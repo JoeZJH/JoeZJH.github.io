@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Github主题推荐算法 | Jiahong Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="subtitle: Topic Suggestions for Millions of Repositories Github官网原文 总体流程图  分为七个步骤：   Readme 预处理与清除(Readme preprocessing and cleanup)： 移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和ima">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Github主题推荐算法">
+<meta property="og:url" content="https://JoeZJH.github.io/2018/05/30/Notes/Others/Github-topics-method/index.html">
+<meta property="og:site_name" content="Jiahong Blog">
+<meta property="og:description" content="subtitle: Topic Suggestions for Millions of Repositories Github官网原文 总体流程图  分为七个步骤：   Readme 预处理与清除(Readme preprocessing and cleanup)： 移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和ima">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="https://joezjh.github.io/2018/05/30/Notes/Others/Github-topics-method/Github-topics-process-flow.png">
+<meta property="og:image" content="https://joezjh.github.io/2018/05/30/Notes/Others/Github-topics-method/tf-idf.png">
+<meta property="og:updated_time" content="2018-09-22T00:36:23.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Github主题推荐算法">
+<meta name="twitter:description" content="subtitle: Topic Suggestions for Millions of Repositories Github官网原文 总体流程图  分为七个步骤：   Readme 预处理与清除(Readme preprocessing and cleanup)： 移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和ima">
+<meta name="twitter:image" content="https://joezjh.github.io/2018/05/30/Notes/Others/Github-topics-method/Github-topics-process-flow.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Jiahong Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Jiahong Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://JoeZJH.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Notes/Others/Github-topics-method" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/05/30/Notes/Others/Github-topics-method/" class="article-date">
+  <time datetime="2018-05-30T08:00:45.000Z" itemprop="datePublished">2018-05-30</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Github主题推荐算法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>subtitle: Topic Suggestions for Millions of Repositories</p>
+<p><a href="https://githubengineering.com/topics/" target="_blank" rel="noopener">Github官网原文</a></p>
+<h3 id="总体流程图"><a href="#总体流程图" class="headerlink" title="总体流程图"></a>总体流程图</h3><!-- ![process-flow](Github-topics-method/Github-topics-process-flow.png) -->
+<img src="/2018/05/30/Notes/Others/Github-topics-method/Github-topics-process-flow.png" title="process-flow">
+<p>分为七个步骤：</p>
+<hr>
+<ul>
+<li>Readme 预处理与清除(Readme preprocessing and cleanup)：<ul>
+<li>移除不要的文本块(Remove unwanted blocks)<ul>
+<li>去除没用文本：一些块是没用的，比如code, table 和image链接等</li>
+</ul>
+</li>
+<li>文本划分(Text segmentation)<ul>
+<li>提取有用的文本：一个启发式的README tagger，借助格式分析：分析缩进(indentation)，空格(spacing)，和反撇号( `, backtick)等决定是否是有用信息【说明：这里语法分析是没必要的，我们只关心有用的文本，其他的都是为噪音(noise)】</li>
+<li>提取到有用文本后，删除拓展部分：HTML标签，路径和其他处理出来的部分等</li>
+<li>最后将剩下的文本进行粗粒度分割【用标点符号(punctuation marks)和README中的一些符号，比如临近哈希符号(contiguous hash symbols)】</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>生成候选主题(Generate candidate topics)<ul>
+<li>用自定义的停用词去将词单元划分出来(Use custom stop words to break text into word units)<ul>
+<li>停用词去除</li>
+<li>n-gram分段小于等于4(测试发现小于4的比较好，太长的主题过于具体了，不合适)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>移除噪音主题(Eliminate noisy topics)<ul>
+<li>用逻辑回归模型删减“bad”主题(Use a logistic regression model to prune “bad” topics)<ul>
+<li>监督逻辑回归模型(supervised logistic regression model)主要针对除了频数比较小的外，一些不好的，比如”great”, “cool”等，<strong>这里的模型是一个分类模型，分为两类(good[positive] and bad(negative))</strong>, 我们称之为关键词过滤模型<ul>
+<li>手动收集大约300个数据集作为训练集</li>
+<li>单个动词一般都是Bad类<code>请教师兄</code></li>
+<li>其他的(<code>Other features we used were occurrence of user names, n-gram size of a phrase, length of a phrase, and numeric content within a phrase.</code>)</li>
+<li>以后打算加入回馈机制(来自用户的)去更新这个关键词过滤模型：接受度高的词作为positive的，接受度低的作为停用词或者negative的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>移除不满足最小频数的主题(Eliminate topics not satisfying minimum frequency count)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>给主题评分(Score Topics)<ul>
+<li>用混合tf-idf分数，以主题频率和n元词作为打分标准(Use combination of tf-idf scores, topic frequency and n-gram size for scoring)<ul>
+<li>评估多种指标后，选择了点互信息指标(PMI)： <a href="https://blog.csdn.net/luo123n/article/details/48574123" target="_blank" rel="noopener">Pointwise Mutual Information</a></li>
+<li>考虑另一种指标tf-idf：参考论文<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" target="_blank" rel="noopener">Using TF-IDF to Determine Word Relevance in Document Queries.pdf</a>或者<a href="https://blog.csdn.net/baimafujinji/article/details/51476117" target="_blank" rel="noopener">Python的实现</a></li>
+<li><code>The second approach we tried uses the average tf-idf scores of individual words in a phrase weighted by the phrase frequency (if it’s more than one word long) and n-gram size.</code></li>
+<li>两种方法比较：<ul>
+<li>PMI： 强调独特性，越特殊的短语评分越高，但有些可能只是拼写错误(Typo)或者是没有被删除的代码片段</li>
+<li>tf-idf： 不强调独特性，最终选择是tf-idf,原因是这个指标较好的平衡了独特性和主题与仓库(repository)的相关程度</li>
+</ul>
+</li>
+<li>在tf-idf的基础上还添加了一下其他的比如boosting scores等方法<br><strong>下面是TF-IDF的说明</strong><!-- ![tf-idf](Github-topics-method/tf-idf.png) -->
+<img src="/2018/05/30/Notes/Others/Github-topics-method/tf-idf.png" title="tf-idf">
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li><p>规范化主题(Canonicalize topics)</p>
+<ul>
+<li><p>使用内部词典规范主题形式(Use an in-house dictionary to suggest canonical form of topics)</p>
+<ul>
+<li><p>解决文字层面的差别和变化等,比如下面四个主题<code>请教师兄：这个在我们程序中实现指的是SO的那个库的部分吗？,不是，这里是规范化，SO那个是提取标签</code></p>
+<p><strong><em>neural-network<br>neural-networks<br>neuralnetwork<br>neuralnetworks</em></strong></p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li><p>移除相似的主题(Eliminate near similar topics)</p>
+<ul>
+<li><p>用基于Jaccard相似性评分的贪心算法(Greedy approach using Jaccard similarity scoring)</p>
+<ul>
+<li><p>motivation：在得到Top-N的主题后，有些主题其实很相似，虽然都有用，但是他们只是在不同粒度描述了同一个主题而已，因此我们需要删除一些重复的，比如下面的例子</p>
+<p><strong><em>machine learning<br>deep learning<br>general-purpose machine learning<br>machine learning library<br>machine learning algorithms<br>distributed machine learning<br>machine learning framework<br>deep learning library<br>support vector machine<br>linear regression</em></strong></p>
+</li>
+<li><p>method： 两个短语的相似性计算使用的是基于词的Jaccard相似性(两个短语的差集与并集的比值，因为它对较短的短语很有效，而且分数是[0-1]的，很方便设置阈值(thresholds))，用贪心算法，如果两个主题相似，去除分数较低的那一个，上面的例子去除相似主题后的结果是：</p>
+<p><strong><em>machine learning<br>deep learning<br>support vector machine<br>linear regression</em></strong></p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>返回Top-K主题作为最终结果</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://JoeZJH.github.io/2018/05/30/Notes/Others/Github-topics-method/" data-id="cjmcpnjwa000d0yc8qpmakpuk" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/06/06/Notes/MySQL/Error-code-28-No-space-left-on-device/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          (MySQL)Error code 28; No space left on device
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/05/30/Notes/MySQL/MySQL 引擎——比较说明/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">MySQL 引擎——比较说明</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/09/">September 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/09/19/Notes/Python/如何在Idea中优雅的导入自定义的Python包/">如何优雅的导入自定义的Python包</a>
+          </li>
+        
+          <li>
+            <a href="/2018/09/18/Notes/Python/Get-index-of-the-top-n-values-of-a-list-in-python/">(Python)从数组中返回最大的K个值在数组中的索引</a>
+          </li>
+        
+          <li>
+            <a href="/2018/09/07/Notes/Linux/时区问题/">Linux（Centos） 时区问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/09/06/Notes/Python/Jupter-convert-ipynb-to-py/">将ipynb文件转成py文件</a>
+          </li>
+        
+          <li>
+            <a href="/2018/09/04/Notes/ML/程序中命名问题/">变量命名问题</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 Joe Zhou<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
