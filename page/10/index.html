@@ -403,6 +403,375 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html" itemprop="url">ML——GBDT-梯度提升树-推导过程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+
+<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
+<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
+<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html">无约束参数优化方法</a></li>
+</ul>
+<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
+<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
+<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
+<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
+</li>
+</ul>
+<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
+<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML——DT-决策树.html">ML——DT-决策树</a></li>
+</ul>
+<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
+<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
+<ul>
+<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
+</ul>
+<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \arg\max_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
+<ul>
+<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
+<li>最小化损失函数即可得到最优模型</li>
+</ul>
+<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
+<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
+<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
+<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
+<li>上面的推导中<ul>
+<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)</li>
+<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
+<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
+</ul>
+</li>
+<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
+<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
+</ul>
+</li>
+<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
+</ul>
+</li>
+</ul>
+<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用线性回归模型等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
+<h5 id="最小方差回归-损失函数"><a href="#最小方差回归-损失函数" class="headerlink" title="最小方差回归(损失函数)"></a>最小方差回归(损失函数)</h5><p><em>Least-squares Regression</em></p>
+<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
+<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
+</ul>
+<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least absolute Deviation Regression, LAD</em></p>
+<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
+<li>绝对值的导数就是1或者-1,当<br>$$(y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
+<li>同理得到，当<br>$$(y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
+<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
+</ul>
+</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下<br><em>待更新</em><br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
+<h3 id="XGBoost算法原理-Newton-Boosting-Tree"><a href="#XGBoost算法原理-Newton-Boosting-Tree" class="headerlink" title="XGBoost算法原理(Newton Boosting Tree)"></a>XGBoost算法原理(Newton Boosting Tree)</h3><ul>
+<li>(从函数空间定义和后面的公式推导来看)<strong>XGBoost中基函数只使用CART回归树，不能使用线性回归</strong></li>
+<li>损失函数中加入了正则项<br><em>待更新</em></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
+<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
+<li>学得的模型能适用于训练过程中从未观察到的数据</li>
+<li>也就是说:测试集未知</li>
+</ul>
+<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
+<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
+<li>也就是说:测试集就是训练时观察到的未标记数据</li>
+</ul>
+<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
+<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
+<li>都是迭代扩充标记数据集的算法:<ul>
+<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
+</ul>
+</li>
+</ul>
+<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
+<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
+<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
+</ul>
+<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
+<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
+<li>半监督学习和主动学习的测试集都是未知数据</li>
+<li>半监督学习是基于”开放世界”假设的</li>
+<li>直推学习是基于”封闭世界”假设的</li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
+<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">学习算法</th>
+<th style="text-align:center">是否需要专家知识(人工)</th>
+<th style="text-align:center">是否具有泛化性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">半监督学习</td>
+<td style="text-align:center">否</td>
+<td style="text-align:center">是(“开放世界”假设)</td>
+</tr>
+<tr>
+<td style="text-align:left">主动学习</td>
+<td style="text-align:center">是</td>
+<td style="text-align:center">是(“开放世界”假设)</td>
+</tr>
+<tr>
+<td style="text-align:left">直推学习</td>
+<td style="text-align:center">否</td>
+<td style="text-align:center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
+</tr>
+</tbody>
+</table>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——Xgboost.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1047,7 +1416,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最优化方法-无约束参数优化方法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型的方差与偏差.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1066,7 +1435,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html" itemprop="url">ML——最优化方法-无约束参数优化方法</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——模型的方差与偏差.html" itemprop="url">ML——模型的方差与偏差</a></h1>
         
 
         <div class="post-meta">
@@ -1118,182 +1487,34 @@
       
         
           
-            <p><strong>本文介绍无约束的参数优化方法：梯度下降法(Gradient Descent)、牛顿法(Newton’s Method)和拟牛顿法(Quasi-Newton Methods)</strong></p>
-<p><script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script></p>
-<h3 id="无约束参数优化方法概览"><a href="#无约束参数优化方法概览" class="headerlink" title="无约束参数优化方法概览"></a>无约束参数优化方法概览</h3><h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><p>$$<br>\begin{align}<br>\theta^{\star} = \arg\max_{\theta}L(\theta)<br>\end{align}<br>$$</p>
-<h4 id="直接法"><a href="#直接法" class="headerlink" title="直接法"></a>直接法</h4><h5 id="使用直接法需要满足两个条件"><a href="#使用直接法需要满足两个条件" class="headerlink" title="使用直接法需要满足两个条件"></a>使用直接法需要满足两个条件</h5><ul>
-<li>\(L(\theta)\)为关于\(\theta\)的凸函数</li>
-<li>\(\nabla L(\theta)=0\)有解析解(又名闭式解，指的是有限个常见运算的组合给出的形式)</li>
+            <p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+
+<h3 id="偏差与方差的定义"><a href="#偏差与方差的定义" class="headerlink" title="偏差与方差的定义"></a>偏差与方差的定义</h3><ul>
+<li>方差：模型的预测值之间的离散程度</li>
+<li>偏差：模型整体的预测值与真实值的偏离程度</li>
 </ul>
-<h5 id="求解"><a href="#求解" class="headerlink" title="求解"></a>求解</h5><ul>
-<li>目标函数直接对参数求导后令目标函数导数为0: $$\nabla L(\theta)=0$$</li>
+<h3 id="正则化与方差和偏差"><a href="#正则化与方差和偏差" class="headerlink" title="正则化与方差和偏差"></a>正则化与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://www.cnblogs.com/qkloveslife/p/9885500.html" target="_blank" rel="noopener">https://www.cnblogs.com/qkloveslife/p/9885500.html</a></li>
 </ul>
-<h4 id="迭代法"><a href="#迭代法" class="headerlink" title="迭代法"></a>迭代法</h4><ul>
-<li>包括梯度下降法和牛顿法，牛顿法又可以拓展为拟牛顿法</li>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>\(\lambda\)为正则化系数</li>
+<li>当\(\lambda\)很小时，模型处于“高方差”状态，“训练误差”很小，“交叉验证误差”较大</li>
+<li>当\(\lambda\)很大时，模型处于“高偏差”状态，“训练误差”和“交叉验证误差”都很大</li>
 </ul>
-<h3 id="梯度下降法"><a href="#梯度下降法" class="headerlink" title="梯度下降法"></a>梯度下降法</h3><p><em>更详细的说明参考<a href="/Notes/ML/ML——最小二乘与梯度下降.html" title="/Notes/ML/ML——最小二乘与梯度下降.html">ML——最小二乘与梯度下降</a>中的介绍</em></p>
-<ul>
-<li>梯度下降法通过每次迭代沿着梯度下降最快的方向(梯度的负方向)前进一个\(\Delta \theta\)长度</li>
-<li>\(\Delta \theta\)为步长\(\alpha\)(参数)乘以梯度的模(变化率)的方法，实现对极大(小)值的一步步逼近</li>
+<h3 id="集成学习与方差和偏差"><a href="#集成学习与方差和偏差" class="headerlink" title="集成学习与方差和偏差"></a>集成学习与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://blog.csdn.net/xmu_jupiter/article/details/47314927" target="_blank" rel="noopener">https://blog.csdn.net/xmu_jupiter/article/details/47314927</a></li>
 </ul>
-<h3 id="牛顿法"><a href="#牛顿法" class="headerlink" title="牛顿法"></a>牛顿法</h3><h4 id="数学中的牛顿法"><a href="#数学中的牛顿法" class="headerlink" title="数学中的牛顿法"></a>数学中的牛顿法</h4><ul>
-<li>牛顿法的本质是求函数值\(f(x)\)为零(\(f(x)=0\))时参数(自变量\(x\))的值</li>
-<li>本质上说，牛顿法是用逼近的方法来<strong>解方程</strong>的一种方法</li>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><h5 id="集成学习分两类"><a href="#集成学习分两类" class="headerlink" title="集成学习分两类"></a>集成学习分两类</h5><ul>
+<li>平均方法：例如随机森林， Bagging methods。在平均方法中，系统分别去建立多个基分类器，分类器之间没有任何联系。然后在分类或者回归阶段，各个分类器根据测试数据给出自己的答案，然后系统根据各个分类器给出的结果去综合出最后的结果，比如可以使投票的形式。</li>
+<li>提升方法：例如梯度提升决策树GBDT，AdaBoost。在提升方法中，系统模型在训练过程中会先后建立一系列分类器，这些分类器单个可能是弱分类器，但是组合起来就成为一个强分类器。</li>
 </ul>
-<h5 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>对于确定的方程\(f(x)=0\)，我们的目标是求解自变量\(x\)的值</li>
-<li>1.初始值定义为\(x=x_{0}\)</li>
-<li>2.牛顿法通过迭代每次从当前点\(x={k}\)沿着斜率\(\frac{\partial f(x)}{\partial x}, x=x_{k}\)出发做一条直线,并求出其表达式</li>
-<li>3.求出该直线与x轴的交点\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)</li>
-<li>4.设置下一次迭代的点为\(x=x_{k+1}\)</li>
-<li>5.重复2到4，直到斜率小于某个阈值\(\epsilon\)时停止迭代</li>
-<li>6.迭代停止时\(x=x_{k+1}\)就是方程的近似解</li>
-<li>迭代过程图示化如下：<br><em>图片引用自博客：<a href="https://www.cnblogs.com/lyr2015/p/9010532.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyr2015/p/9010532.html</a></em>
-</li>
-</ul>
-<h5 id="迭代公式推导"><a href="#迭代公式推导" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h5><ul>
-<li>上述迭代流程中迭代公式\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)的推导如下：
-</li>
-</ul>
-<h4 id="最优化方法中的牛顿法"><a href="#最优化方法中的牛顿法" class="headerlink" title="最优化方法中的牛顿法"></a>最优化方法中的牛顿法</h4><ul>
-<li>最优化方法的目标是学习函数\(f(\theta)\)的极小/大值(若\(f(\theta)\)是凸函数，则为最小/大值)</li>
-<li>可以证明，目标函数(凸函数)取最优点(最大/小值)时，目标函数的导数\(\frac{\partial f(\theta)}{\partial \theta}=0, 其中\theta=\theta^{\star}\)</li>
-<li>基于这个事实，在知道目标函数的导数\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)的表达式后，我们可以列出方程\(f{}’(\theta)=0\)<ul>
-<li>此时方程的解\(\theta^{\star}\)就是原始目标函数的最优解</li>
+<h5 id="不同类别的偏差与方差"><a href="#不同类别的偏差与方差" class="headerlink" title="不同类别的偏差与方差"></a>不同类别的偏差与方差</h5><ul>
+<li>平均方法尝试去降低模型的方差<ul>
+<li>所以平均方法通常比其任何一个基分类器效果好</li>
 </ul>
 </li>
-<li>解上述方程\(\frac{\partial f(\theta)}{\partial \theta}=0\)时我们即可使用<strong>数学中的牛顿法</strong></li>
-</ul>
-<h5 id="算法流程-1"><a href="#算法流程-1" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>具体算法步骤与<strong>数学中的算法流程</strong>小节一致，不同的地方在于此时迭代公式变为\(\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}\)</li>
-<li>在具体的实现中，我们一般会直接推导出每一步的迭代公式，按照公式迭代即可得到最优解</li>
-</ul>
-<h4 id="迭代公式推导-1"><a href="#迭代公式推导-1" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h4><ul>
-<li>根据上述事实，此时我们的目标函数为\(f(\theta)\)，目标方程方程为\(f{}’(\theta)=0\)</li>
-<li>此时迭代公式为$$\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}$$</li>
-<li>当参数数量不止一个时，\(\theta\)表示一个向量，此时迭代公式为$$\theta_{k+1}=\theta_{k}-H_{k}^{-1}\nabla_{\theta}f(\theta_{k})$$<ul>
-<li>其中\(H_{k}^{-1}\)为海森矩阵\(H_{k}\)的逆, \(H_{k}=H(\theta_{k})\)</li>
-<li>\(H_{k}^{-1}\)和\(\frac{1}{f{}’{}’(\theta_{k})}\)分别是多维和一维参数时目标函数的二阶导</li>
-<li>海森矩阵是目标函数对参数的二阶导数，\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>推导步骤和上面的<strong>数学中的迭代公式</strong>推导一致</li>
-</ul>
-<h3 id="牛顿法与梯度下降法的一种简单推导方法"><a href="#牛顿法与梯度下降法的一种简单推导方法" class="headerlink" title="牛顿法与梯度下降法的一种简单推导方法"></a>牛顿法与梯度下降法的一种简单推导方法</h3><ul>
-<li>用泰勒展开来推导,详情待更新(参考&lt;&lt;百面&gt;&gt;P149)</li>
-</ul>
-<h4 id="迭代法的思想"><a href="#迭代法的思想" class="headerlink" title="迭代法的思想"></a>迭代法的思想</h4><p>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\max_{\delta}L(\theta_{t} + \delta) \\<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>\end{align}<br>$$</p>
-<h4 id="一阶法——梯度下降法"><a href="#一阶法——梯度下降法" class="headerlink" title="一阶法——梯度下降法"></a>一阶法——梯度下降法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做一阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta \\<br>\end{align}<br>$$</li>
-<li>由于上式在\(\delta\)非常小时才成立，所以我们一般加上加入L2正则项（L2正则项可以保证\(\delta\)的值不会太大）<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2} \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\max_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\max_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2}) \\<br>&amp;= -\alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="二阶法——牛顿迭代法"><a href="#二阶法——牛顿迭代法" class="headerlink" title="二阶法——牛顿迭代法"></a>二阶法——牛顿迭代法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做二阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\max_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\max_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta)  \\<br>&amp;= -\nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t}) \\<br>&amp;= -H(\theta_{t})^{-1}\nabla L(\theta_{t}) \\<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<h3 id="比较梯度下降法与牛顿法"><a href="#比较梯度下降法与牛顿法" class="headerlink" title="比较梯度下降法与牛顿法"></a>比较梯度下降法与牛顿法</h3><ul>
-<li>一般来说，牛顿法收敛速度快<ul>
-<li>一种解释是梯度下降法用<strong>一次平面去拟合局部区域</strong>牛顿法是用<strong>二次曲面去拟合局部区域</strong>，所以后者能得到更好的拟合效果，迭代的方向也就越精确</li>
-<li>另一种解释是梯度下降只能看到当前目标函数的下降方向，牛顿法可以看到当前当前目标函数的下降方向，同时还能看到一阶导数的变化趋势，所以拟合更快</li>
-</ul>
-</li>
-<li>梯度下降法中有个超参数\(\alpha\)<ul>
-<li>牛顿法中海森矩阵的逆在迭代过程中不断减小，可以起到逐步减小步长的效果(这里的步长与梯度下降中的\(\alpha\)步长不一样,梯度下降中的\(\alpha\)是超参数,表示每次向着负梯度移动的长度,而牛顿法中没有超参数)</li>
-<li>为了防止震荡,这个步长\(\alpha\)也可以随着迭代次数不断减小</li>
-</ul>
-</li>
-<li>梯度下降法可能造成震荡<ul>
-<li>越接近最优值时，步长\(\alpha\)应该不断减小，否则会在最优值附近来回震荡</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第一版附录A中,\(\alpha\)是不断变化的,能保证不会造成震荡</li>
-</ul>
-</li>
-<li>牛顿法在多变量时需要求海森矩阵H的逆,比较复杂,时间和空间上有要求,不如梯度下降法来的容易</li>
-</ul>
-<h3 id="拟牛顿法"><a href="#拟牛顿法" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h3><ul>
-<li>解决牛顿法求取海森矩阵\(H\)的逆\(H^{-1}\)时比较耗时间的难题</li>
-<li>用一个近似矩阵\(B\)代替海森矩阵\(H\)的逆\(H^{-1}\)</li>
-<li>不同算法近似矩阵\(B\)的计算有差异</li>
-<li>常见的拟牛顿法：BFGS,L-BFGS和OWL-QN等<ul>
-<li>&lt;&lt;统计学习方法&gt;&gt;中讲解了三个拟牛顿算法: DFP,BFGS和Broyden类算法</li>
-</ul>
-</li>
-</ul>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><em>归纳自&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<h4 id="相同迭代公式"><a href="#相同迭代公式" class="headerlink" title="相同迭代公式"></a>相同迭代公式</h4><ul>
-<li>目标函数为\(f(\theta)\),最优化方法的终极目标是求\(f(\theta)\)的最大值点(或极大值点)</li>
-<li>目标函数的一阶导数<ul>
-<li>参数一维时为:\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)</li>
-<li>参数多维时为:\(\nabla f(\theta)\)</li>
-</ul>
-</li>
-<li>目标函数的二阶导数<ul>
-<li>参数一维时为:\(f{}’{}’(\theta)\)</li>
-<li>参数多维时为:(海森矩阵)\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>梯度下降法,牛顿法和拟牛顿法的迭代参数均可表示为下面的迭代形式:<br>$$\theta_{k+1}=\theta_{k}+\lambda_{k}p_{k}$$</li>
-<li>均通过一阶导数\(\left | \nabla f(\theta) \right |&lt;\epsilon\)为<strong>收敛判断条件</strong><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中,梯度下降法还可以通过\(\left | \theta_{k+1}-\theta_{k+} \right |&lt;\epsilon\)或\(\left | f(\theta_{k+1})-f(\theta_{k+}) \right |&lt;\epsilon\)来判断收敛</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降法-1"><a href="#梯度下降法-1" class="headerlink" title="梯度下降法"></a>梯度下降法</h4><ul>
-<li>\(p_{k}=\nabla f(x)\) </li>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h4 id="牛顿法-1"><a href="#牛顿法-1" class="headerlink" title="牛顿法"></a>牛顿法</h4><ul>
-<li>\(p_{k}=-H_{k}^{-1}\nabla f(\theta)\)</li>
-<li>\(\lambda_{k}=1\)是固定长度的,详情见<strong>数学中的牛顿法</strong>的推导,每次迭代到斜率与横轴的交点<br>$$\lambda_{k}=1$$</li>
-</ul>
-<h4 id="拟牛顿法-1"><a href="#拟牛顿法-1" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h4><ul>
-<li>核心思想是找一个容易计算的近似矩阵(可以迭代计算,而不是每次重新计算逆矩阵的矩阵)替代原始牛顿法中的海森矩阵\(H\)(\(B\))或者海森矩阵的逆矩阵\(H^{-1}\)(\(G\))</li>
-</ul>
-<h5 id="DFP算法"><a href="#DFP算法" class="headerlink" title="DFP算法"></a>DFP算法</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>\(p_{k}=-G_{k}\nabla f(\theta)\)<ul>
-<li>关于\(G_{k}\)的计算:<ul>
-<li>初始化\(G(0)\)为正定对称矩阵</li>
-<li>\(G_{k+1}=G_{k}+\frac{\delta_{k}\delta_{k}^{T}}{\delta_{k}^{T}y_{k}}-\frac{G_{k}y_{k}y_{k}^{T}G_{k}}{y_{k}^{T}G_{k}y_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="BFGS算法"><a href="#BFGS算法" class="headerlink" title="BFGS算法"></a>BFGS算法</h5><ul>
-<li>使用\(B_{k}\)逼近海森矩阵\(H_{k}\)</li>
-<li>\(p_{k}=-B_{k}^{-1}\nabla f(\theta)\)<ul>
-<li>关于\(B_{k}\)的计算:<ul>
-<li>初始化\(B(0)\)为正定对称矩阵</li>
-<li>\(B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{T}}{y_{k}^{T}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{T}B_{k}}{\delta_{k}^{T}B_{k}\delta_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="Broyden类算法-Broyden’s-algorithm"><a href="#Broyden类算法-Broyden’s-algorithm" class="headerlink" title="Broyden类算法(Broyden’s algorithm)"></a>Broyden类算法(Broyden’s algorithm)</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>在BFGS中取\(G^{BFGS}=B^{-1}\)</li>
-<li>利用DFP和BFGS二者的<strong>线性组合</strong>选择合适的海森矩阵的逆矩阵\(H^{-1}\)的替代矩阵<br>$$G_{k+1}=\alpha G^{DFP}+(1-\alpha)G^{BFGS}$$</li>
-<li>可以证明\(G\)此时是正定的</li>
-<li>\(0\leq \alpha \leq 1\)</li>
-<li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
+<li>而提升方法尝试去降低模型的偏差</li>
 </ul>
 
           
@@ -1343,7 +1564,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1362,7 +1583,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
         
 
         <div class="post-meta">
@@ -1414,201 +1635,69 @@
       
         
           
-            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
-<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><ul>
-<li>m个基础模型</li>
-<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
-</li>
-</ul>
-<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
-<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
-<li>随机森林详情可参考<a href="/Notes/ML/Models/ML——RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
-</ul>
-<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><ul>
-<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
-<li>训练过程为阶梯状</li>
-<li>基础模型按照次序依次训练(实现时可做到并行)</li>
-<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
-</li>
-</ul>
-<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
-<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
-</ul>
-<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
-<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
-<li>GBDT详情可参考<a href="/Notes/ML/Models/ML——GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
-</ul>
-<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><ul>
-<li>训练所有基础模型</li>
-<li>获取所有基础模型的预测结果</li>
-<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
-<li>基于新的训练集进行训练,得到预测模型M()</li>
-<li>测试时也要将特征转换后再用M进行预测</li>
-<li>实质上就是先用一些模型提取特征,然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
-<li>理论上可以堆叠各种各样的分类器
-</li>
-</ul>
-<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><p><em>待更新</em></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
-<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
-<li>训练集: 用于模型训练</li>
-<li>验证集: 用于模型选择</li>
-<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
-</ul>
-<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
-<li>训练集: 用于模型拟合的数据样本</li>
-<li>验证集: 用于模型的选择<ul>
-<li>不参与训练过程</li>
-<li>可用于超参数的调整</li>
-<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
-<li>可多次使用</li>
-</ul>
-</li>
-<li>测试集: 用于模型的评估 <ul>
-<li>不参与训练过程</li>
-<li>不可用于超参数的调整</li>
-<li>只可以使用一次</li>
+            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)
+</em>梯度的数学定义:函数上升最快的方向*</p>
+<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
+<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
+<li>各种简称,都是同一种算法:<ul>
+<li>GBDT(Gradient Boosting Decision Tree)</li>
+<li>MART(Multiple Additive Regression Tree)</li>
+<li>GBT(Gradient Boosting Tree)</li>
+<li>GTB(Gradient Tree Boosting)</li>
+<li>GBRT(Gradient Boosting Regression Tree)</li>
 </ul>
 </li>
 </ul>
-<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
-<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
-<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
-<li>此时从验证集中划分一部分验证集</li>
+<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
+<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等)</li>
+<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
+<li>残差 = 真实值 - 预测值</li>
 </ul>
-<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
-<li>需要训练集用于训练,验证集用于模型选择</li>
-<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
+<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
+<li>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重<ul>
+<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
 </ul>
-<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
-<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
-<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
-<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
+</li>
+<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
+<ul>
+<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
+<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
 </ul>
-<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
-<li>用来调超参数的一部分正好称为验证集</li>
-<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
+</li>
+<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
+<ul>
+<li>因为我们的目标是拟合上一若学习器的残差</li>
+<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
+</ul>
+</li>
+</ul>
+<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
+<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
+<li>此时类别可编码为一个一维向量,取值0或1</li>
+</ul>
+<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
+<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
+<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
+<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
+<li>然后每个模型每轮分别学习当前特征的残差</li>
+<li>每个模型都会用到所有的样本<ul>
+<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
+<li>编码为(x, [0,1,0])</li>
+<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
+<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
+</ul>
+</li>
+<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
+<li>最后预测时<ul>
+<li>给定一个未标记样本</li>
+<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
+<li>最后选择分数最高的一个类为最终分类即可</li>
+</ul>
+</li>
+</ul>
+<h3 id="Sklearn相关库"><a href="#Sklearn相关库" class="headerlink" title="Sklearn相关库"></a>Sklearn相关库</h3><h3 id="与其他算法的对比"><a href="#与其他算法的对比" class="headerlink" title="与其他算法的对比"></a>与其他算法的对比</h3><ul>
+<li>GDBT是一种集成算法,但是不同与</li>
 </ul>
 
           
@@ -1840,7 +1929,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最小二乘与梯度下降.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1859,7 +1948,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——最小二乘与梯度下降.html" itemprop="url">ML——最小二乘与梯度下降</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
         
 
         <div class="post-meta">
@@ -1911,296 +2000,45 @@
       
         
           
-            <p><em>本文持续更新，主要总结各种与最小二乘和梯度下降相关的优化方法</em></p>
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
-
-<h3 id="最小二乘与最小均方误差的区别"><a href="#最小二乘与最小均方误差的区别" class="headerlink" title="最小二乘与最小均方误差的区别"></a>最小二乘与最小均方误差的区别</h3><h4 id="最小二乘法"><a href="#最小二乘法" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
-<li>二乘也就是平方的意思，故又称最小平方法(英文全称Least Square Method, LSM或者LS)</li>
-<li>是一种数学优化技术</li>
-<li>通过最小化误差的平方和寻找数据的最佳函数匹配<ul>
-<li>为什么最小化误差平方和可以得到最佳函数匹配呢？<ul>
-<li>可以证明，只要误差是服从正太分布的，最小化误差平法和就能匹配到最佳函数(这个高斯证明过)</li>
-<li>可以证明，误差的确是服从正太分布的，细节可以参考<a href="https://www.matongxue.com/madocs/589.html" title="https://www.matongxue.com/madocs/589.html" target="_blank" rel="noopener">为什么正太分布如此常见</a></li>
-<li>中心极限定理说了，在适当的条件下，大量相互独立随机变量的均值经适当标准化后依分布收敛于正态分布 <ul>
-<li>适当的条件包括三个要素:<ul>
-<li>独立</li>
-<li>随机</li>
-<li>相加</li>
+            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
+<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
+<li>训练集: 用于模型训练</li>
+<li>验证集: 用于模型选择</li>
+<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
+</ul>
+<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
+<li>训练集: 用于模型拟合的数据样本</li>
+<li>验证集: 用于模型的选择<ul>
+<li>不参与训练过程</li>
+<li>可用于超参数的调整</li>
+<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
+<li>可多次使用</li>
 </ul>
 </li>
-<li>误差满足上面三个要素</li>
-</ul>
-</li>
-<li>综上所述，最小二乘法(最小化误差平法和)可以的到最佳函数匹配</li>
+<li>测试集: 用于模型的评估 <ul>
+<li>不参与训练过程</li>
+<li>不可用于超参数的调整</li>
+<li>只可以使用一次</li>
 </ul>
 </li>
 </ul>
-</li>
-<li>最小二乘法通过求导，并令导数为0，直接求得误差平方和(损失函数的一种)取最小值时的参数</li>
+<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
+<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
+<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
+<li>此时从验证集中划分一部分验证集</li>
 </ul>
-<h4 id="最小化均方误差"><a href="#最小化均方误差" class="headerlink" title="最小化均方误差"></a>最小化均方误差</h4><ul>
-<li>最小二乘（Least Square, LS）问题是这样一类优化问题，目标函数是若干项的平方和</li>
-<li>LS的一种更复杂也更灵活的变形: 加权最小二乘根据实际问题考虑每个求和项的重要程度，即为每一项加权值w</li>
-<li>均方误(Mean Square Error, MSE)是一种加权最小二乘，它的权值是对应项的概率</li>
+<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
+<li>需要训练集用于训练,验证集用于模型选择</li>
+<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
 </ul>
-<h4 id="周志华的解释"><a href="#周志华的解释" class="headerlink" title="周志华的解释"></a>周志华的解释</h4><ul>
-<li>基于均方误差最小化来进行模型求解的方法称为最小二乘法 ——《机器学习》(周志华著)<ul>
-<li>理解：周志华的意思应该是把均方误差与误差平方和视为一个东西，也就是说各项的权重相同，所以感觉这里定义其实是比较模糊的，不用太在意最小二乘法与最小化均方误差法的定义</li>
+<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
+<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
+<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
+<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
 </ul>
-</li>
-</ul>
-<h3 id="梯度下降与梯度上升"><a href="#梯度下降与梯度上升" class="headerlink" title="梯度下降与梯度上升"></a>梯度下降与梯度上升</h3><h4 id="意义"><a href="#意义" class="headerlink" title="意义"></a>意义</h4><p><strong>为什么需要梯度下降或者梯度上升,而不是用直接对目标函数求导得到最优解?</strong> </p>
-<h5 id="几点说明"><a href="#几点说明" class="headerlink" title="几点说明"></a>几点说明</h5><ul>
-<li>对于凸函数而言:<ul>
-<li>通过函数(损失函数等)对参数求导,令其导数为0,的确可以解得损失函数的最小(最大)值点对应的参数</li>
-</ul>
-</li>
-<li>对于非凸函数而言:<ul>
-<li>相同的方法可能只能得到极值点,而不是最小(最大)值点</li>
-<li>但此时梯度下降法也不能找到最优点</li>
-</ul>
-</li>
-<li>无论是梯度下降函数直接推到求解目标函数最优解,我们都需要求目标函数的导数,并且需要确保目标函数可导,不然是不能用这些方法的</li>
-</ul>
-<h5 id="几点原因"><a href="#几点原因" class="headerlink" title="几点原因"></a>几点原因</h5><ul>
-<li>有时候目标方程(令导数为0后得到的方程)很复杂,求导数为0的参数的解(根)很难<ul>
-<li>包括时间和空间两方面可能面临困难</li>
-<li>比如大矩阵的乘法,大矩阵的逆等</li>
-<li>求某一点的梯度一般是比较容易的(只要求出导数后将对应点的数值带入即可)<ul>
-<li><em>这里与求导数为0的解难度不一样,在求出函数导数后,求某一点的梯度仅仅需要带入该点的值,而求导数为0的解需要的是很难的解题过程,甚至可能找不到解</em></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>有时候目标方程很奇怪,之前我们没见过,需要我们写新的代码教会计算机如何直接求解函数的根<ul>
-<li>直接使用梯度下降的话是计算机可以理解的</li>
-<li>梯度下降法不用重新写代码来教给计算机</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h4><ul>
-<li>梯度下降是最小化目标函数<ul>
-<li>\(\theta=\theta-\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
-<li>\(\lambda\)为步长</li>
-<li>每轮迭代沿着负梯度方向移动</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度上升"><a href="#梯度上升" class="headerlink" title="梯度上升"></a>梯度上升</h4><ul>
-<li>梯度上升是最大化目标函数<ul>
-<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
-<li>\(\lambda\)为步长</li>
-<li>每轮迭代验证正梯度方向移动</li>
-</ul>
-</li>
-</ul>
-<h3 id="梯度下降-上升-法与最小二乘法"><a href="#梯度下降-上升-法与最小二乘法" class="headerlink" title="梯度下降(上升)法与最小二乘法"></a>梯度下降(上升)法与最小二乘法</h3><h4 id="最小二乘法-1"><a href="#最小二乘法-1" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
-<li>最小二乘法是一种通过<strong>最小化误差的平方和</strong>寻找数据的<strong>最佳函数匹配</strong>的<strong>数学优化技术</strong></li>
-<li>与最小二乘法并列的是最小话误差的三次方或者四次方等方法<ul>
-<li>这里的<strong>三次方和</strong>和<strong>四次方和</strong>只是为了和<strong>二次方和</strong>作对比，实践中很少遇到这样的优化技术</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降-上升-法"><a href="#梯度下降-上升-法" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h4><ul>
-<li>梯度下降(上升)法的目标是通过迭代(每次朝着最优方向，即梯度下降最快方向前进)不断逼近能使得目标函数最小(最大)时的最优参数值的方法</li>
-<li>梯度下降(上升)是一种迭代法，也就是通过更新参数不停的逼近最优点，可以用来解决各种各样的问题(包括最小二乘问题，最小化误差三次方和等)<ul>
-<li>这里最小二乘问题可以理解为用最小二乘法(最小化误差平法和)来寻找最佳函数的问题</li>
-</ul>
-</li>
-</ul>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
-<li>最小二乘法与梯度下降(上升)法不在一个维度，不能对比</li>
-</ul>
-<h5 id="最小二乘法-2"><a href="#最小二乘法-2" class="headerlink" title="最小二乘法"></a>最小二乘法</h5><ul>
-<li>目标：找到(或者逼近)最优函数，使得该函数能最拟合已知数据</li>
-<li>方法：最小化误差平方和</li>
-</ul>
-<h5 id="梯度下降-上升-法-1"><a href="#梯度下降-上升-法-1" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h5><ul>
-<li>目标：找到(或者逼近)最优参数，使得该参数能最小化(最大化)目标函数</li>
-<li>方法：是通过沿梯度方向迭代更新参数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)
-</em>梯度的数学定义:函数上升最快的方向*</p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
-</ul>
-</li>
-</ul>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等)</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
-</li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
-<ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
-</ul>
-</li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
-</ul>
-</li>
-</ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
-</li>
-</ul>
-<h3 id="Sklearn相关库"><a href="#Sklearn相关库" class="headerlink" title="Sklearn相关库"></a>Sklearn相关库</h3><h3 id="与其他算法的对比"><a href="#与其他算法的对比" class="headerlink" title="与其他算法的对比"></a>与其他算法的对比</h3><ul>
-<li>GDBT是一种集成算法,但是不同与</li>
+<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
+<li>用来调超参数的一部分正好称为验证集</li>
+<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
 </ul>
 
           
@@ -2287,7 +2125,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">124</span>
+                  <span class="site-state-item-count">125</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
