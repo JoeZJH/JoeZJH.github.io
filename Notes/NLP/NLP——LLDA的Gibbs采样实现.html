@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong&#39;s Blog">
 <meta property="og:description" content="本文介绍基于Python的有标签隐式狄利克雷分布(Labeled Latent Dirichlet Allocation, L-LDA)的Gibbs Sampling实现  项目地址: https://github.com/JoeZJH/Labeled-LDA-Python    一些问题为什么选择吉布斯采样问 为什么使用Gibbs Sampling而不是变分推断实现?  答参考文献:Labele">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2019-07-18T01:00:29.000Z">
+<meta property="og:updated_time" content="2019-07-18T15:00:53.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="NLP——LLDA的Gibbs采样实现">
 <meta name="twitter:description" content="本文介绍基于Python的有标签隐式狄利克雷分布(Labeled Latent Dirichlet Allocation, L-LDA)的Gibbs Sampling实现  项目地址: https://github.com/JoeZJH/Labeled-LDA-Python    一些问题为什么选择吉布斯采样问 为什么使用Gibbs Sampling而不是变分推断实现?  答参考文献:Labele">
@@ -480,7 +480,29 @@
 <li>在我们论文实验中,由于主题数与标签数量一致,直接设定即可</li>
 </ul>
 <h3 id="验证集问题"><a href="#验证集问题" class="headerlink" title="验证集问题"></a>验证集问题</h3><h4 id="问-5"><a href="#问-5" class="headerlink" title="问"></a>问</h4><ul>
-<li>实际在SemiTagRec实现的时候，训练集都全部被用来训练LLDA模型了，那网格搜索的时候验证集是什么数据呢？</li>
+<li>实际在SemiTagRec实现的时候，只提到训练集和测试集，那网格搜索的时候验证集是什么数据呢？</li>
+</ul>
+<h4 id="答-5"><a href="#答-5" class="headerlink" title="答"></a>答</h4><ul>
+<li>我们的算法中，如果考虑详细情况的话，网格搜索超参数其实需要每次都调一遍</li>
+<li>但是幸亏我们测试发现Integrator的超参数很容易调</li>
+<li><p>实际实验时，我们使用80%和90%样本作为训练集，然后只用随机采样50个左右的样本作为验证集基本就收敛了(随机采样多个都是这样，能在0.91到0.09周围得到最优值)，而且后面调试几乎不变(基本上就在0.89-0.93和0.11-0.07之间且精度几乎没变化，所以我们实际上用所有测试样本测试通过得到了最优的值为0.91和0.09[取平均值得到的])</p>
+</li>
+<li><p>最终方法：在我们的算法中，首先经过多次训练和测试(实际上就是每次训练完，然后使用网格搜索法完成了Integrator的超参数设定，基本都是使用0.91和0.09最好)，然后接下来的模型迭代训练中我们没有再修改这个超参数了,所以也不用验证集了，这可以为我们之后的训练增加训练和测试数据，对我们来说是个好消息</p>
+</li>
+</ul>
+<h3 id="训练集和测试集的划分"><a href="#训练集和测试集的划分" class="headerlink" title="训练集和测试集的划分"></a>训练集和测试集的划分</h3><h4 id="问-6"><a href="#问-6" class="headerlink" title="问"></a>问</h4><ul>
+<li>为什么使用90%这么多的样本作为训练集？测试集使用10%足够了吗？</li>
+</ul>
+<h4 id="答-6"><a href="#答-6" class="headerlink" title="答"></a>答</h4><ul>
+<li>实际上我们的算法中，我们一开始的分割方式是60%训练，20%验证，20%测试，这样训练的到的结果不理想(LLDA的训练结果测试就非常差)，分析原因其实是3000+的训练集太少了，对我们的训练模型LLDA来说，远远不够</li>
+<li>由于可用的训练样本数量太少，为了保证训练质量，我们选择90%(5000个左右)用于训练后，10%(550个左右)用于测试，550个测试样本总数有2000+个正确的标签，实际上够用了(测试证明，300个测试样本以后基本上增加测试样本模型的精度几乎没变化)</li>
+</ul>
+<h3 id="为什么不使用十折交叉验证法"><a href="#为什么不使用十折交叉验证法" class="headerlink" title="为什么不使用十折交叉验证法"></a>为什么不使用十折交叉验证法</h3><h4 id="问-7"><a href="#问-7" class="headerlink" title="问"></a>问</h4><ul>
+<li>既然分配给测试的数据太少，为了增加训练集的同时保证模型评估的精确性，是不是应该使用十折交叉验证法</li>
+</ul>
+<h4 id="答-7"><a href="#答-7" class="headerlink" title="答"></a>答</h4><ul>
+<li>我们的模型使用的训练时间太长了，采样花的时间比较多，考虑到时间因素，没有使用十折交叉验证</li>
+<li>待更新：这个回答真的好吗？</li>
 </ul>
 
       
@@ -512,8 +534,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/NLP/NLP——主题模型LDA与LLDA.html" rel="next" title="NLP——主题模型LDA与LLDA">
-                <i class="fa fa-chevron-left"></i> NLP——主题模型LDA与LLDA
+              <a href="/Notes/NLP/NLP——困惑度-Perplexity.html" rel="next" title="NLP——困惑度-Perplexity">
+                <i class="fa fa-chevron-left"></i> NLP——困惑度-Perplexity
               </a>
             
           </div>
@@ -522,8 +544,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/NLP/NLP——关于英文单词的处理总结.html" rel="prev" title="NLP——关于英文单词的处理总结">
-                NLP——关于英文单词的处理总结 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/NLP/NLP——主题模型LDA与LLDA.html" rel="prev" title="NLP——主题模型LDA与LLDA">
+                NLP——主题模型LDA与LLDA <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -656,7 +678,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题"><span class="nav-number">1.</span> <span class="nav-text">一些问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么选择吉布斯采样"><span class="nav-number">1.1.</span> <span class="nav-text">为什么选择吉布斯采样</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问"><span class="nav-number">1.1.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答"><span class="nav-number">1.1.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#收敛性的判断"><span class="nav-number">1.2.</span> <span class="nav-text">收敛性的判断</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-1"><span class="nav-number">1.2.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">答</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#收敛的判断方式"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">收敛的判断方式</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#我们的实现"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">我们的实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#增量更新训练数据"><span class="nav-number">1.3.</span> <span class="nav-text">增量更新训练数据</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-2"><span class="nav-number">1.3.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-2"><span class="nav-number">1.3.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#推断-预测"><span class="nav-number">1.4.</span> <span class="nav-text">推断(预测)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-3"><span class="nav-number">1.4.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-3"><span class="nav-number">1.4.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实际使用时主题数的确定"><span class="nav-number">1.5.</span> <span class="nav-text">实际使用时主题数的确定</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-4"><span class="nav-number">1.5.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-4"><span class="nav-number">1.5.2.</span> <span class="nav-text">答</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#验证集问题"><span class="nav-number">2.</span> <span class="nav-text">验证集问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#问-5"><span class="nav-number">2.1.</span> <span class="nav-text">问</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题"><span class="nav-number">1.</span> <span class="nav-text">一些问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么选择吉布斯采样"><span class="nav-number">1.1.</span> <span class="nav-text">为什么选择吉布斯采样</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问"><span class="nav-number">1.1.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答"><span class="nav-number">1.1.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#收敛性的判断"><span class="nav-number">1.2.</span> <span class="nav-text">收敛性的判断</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-1"><span class="nav-number">1.2.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">答</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#收敛的判断方式"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">收敛的判断方式</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#我们的实现"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">我们的实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#增量更新训练数据"><span class="nav-number">1.3.</span> <span class="nav-text">增量更新训练数据</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-2"><span class="nav-number">1.3.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-2"><span class="nav-number">1.3.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#推断-预测"><span class="nav-number">1.4.</span> <span class="nav-text">推断(预测)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-3"><span class="nav-number">1.4.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-3"><span class="nav-number">1.4.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实际使用时主题数的确定"><span class="nav-number">1.5.</span> <span class="nav-text">实际使用时主题数的确定</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#问-4"><span class="nav-number">1.5.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#答-4"><span class="nav-number">1.5.2.</span> <span class="nav-text">答</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#验证集问题"><span class="nav-number">2.</span> <span class="nav-text">验证集问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#问-5"><span class="nav-number">2.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#答-5"><span class="nav-number">2.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练集和测试集的划分"><span class="nav-number">3.</span> <span class="nav-text">训练集和测试集的划分</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#问-6"><span class="nav-number">3.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#答-6"><span class="nav-number">3.2.</span> <span class="nav-text">答</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么不使用十折交叉验证法"><span class="nav-number">4.</span> <span class="nav-text">为什么不使用十折交叉验证法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#问-7"><span class="nav-number">4.1.</span> <span class="nav-text">问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#答-7"><span class="nav-number">4.2.</span> <span class="nav-text">答</span></a></li></ol></li></ol></div>
             
 
           </div>
