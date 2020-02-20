@@ -277,6 +277,695 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——Neo4j使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/KnowledgeGraph/KG——Neo4j使用笔记.html" itemprop="url">KG——Neo4j使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-08T00:00:00+08:00">
+                2019-06-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要记录Neo4j使用过程中的遇到的问题和解决方案等</em></p>
+<hr>
+<h3 id="安装与启动"><a href="#安装与启动" class="headerlink" title="安装与启动"></a>安装与启动</h3><h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><ul>
+<li>安装Neo4j前,一般需要安装Java环境, Ubuntu自带的版本不行的话需要重新下载安装新的版本并设置环境变量</li>
+</ul>
+<h5 id="自动安装"><a href="#自动安装" class="headerlink" title="自动安装"></a>自动安装</h5><ul>
+<li>Ubuntu上安装和卸载命令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install neo4j</span><br><span class="line">sudo apt-get remove neo4j</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="手动安装"><a href="#手动安装" class="headerlink" title="手动安装"></a>手动安装</h5><ul>
+<li>下载neo4j已经编译好的文件, 官网为<a href="http://www.neo4j.com/" target="_blank" rel="noopener">http://www.neo4j.com/</a><ul>
+<li>不要直接点download neo4j, 从官网选中products-&gt;neo4j database-&gt;拉到最下面选择Community Edition_&gt;选择对应的release版本(.tar文件)下载即可</li>
+</ul>
+</li>
+<li>将下载到的.tar文件解压到安装目录中(一般选择/usr/local/neo4j/)</li>
+<li>现已经安装成功,直接进入安装目录即可使用<code>./bin/neo4j console</code>启动neo4j数据库</li>
+<li>初始的账户和密码都是neo4j, 第一次登录需要重新设置密码</li>
+</ul>
+<h4 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h4><ul>
+<li><p>使用console启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j console</span><br></pre></td></tr></table></figure>
+<ul>
+<li>terminal将输出实时运行log信息,关闭terminal,neo4j数据库随之关闭</li>
+<li>此时用其他电脑不能访问,只能本地电脑localhost:7474/browser访问</li>
+</ul>
+</li>
+<li><p>查看启动状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j status</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j start</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>停止</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j stop</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>默认访问端口: 7474, 比如本地访问网址为: localhost:7474/browser</p>
+</li>
+</ul>
+<hr>
+<h3 id="Neo4J导入Turtle文件"><a href="#Neo4J导入Turtle文件" class="headerlink" title="Neo4J导入Turtle文件"></a>Neo4J导入Turtle文件</h3><h4 id="Turtle简介"><a href="#Turtle简介" class="headerlink" title="Turtle简介"></a>Turtle简介</h4><p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
+<ul>
+<li>Turtle是最常用的RDF序列化方式, 比RDF/XML更紧凑, 可读性比N-Triples更好</li>
+<li>其他序列化方式包括:<ul>
+<li>RDF/XML: 用XML格式来表示RDF数据</li>
+<li>N-Triples: 用多个三元组来表示RDF数据集合,是最直观的表示方法,每一行表示一个三元组,方便机器解析和处理,<a href="https://wiki.dbpedia.org/" target="_blank" rel="noopener">DBpedia</a> 是按照这个方式来发布数据的</li>
+<li>RDFa: (The Resource Description Framework in Attributes)</li>
+<li>JSON-LD</li>
+</ul>
+</li>
+</ul>
+<h4 id="安装neosemantics插件"><a href="#安装neosemantics插件" class="headerlink" title="安装neosemantics插件"></a>安装neosemantics插件</h4><p><em>注意,这里要求neo4j安装方式是手动安装的,(自动安装的neo4j本人找不到&lt;NEO_HOME&gt;/plugins目录),手动安装方式参考前面的安装流程</em></p>
+<ul>
+<li>下载插件release版本, 项目地址: <a href="https://github.com/neo4j-labs/neosemantics" target="_blank" rel="noopener">https://github.com/neo4j-labs/neosemantics</a><ul>
+<li>注意,下载时一定要查看版本与已经安装的neo4j数据库是否兼容,否则可能造成运行时异常,或者找不到方法名等</li>
+</ul>
+</li>
+<li><p>按照项目中的README.md安装插件</p>
+<ul>
+<li>复制release版本到&lt;NEO_HOME&gt;/plugins目录下</li>
+<li><p>修改&lt;NEO_HOME&gt;/conf/neo4j.conf文件,添加一行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dbms.unmanaged_extension_classes=semantics.extension=/rdf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启neo4j服务器</p>
+</li>
+<li>使用<code>call dbms.procedures()</code>测试是否安装成功</li>
+</ul>
+</li>
+</ul>
+<h4 id="导入Turtle文件"><a href="#导入Turtle文件" class="headerlink" title="导入Turtle文件"></a>导入Turtle文件</h4><ul>
+<li><p>导入云端文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CALL semantics.importRDF(&quot;https://raw.githubusercontent.com/jbarrasa/neosemantics/3.5/docs/rdf/nsmntx.ttl&quot;,&quot;Turtle&quot;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导入本地文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CALL semantics.importRDF(&quot;file:///home/jiahong/neosemantics/3.5/docs/rdf/nsmntx.ttl&quot;,&quot;Turtle&quot;)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="彻底清空Neo4J数据库"><a href="#彻底清空Neo4J数据库" class="headerlink" title="彻底清空Neo4J数据库"></a>彻底清空Neo4J数据库</h3><p><em>参考链接: <a href="https://blog.csdn.net/u012485480/article/details/83088818" target="_blank" rel="noopener">https://blog.csdn.net/u012485480/article/details/83088818</a></em></p>
+<h4 id="使用Cypher语句"><a href="#使用Cypher语句" class="headerlink" title="使用Cypher语句"></a>使用Cypher语句</h4><ul>
+<li>直接使用下面的Cypher语句即可<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (n) detach delete n</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h5><ul>
+<li>无需操作文件</li>
+<li>无需停止和启动服务</li>
+<li>对于数据量大的情况下删除很慢(需要先查询再删除,内存可能会溢出)</li>
+</ul>
+<h4 id="删除数据库文件"><a href="#删除数据库文件" class="headerlink" title="删除数据库文件"></a>删除数据库文件</h4><ul>
+<li><p>停止neo4j服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j stop</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>删除<code>./data/databases/graph.db</code>目录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo rm -rf ./data/database/graph.db</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动neo4j服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h5><ul>
+<li>需要删除文件操作</li>
+<li>需要停止和启动服务</li>
+<li>对于数据量大的情况下删除速度也非常快速</li>
+</ul>
+<hr>
+<h3 id="Neo4j约束"><a href="#Neo4j约束" class="headerlink" title="Neo4j约束"></a>Neo4j约束</h3><h4 id="查看当前数据库中的所有约束"><a href="#查看当前数据库中的所有约束" class="headerlink" title="查看当前数据库中的所有约束"></a>查看当前数据库中的所有约束</h4><ul>
+<li>Cypher查询语句CQL<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:schema</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="创建约束"><a href="#创建约束" class="headerlink" title="创建约束"></a>创建约束</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
+<h4 id="删除约束"><a href="#删除约束" class="headerlink" title="删除约束"></a>删除约束</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">drop constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
+<h4 id="节点的唯一性约束"><a href="#节点的唯一性约束" class="headerlink" title="节点的唯一性约束"></a>节点的唯一性约束</h4><ul>
+<li><p>为某个标签在某个属性上创建唯一性约束</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
+<ul>
+<li>创建唯一性约束后会自动为该标签对应的属性创建索引Index</li>
+<li>这里的索引为<code>ON :Person(name) ONLINE (for uniqueness constraint)</code></li>
+<li>理解,因为要确保唯一性,所以需要索引加快每次插入节点前检索的效率</li>
+<li>手动创建索引(为了加快某个标签的某个属性的检索效率)的方法为:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create index on :Person(name)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>唯一性约束设置后,当写入重复的数据时,会报错</p>
+<blockquote>
+<p>Neo.ClientError.Schema.ConstraintValidationFailed<br>Node(19718935) already exists with label <code>Person</code> and property <code>name</code> = ‘Joe’</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h3 id="节点操作"><a href="#节点操作" class="headerlink" title="节点操作"></a>节点操作</h3><h4 id="创建节点"><a href="#创建节点" class="headerlink" title="创建节点"></a>创建节点</h4><ul>
+<li><p>创建结点方式如下,其中p</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (p:Person&#123;name:&apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>上面的句子创建了一个结点</li>
+<li>结点标签为: Person<ul>
+<li>如果之前没有Person标签则新建Person标签</li>
+<li>如果没有添加索引,那么这个标签在所有Person标签的节点都被删除后也会自动消失</li>
+<li>如果添加了索引,则删除所有结点和相关索引后该标签会自动消失</li>
+</ul>
+</li>
+<li><p>结点名称为: p</p>
+<ul>
+<li>p本质上在这里是一个变量</li>
+<li>如果当前执行语句中对当前结点没有更多操作, 甚至可以省略节点名称p<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (:Person&#123;name: &apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>结点属性<code>name</code>的值为: ‘Joe’</p>
+<ul>
+<li>这个属性很有用, 可以在显示结点的时候直接在结点中显示出来”Joe”, 方便查看</li>
+<li>测试: 换成其他属性,比如属性<code>a</code>后, 在Neo4j可视化结点时是不显示的</li>
+<li><code>name</code>本身也可以省略<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (:Person)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="删除结点"><a href="#删除结点" class="headerlink" title="删除结点"></a>删除结点</h4><ul>
+<li>删除标签为Person且名字为”Joe”的所有结点<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) delete p</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="标签操作"><a href="#标签操作" class="headerlink" title="标签操作"></a>标签操作</h3><ul>
+<li>Neo4j中一般为节点创建一个标签即可,通常一些标准的知识图谱还会为同一个节点创建多个标签,说明这个节点属于多个标签</li>
+<li>节点的标签数量可以为0个,1个或多个</li>
+<li>没有标签的结点可通过id获取到<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (n) where id(n)=&lt;node-id&gt; return n</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="直接创建标签"><a href="#直接创建标签" class="headerlink" title="直接创建标签"></a>直接创建标签</h4><ul>
+<li><p>单个标签创建</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (&lt;node-name&gt;:&lt;label-name&gt;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>多个标签创建</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (&lt;node-name&gt;:&lt;label-name1&gt;:&lt;label-name2&gt;:...:&lt;label-nameN&gt;)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>从很多知识图谱的例子来看,标签之间并不是完全的从属关系</li>
+<li>从属关系: Person:Student</li>
+<li>并列关系: Man:Student</li>
+</ul>
+</li>
+</ul>
+<h4 id="给已有的节点添加标签"><a href="#给已有的节点添加标签" class="headerlink" title="给已有的节点添加标签"></a>给已有的节点添加标签</h4><ul>
+<li>使用<code>set</code>关键字添加标签标签<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) set p:Student</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="移除已有结点的标签"><a href="#移除已有结点的标签" class="headerlink" title="移除已有结点的标签"></a>移除已有结点的标签</h4><ul>
+<li>使用<code>remove</code>关键字删除标签<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) remove p:Student</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="属性操作"><a href="#属性操作" class="headerlink" title="属性操作"></a>属性操作</h3><ul>
+<li>属性操作与标签操作类似, 使用的也是<code>REMOVE</code>和<code>SET</code>指令</li>
+</ul>
+<h4 id="直接创建属性"><a href="#直接创建属性" class="headerlink" title="直接创建属性"></a>直接创建属性</h4><ul>
+<li>使用<code>CREATE</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (p:Person&#123;name:&apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="添加属性"><a href="#添加属性" class="headerlink" title="添加属性"></a>添加属性</h4><ul>
+<li>使用<code>SET</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&quot;Joe&quot;&#125;) set p.sex=&quot;male&quot;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="移除属性"><a href="#移除属性" class="headerlink" title="移除属性"></a>移除属性</h4><ul>
+<li>使用<code>REMOVE</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&quot;Joe&quot;&#125;) remove p.sex</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="各种操作命令总结"><a href="#各种操作命令总结" class="headerlink" title="各种操作命令总结"></a>各种操作命令总结</h3><ul>
+<li><code>DELETE</code>和<code>CREATE</code>指令用于删除节点和关联关系</li>
+<li><code>REMOVE</code>和<code>SET</code>指令用于删除标签和属性</li>
+</ul>
+<hr>
+<h3 id="Neo4j同时创建多个数据库"><a href="#Neo4j同时创建多个数据库" class="headerlink" title="Neo4j同时创建多个数据库"></a>Neo4j同时创建多个数据库</h3><ul>
+<li>Neo4j中无法同时创建多个数据库,但是我们可以通过硬性和软性的方法分别实现等价功能</li>
+</ul>
+<h4 id="硬件上实现多个数据库"><a href="#硬件上实现多个数据库" class="headerlink" title="硬件上实现多个数据库"></a>硬件上实现多个数据库</h4><ul>
+<li>Neo4j的数据库文件为<code>./data/databases/graph.db</code><ul>
+<li>我们可以手动修改该文件的名称,然后重新创建文件实现</li>
+</ul>
+</li>
+<li>Neo4j的数据库配置文件为<code>./conf/neo4j.conf</code><ul>
+<li>可以修改<code>#dbms.active_database=graph.db</code></li>
+<li>修改方法为将注释取消并且修改数据库为对应的数据库名称</li>
+</ul>
+</li>
+</ul>
+<h4 id="软件上实现多个数据库"><a href="#软件上实现多个数据库" class="headerlink" title="软件上实现多个数据库"></a>软件上实现多个数据库</h4><ul>
+<li>为不同数据库的每个结点分别指定同一个数据库名称对应的标签<ul>
+<li>比如”Docker”和”School”分别对应Docker知识图谱和学校知识图谱</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Py2neo中结点如何被图识别"><a href="#Py2neo中结点如何被图识别" class="headerlink" title="Py2neo中结点如何被图识别?"></a>Py2neo中结点如何被图识别?</h3><ul>
+<li>每个Python结点对象都有个唯一的标识符ID<ul>
+<li>对应属性为<code>identity</code></li>
+<li>对于从Graph中读出的结点,该属性为一个唯一的数值,与图数据库中结点的数值一致</li>
+<li>对于Python直接初始化的结点对象,该属性是<code>None</code></li>
+</ul>
+</li>
+<li>只要<code>identity</code>属性指定了,其他属性与数据库中的结点不同也可以的<ul>
+<li>使用<code>Graph.push(local_node)</code>可以把本地结点更新到远处数据库中</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Neo4j和JVM版本兼容问题"><a href="#Neo4j和JVM版本兼容问题" class="headerlink" title="Neo4j和JVM版本兼容问题"></a>Neo4j和JVM版本兼容问题</h3><h4 id="报错"><a href="#报错" class="headerlink" title="报错:"></a>报错:</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>ERROR! Neo4j cannot be started using java version 1.8.0_222. </p>
+<ul>
+<li>Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j.</li>
+<li>Please see <a href="https://neo4j.com/docs/" target="_blank" rel="noopener">https://neo4j.com/docs/</a> for Neo4j installation instructions.</li>
+</ul>
+</blockquote>
+<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
+<li><p>安装对应版本的Java虚拟机(这里不会修改操作系统中原来的JAVA_HOME)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo yum search jdk</span><br><span class="line">sudo yum install java-11-openjdk</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将对应的JAVA_HONE配置到Neo4j中(不修改原来系统中的JAVA_HOME)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim ./conf/neo4j.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在文件最后一行添加</p>
+</li>
+</ul>
+<blockquote>
+<p>JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64</p>
+<ul>
+<li>重新启动neo4j<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li>注意: 以上方法都不会影响系统的JAVA_HOME和JAVA环境</li>
+</ul>
+<hr>
+<h3 id="Neo4j服务器配置远程访问功能"><a href="#Neo4j服务器配置远程访问功能" class="headerlink" title="Neo4j服务器配置远程访问功能"></a>Neo4j服务器配置远程访问功能</h3><ul>
+<li><p>打开配置文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim ./conf/neo4j.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将下面的语句注释取消</p>
+</li>
+</ul>
+<blockquote>
+<p>dbms.connectors.default_listen_address=0.0.0.0</p>
+</blockquote>
+<ul>
+<li>注意: 如果是服务器有防火墙,则需要把以下端口打开<ul>
+<li>7474: http</li>
+<li>7687: bolt</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Neo4j-4-0-0以后"><a href="#Neo4j-4-0-0以后" class="headerlink" title="Neo4j 4.0.0以后"></a>Neo4j 4.0.0以后</h3><ul>
+<li>数据库文件夹变化了,不能像之前一样修改文件夹名为<code>graph.db</code>来更改数据库</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/CSDN——打印博客.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/CSDN——打印博客.html" itemprop="url">CSDN——打印博客</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-05T00:00:00+08:00">
+                2019-06-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文描述了如何打印干净的CSDN博客</em><br>参考博客: <a href="https://blog.csdn.net/sinat_42483341/article/details/89354222" target="_blank" rel="noopener">https://blog.csdn.net/sinat_42483341/article/details/89354222</a></p>
+<hr>
+<h3 id="使用JavaScript脚本"><a href="#使用JavaScript脚本" class="headerlink" title="使用JavaScript脚本"></a>使用JavaScript脚本</h3><p><em>本方法适用在Chrome中</em></p>
+<ul>
+<li>在Chrome的调试窗口中,Console处输入下面的脚本即可<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">(function()&#123;</span><br><span class="line">$(&quot;#side&quot;).remove();</span><br><span class="line">$(&quot;#comment_title, #comment_list, #comment_bar, #comment_form, .announce, #ad_cen, #ad_bot&quot;).remove();</span><br><span class="line">$(&quot;.nav_top_2011, #header, #navigator&quot;).remove();</span><br><span class="line">$(&quot;.p4course_target, .comment-box, .recommend-box, #csdn-toolbar, #tool-box&quot;).remove();</span><br><span class="line">$(&quot;aside&quot;).remove();</span><br><span class="line">$(&quot;.tool-box&quot;).remove();</span><br><span class="line">$(&quot;main&quot;).css(&apos;display&apos;,&apos;content&apos;); </span><br><span class="line">$(&quot;main&quot;).css(&apos;float&apos;,&apos;left&apos;); </span><br><span class="line">window.print();</span><br><span class="line"></span><br><span class="line">$(&quot;tool-box&quot;).remove();</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="使用油猴插件"><a href="#使用油猴插件" class="headerlink" title="使用油猴插件"></a>使用油猴插件</h3><p><em>没搜索到相关脚本,有时间的时候自己实现一份</em></p>
+<ul>
+<li>基本功能<ul>
+<li>在CSDN网站访问时添加一个”打印博客”按钮,点击即可打印</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——xDeepFM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——xDeepFM.html" itemprop="url">DL——xDeepFM</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-05-18T00:00:00+08:00">
+                2019-05-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍xDeepFM的理论介绍,包括阅读论文后自己的理解</em></p>
+<p><script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
+<ul>
+<li>上篇博客参考: <a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
+<li>原始论文: <a href="https://arxiv.org/pdf/1803.05170.pdf" target="_blank" rel="noopener">xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, KDD 2018</a></li>
+</ul>
+<h3 id="xDeepFM结构图"><a href="#xDeepFM结构图" class="headerlink" title="xDeepFM结构图"></a>xDeepFM结构图</h3><img src="/Notes/DL/DL——xDeepFM/xDeepFM_overview.png">
+<ul>
+<li>显然, 上图中除了 CIN 部分以外,其他跟 DeepFM 基本是相同的, 所以我们本文主要讲述 CIN 组件部分, 其他的嵌入层等可参考我之前的博客<a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
+</ul>
+<h4 id="CIN组件"><a href="#CIN组件" class="headerlink" title="CIN组件"></a>CIN组件</h4><p><em>Compressed Interaction Network</em></p>
+<ul>
+<li>论文中首先提出的就是这个CIN网络(Compressed Interaction Network)</li>
+<li>结构图如下:<img src="/Notes/DL/DL——xDeepFM/cin_overview.png"></li>
+<li>理解<ul>
+<li>每个隐藏层都与一个池化操作连接到一起</li>
+<li>特征阶数与网络层数相关</li>
+<li>可以与 RNN 对应着看, 当前网络层由上一个隐藏层和一个额外输入确定</li>
+<li>确切的说: CIN 中当前层输入是前一层的隐藏层 + 原来的特征向量</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1174,274 +1863,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——服务器防火墙配置.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——服务器防火墙配置.html" itemprop="url">Linux——服务器防火墙配置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-24T00:00:00+08:00">
-                2019-02-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍Linux下服务器防火墙的设置</em><br>更详细的描述可以参考博客:<a href="https://blog.51cto.com/andyxu/2137046" target="_blank" rel="noopener">https://blog.51cto.com/andyxu/2137046</a></p>
-<hr>
-<h3 id="防火墙总结"><a href="#防火墙总结" class="headerlink" title="防火墙总结"></a>防火墙总结</h3><ul>
-<li>iptables:内核层面的netfilter网络过滤器来处理</li>
-<li>firewalld: 交由内核层面的nftables包过滤框架处理</li>
-</ul>
-<hr>
-<h3 id="Centos6"><a href="#Centos6" class="headerlink" title="Centos6"></a>Centos6</h3><p><em>Centos6默认使用iptable作为防火墙</em></p>
-<h4 id="查看防火墙状态"><a href="#查看防火墙状态" class="headerlink" title="查看防火墙状态"></a>查看防火墙状态</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service iptable status</span><br></pre></td></tr></table></figure>
-<h4 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h4><ul>
-<li><p>临时</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">servcie iptables stop</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>永久</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chkconfig iptables off</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="打开防火墙"><a href="#打开防火墙" class="headerlink" title="打开防火墙"></a>打开防火墙</h4><ul>
-<li><p>临时</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">servcie iptables start</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>永久</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chkconfig iptables on</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="Centos7"><a href="#Centos7" class="headerlink" title="Centos7"></a>Centos7</h3><p><em>Centos7默认使用的时firewall作为防火墙, 默认使用systemctl管理服务,接下来介绍systemctl管理firewall服务的操作,其他服务也可用systemctl以类似方法管理,只需将filewall名称换成其他服务名称即可</em></p>
-<ul>
-<li>关于服务名称的命名<ul>
-<li>一般来说都是正常名称后加上一位’d.service’,比如’firewalld.service’,’mysqld.service’等</li>
-</ul>
-</li>
-</ul>
-<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><ul>
-<li>Centos7自带firewalld</li>
-<li>Ubuntu:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install firewalld</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h4><ul>
-<li>/usr/lib/firewalld/<ul>
-<li>系统配置,尽量不修改</li>
-</ul>
-</li>
-<li>/etc/firewalld/<ul>
-<li>用户配置地址</li>
-</ul>
-</li>
-</ul>
-<h4 id="关于systemctl的使用"><a href="#关于systemctl的使用" class="headerlink" title="关于systemctl的使用"></a>关于systemctl的使用</h4><ul>
-<li><p>列出所有服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>列出所有打开的服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep enabled</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>列出某个服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep [service name]</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="查看防火墙状态-1"><a href="#查看防火墙状态-1" class="headerlink" title="查看防火墙状态"></a>查看防火墙状态</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --state</span><br></pre></td></tr></table></figure>
-<ul>
-<li>输出<code>not running</code>或者<code>running</code></li>
-</ul>
-<h4 id="查看防火墙服务"><a href="#查看防火墙服务" class="headerlink" title="查看防火墙服务"></a>查看防火墙服务</h4><ul>
-<li><p>方法一</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep firewalld.service</span><br></pre></td></tr></table></figure>
-<ul>
-<li>输出<code>firewalld.service disabled</code>或者<code>firewalld.service enabled</code></li>
-</ul>
-</li>
-<li><p>方法二</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status firewalld.service</span><br></pre></td></tr></table></figure>
-<ul>
-<li>输出更详细的信息</li>
-</ul>
-</li>
-</ul>
-<h4 id="开机启动"><a href="#开机启动" class="headerlink" title="开机启动"></a>开机启动</h4><ul>
-<li><p>禁止</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl disable firewalld.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>允许</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable firewalld.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl is-enabled firewalld.service;echo $?</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="启动防火墙服务"><a href="#启动防火墙服务" class="headerlink" title="启动防火墙服务"></a>启动防火墙服务</h4><ul>
-<li><p>启动防火墙后默认只开放22端口,其他端口都关闭</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start firewalld.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>不能启动的解决方案</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl unmask firewalld.service </span><br><span class="line">systemctl start firewalld.service</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="关闭防火墙服务"><a href="#关闭防火墙服务" class="headerlink" title="关闭防火墙服务"></a>关闭防火墙服务</h4><ul>
-<li><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="端口相关操作命令"><a href="#端口相关操作命令" class="headerlink" title="端口相关操作命令"></a>端口相关操作命令</h4><ul>
-<li><p>查看所有以开放端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --list-ports</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看某个端口是否开启</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --query-port=8080/tcp</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>开放端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --zone=public --add-port=80/tcp --permanent</span><br></pre></td></tr></table></figure>
-<ul>
-<li>命令含义：<ul>
-<li>–zone #作用域</li>
-<li>–add-port=80/tcp #添加端口，格式为：端口/通讯协议</li>
-<li>–permanent #永久生效，没有此参数重启后失效</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>重启服务<br><em>开放端口后需要重启服务才能生效</em></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>移除指定端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --remove-port=8080/tcp</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="防火墙的域"><a href="#防火墙的域" class="headerlink" title="防火墙的域"></a>防火墙的域</h4><h5 id="域的作用"><a href="#域的作用" class="headerlink" title="域的作用"></a>域的作用</h5><ul>
-<li>一共9种,常用的就一种public,开放时把所有访问该端口的用户当做公共人员,不完全信任,trusted为完全信任:<ul>
-<li>block dmz drop external home internal public trusted work</li>
-<li>下面图片来自博客:<a href="https://blog.51cto.com/13503302/2095633" target="_blank" rel="noopener">https://blog.51cto.com/13503302/2095633</a><img src="/Notes/Linux/Linux——服务器防火墙配置/firewalld-zones.png"></li>
-</ul>
-</li>
-<li>在开放端口时,可以为其添加域(默认为public),不同的域代表不同的信任</li>
-</ul>
-<h5 id="域的操作"><a href="#域的操作" class="headerlink" title="域的操作"></a>域的操作</h5><ul>
-<li><p>查看默认zone</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --get-default-zone</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改默认zone</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --set-default-zone=public</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="防火墙与SSH登录"><a href="#防火墙与SSH登录" class="headerlink" title="防火墙与SSH登录"></a>防火墙与SSH登录</h4><p><em>默认启动firewall后,防火墙不会打开22端口[已测试],但为何还能正常ssh登录呢?</em><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --list-all</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>public<br>  target: default<br>  icmp-block-inversion: no<br>  interfaces:<br>  sources:<br>  services: ssh dhcpv6-client<br>  ports:<br>  protocols:<br>  masquerade: no<br>  forward-ports:<br>  source-ports:<br>  icmp-blocks:<br>  rich rules: </p>
-</blockquote>
-<ul>
-<li>从上面的输出中可以看出来<code>ssh</code>服务默认被开启防火墙了,所以无需开启22端口即可使用ssh指令登录到服务器</li>
-<li>同时开启的还有<code>dhcpv6-client</code>服务,这个服务用于ipv6的DHCP服务(为什么ipv4不需要这个服务呢?详情参考问答:<a href="https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it</a> )</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——硬盘操作-分区和挂载.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1691,307 +2112,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——查看服务器内核和系统版本.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——查看服务器内核和系统版本.html" itemprop="url">Linux——查看服务器内核和系统版本</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-24T00:00:00+08:00">
-                2019-02-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Linux系统的内核版本和系统版本等信息用命令行如何查看</em></p>
-<hr>
-<h3 id="系统类型和版本"><a href="#系统类型和版本" class="headerlink" title="系统类型和版本"></a>系统类型和版本</h3><h4 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h4><ul>
-<li><p>文件存在表示为Centos</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/redhat-release</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上述指令同时会输出Centos版本</p>
-</li>
-</ul>
-<h4 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h4><ul>
-<li><p>命令可以执行表示为Ubuntu</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsb_release -a</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>执行下面命令可以看出Ubuntu的版本</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/issue</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="更进一步的内核信息"><a href="#更进一步的内核信息" class="headerlink" title="更进一步的内核信息"></a>更进一步的内核信息</h3><ul>
-<li><p>内核名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -s</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>结点名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -n</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>内核发行号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -r</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>处理器类型</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -p</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>操作系统</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -o</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——自动加载bashrc.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Ubuntu——自动加载bashrc.html" itemprop="url">Ubuntu——自动加载bashrc</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-24T00:00:00+08:00">
-                2019-02-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文描述了如何为Ubuntu用户创建默认的~/.bashrc并设置自动加载~/.bashrc</em></p>
-<hr>
-<h3 id="创建-bashrc"><a href="#创建-bashrc" class="headerlink" title="创建.bashrc"></a>创建.bashrc</h3><ul>
-<li>如果.bashrc存在,则无需创建,很多程序安装时可能会自动创建,否则,需要我们复制一个</li>
-<li><p>复制命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /etc/skel/.bashrc ~/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>亲测,无需复制,创建一个新的即可</p>
-</li>
-</ul>
-<hr>
-<h3 id="使-bashrc生效"><a href="#使-bashrc生效" class="headerlink" title="使.bashrc生效"></a>使.bashrc生效</h3><h4 id="暂时生效"><a href="#暂时生效" class="headerlink" title="暂时生效"></a>暂时生效</h4><p><em>用户重新登录不会生效</em><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure></p>
-<h4 id="永久生效"><a href="#永久生效" class="headerlink" title="永久生效"></a>永久生效</h4><p><em>用户登录后默认生效</em></p>
-<ul>
-<li><p>新建或打开文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.profile</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加下面的语句</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># ~/.profile: executed by Bourne-compatible login shells.</span><br><span class="line"> </span><br><span class="line">if [ &quot;$BASH&quot; ]; then</span><br><span class="line">  if [ -f ~/.bashrc ]; then</span><br><span class="line">    . ~/.bashrc</span><br><span class="line">  fi</span><br><span class="line">fi</span><br><span class="line"> </span><br><span class="line">mesg n</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>保存后退出,以后默认的,我们登录后<code>~/.bashrc</code>即可生效</p>
-</li>
-<li>马上生效<code>~/.profile</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.profile</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/19/">19</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2041,7 +2166,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">180</span>
+                  <span class="site-state-item-count">183</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2281,7 +2406,7 @@
     var isfetched = false;
     var isXml = true;
     // Search DB path;
-    var search_path = "";
+    var search_path = "search.xml";
     if (search_path.length === 0) {
       search_path = "search.xml";
     } else if (/json$/i.test(search_path)) {
