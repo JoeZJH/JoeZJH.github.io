@@ -277,6 +277,884 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——SVM-支持向量机.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——SVM-支持向量机.html" itemprop="url">ML——SVM-支持向量机</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-20T00:00:00+08:00">
+                2017-06-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+<hr>
+<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
+<li>假设有N样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{N})\)<ul>
+<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{N}, y_{N}))\)</li>
+</ul>
+</li>
+<li>假设\(x_{i}\)等所有向量都为列向量, \(w\)为行向量(这里是为了推到方便,与&lt;&lt;统计学习方法&gt;&gt;一致)<ul>
+<li>实际代码实现时与行列向量无关,取二者的内积<code>np.inner(w,x)</code>即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
+<li>分类超平面<br>$$w^{\star}x + b^{\star} = 0$$<ul>
+<li>分类超平面由\((w, b)\)唯一确定(注意: LR的分类超平面由\((w, b)\)和阈值唯一确定)</li>
+</ul>
+</li>
+<li>分类决策函数<br>$$f(x) = sign(w^{\star}x + b^{\star})$$</li>
+</ul>
+<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><h5 id="间隔定义"><a href="#间隔定义" class="headerlink" title="间隔定义"></a>间隔定义</h5><ul>
+<li>函数间隔定义<ul>
+<li>点\((x_{i}, y_{i})\)到超平面\((w,b)\)的函数间隔为:<br>$$\hat{\gamma}_{i} = y_{i}(w\cdot x_{i} + b)$$</li>
+<li>所有训练样本\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)到超平面\((w,b)\)的函数间隔为:<br>$$\hat{\gamma} = \min_{i=1,\dots,N}\hat{\gamma}_{i}$$</li>
+</ul>
+</li>
+<li>几何间隔的定义<ul>
+<li>点\((x_{i}, y_{i})\)到超平面\((w,b)\)的几何间隔为:<br>$$\gamma_{i} = y_{i} (\frac{w}{||w||}\cdot x_{i} + \frac{b}{||w||})$$</li>
+<li>进一步推导得:<br>$$\gamma_{i} = \frac {y_{i}(w\cdot x_{i} + b)}{||w||} = \frac{\hat{\gamma}}{||w||}$$</li>
+<li>所有训练样本\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)到超平面\((w,b)\)的几何间隔为:<br>$$\gamma = \min_{i=1,\dots,N}\gamma_{i}$$</li>
+</ul>
+</li>
+</ul>
+<h5 id="确定优化目标-1"><a href="#确定优化目标-1" class="headerlink" title="确定优化目标"></a>确定优化目标</h5><ul>
+<li>求解能够<strong>正确划分训练数据集</strong>并且<strong>几何间隔最大的分类超平面</strong>(分离超平面)</li>
+<li>定义约束优化问题:<br>$$<br>\begin{align}<br>&amp;\max_{w,b} \quad \gamma \\<br>&amp;s.t. \quad y_{i} (\frac{w}{||w||}\cdot x_{i} + \frac{b}{||w||}) \geq \gamma, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+<li>将\(\gamma = \frac{\hat{\gamma}}{||w||}\)带入并在条件中消去分母上的\(||w||\),得<br>$$<br>\begin{align}<br>&amp;\max_{w,b} \quad\frac{\hat{\gamma}}{||w||} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq \hat{\gamma}, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+<li><p>上面的式子中,函数间隔\(\hat{\gamma}\)的值不影响最优化问题的解,于是我们设置\(\hat{\gamma}=1\)</p>
+<ul>
+<li>因为将参数\((w,b)\)同时扩大或缩小为\((\lambda w,\lambda b)\), 函数间隔对应变成\(\lambda \hat{\gamma}\)</li>
+<li>两个等价的优化方法:<ul>
+<li>设置\(\hat{\gamma}=1\)再对原始问题进行最优化得到参数\((w^{\star},b^{\star})\)</li>
+<li>先对原始问题最优化求得参数\((w,b)\),再将参数同时扩大或缩小为\((\lambda w,\lambda b)\),使得\(\lambda \hat{\gamma}=1\)得到的最终参数\((w^{\star},b^{\star}) = (\lambda w,\lambda b)\)等价<br>$$<br>\begin{align}<br>&amp;\max_{w,b}\quad \frac{1}{||w||} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq 1, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>进一步分析,由于最大化\(\frac{1}{||w||}\)与最小化\(\frac{1}{2}||w||^{2}\)等价(这里\(w\)为行向量时,\(||w||^{2} = ww^{T}\)), 最优化问题可等价表示为:<br>$$<br>\begin{align}<br>&amp;\min_{w,b}\quad \frac{1}{2}||w||^{2} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq 1, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+<ul>
+<li>这是一个<strong>凸二次规划问题</strong>(convex quadratic programming),凸优化问题参考<a href="/Notes/Others/Math——凸二次优化问题和拉格朗日对偶性.html">Math——凸二次优化问题和拉格朗日对偶性</a></li>
+</ul>
+</li>
+</ul>
+<h5 id="优化问题的求解-对偶"><a href="#优化问题的求解-对偶" class="headerlink" title="优化问题的求解(对偶)"></a>优化问题的求解(对偶)</h5><ul>
+<li>首先将SVM优化问题转换为一般凸优化形式<br>$$<br>\begin{align}<br>&amp;\min_{w,b}\quad \frac{1}{2}||w||^{2} \\<br>&amp;s.t.\quad 1 - y_{i} (w\cdot x_{i} + b) \leq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+<li>由上述优化问题定义拉格朗日函数<br>$$<br>\begin{align}<br>L(w,b,\alpha) = \frac{1}{2}||w||^{2} + \sum_{i=1}^{N}\alpha_{i}(1-y_{i}(w\cdot x_{i} + b))<br>\end{align}<br>$$</li>
+<li>根据拉格朗日对偶性,<br>$$<br>\begin{align}<br>\min_{w,b}\max_{\alpha:\alpha_{i} \geq 0}L(w,b,\alpha) = \max_{\alpha:\alpha_{i} \geq 0}\min_{w,b}L(w,b,\alpha)<br>\end{align}<br>$$<ul>
+<li>左边:原始问题为极小极大问题</li>
+<li>右边:对偶问题为极大极小问题</li>
+</ul>
+</li>
+<li>解对偶问题:</li>
+<li>先求<br>$$<br>\begin{align}<br>\min_{w,b}L(w,b,\alpha)<br>\end{align}<br>$$</li>
+<li>求导数为0得<br>$$<br>\begin{align}<br>\nabla_{w}L(w,b,\alpha) &amp;= w - \sum_{i=1}^{N}\alpha_{i}y_{i}x_{i} = 0 \\<br>\nabla_{b}L(w,b,\alpha) &amp;= \sum_{i=1}^{N}\alpha_{i}y_{i} = 0<br>\end{align}<br>$$</li>
+<li>解得:<br>$$<br>\begin{align}<br>&amp;w = \sum_{i=1}^{N}\alpha_{i}y_{i}x_{i} \\<br>&amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0<br>\end{align}<br>$$</li>
+<li>代入原来的拉格朗日函数有:</li>
+</ul>
+<p>$$<br>\begin{align}<br>\min_{w,b}L(w,b,\alpha) &amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i}(1-y_{i}(\left [\sum_{j=1}^{N}\alpha_{j}y_{j}x_{j}\right]\cdot x_{i} + b)) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\alpha_{i}y_{i}\left [\sum_{j=1}^{N}\alpha_{j}y_{j}x_{j}\right]\cdot x_{i} + \sum_{i=1}^{N}\alpha_{i}y_{i}b + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}y_{i}\alpha_{j}y_{j}(x_{j}\cdot x_{i}) + \sum_{i=1}^{N}\alpha_{i}y_{i}b + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= -\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + 0 + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= -\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i}<br>\end{align}<br>$$</p>
+<ul>
+<li>上面的\(\min_{w,b}L(w,b,\alpha)\)对\(\alpha\)求极大值有:<br>$$<br>\begin{align}<br>\max_{\alpha} \quad &amp;-\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i} \\<br>s.t. \quad &amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0 \\<br>\quad &amp;\alpha_{i} \geq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+<li><p>转换为一般优化问题<br>$$<br>\begin{align}<br>\min_{\alpha} \quad &amp;\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\alpha_{i} \\<br>s.t. \quad &amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0 \\<br>\quad &amp;-\alpha_{i} \leq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+</li>
+<li><p>假设上面的式子能够求得\(\alpha\)的解为:<br>$$<br>\begin{align}<br>\alpha^{\star} = (\alpha_{1}^{\star}, \alpha_{2}^{\star},\dots, \alpha_{N}^{\star})<br>\end{align}<br>$$</p>
+</li>
+<li>根据拉格朗日对偶问题与原始问题的解对应的条件,<a href="/Notes/Others/Math——凸优化问题和拉格朗日对偶性.html">Math——凸优化问题和拉格朗日对偶性</a>,如果上面的式子中存在下标\(j\),满足\(-\alpha_{j}^{\star} &lt; 0\),即满足:<br>$$\exists j \quad \alpha_{j}^{\star} &gt; 0$$</li>
+<li>那么最终可求得:<br>$$<br>\begin{align}<br>&amp;w^{\star} = \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}x_{i} \\<br>\end{align}<br>$$</li>
+<li>\(b^{\star}\)的表达式由\(\alpha_{j}^{\star} &gt; 0\),和KKT条件\(\alpha_{j}^{\star}(y_{j}(w^{\star}\cdot x_{j} + b^{\star})-1) = 0\)可解得:<br>$$<br>\begin{align}<br>y_{j}(w^{\star}\cdot x_{j} + b^{\star})-1 = 0 \\<br>\end{align}<br>$$</li>
+<li>注意到\(y_{j}\in \{-1, 1\}\), 所以\(y_{j}^{2}=1\)<br>$$<br>\begin{align}<br>y_{j}^{2}(w^{\star}\cdot x_{j} + b^{\star})-y_{j} = 0 \\<br>w^{\star}\cdot x_{j} + b^{\star} = y_{j} \\<br>\end{align}<br>$$</li>
+<li>所以有<br>$$<br>\begin{align}<br>b^{\star} &amp;= y_{j} - w^{\star}\cdot x_{j} \\<br>&amp;= y_{j} - \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x_{j})<br>\end{align}<br>$$</li>
+<li>综合\(w^{\star}\)和\(b^{\star}\)的表达式,我们有分类超平面为:<br>$$<br>\begin{align}<br>w^{\star}x + b^{\star} &amp;= 0 \\<br>\sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x) + b^{\star} &amp;= 0<br>\end{align}<br>$$</li>
+<li>分类决策函数为:<br>$$<br>\begin{align}<br>f(x) &amp;= sign(w^{\star}x + b^{\star}) \\<br>f(x) &amp;= sign\left (\sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x) + b^{\star}\right )<br>\end{align}<br>$$<ul>
+<li>这就是分线性可分SVM的对偶形式</li>
+<li>分类决策函数只与待预测的样本\(x\)和已有训练数据\(x_{j}\)的输入内积\((x_{j}\cdot x)\)相关<ul>
+<li>注意\(b^{\star}\)是通过原始训练样本算出来的定值,\(b^{\star}, w^{\star}\)的值与待预测的未知样本无关,训练样本确定,参数就确定了, 内积的出现是在加入位置样本后\(w^{\star}\cdot x\)产生的</li>
+</ul>
+</li>
+<li>SVM的对偶形式使得我们可以用核函数来扩展SVM(非线性核函数可使得SVM能解决非线性问题)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="支持向量"><a href="#支持向量" class="headerlink" title="支持向量"></a>支持向量</h3><ul>
+<li>优化问题的推导过程中,又一步,对偶问题与原始问题能够相等的条件是存在下标\(j\),满足\(-\alpha_{j}^{\star} &lt; 0\),即满足:<br>$$\exists j \quad \alpha_{j}^{\star} &gt; 0$$</li>
+<li>上面的\(j\)对应的样本点\((x_{j}, y_{j})\)就是<strong>支持向量</strong><ul>
+<li>支持向量一定在间隔边界上:<br>$$y_{j}(w^{\star}\cdot x_{j}+b^{\star})-1 = 0$$</li>
+<li>或者<br>$$w^{\star}\cdot x_{j}+b^{\star} = \pm 1$$<ul>
+<li>\(y_i\) 的取值为 1 或者 -1</li>
+</ul>
+</li>
+<li>实际上,在训练时参数\((w^{\star}, b^{\star})\)只依赖于\(\alpha_{j} &gt; 0\)的点,即只依赖<strong>支持向量</strong><br>$$<br>\begin{align}<br>&amp;w^{\star} = \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}x_{i} \\<br>&amp;b^{\star} = y_{j} - \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x_{j})<br>\end{align}<br>$$</li>
+<li>所有非支持向量对应的\(\alpha_{i} = 0\),所以对最终参数\((w^{\star}, b^{\star})\)只与<strong>支持向量</strong>相关</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="核函数"><a href="#核函数" class="headerlink" title="核函数"></a>核函数</h3><ul>
+<li>\(\phi(x)\)定义为从<strong>输入空间</strong>到<strong>希尔伯特空间</strong>的映射<br>$$<br>\begin{align}<br>K(x,z) = \phi(x)\phi(z)<br>\end{align}<br>$$</li>
+<li>将SVM对偶形式中的内积\((x_{i}\cdot x_{j})\)用核函数\(K(x_{i},x_{j}) = \phi(x_{i})\phi(x_{j})\)来替代即可在SVM中应用<strong>核技巧</strong></li>
+</ul>
+<h4 id="常用核函数"><a href="#常用核函数" class="headerlink" title="常用核函数"></a>常用核函数</h4><ul>
+<li>多项式核函数<br>$$K(x,z) = (x\cdot z + 1)^{p}$$</li>
+<li>高斯核函数<br>$$K(x,z) = e^{\left( -\frac{||x-z||^{2}}{2\sigma^{2}}\right )}$$</li>
+<li>字符串核函数<br>[待更新]</li>
+</ul>
+<hr>
+<h3 id="序列最小最优化算法-SMO"><a href="#序列最小最优化算法-SMO" class="headerlink" title="序列最小最优化算法(SMO)"></a>序列最小最优化算法(SMO)</h3><ul>
+<li>为什么要用SMO?<ul>
+<li>前面我们的推导将 <strong>SVM的参数求解</strong> 转化为了一个求解<strong>凸二次优化</strong>的问题</li>
+<li>凸二次优化问题有全局最优解(有很多优化算法可以求解凸二次优化问题)</li>
+<li>但是当<strong>样本量太大</strong>时,普通的<strong>凸二次优化算法</strong>会变得<strong>十分低效</strong>,导致<strong>实际操作</strong>中<strong>无法使用</strong></li>
+<li>所以我们需要一个能高效实现的算法 SMO</li>
+</ul>
+</li>
+<li>基本思路<ul>
+<li>如果所有变量的解都满足最优化问题的KKT条件,那么这个最优化问题的解就得到了<ul>
+<li>原因: KKT条件是该最优化问题的<strong>充要条件</strong></li>
+</ul>
+</li>
+<li>否则,存在某些解不满足KKT条件,选择两个变量,固定其他变量,<ul>
+<li>两个变量中其中一个是<strong>最不满足KKT条件的变量</strong>,</li>
+<li>另一个在第一个确定后,自动由约束条件确定下来</li>
+</ul>
+</li>
+<li>针对这两个变量构建二次规划问题的解,这个二次规划问题关于这两个变量的解应该更接近原始二次规划问题的解<ul>
+<li>原因: 因为二次规划问题的目标函数值变得更小</li>
+<li>此时可通过<strong>解析方法</strong>求解(由于只有两个变量,比较简单),整个算法的速度会很快</li>
+</ul>
+</li>
+<li>SMO算法不断的将原问题分解为子问题,迭代更新参数,每次更新两个参数,最终得到近似解</li>
+</ul>
+</li>
+<li>优点:<ul>
+<li>训练速度快</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a>补充说明</h3><h4 id="SVM需要特征归一化"><a href="#SVM需要特征归一化" class="headerlink" title="SVM需要特征归一化"></a>SVM需要特征归一化</h4><p><em>是必要的</em></p>
+<ul>
+<li>因为SVM寻找的是所谓的<strong>间隔</strong>(margin), 就是两个支持向量的间隔</li>
+<li>如果<strong>不归一化</strong>的话, 这个间隔会因为不同特征的单位等, 数值被放大或者缩小, 从而造成<strong>无法评估间隔</strong>, 所以归一化对于SVM很重要</li>
+<li>线性SVM依赖数据表达的距离测度，所以需要对数据先做normalization<ul>
+<li>个人理解: 非线性的SVM其实也应该归一化,不然核函数映射到高位空间后以后还是可能受数值影响?</li>
+</ul>
+</li>
+</ul>
+<h4 id="损失函数自带正则"><a href="#损失函数自带正则" class="headerlink" title="损失函数自带正则"></a>损失函数自带正则</h4><ul>
+<li>由于优化目标中就自带了参数 \(\frac{1}{2}||w||^2\), 所以SVM实际上已经自己带了L2正则化了</li>
+<li>这也是SVM也叫<strong>结构风险最小化</strong>算法的原因<ul>
+<li>结构风险最小化就是模型复杂度最小化</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——awk和xargs命令的使用.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Bash——awk和xargs命令的使用.html" itemprop="url">Bash——awk和xargs命令的使用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-06T00:00:00+08:00">
+                2017-06-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>用于在linux bash中设计处理terminal输出自动删除等问题</em></p>
+<hr>
+<h3 id="使用实例"><a href="#使用实例" class="headerlink" title="使用实例"></a>使用实例</h3><pre><code>sudo docker images | grep &apos;&lt;none&gt;&apos; | awk &apos;{print $3}&apos; | xargs sudo docker rmi 
+</code></pre><p>上面的代码是删除所有名字为<code>&lt;none&gt;</code>的docker镜像</p>
+<hr>
+<h3 id="awk"><a href="#awk" class="headerlink" title="awk"></a>awk</h3><pre><code>awk &apos;{print $3}&apos; //读取每一行的第三列的值
+</code></pre><hr>
+<h3 id="xargs"><a href="#xargs" class="headerlink" title="xargs"></a>xargs</h3><pre><code>xargs sudo docker rmi //将管道传递过来的所有行添加到后面的命令后面，等价于sudo docker rmi &lt;rows&gt;
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Gradient——梯度的理解.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Gradient——梯度的理解.html" itemprop="url">Gradient——梯度的理解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-05-09T00:00:00+08:00">
+                2017-05-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>梯度方向是函数局部上升最快的方向</strong></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><ul>
+<li>对函数\(f(x, y, z)\)而言</li>
+<li>方向导数:各个方向的导数,函数,标量<ul>
+<li>关于x, y, x的偏导数: \(\frac {\partial f}{\partial x}, \frac {\partial f}{\partial y}, \frac {\partial f}{\partial z}\)</li>
+<li>对特定的某一点\((x_{0}, y_{0}, z_{0})\)而言,改点的偏导数是将对应的值带入后得到的数值,是一个确定的数值</li>
+</ul>
+</li>
+<li>梯度:各个方向导数组成的向量,每一维为一个方向导数,矢量<ul>
+<li>梯度: \((\frac {\partial f}{\partial x}, \frac {\partial f}{\partial y}, \frac {\partial f}{\partial z}\)),一个向量</li>
+<li>梯度方向表示函数局部上升最快的方向</li>
+<li>梯度的模\(|\nabla f|\)表示变化率</li>
+</ul>
+</li>
+</ul>
+<h4 id="直观理解"><a href="#直观理解" class="headerlink" title="直观理解"></a>直观理解</h4><ul>
+<li>一维函数中,代表参数(自变量)的点在一条直线上运动,所以梯度的方向有正向和负向</li>
+<li>二维函数中,代表参数(自变量)的点在一个平面上运动,所以梯度的方向有无数种,但都在二维平面上</li>
+<li>三维函数中,代表参数(自变量)的点在一个空间中运动,所以梯度的方向有无数种,但都在三维空间中</li>
+<li>无论何时,梯度方向是函数上升最快的方向,指明参数朝着这个方向移动时,函数上升的速度最快</li>
+<li>梯度下降法中,求取梯度的意义就在于知道函数上升或者下降最快的方向</li>
+</ul>
+<h4 id="关于梯度的模-nabla-f"><a href="#关于梯度的模-nabla-f" class="headerlink" title="关于梯度的模\(|\nabla f|\)"></a>关于梯度的模\(|\nabla f|\)</h4><ul>
+<li>梯度的方向与参数(自变量)的变化相关,梯度的模\(|\nabla f|\)与函数变化相关</li>
+<li>梯度的模可以理解为变化率,也就是在梯度对应的方向上移动单位长度后,函数能上升的数值大小为\(|\nabla f|\)(当然,这是按照当前点周围的极小的曲面拟合出来的平面计算得到的数值,不是真正的函数数值)</li>
+<li>梯度下降法中,梯度的方向指明了参数移动的方向,梯度的模暗示着参数移动时函数的增量大小</li>
+<li>但为什么梯度下降法中,保留着梯度的模?而不是将梯度向量变成单位向量?梯度的模有什么特殊的意义吗?<ul>
+<li>一个猜想:在梯度下降法时,如果超参数步长\(\alpha\)不变的话,每次迭代时参数(自变量)真正移动的长度是\(\alpha\times |\nabla f|\),此时随着迭代次数的增加,\(|\nabla f|\)值会越来越小(可以证明,因为越来越接近最地点,函数变化率越来越小),这会导致\(\alpha\times |\nabla f|\)越来越小,从而减少震荡?</li>
+<li>梯度的模的意义可用数学证明,移动梯度的模的\(\alpha\)倍是最优的,详情参考我的博客<a href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html">ML——最优化方法-无约束参数优化方法</a>中用一阶泰勒展开推导梯度下降法的过程<ul>
+<li>基本思路,将函数在参数的某个值\(\theta_{t} + \delta\)处一阶泰勒展开,然后对\(\delta\)加上正则项.最后在直接求导即可得到梯度下降法的更新表达式</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="参考博客"><a href="#参考博客" class="headerlink" title="参考博客"></a>参考博客</h3><ul>
+<li>链接: <a href="https://choibunbing.com/2019/04/25/为什么梯度方向是函数局部上升最快的方向/" target="_blank" rel="noopener">https://choibunbing.com/2019/04/25/为什么梯度方向是函数局部上升最快的方向/</a></li>
+</ul>
+<img src="/Notes/Others/Gradient——梯度的理解/Gradient_Blog_Screenshot.png">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种镜像源的管理.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/General——各种镜像源的管理.html" itemprop="url">General——各种镜像源的管理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-03-06T00:00:00+08:00">
+                2017-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>各种镜像源管理</em></p>
+<hr>
+<h3 id="pip镜像源"><a href="#pip镜像源" class="headerlink" title="pip镜像源"></a>pip镜像源</h3><p><em>一般来说pip默认使用的源可能会比较慢,此时需要修改成国内的源</em></p>
+<h4 id="修改方法"><a href="#修改方法" class="headerlink" title="修改方法:"></a>修改方法:</h4><h5 id="临时修改"><a href="#临时修改" class="headerlink" title="临时修改"></a>临时修改</h5><ul>
+<li><p>在命令后面添加如下参数即可将安装源换成阿里云</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-i http://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>只在当前命令中修改,以后想要使用时需要继续添加参数</p>
+</li>
+<li>特别说明: 在阿里云的服务器上使用这个指令时效果非常明显</li>
+</ul>
+<h5 id="永久修改"><a href="#永久修改" class="headerlink" title="永久修改"></a>永久修改</h5><ul>
+<li><p>修改文件<code>~/.pip/pip.conf</code>内容, 如果没有该文件则新建一个</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.pip/pip.conf</span><br><span class="line"># write the following contents and save</span><br><span class="line"># the example is USTC</span><br><span class="line">[global]</span><br><span class="line">index-url = https://pypi.mirrors.ustc.edu.cn/simple/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>这个命令修改当前用户的默认<code>pip</code>命令镜像</p>
+</li>
+</ul>
+<h4 id="镜像列表"><a href="#镜像列表" class="headerlink" title="镜像列表"></a>镜像列表</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">清华：https://pypi.tuna.tsinghua.edu.cn/simple </span><br><span class="line">阿里云：http://mirrors.aliyun.com/pypi/simple/ </span><br><span class="line">中国科技大学 https://pypi.mirrors.ustc.edu.cn/simple/ </span><br><span class="line">华中科技大学：http://pypi.hustunique.com/ </span><br><span class="line">山东理工大学：http://pypi.sdutlinux.org/ </span><br><span class="line">豆瓣：http://pypi.douban.com/simple/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>其中清华的比较常用</li>
+</ul>
+<hr>
+<h3 id="Ubuntu源"><a href="#Ubuntu源" class="headerlink" title="Ubuntu源"></a>Ubuntu源</h3><p><em>Linux一般默认使用自己系统的源,比如Ubuntu使用的就是自己的Ubuntu官网源</em></p>
+<h4 id="修改方法-1"><a href="#修改方法-1" class="headerlink" title="修改方法"></a>修改方法</h4><ul>
+<li>修改文件<code>/etc/apt/source.list</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">sudo /vim/apt/source.list</span><br><span class="line"></span><br><span class="line"># write new image source</span><br><span class="line"># the example of aliyun</span><br><span class="line">deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line"></span><br><span class="line"># update and upgrade</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get upgrade</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="镜像源列表"><a href="#镜像源列表" class="headerlink" title="镜像源列表"></a>镜像源列表</h4><h5 id="中科大源"><a href="#中科大源" class="headerlink" title="中科大源"></a>中科大源</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">deb https://mirrors.ustc.edu.cn/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.ustc.edu.cn/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb https://mirrors.ustc.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.ustc.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb https://mirrors.ustc.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.ustc.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb https://mirrors.ustc.edu.cn/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.ustc.edu.cn/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb https://mirrors.ustc.edu.cn/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.ustc.edu.cn/ubuntu/ bionic-proposed main restricted universe multiverse</span><br></pre></td></tr></table></figure>
+<h5 id="163源"><a href="#163源" class="headerlink" title="163源"></a>163源</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">deb http://mirrors.163.com/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb http://mirrors.163.com/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb http://mirrors.163.com/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb http://mirrors.163.com/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb http://mirrors.163.com/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.163.com/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.163.com/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.163.com/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.163.com/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb-src http://mirrors.163.com/ubuntu/ bionic-backports main restricted universe multiverse</span><br></pre></td></tr></table></figure>
+<h5 id="清华源"><a href="#清华源" class="headerlink" title="清华源"></a>清华源</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse</span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse</span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse</span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse</span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-proposed main restricted universe multiverse</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-proposed main restricted universe multiverse</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="Centos源"><a href="#Centos源" class="headerlink" title="Centos源"></a>Centos源</h3><h4 id="修改方法-2"><a href="#修改方法-2" class="headerlink" title="修改方法"></a>修改方法</h4><ul>
+<li>修改文件<code>/etc/yum.repos.d/CentOS-Base.repo</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># backup</span><br><span class="line">sudo mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo_bak</span><br><span class="line"># create new config file</span><br><span class="line"># the example of aliyun, the config file could be downloaded from remote directly</span><br><span class="line">sudo wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo</span><br><span class="line"># update chche</span><br><span class="line">sudo yum makechche</span><br><span class="line"># update</span><br><span class="line">sudo -y update</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="镜像源列表-1"><a href="#镜像源列表-1" class="headerlink" title="镜像源列表"></a>镜像源列表</h4><h5 id="网易源"><a href="#网易源" class="headerlink" title="网易源"></a>网易源</h5><ul>
+<li>Centos6: <a href="http://mirrors.163.com/.help/CentOS6-Base-163.repo" target="_blank" rel="noopener">http://mirrors.163.com/.help/CentOS6-Base-163.repo</a></li>
+<li>Centos7: <a href="http://mirrors.163.com/.help/CentOS7-Base-163.repo" target="_blank" rel="noopener">http://mirrors.163.com/.help/CentOS7-Base-163.repo</a></li>
+</ul>
+<h5 id="阿里源"><a href="#阿里源" class="headerlink" title="阿里源"></a>阿里源</h5><ul>
+<li>Centos6: <a href="http://mirrors.aliyun.com/repo/Centos-6.repo" target="_blank" rel="noopener">http://mirrors.aliyun.com/repo/Centos-6.repo</a></li>
+<li>Centos7: <a href="http://mirrors.aliyun.com/repo/Centos-7.repo" target="_blank" rel="noopener">http://mirrors.aliyun.com/repo/Centos-7.repo</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——GitHub-Pages的CNAME设置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Git/Git——GitHub-Pages的CNAME设置.html" itemprop="url">Git——GitHub-Pages的CNAME设置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-02T00:00:00+08:00">
+                2017-01-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="CNAME是什么"><a href="#CNAME是什么" class="headerlink" title="CNAME是什么"></a>CNAME是什么</h3><ul>
+<li>CNAME是DNS解析中的一种别名记录，允许同一个网站有两个不同的记录解析过去</li>
+<li>CNAME在GitHub Pages中体现为可以将xxx.github.io的域名添加别名为自定义的域名（这个域名通常是自己买的，在域名那里也要配置解析到当前xxx.github.io）</li>
+</ul>
+<hr>
+<h3 id="GitHub-Pages中使用CNAME时遇到的问题"><a href="#GitHub-Pages中使用CNAME时遇到的问题" class="headerlink" title="GitHub Pages中使用CNAME时遇到的问题"></a>GitHub Pages中使用CNAME时遇到的问题</h3><ul>
+<li>我们可以在GitHub账户中设置CNAME</li>
+<li>重新提交commit并推送数据到GitHub上后，之前设置的CNAME会被删除，需要重新设置，也就是说每次push操作后都需要重新设置<ul>
+<li>这个问题在<code>hexo d</code>后也会出现</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li>在当前项目的GitHub Pages对应的分支下面新建一个文件，命名为<code>CNAME</code></li>
+<li>打开文件并新建一行为目标网站的域名（如果是中文域名则需要编码转换）</li>
+<li>在Hexo中，我们可以在<code>source</code>文件夹下面新建该文件<ul>
+<li><code>hexo generate</code>时会将<code>source</code>文件夹下面的文件都拷贝到<code>public</code>文件夹下面</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——使用总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -420,147 +1298,6 @@
 </ul>
 <hr>
 <h3 id="fetch和pull"><a href="#fetch和pull" class="headerlink" title="fetch和pull"></a>fetch和pull</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git pull == git fetch + git merge</span><br><span class="line">git pull origin master:old == git fetch origin master:old + git merge old</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——GitHub-Pages的CNAME设置.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Git/Git——GitHub-Pages的CNAME设置.html" itemprop="url">Git——GitHub-Pages的CNAME设置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-02T00:00:00+08:00">
-                2017-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="CNAME是什么"><a href="#CNAME是什么" class="headerlink" title="CNAME是什么"></a>CNAME是什么</h3><ul>
-<li>CNAME是DNS解析中的一种别名记录，允许同一个网站有两个不同的记录解析过去</li>
-<li>CNAME在GitHub Pages中体现为可以将xxx.github.io的域名添加别名为自定义的域名（这个域名通常是自己买的，在域名那里也要配置解析到当前xxx.github.io）</li>
-</ul>
-<hr>
-<h3 id="GitHub-Pages中使用CNAME时遇到的问题"><a href="#GitHub-Pages中使用CNAME时遇到的问题" class="headerlink" title="GitHub Pages中使用CNAME时遇到的问题"></a>GitHub Pages中使用CNAME时遇到的问题</h3><ul>
-<li>我们可以在GitHub账户中设置CNAME</li>
-<li>重新提交commit并推送数据到GitHub上后，之前设置的CNAME会被删除，需要重新设置，也就是说每次push操作后都需要重新设置<ul>
-<li>这个问题在<code>hexo d</code>后也会出现</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
-<li>在当前项目的GitHub Pages对应的分支下面新建一个文件，命名为<code>CNAME</code></li>
-<li>打开文件并新建一行为目标网站的域名（如果是中文域名则需要编码转换）</li>
-<li>在Hexo中，我们可以在<code>source</code>文件夹下面新建该文件<ul>
-<li><code>hexo generate</code>时会将<code>source</code>文件夹下面的文件都拷贝到<code>public</code>文件夹下面</li>
-</ul>
-</li>
-</ul>
 
           
         
@@ -1175,7 +1912,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">184</span>
+                  <span class="site-state-item-count">188</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1188,7 +1925,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

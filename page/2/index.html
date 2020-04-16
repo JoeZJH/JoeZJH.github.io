@@ -277,6 +277,368 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——UNILM论文阅读笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/NLP/NLP——UNILM论文阅读笔记.html" itemprop="url">NLP——UNILM论文阅读笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-10-17T00:00:00+08:00">
+                2019-10-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍了MSRA今年的一篇文章: <a href="https://arxiv.org/abs/1905.03197" target="_blank" rel="noopener">UNILM: Unified Language Model Pre-training for Natural Language Understanding and Generation</a></em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="UNILM基于三个预训练目标"><a href="#UNILM基于三个预训练目标" class="headerlink" title="UNILM基于三个预训练目标"></a>UNILM基于三个预训练目标</h3><ul>
+<li>Unidirectional LM: </li>
+<li>Bidirectional LM: </li>
+<li>Sequence2Sequence LM: </li>
+</ul>
+<hr>
+<h3 id="贡献"><a href="#贡献" class="headerlink" title="贡献"></a>贡献</h3><h4 id="和BERT对比"><a href="#和BERT对比" class="headerlink" title="和BERT对比"></a>和BERT对比</h4><ul>
+<li>BERT是双向模型,所以自然语言的生成(NLG)任务上不适用</li>
+<li>UNILM采用三种(无监督的)LM目标,其中的Sequence2Sequence LM能够解决文本生成问题</li>
+</ul>
+<h4 id="其他一些优点"><a href="#其他一些优点" class="headerlink" title="其他一些优点"></a>其他一些优点</h4><ul>
+<li>仅使用一个LM(由Transformer构成), 在三个不同的预训练任务上共享参数, 泛化能力强<ul>
+<li>参数共享: 不需要在不同的语言模型(对应不同的预训练任务)上使用不同的模型参数</li>
+<li>泛化能力强: 多个训练目标同时优化模型,使得模型能够避开因为训练目标引起的过拟合问题</li>
+</ul>
+</li>
+<li></li>
+</ul>
+<hr>
+<h3 id="模型结构介绍"><a href="#模型结构介绍" class="headerlink" title="模型结构介绍"></a>模型结构介绍</h3><h4 id="结构图"><a href="#结构图" class="headerlink" title="结构图"></a>结构图</h4><img src="/Notes/NLP/NLP——UNILM论文阅读笔记/UNILM_Overview.png">
+<ul>
+<li>输入向量为 \(\vec{x} = (x_1, x_2,,,x_{|x|}\))</li>
+<li>输入向量表征与BERT相同,由Embedding层(三个Embedding层之和, 和BERT一样):<ul>
+<li>Token Embedding, WordPiece</li>
+<li>Position Embedding</li>
+<li>Segment Embedding, 由于UNILM会使用多个LM任务训练,所以Segment Embedding在模型中也扮演着LM标识的作用(对不同的LM目标使用不同的Segment Embeddings)</li>
+</ul>
+</li>
+<li>主要网络(Backbone Network)为多层Transformer:<ul>
+<li>每两个Transformer Blocks之间的Self-Attention Masks: For Each Transformer Block, 使用多头Self-Attention来聚合之前层出现的输入向量.(这里的Self-Attention使用了)</li>
+<li>Transformer之间的Self-Attention机制决定了模型什么语言模型(任务)</li>
+<li>如图所示:<ul>
+<li>Bidirectional LM 对应的 Self-Attention Masks为全0的矩阵, 表示所有的Attention都不屏蔽 (attend to all tokens)</li>
+<li>Left-to-Right LM 对应的 Self-Attention Masks为拼屏蔽右上三角的矩阵(左下三角全为0)</li>
+<li>Right-to-Left LM 对应的 Self-Attention Masks为拼屏蔽左下三角的矩阵(右上三角全为0)</li>
+<li>Seq-to-Seq LM 对应的 Self-Attention为 <ul>
+<li>\(S_1\)-\(S_1\) 为全0(0表示开放), 对应为Bidirectional</li>
+<li>\(S_1\)-\(S_2\) 为负无穷(负无穷表示屏蔽)</li>
+<li>\(S_2\)-\(S_1\) 为全0</li>
+<li>\(S_2\)-\(S_2\) 为屏蔽右上三角的矩阵(这里与Left-to-Right的情况相同)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="按照结构图分析数据流"><a href="#按照结构图分析数据流" class="headerlink" title="按照结构图分析数据流"></a>按照结构图分析数据流</h4><ul>
+<li>对于一组输入向量 \(\{\vec{x}\}_{i=1}^{|x|} \), 初始编码为 \(\mathbf{H}^0 = [\vec{x}_1, \vec{x}_2,,,\vec{x}_{|\vec{x}|}]\)</li>
+<li>第一层后编码为上下文表征\(\mathbf{H}^1 = [\vec{h}_1^1, \vec{h}_2^1,,,\vec{h}_{|\vec{x}|}^1]\)</li>
+<li>第 \(l\) 层后编码为上下文表征\(\mathbf{H}^l = [\vec{h}_1^l, \vec{h}_2^l,,,\vec{h}_{|\vec{x}|}^l]\)</li>
+<li>每一层的 Transformer Block, 使用 multiple self-attention heads去聚合上一层的输出: L-layer的 Transformer对应的数学表达式为 \(\mathbf{H}^l = Transformer_l(\mathbf{H}^{l-1}), l \in [1, L]\)</li>
+<li>Self-Attention Head \(\mathbf{A}_l\)的详细计算公式如下:<br>$$<br>\begin{align}<br>\mathbf{H} = \mathbf{H}^{l-1}\mathbf{W}_l^Q \\<br>\mathbf{K} = \mathbf{H}^{l-1}\mathbf{W}_l^K \\<br>\mathbf{V} = \mathbf{H}^{l-1}\mathbf{W}_l^V \\<br>\mathbf{A} = softmax(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}} + \mathbf{M})\mathbf{V}_l \\<br>where, \quad \mathbf{M}_{ij} = 0 \ or \ -\infty<br>\end{align}<br>$$<ul>
+<li>\(\mathbf{M}\)中的值<ul>
+<li>\(-\infty\) 表示屏蔽Attention (prevent from Attention)</li>
+<li>0 表示允许 Attention (allow to Attention)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——样本不均衡问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——样本不均衡问题.html" itemprop="url">ML——样本不均衡问题</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-07-29T00:00:00+08:00">
+                2019-07-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="关于样本不均衡的解决"><a href="#关于样本不均衡的解决" class="headerlink" title="关于样本不均衡的解决"></a>关于样本不均衡的解决</h3><ul>
+<li>相关实践: 某次比赛中, 训练集中正负样本数量分别为20663和569877,占比分别为3.499%和96.501%, 差别很大</li>
+</ul>
+<h4 id="基于数据的解决方案"><a href="#基于数据的解决方案" class="headerlink" title="基于数据的解决方案"></a>基于数据的解决方案</h4><h5 id="过采样"><a href="#过采样" class="headerlink" title="过采样"></a>过采样</h5><ul>
+<li>增加负样本的数量<ul>
+<li>简单复制样本多次: 容易过拟合,模型变得复杂</li>
+<li>使用<strong>SMOTE</strong>算法采样: 对少数样本集\(S_{min}\)中的每一个样本 \(x\),从他的K近邻中随机选取一个样本\(y\), 然后在 \(x, y\) 之间随机选取一个新的点作为新合成的样本<ul>
+<li>能降低过拟合风险</li>
+<li>需要一个样本间距离定义的函数,且对于少数样本多时选取最近邻的复杂度太大</li>
+<li>由于为每个样本都采样了,所以可能会增大类间重叠度(生成的样本可能是符合多数样本类别的,很容易造成生成没有意义甚至是噪声)</li>
+</ul>
+</li>
+<li>使用<strong>Borderline-SMOTE</strong>算法优化<strong>SMOTE</strong>算法: <ul>
+<li>只在分类边界上的少数样本进行采样</li>
+</ul>
+</li>
+<li>使用<strong>ADASYN</strong>算法优化<strong>SMOTE</strong>算法:<ul>
+<li>给不同的少数类样本合成不同个数的新样本</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="负采样"><a href="#负采样" class="headerlink" title="负采样"></a>负采样</h5><ul>
+<li>减少正样本数量,让分类器更重视负样本<ul>
+<li>Easy Ensemble算法: 每次从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\), 最后融合多个分类模型的结果<ul>
+<li>融合模型时简单的可以对模型输出做均值(评估方式为AUC分数)或者投票(评估方式为分类精度)</li>
+</ul>
+</li>
+<li>Balance Cascade算法: 级联结构, 在每一级中从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\) 训练当前级的分类其,然后将 \(S_{maj}\) 能正确被当前分类器正确分类的样本剔除, 剩下不能正确分类的样本进行下一级操作,重复若干次后得到级联结构,最终的输出结果是各级分类器结果的融合<ul>
+<li>这里有点像是Boosting方法,对样本权重进行修改,使得模型更重视上次分类错误的样本</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于算法的解决方案"><a href="#基于算法的解决方案" class="headerlink" title="基于算法的解决方案"></a>基于算法的解决方案</h4><ul>
+<li>修改模型的训练<strong>目标函数</strong><ul>
+<li>比如使用 AUC_ROC 的负数作为损失函数</li>
+<li>深度学习中可以使用Focal Loss代替传统的SGD</li>
+</ul>
+</li>
+<li>也可以将问题转化为<strong>基于单类学习的异常检测</strong>问题</li>
+<li><strong>单类学习</strong>(One Class Learning), <strong>异常检测</strong>(Anomaly Detection) *<ul>
+<li><strong>单类学习</strong>(One Class Learning): 训练数据只有一个类别,学习一个能够远离这个类别样本的Boundary,比如<ul>
+<li>单类别SVM(One Class SVM)</li>
+<li>K近邻非参数方法</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="一个重要的特殊说明"><a href="#一个重要的特殊说明" class="headerlink" title="一个重要的特殊说明"></a>一个重要的特殊说明</h3><ul>
+<li>在深度神经网络中,如果样本类别不平衡,不要使用BN, 否则会出现问题</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——图嵌入综述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -899,6 +1261,148 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html" itemprop="url">Bash——Shell中的环境变量高级解析方法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-08T00:00:00+08:00">
+                2019-06-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>参考链接：<a href="https://www.cnblogs.com/flintlovesam/p/6677037.html" target="_blank" rel="noopener">https://www.cnblogs.com/flintlovesam/p/6677037.html</a></em></p>
+<h3 id="Shell中的-、-和-使用范例"><a href="#Shell中的-、-和-使用范例" class="headerlink" title="Shell中的${}、##和%%使用范例"></a>Shell中的${}、##和%%使用范例</h3><ul>
+<li><p>假设我们定义了一个变量为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file=/dir1/dir2/dir3/my.file.txt</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>可以用${ }分别替换得到不同的值：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file#*/&#125;：删掉第一个 / 及其左边的字符串：dir1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file##*/&#125;：删掉最后一个 /  及其左边的字符串：my.file.txt</span><br><span class="line">$&#123;file#*.&#125;：删掉第一个 .  及其左边的字符串：file.txt</span><br><span class="line">$&#123;file##*.&#125;：删掉最后一个 .  及其左边的字符串：txt</span><br><span class="line">$&#123;file%/*&#125;：删掉最后一个  /  及其右边的字符串：/dir1/dir2/dir3</span><br><span class="line">$&#123;file%%/*&#125;：删掉第一个 /  及其右边的字符串：(空值)</span><br><span class="line">$&#123;file%.*&#125;：删掉最后一个  .  及其右边的字符串：/dir1/dir2/dir3/my.file</span><br><span class="line">$&#123;file%%.*&#125;：删掉第一个  .   及其右边的字符串：/dir1/dir2/dir3/my</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>记忆的方法为：</p>
+<ul>
+<li><code>%</code>和<code>#</code>分别在<code>$</code>的右边和左边</li>
+<li><code>#</code>是去掉左边（键盘上<code>#</code>在 <code>$</code> 的左边）</li>
+<li><code>%</code>是去掉右边（键盘上<code>%</code> 在<code>$</code> 的右边）</li>
+<li>单一符号是最小匹配；两个符号是最大匹配<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file:0:5&#125;：提取最左边的 5 个字节：/dir1</span><br><span class="line">$&#123;file:5:5&#125;：提取第 5 个字节右边的连续5个字节：/dir2</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>也可以对变量值里的字符串作替换：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file/dir/path&#125;：将第一个dir 替换为path：/path1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file//dir/path&#125;：将全部dir 替换为 path：/path1/path2/path3/my.file.txt</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>利用 ${ } 还可针对不同的变数状态赋值(沒设定、空值、非空值)：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file-my.file.txt&#125; ：假如 $file 沒有设定，則使用 my.file.txt 作传回值。(空值及非空值時不作处理)</span><br><span class="line">$&#123;file:-my.file.txt&#125; ：假如 $file 沒有設定或為空值，則使用 my.file.txt 作傳回值。 (非空值時不作处理)</span><br><span class="line">$&#123;file+my.file.txt&#125; ：假如 $file 設為空值或非空值，均使用 my.file.txt 作傳回值。(沒設定時不作处理)</span><br><span class="line">$&#123;file:+my.file.txt&#125; ：若 $file 為非空值，則使用 my.file.txt 作傳回值。 (沒設定及空值時不作处理)</span><br><span class="line">$&#123;file=my.file.txt&#125; ：若 $file 沒設定，則使用 my.file.txt 作傳回值，同時將 $file 賦值為 my.file.txt 。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:=my.file.txt&#125; ：若 $file 沒設定或為空值，則使用 my.file.txt 作傳回值，同時將 $file 賦值為my.file.txt 。 (非空值時不作处理)</span><br><span class="line">$&#123;file?my.file.txt&#125; ：若 $file 沒設定，則將 my.file.txt 輸出至 STDERR。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:?my.file.txt&#125; ：若 $file 没设定或为空值，则将 my.file.txt 输出至 STDERR。 (非空值時不作处理)</span><br><span class="line">$&#123;#var&#125; 可计算出变量值的长度：</span><br><span class="line">$&#123;#file&#125; 可得到 27 ，因为/dir1/dir2/dir3/my.file.txt 是27个字节</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/CSDN——打印博客.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1174,152 +1678,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——isinstance的困境.html" itemprop="url">Python——类的__class__属性与isinstance函数的用法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-05-16T00:00:00+08:00">
-                2019-05-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="不同文件为入口文件时"><a href="#不同文件为入口文件时" class="headerlink" title="不同文件为入口文件时"></a>不同文件为入口文件时</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line"></span><br><span class="line">class Apple:</span><br><span class="line">	def __init__(self):</span><br><span class="line">		name = &quot;HongFuShi&quot;</span><br><span class="line"></span><br><span class="line">apple = Apple()</span><br><span class="line">print apple.__class__</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">import fruit</span><br></pre></td></tr></table></figure>
-<ul>
-<li>考虑一个文件名为<em>fruit.py</em>的文件夹中定义了一个类<code>Apple</code>,同时初始化一个对象<code>apple</code><ul>
-<li>若执行<code>python fruit.py</code>: 输入”<strong>main</strong>.Apple”</li>
-<li>若将当前文件导入到另一个文件<em>run.py</em>中,然后执行<code>python run.py</code>: 输出”fruit.Apple”</li>
-<li>也就是说,执行不同文件,类<code>Apple</code>的前缀不同</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="isinstance的困境"><a href="#isinstance的困境" class="headerlink" title="isinstance的困境"></a>isinstance的困境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line">class Apple(object):</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    from run import get_apple</span><br><span class="line">    apple1 = Apple()</span><br><span class="line">    print apple1.__class__</span><br><span class="line">    apple2 = get_apple()</span><br><span class="line">    print apple2.__class__</span><br><span class="line">    print isinstance(apple2, Apple)</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">from fruit import Apple</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_apple():</span><br><span class="line">    apple = Apple()</span><br><span class="line">    print apple.__class__</span><br><span class="line">    return apple</span><br></pre></td></tr></table></figure>
-<ul>
-<li>此时执行<code>python run.py</code>, 无任何输出</li>
-<li><p>若执行<code>python fruit.py</code>, 则输出如下:</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &apos;__main__.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">False</span><br></pre></td></tr></table></figure>
-<ul>
-<li>此时<code>fruit.py</code>是程序的入口文件</li>
-<li>在入口文件中执行<code>apple1 = Apple()</code>后得到的类将是<code>__main__.Apple</code></li>
-<li>在入口文件被导入到<code>run.py</code>文件中后,执行<code>apple2 = Apple()</code>后得到的类将是<code>fruit.Apple</code></li>
-<li>此时,由于<code>apple2</code>的类别是<code>fruit.Apple</code>且<code>Apple</code>在<code>fruit.py</code>中是<code>__main__.Apple</code>,造成<code>isinstance(apple2, Apple)</code>返回<code>False</code></li>
-<li>isinstance的困境: <strong>看起来是同一个类,但执行isinstance后返回False</strong></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——知识图谱的描述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1526,6 +1884,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——isinstance的困境.html" itemprop="url">Python——类的__class__属性与isinstance函数的用法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-05-16T00:00:00+08:00">
+                2019-05-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="不同文件为入口文件时"><a href="#不同文件为入口文件时" class="headerlink" title="不同文件为入口文件时"></a>不同文件为入口文件时</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line"></span><br><span class="line">class Apple:</span><br><span class="line">	def __init__(self):</span><br><span class="line">		name = &quot;HongFuShi&quot;</span><br><span class="line"></span><br><span class="line">apple = Apple()</span><br><span class="line">print apple.__class__</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">import fruit</span><br></pre></td></tr></table></figure>
+<ul>
+<li>考虑一个文件名为<em>fruit.py</em>的文件夹中定义了一个类<code>Apple</code>,同时初始化一个对象<code>apple</code><ul>
+<li>若执行<code>python fruit.py</code>: 输入”<strong>main</strong>.Apple”</li>
+<li>若将当前文件导入到另一个文件<em>run.py</em>中,然后执行<code>python run.py</code>: 输出”fruit.Apple”</li>
+<li>也就是说,执行不同文件,类<code>Apple</code>的前缀不同</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="isinstance的困境"><a href="#isinstance的困境" class="headerlink" title="isinstance的困境"></a>isinstance的困境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line">class Apple(object):</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    from run import get_apple</span><br><span class="line">    apple1 = Apple()</span><br><span class="line">    print apple1.__class__</span><br><span class="line">    apple2 = get_apple()</span><br><span class="line">    print apple2.__class__</span><br><span class="line">    print isinstance(apple2, Apple)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">from fruit import Apple</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_apple():</span><br><span class="line">    apple = Apple()</span><br><span class="line">    print apple.__class__</span><br><span class="line">    return apple</span><br></pre></td></tr></table></figure>
+<ul>
+<li>此时执行<code>python run.py</code>, 无任何输出</li>
+<li><p>若执行<code>python fruit.py</code>, 则输出如下:</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &apos;__main__.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">False</span><br></pre></td></tr></table></figure>
+<ul>
+<li>此时<code>fruit.py</code>是程序的入口文件</li>
+<li>在入口文件中执行<code>apple1 = Apple()</code>后得到的类将是<code>__main__.Apple</code></li>
+<li>在入口文件被导入到<code>run.py</code>文件中后,执行<code>apple2 = Apple()</code>后得到的类将是<code>fruit.Apple</code></li>
+<li>此时,由于<code>apple2</code>的类别是<code>fruit.Apple</code>且<code>Apple</code>在<code>fruit.py</code>中是<code>__main__.Apple</code>,造成<code>isinstance(apple2, Apple)</code>返回<code>False</code></li>
+<li>isinstance的困境: <strong>看起来是同一个类,但执行isinstance后返回False</strong></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——数字范围边界等问题.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1648,416 +2152,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主成分分析-PCA.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——主成分分析-PCA.html" itemprop="url">ML——主成分分析-PCA</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-03-15T00:00:00+08:00">
-                2019-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="与TSVD的对比"><a href="#与TSVD的对比" class="headerlink" title="与TSVD的对比"></a>与TSVD的对比</h3><ul>
-<li>关于SVD的进一步了解可参考<a href="/Notes/Others/Math——奇异值分解-SVD.html">Math——奇异值分解-SVD</a></li>
-<li>PCA与TSVD目标不同</li>
-<li>TSVD奇异值与PCA分解得到的对角矩阵元素意义不同<ul>
-<li>PCA得到矩阵对角元素的是该维度的方差</li>
-<li>TSVD得到的是某种重要的隐形意义(注意,不是方差)</li>
-</ul>
-</li>
-<li>PCA等价于下面两个步骤:<ul>
-<li>对数据X中心化</li>
-<li>对数据做TSVD分解</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="与ICA的对比"><a href="#与ICA的对比" class="headerlink" title="与ICA的对比"></a>与ICA的对比</h3><ul>
-<li>ICA得到的变量满足独立性</li>
-<li>PCA得到的变量满足不相关性</li>
-<li>独立与不相关的关系<ul>
-<li>变量独立\(=&gt;\)变量不相关</li>
-<li>变量不相关\(\neq&gt;\)变量独立</li>
-<li>当变量是正态分布时:变量独立\(&lt;=&gt;\)变量不相关</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Tips——一些有用的tips总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/Tips——一些有用的tips总结.html" itemprop="url">Tips——一些有用的tips总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-03-13T00:00:00+08:00">
-                2019-03-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文对一些程序员日常可能用到的小tips进行总结和记录</em></p>
-<hr>
-<h3 id="海量字符串的合并"><a href="#海量字符串的合并" class="headerlink" title="海量字符串的合并"></a>海量字符串的合并</h3><h4 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h4><ul>
-<li>将大量的(现实遇到的是18W+级别的句子,句子长度平均在100个字符以上)字符串需要合并为一个字符串</li>
-<li><p>如果直接迭代并使用下面的语句合并,花费很多时间,随着字符串的增大,合并速度越来越慢</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">all_texts += &quot; %s&quot; % text</span><br><span class="line">all_texts = &quot;%s %s&quot; % (all_text, text)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>现实生活中发现到了5000个字符串以上时速度变得极慢</p>
-</li>
-</ul>
-<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
-<li>分批次合并,将词语分批次分别合并为一个比较小的,最后再合并到一起<ul>
-<li>实际中我按照2000个句子一份合并完成,再最终合并,速度提升了非常多</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——队列和栈使用.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——队列和栈使用.html" itemprop="url">Python——队列和栈使用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-03-03T00:00:00+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文从总结Python中栈和队列的基本使用</em><br><strong>Python 中queue模块是线程安全的,为多线程任务设计的,没有peek()操作</strong></p>
-<ul>
-<li>双端队列(deque)是一个具有栈和队列性质的数据结构，可以从两端弹出</li>
-</ul>
-<hr>
-<h3 id="普通的栈和队列"><a href="#普通的栈和队列" class="headerlink" title="普通的栈和队列"></a>普通的栈和队列</h3><h4 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h4><h5 id="list实现栈"><a href="#list实现栈" class="headerlink" title="list实现栈"></a>list实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># init</span><br><span class="line">stack = list()</span><br><span class="line"># push</span><br><span class="line">stack.append(1)</span><br><span class="line"># pop</span><br><span class="line">stack.pop()</span><br><span class="line"># peek</span><br><span class="line">top = stack[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(stack) == 0:</span><br><span class="line">	print(&quot;stack is empty&quot;)</span><br></pre></td></tr></table></figure>
-<h5 id="deque实现栈"><a href="#deque实现栈" class="headerlink" title="deque实现栈"></a>deque实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line"># init</span><br><span class="line">stack = deque([1, 2, 3])</span><br><span class="line"># push</span><br><span class="line">stack.append(4)</span><br><span class="line"># pop</span><br><span class="line">stack.pop()</span><br><span class="line"># peek</span><br><span class="line">top = stack[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(stack) == 0:</span><br><span class="line">	print(&quot;stack is empty&quot;)</span><br></pre></td></tr></table></figure>
-<h4 id="队列"><a href="#队列" class="headerlink" title="队列"></a>队列</h4><h5 id="list实现栈-1"><a href="#list实现栈-1" class="headerlink" title="list实现栈"></a>list实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># init</span><br><span class="line">queue = [1, 2, 3]</span><br><span class="line"># push</span><br><span class="line">queue.append(4)</span><br><span class="line"># pop</span><br><span class="line">queue.pop(0)</span><br><span class="line"># peek</span><br><span class="line">first = queue[0]</span><br><span class="line">last = queue[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(queue) == 0:</span><br><span class="line">	print(&quot;queue is empty&quot;)</span><br></pre></td></tr></table></figure>
-<h5 id="deque实现队列"><a href="#deque实现队列" class="headerlink" title="deque实现队列"></a>deque实现队列</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line"># init</span><br><span class="line">queue = deque([1, 2, 3])</span><br><span class="line"># push</span><br><span class="line">queue.append(4)</span><br><span class="line"># pop</span><br><span class="line">queue.popleft()</span><br><span class="line"># peek</span><br><span class="line">first = queue[0]</span><br><span class="line">last = queue[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(queue) == 0:</span><br><span class="line">	print(&quot;queue is empty&quot;)</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="线程安全的栈和队列"><a href="#线程安全的栈和队列" class="headerlink" title="线程安全的栈和队列"></a>线程安全的栈和队列</h3><h4 id="queue模块实现队列和栈"><a href="#queue模块实现队列和栈" class="headerlink" title="queue模块实现队列和栈"></a>queue模块实现队列和栈</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import queue</span><br><span class="line"># init, stack and queue</span><br><span class="line">sstack = queue.LifoQueue()</span><br><span class="line">squeue = queue.Queue()</span><br><span class="line"># push</span><br><span class="line">sstack.put(item)</span><br><span class="line"># pop</span><br><span class="line">sstack.get()</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if sstack.empty():</span><br><span class="line">	print(&quot;sstack is empty&quot;)</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2112,7 +2206,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">184</span>
+                  <span class="site-state-item-count">188</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2125,7 +2219,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
