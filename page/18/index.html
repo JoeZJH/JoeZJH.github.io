@@ -277,6 +277,754 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
+<p><script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
+<ul>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+</ul>
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+</li>
+</ul>
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制</li>
+</ul>
+<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+<pre><code>* 图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小
+</code></pre><ul>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+</ul>
+</li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——归一化与标准化.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——归一化与标准化.html" itemprop="url">ML——归一化与标准化</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-01T00:00:00+08:00">
+                2018-02-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文总结归一化与标准化的理解和使用, 涉及到无量纲,中心化等知识, 但是并不完全</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="归一化"><a href="#归一化" class="headerlink" title="归一化"></a>归一化</h3><p><em>Normalization</em></p>
+<ul>
+<li>把数据变成<strong>[0,1]或[-1,1]</strong>的小数</li>
+<li>把有量纲表达式变成<strong>无量纲</strong>表达式，便于不同单位或量级的指标能够进行比较和加权</li>
+<li><p>归一化是一种简化计算的方式，即将有量纲的表达式，经过变换，化为无量纲的表达式，成为纯量</p>
+<ul>
+<li>无量纲的理解: <ul>
+<li>通过某种数值变换去掉单位,的影响,比如”kg”和”g”都可以表示体重,但是前者的数字比后者小</li>
+<li>不管是”kg”还是”g”作为单位,无量纲后他们的数值应该是一样的 </li>
+<li><strong>无量纲的本质</strong>是说: <strong>变换后, 单位不再影响数据的数值</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>应用:</p>
+<ul>
+<li>LR等用梯度下降时, 先使用数据归一化可以使得梯度下降速度加快(否则可能下降方向并不是最好方向)</li>
+</ul>
+</li>
+</ul>
+<h4 id="归一化的不同方法"><a href="#归一化的不同方法" class="headerlink" title="归一化的不同方法"></a>归一化的不同方法</h4><h5 id="线性归一化"><a href="#线性归一化" class="headerlink" title="线性归一化"></a>线性归一化</h5><ul>
+<li>Min-Max Normalization<br>$$ x_i’ = \frac{x_i-min(X)}{max(X)-min(X)}$$</li>
+<li>平均归一化<br>$$ x_i’ = \frac{x_i-mean(X)}{max(X)-min(X)}$$</li>
+<li>上面两种归一化在新数据加入时最大最小值会变化,所以不能在线归一化</li>
+</ul>
+<h5 id="非线性归一化"><a href="#非线性归一化" class="headerlink" title="非线性归一化"></a>非线性归一化</h5><ul>
+<li>对数函数转换等</li>
+</ul>
+<hr>
+<h3 id="标准化"><a href="#标准化" class="headerlink" title="标准化"></a>标准化</h3><p><em>Standardization</em></p>
+<ul>
+<li>使每个特征中的数值平均变为0(将每个特征的值都减掉原始资料中该特征的平均)、标准差变为1</li>
+<li>数学描述<br>$$x_i’ = \frac{x-mean(X)}{std(X)}$$</li>
+</ul>
+<hr>
+<h3 id="中心化"><a href="#中心化" class="headerlink" title="中心化"></a>中心化</h3><ul>
+<li>平均值为0，对标准差无要求</li>
+<li>数学描述<br>$$x_i’ = x-mean(X)$$</li>
+</ul>
+<hr>
+<h3 id="归一化-vs-标准化"><a href="#归一化-vs-标准化" class="headerlink" title="归一化 vs 标准化"></a>归一化 vs 标准化</h3><h4 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h4><ul>
+<li>归一化是将样本的特征值转换到同一量纲下把数据映射到[0,1]或者[-1, 1]区间内，仅由变量的极值决定，因区间放缩法是归一化的一种</li>
+<li>标准化是依照特征矩阵的列处理数据，其通过求z-score的方法，转换为标准正态分布，和整体样本分布相关，每个样本点都能对标准化产生影响</li>
+</ul>
+<h4 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h4><ul>
+<li>都能取消由于量纲不同引起的误差</li>
+<li>都是一种线性变换(都是对向量X按照比例压缩再进行平移)</li>
+<li>个人理解: <strong>标准化可以看作是一种特殊的归一化</strong></li>
+</ul>
+<h3 id="中心化-vs-标准化"><a href="#中心化-vs-标准化" class="headerlink" title="中心化 vs 标准化"></a>中心化 vs 标准化</h3><ul>
+<li>标准化 = 中心化 + 数据除以标准差(使得数据标准差为1)</li>
+<li>有些地方也把零均值归一化(Z-Score Normalization)称为标准化,公式与标准化相同</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>一些模型一般需要归一化<ul>
+<li>LR: 加快梯度下降过程(因为不同维度使用相同的学习率,所以容易造成走弯路)</li>
+<li>KNN: 防止计算距离时大数吃小数的情况发生</li>
+<li>PCA: 归一化后 \(X^TX\) 才能表示数据的协方差矩阵</li>
+<li><strong>神经网络</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="关于神经网络为什么需要归一化"><a href="#关于神经网络为什么需要归一化" class="headerlink" title="关于神经网络为什么需要归一化?"></a>关于神经网络为什么需要归一化?</h4><h5 id="数值问题"><a href="#数值问题" class="headerlink" title="数值问题"></a>数值问题</h5><ul>
+<li>归一化可以避免很多不必要的数值问题<ul>
+<li>我理解的一种情况: 输入太大时, 权重太小, 容易造成精度问题, 数值太小时同理</li>
+</ul>
+</li>
+<li>归一化可以避免梯度爆炸等问题<ul>
+<li>个人理解: 如果数值很大的话, 梯度一般也会对应很大, 连续乘以后就容易造成梯度爆炸, 数值太小, 同理, 容易造成梯度消失</li>
+</ul>
+</li>
+<li>加快学习<ul>
+<li>与LR一样, 使用梯度下降优化神经网络参数时, 如果数值差别太大, 可能造成优化时梯度优化走弯路(因为不同维度使用的是相同的学习率)</li>
+</ul>
+</li>
+<li>避免某些数值小的神经元输出被数值大的输出吞掉的情况<ul>
+<li>个人理解: 虽然说我们找到合适权重后,可以使得二者到下一个神经元的差值没那么大, 但是我的理解是初始化的时候不知道数值,所以权重是随机的,之后如果两个神经元数值差距太大的话,是否会大值吞小值很难说</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于LR为什么需要归一化"><a href="#关于LR为什么需要归一化" class="headerlink" title="关于LR为什么需要归一化?"></a>关于LR为什么需要归一化?</h4><p><em>不是必要的</em></p>
+<ul>
+<li>因为LR使用梯度下降法求解参数时, 特征之间差别太大容易影响收敛速度, 归一化可以提升LR的收敛速度, 同时不影响分类结果</li>
+</ul>
+<h4 id="关于SVM为什么需要归一化"><a href="#关于SVM为什么需要归一化" class="headerlink" title="关于SVM为什么需要归一化?"></a>关于SVM为什么需要归一化?</h4><p><em>是必要的</em></p>
+<ul>
+<li>因为SVM寻找的是所谓的<strong>间隔</strong>(margin), 就是两个支持向量的间隔</li>
+<li>如果<strong>不归一化</strong>的话, 这个间隔会因为不同特征的单位等, 数值被放大或者缩小, 从而造成<strong>无法评估间隔</strong>, 所以归一化对于SVM很重要</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Sklearn/Sklearn——总体介绍.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Sklearn/Sklearn——总体介绍.html" itemprop="url">Sklearn——总体介绍</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-12-13T00:00:00+08:00">
+                2017-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Sklearn 总体介绍</em></p>
+<hr>
+<h3 id="总结介绍图"><a href="#总结介绍图" class="headerlink" title="总结介绍图"></a>总结介绍图</h3><img src="/Notes/ML/Sklearn/Sklearn——总体介绍/sklearn-summary.png" title="sklearn-summary">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html" itemprop="url">ML——MLE和MAP的区别举例说明</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-10-18T00:00:00+08:00">
+                2017-10-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文用一个简单的例子在直观上说明极大似然估计与最大后验估计的区别</em></p>
+<hr>
+<h3 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h3><ul>
+<li><p>事件定义</p>
+<ul>
+<li>A = 好好学习 </li>
+<li>B = 作弊</li>
+<li>C = 班级第一</li>
+</ul>
+</li>
+<li><p>条件概率</p>
+<ul>
+<li>P(C|A) = 0.1</li>
+<li>P(C|B) = 0.5</li>
+</ul>
+</li>
+<li><p>已知某同学考了年级第一</p>
+<ul>
+<li>此时可得概率：<ul>
+<li>P(C) = 1</li>
+</ul>
+</li>
+<li>ML(极大似然估计，找一个使得结果发生可能性最大的条件<br>  <strong>计算条件概率P(结果|条件)</strong><ul>
+<li>参数为e</li>
+<li>P(C|e = A) = 0.1</li>
+<li>P(C|e = B) = 0.5</li>
+<li>该同学更可能是作弊了</li>
+</ul>
+</li>
+<li>若此时添加先验：<ul>
+<li>P(A) = 0.99</li>
+<li>P(B) = 0.01</li>
+</ul>
+</li>
+<li>MAP(计算后验概率,在结果发生时,最可能是什么产生的?<br>  <strong>计算后验概率:P(条件|结果)</strong>,令P(C)=1<ul>
+<li>P(A|C) = P(C|A)P(A)/P(C) = 0.1*0.99/1 = 0.099</li>
+<li>P(B|C) = P(C|B)P(B)/P(C) = 0.5*0.01/1 = 0.005</li>
+<li>此时可发现该同学更可能是好好学习了</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="深入分析：MLE与MAP的区别"><a href="#深入分析：MLE与MAP的区别" class="headerlink" title="深入分析：MLE与MAP的区别"></a>深入分析：MLE与MAP的区别</h3><ul>
+<li>MAP比MLE多考虑了一个先验概率，这个先验概率指明了条件概率的条件(例如 P(C|A)的先验是P(A))</li>
+<li>MAP的是比较后验概率，ML的是比较条件概率，但是两者本质上都是找一个使得结果发生的最可能的原因</li>
+<li>MLE可以认为是特殊的MAP<ul>
+<li>ML是先验概率为均匀分布时的MAP(上例中： 若P(A) = P(B), 则MLE等价于MAP)</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——参数估计MLE-MAP-BEP.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -628,177 +1376,6 @@
 </li>
 <li>最大后验概率估计可以退化成极大似然估计<ul>
 <li>极大似然估计相当于是参数\(\theta\)的先验分布\(P(\theta)\)为均为分布的最大后验概率估计</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html" itemprop="url">ML——MLE和MAP的区别举例说明</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-10-18T00:00:00+08:00">
-                2017-10-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文用一个简单的例子在直观上说明极大似然估计与最大后验估计的区别</em></p>
-<hr>
-<h3 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h3><ul>
-<li><p>事件定义</p>
-<ul>
-<li>A = 好好学习 </li>
-<li>B = 作弊</li>
-<li>C = 班级第一</li>
-</ul>
-</li>
-<li><p>条件概率</p>
-<ul>
-<li>P(C|A) = 0.1</li>
-<li>P(C|B) = 0.5</li>
-</ul>
-</li>
-<li><p>已知某同学考了年级第一</p>
-<ul>
-<li>此时可得概率：<ul>
-<li>P(C) = 1</li>
-</ul>
-</li>
-<li>ML(极大似然估计，找一个使得结果发生可能性最大的条件<br>  <strong>计算条件概率P(结果|条件)</strong><ul>
-<li>参数为e</li>
-<li>P(C|e = A) = 0.1</li>
-<li>P(C|e = B) = 0.5</li>
-<li>该同学更可能是作弊了</li>
-</ul>
-</li>
-<li>若此时添加先验：<ul>
-<li>P(A) = 0.99</li>
-<li>P(B) = 0.01</li>
-</ul>
-</li>
-<li>MAP(计算后验概率,在结果发生时,最可能是什么产生的?<br>  <strong>计算后验概率:P(条件|结果)</strong>,令P(C)=1<ul>
-<li>P(A|C) = P(C|A)P(A)/P(C) = 0.1*0.99/1 = 0.099</li>
-<li>P(B|C) = P(C|B)P(B)/P(C) = 0.5*0.01/1 = 0.005</li>
-<li>此时可发现该同学更可能是好好学习了</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="深入分析：MLE与MAP的区别"><a href="#深入分析：MLE与MAP的区别" class="headerlink" title="深入分析：MLE与MAP的区别"></a>深入分析：MLE与MAP的区别</h3><ul>
-<li>MAP比MLE多考虑了一个先验概率，这个先验概率指明了条件概率的条件(例如 P(C|A)的先验是P(A))</li>
-<li>MAP的是比较后验概率，ML的是比较条件概率，但是两者本质上都是找一个使得结果发生的最可能的原因</li>
-<li>MLE可以认为是特殊的MAP<ul>
-<li>ML是先验概率为均匀分布时的MAP(上例中： 若P(A) = P(B), 则MLE等价于MAP)</li>
 </ul>
 </li>
 </ul>
@@ -1687,615 +2264,11 @@ source deactivate python3
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/LaTex——笔记.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/LaTex——笔记.html" itemprop="url">LaTex——笔记</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-09T00:00:00+08:00">
-                2017-09-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>LaTex使用笔记</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="LaTex公式相关"><a href="#LaTex公式相关" class="headerlink" title="LaTex公式相关"></a>LaTex公式相关</h3><ul>
-<li><p>LaTex公式等号对齐</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">\begin&#123;\align&#125;</span><br><span class="line">L(x)&amp;=U(x) \\</span><br><span class="line">&amp;=N(x)\\</span><br><span class="line">&amp;=M(x)</span><br><span class="line">\end&#123;\align&#125;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>其中<code>\\</code>表示换行<code>&amp;</code>表示每一行的对齐点</li>
-<li>在Markdown文档中要注意<code>\\\\</code>才对应此处的<code>\\</code>,因为<code>\</code>在Markdown文档中是转义字符</li>
-</ul>
-</li>
-<li><p>LaTex特殊公式总结</p>
-</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">LaTex</th>
-<th style="text-align:center">符号</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">\partial</td>
-<td style="text-align:center">\(\partial\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\nabla</td>
-<td style="text-align:center">\(\nabla\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\infty</td>
-<td style="text-align:center">\(\infty\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\int</td>
-<td style="text-align:center">\(\int\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\iint</td>
-<td style="text-align:center">\(\iint\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\iiint</td>
-<td style="text-align:center">\(\iiint\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\oint</td>
-<td style="text-align:center">\(\oint\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\triangle</td>
-<td style="text-align:center">\(\triangle\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\bigtriangledown</td>
-<td style="text-align:center">\(\bigtriangledown\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\triangleleft</td>
-<td style="text-align:center">\(\triangleleft\)</td>
-</tr>
-<tr>
-<td style="text-align:center">\triangleright</td>
-<td style="text-align:center">\(\triangleright\)</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>公式空格</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">LaTex</th>
-<th style="text-align:center">空格效果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">a\qquad b</td>
-<td style="text-align:center">\(a\qquad b\)</td>
-</tr>
-<tr>
-<td style="text-align:center">a\quad b</td>
-<td style="text-align:center">\(a\quad b\)</td>
-</tr>
-<tr>
-<td style="text-align:center">a\ b</td>
-<td style="text-align:center">\(a\ b\)</td>
-</tr>
-<tr>
-<td style="text-align:center">a\; b</td>
-<td style="text-align:center">\(a\; b\)</td>
-</tr>
-<tr>
-<td style="text-align:center">a\, b</td>
-<td style="text-align:center">\(a\, b\)</td>
-</tr>
-<tr>
-<td style="text-align:center">ab</td>
-<td style="text-align:center">\(ab\)</td>
-</tr>
-<tr>
-<td style="text-align:center">a!b</td>
-<td style="text-align:center">\(a!b\)</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>公式后面你加上序号<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$$y(x) = x^&#123;2&#125; \tag&#123;1&#125;$$</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p>$$y(x) = x^{2} \tag{1}$$</p>
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——使用总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hexo/Hexo——使用总结.html" itemprop="url">Hexo——使用总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-09T00:00:00+08:00">
-                2017-09-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Hexo 使用总结</em></p>
-<hr>
-<h3 id="在博客中引用自己的博客"><a href="#在博客中引用自己的博客" class="headerlink" title="在博客中引用自己的博客"></a>在博客中引用自己的博客</h3><ul>
-<li><p>在 _config.yml 中设置属性</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">permalink: :title.html</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>引用方式</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 引用文档，以引用本文为例</span><br><span class="line"># 引用的应该是生成时使用的文件路径或者title,后面跟上.html,但是还要根据不同设置来修改,总之就是访问时的链接</span><br><span class="line">[引用示例](/Notes/Hexo/Hexo——使用总结.html &quot;/Notes/Hexo/Hexo——使用总结.html&quot;)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p><a href="/Notes/Hexo/Hexo——使用总结.html" title="/Notes/Hexo/Hexo——使用总结.html">引用示例</a></p>
-</blockquote>
-<hr>
-<h3 id="导入图片"><a href="#导入图片" class="headerlink" title="导入图片"></a>导入图片</h3><ul>
-<li>在同目录下新建与Markdown文档文件名相同的文件夹，将图片存入文件夹中</li>
-<li>在Markdown文档中使用特殊语法导入  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;% asset_img picture.png descreption %&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<img src="/Notes/Hexo/Hexo——使用总结/picture.png" title="descreption">
-</blockquote>
-<hr>
-<h3 id="插入LaTex公式"><a href="#插入LaTex公式" class="headerlink" title="插入LaTex公式"></a>插入LaTex公式</h3><h4 id="LaTex公式"><a href="#LaTex公式" class="headerlink" title="LaTex公式"></a>LaTex公式</h4><ul>
-<li><a href="https://www.codecogs.com/latex/eqneditor.php" title="https://www.codecogs.com/latex/eqneditor.php" target="_blank" rel="noopener">在线公式编辑地址</a></li>
-<li>LaTex公式用法参见<a href="/Notes/Others/LaTex——笔记.html">LaTex——笔记</a></li>
-</ul>
-<h4 id="借助工具插入公式"><a href="#借助工具插入公式" class="headerlink" title="借助工具插入公式"></a>借助工具插入公式</h4><h5 id="MathJax引擎-推荐"><a href="#MathJax引擎-推荐" class="headerlink" title="MathJax引擎(推荐)"></a>MathJax引擎(推荐)</h5><ul>
-<li>这种方式只需要在是实现时首先添加引擎代码,后面就可以完全像是Latex一样写公式</li>
-</ul>
-<h6 id="头部添加"><a href="#头部添加" class="headerlink" title="头部添加"></a>头部添加</h6><p><script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
-<ul>
-<li>添加头部如下<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script src=&quot;https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot; src=&quot;http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default&quot;&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-<pre><code>* 说明:
-    * 第一个头部可用,在各种浏览器均能正确加载
-    * 第二个涉及到https的安全性问题,在部署到GitHub时,某些浏览器上不能正确加载
-</code></pre><ul>
-<li>测试说明: <ul>
-<li>yilla主题下Chrome和Firefox浏览器中不添加上面的头部当前文档也能识别出公式, 其他浏览器未测试</li>
-<li>next主题下必须加上这个头部才行</li>
-</ul>
-</li>
-</ul>
-<h6 id="写公式"><a href="#写公式" class="headerlink" title="写公式"></a>写公式</h6><ul>
-<li>行内公式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">公式如下:\\(\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;\\)所示</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p>公式如下:\(\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}\)所示</p>
-</blockquote>
-<ul>
-<li>行间公式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">公式如下:$$\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;$$所示</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p>公式如下:$$\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}$$所示</p>
-<ul>
-<li>公式等号对齐<ul>
-<li>公式如下:</li>
-</ul>
-</li>
-</ul>
-</blockquote>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$$</span><br><span class="line">\begin&#123;align&#125;</span><br><span class="line">Q(\theta, \theta^&#123;i&#125;) &amp;= E_&#123;Z&#125;[logP(Y,Z|\theta)|Y,\theta^&#123;i&#125;] \\\\</span><br><span class="line">	&amp;= E_&#123;Z\sim P(Z|Y,\theta^&#123;i&#125;)&#125;[logP(Y,Z|\theta)] \\\\</span><br><span class="line">	&amp;= \sum_&#123;Z&#125; P(Z|Y,\theta^&#123;i&#125;)logP(Y,Z|\theta) \\\\</span><br><span class="line">	&amp;= \sum_&#123;Z&#125; logP(Y,Z|\theta)P(Z|Y,\theta^&#123;i&#125;)</span><br><span class="line">\end&#123;align&#125;</span><br><span class="line">$$</span><br></pre></td></tr></table></figure>
-</code></pre><blockquote>
-<p>$$<br>\begin{align}<br>Q(\theta, \theta^{i}) &amp;= E_{Z}[logP(Y,Z|\theta)|Y,\theta^{i}] \\<br>    &amp;= E_{Z\sim P(Z|Y,\theta^{i})}[logP(Y,Z|\theta)] \\<br>    &amp;= \sum_{Z} P(Z|Y,\theta^{i})logP(Y,Z|\theta) \\<br>    &amp;= \sum_{Z} logP(Y,Z|\theta)P(Z|Y,\theta^{i})<br>\end{align}<br>$$</p>
-</blockquote>
-<h5 id="Google-Chart服务器"><a href="#Google-Chart服务器" class="headerlink" title="Google Chart服务器"></a>Google Chart服务器</h5><ul>
-<li>引用方式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># &lt;img src=&quot;http://chart.googleapis.com/chart?cht=tx&amp;chl=Latex公式&quot; style=&quot;border:none;&quot;&gt;</span><br><span class="line">&lt;img src=&quot;http://chart.googleapis.com/chart?cht=tx&amp;chl=\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;&quot; style=&quot;border:none;&quot;&gt;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p><img src="http://chart.googleapis.com/chart?cht=tx&chl=\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" style="border:none;"></p>
-</blockquote>
-<h5 id="forkosh服务器"><a href="#forkosh服务器" class="headerlink" title="forkosh服务器"></a>forkosh服务器</h5><ul>
-<li>引用方式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=&quot;http://www.forkosh.com/mathtex.cgi? Latex公式&quot;&gt;</span><br><span class="line">&lt;img src=&quot;http://www.forkosh.com/mathtex.cgi?\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;&quot;&gt;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<blockquote>
-<p><img src="http://www.forkosh.com/mathtex.cgi? \Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}"></p>
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Anaconda/Anaconda——安装和常用命令.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Anaconda/Anaconda——安装和常用命令.html" itemprop="url">Anaconda——安装和常用命令</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-01T00:00:00+08:00">
-                2017-09-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Anaconda安装和使用</em></p>
-<hr>
-<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><ul>
-<li><a href="https://www.anaconda.com/" target="_blank" rel="noopener">Anaconda官网</a>下载安装即可</li>
-</ul>
-<hr>
-<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><h4 id="管理conda版本"><a href="#管理conda版本" class="headerlink" title="管理conda版本"></a>管理conda版本</h4><ul>
-<li><p>检查conda版本</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda --version</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>升级版本</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda update conda</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理环境"><a href="#管理环境" class="headerlink" title="管理环境"></a>管理环境</h4><ul>
-<li><p>创建环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">conda create --name your_env_name python=3.6</span><br><span class="line"># &lt;==&gt;</span><br><span class="line">conda create -n your_env_name python=3.6</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>激活环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source activate your_env_name # On Windows, remove the word &apos;source&apos;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>列出所有环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">conda info --envs </span><br><span class="line"># or </span><br><span class="line">conda info -e</span><br><span class="line"># or </span><br><span class="line">conda env list</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>退出当前环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source deactivate # On Windows, remove the word &apos;source&apos;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>复制一个环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create -n new_env_name --clone old_env_name</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>删除环境</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda remove -n your_env_name</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理包"><a href="#管理包" class="headerlink" title="管理包"></a>管理包</h4><ul>
-<li><p>查看已经安装的包</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda list</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>向指定环境中安装包</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda install --name your_env_name package</span><br></pre></td></tr></table></figure>
-<ul>
-<li>如果没有<code>--name</code>参数，package默认安装到当前环境中</li>
-<li>tips： 一般来说当需要在同一个环境下面安装的包比较多时，我们会先激活想要操作的环境，然后直接不使用    <code>--name</code>参数安装</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/17/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><span class="page-number current">18</span><a class="page-number" href="/page/19/">19</a><a class="extend next" rel="next" href="/page/19/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/17/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><span class="page-number current">18</span><a class="page-number" href="/page/19/">19</a><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/19/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2345,7 +2318,7 @@ source deactivate python3
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">190</span>
+                  <span class="site-state-item-count">195</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
