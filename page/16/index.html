@@ -704,207 +704,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
-<hr>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
-<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
-</li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
-<ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
-</ul>
-</li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
-</ul>
-</li>
-</ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
-<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
-<li>和LR对比: 线性模型</li>
-<li>和GBDT对比: </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
-<li>通过不同层级和类型的网络可以对时空信息建模</li>
-<li>适合图像, 声音, 文字等带有时序特质的数据</li>
-</ul>
-<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
-<li>基于树模型的GBDT则能很好地处理表格数据</li>
-<li>模型的可解释性</li>
-<li>输入数据的不变性(几乎不用格式化数据)</li>
-<li>更易于调参等特质更适合数值型数据</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1141,6 +940,207 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
+<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
+<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+<hr>
+<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
+<li>各种简称,都是同一种算法:<ul>
+<li>GBDT(Gradient Boosting Decision Tree)</li>
+<li>MART(Multiple Additive Regression Tree)</li>
+<li>GBT(Gradient Boosting Tree)</li>
+<li>GTB(Gradient Tree Boosting)</li>
+<li>GBRT(Gradient Boosting Regression Tree)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
+<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
+<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
+<li>残差 = 真实值 - 预测值</li>
+</ul>
+<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
+<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
+<ul>
+<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
+</ul>
+</li>
+<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
+<ul>
+<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
+<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
+</ul>
+</li>
+<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
+<ul>
+<li>因为我们的目标是拟合上一若学习器的残差</li>
+<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
+</ul>
+</li>
+</ul>
+<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
+<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
+<li>此时类别可编码为一个一维向量,取值0或1</li>
+</ul>
+<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
+<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
+<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
+<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
+<li>然后每个模型每轮分别学习当前特征的残差</li>
+<li>每个模型都会用到所有的样本<ul>
+<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
+<li>编码为(x, [0,1,0])</li>
+<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
+<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
+</ul>
+</li>
+<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
+<li>最后预测时<ul>
+<li>给定一个未标记样本</li>
+<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
+<li>最后选择分数最高的一个类为最终分类即可</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
+<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
+<li>和LR对比: 线性模型</li>
+<li>和GBDT对比: </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
+<li>通过不同层级和类型的网络可以对时空信息建模</li>
+<li>适合图像, 声音, 文字等带有时序特质的数据</li>
+</ul>
+<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
+<li>基于树模型的GBDT则能很好地处理表格数据</li>
+<li>模型的可解释性</li>
+<li>输入数据的不变性(几乎不用格式化数据)</li>
+<li>更易于调参等特质更适合数值型数据</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——RF-随机森林.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1282,6 +1282,172 @@
 <li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
 </ul>
 </li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
+<hr>
+<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
+<ul>
+<li>m个基础模型</li>
+<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
+
+</li>
+</ul>
+<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
+<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
+<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
+</ul>
+<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
+<ul>
+<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
+<li>训练过程为阶梯状</li>
+<li>基础模型按照次序依次训练(实现时可做到并行)</li>
+<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
+
+</li>
+</ul>
+<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
+<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
+</ul>
+<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
+<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
+<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
+</ul>
+<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
+<ul>
+<li>训练所有基础模型</li>
+<li>获取所有基础模型的预测结果</li>
+<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
+<li>基于新的训练集进行训练,得到预测模型M()</li>
+<li>测试时也要将特征转换后再用M进行预测</li>
+<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
+<li>理论上可以堆叠各种各样的分类器
+
+</li>
+</ul>
+<hr>
+<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
+<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
 </ul>
 
           
@@ -2255,6 +2421,8 @@
           
             <p><em>本文主要介绍Attention的原理和变种</em></p>
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script> -->
+
 <ul>
 <li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
 <li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
@@ -2412,187 +2580,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
-</ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
-</ul>
-</li>
-</ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
-
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
-
-</li>
-</ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
-</li>
-</ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
-<ul>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
-<ul>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
-</ul>
-</li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/15/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><span class="page-number current">16</span><a class="page-number" href="/page/17/">17</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/17/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/15/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><span class="page-number current">16</span><a class="page-number" href="/page/17/">17</a><span class="space">&hellip;</span><a class="page-number" href="/page/21/">21</a><a class="extend next" rel="next" href="/page/17/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2640,7 +2632,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">200</span>
+                  <span class="site-state-item-count">201</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2653,7 +2645,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">40</span>
+                  <span class="site-state-item-count">41</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
