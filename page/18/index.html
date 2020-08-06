@@ -518,6 +518,192 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
+<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
+<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
+</ul>
+<hr>
+<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
+<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
+<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
+<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
+<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
+<li><p>结构图如下所示</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
+<li><p>上面图的代码构建如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>从图中的推导可知,梯度符合预期</li>
+<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
+<li><p>修改上面的构建为</p>
+<ul>
+<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
+</ul>
+</li>
+<li><p>结构图如下:</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
+<li><p>代码如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>显然推导结果符合代码输出预期</li>
+<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
+<li><p>还以上面的结构图为例</p>
+</li>
+<li><p>直接求中间节点 \(z\) 关于自变量的梯度</p>
+</li>
+<li><p>代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
+<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
+</ul>
+<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——各种常用函数总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1623,18 +1809,18 @@
 <h4 id="极大似然估计与最大后验概率估计"><a href="#极大似然估计与最大后验概率估计" class="headerlink" title="极大似然估计与最大后验概率估计"></a>极大似然估计与最大后验概率估计</h4><ul>
 <li>比较MLE与MAP直观理解见我的另一篇博客：<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94MLE%E5%92%8CMAP%E7%9A%84%E5%8C%BA%E5%88%AB%E4%B8%BE%E4%BE%8B%E8%AF%B4%E6%98%8E.html" title="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">MLE-vs-MAP——一个简单的例子说明二者的区别</a></li>
 <li>都只关注参数的具体某个最优值</li>
-<li>极大似然估计相当于是参数\(\theta\)的先验分布\(P(\theta)\)为均为分布的最大后验概率估计</li>
+<li>极大似然估计相当于是参数\(\theta\)的先验分布\(P(\theta)\)为均匀分布的最大后验概率估计</li>
 </ul>
 <h4 id="最大后验概率估计与贝叶斯估计"><a href="#最大后验概率估计与贝叶斯估计" class="headerlink" title="最大后验概率估计与贝叶斯估计"></a>最大后验概率估计与贝叶斯估计</h4><ul>
 <li>相似点：<ul>
 <li>都考虑了参数的先验分布(贝叶斯学派)</li>
-<li>最大后验概率估计是贝叶斯估计的一种简化实现(不用求复杂的分母积分)</li>
+<li>最大后验概率估计是贝叶斯估计的一种简化实现(认为\(\theta\)都是出现在最可能出现的地方，牺牲一点精度，不用求复杂的分母积分)</li>
 <li>二者都围绕下面的公式进行估计<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$</li>
 </ul>
 </li>
 <li>区别：<ul>
-<li><strong>贝叶斯估计</strong>:不能忽略归一化因子\(P(X)\),此时\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\),贝叶斯估计要计算后验分布,所以需要计算归一化因子</li>
-<li><strong>最大后验概率估计</strong>:把分母\(P(X)\)给忽略了,直接对分子极大化求得最优的参数\(\theta^{\star}\),对不同参数值,分母积分结果是相同的,所以\(P(X)\)的值不影响最优参数值的选取,不用计算归一化因子(很复杂,需要积分),速度会快很多</li>
+<li><strong>贝叶斯估计</strong>:求得的结果估计参数\(\theta\)服从一个分布，不能忽略归一化因子\(P(X)\),此时\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\),贝叶斯估计要计算后验分布,所以需要计算归一化因子，虽然对不同参数值,分母积分结果是相同的，但是计算分布时需要这个归一化因子，否则后续得到的不是分布，也无法求取参数的期望等</li>
+<li><strong>最大后验概率估计</strong>:求得的结果估计参数\(\theta\)是一个具体的值，把分母\(P(X)\)给忽略了,直接对分子极大化求得最优的参数\(\theta^{\star}\),由于跟贝叶斯估计一样，对不同参数值,分母积分结果是相同的,所以\(P(X)\)的值不影响最优参数值的选取【不求参数\(\theta\)的分布，所以不用求分母，分母是不影响求参数最优值的】,不用计算归一化因子(很复杂,需要积分),速度会快很多</li>
 </ul>
 </li>
 <li>最大后验概率估计相当于是参数后验分布\(P(\theta|X)\)被最可能的参数值\(\theta^{\star}=\arg\max_{\theta}P(\theta|X)\)替代的贝叶斯估计</li>
@@ -1692,7 +1878,7 @@
 </ul>
 <h4 id="极大似然估计-MLE"><a href="#极大似然估计-MLE" class="headerlink" title="极大似然估计(MLE)"></a>极大似然估计(MLE)</h4><ul>
 <li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
-<li>\(P(\theta)\)为的取值与参数\(\theta\)无关<ul>
+<li>\(P(\theta)\)的取值与参数\(\theta\)无关【认为每个参数\(\theta\)出现的概率相等】<ul>
 <li>\(P(\theta)\)与参数\(\theta\)无关可以理解为参数\(\theta\)服从<strong>均匀分布</strong>: 假设参数\(\theta\)有k个离散取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(P(\theta_{1})=P(\theta_{2})=…=P(\theta_{k})=\frac{1}{k}\)</li>
 </ul>
 </li>
@@ -1711,8 +1897,8 @@
 </ul>
 <h4 id="最大后验概率估计-MAP"><a href="#最大后验概率估计-MAP" class="headerlink" title="最大后验概率估计(MAP)"></a>最大后验概率估计(MAP)</h4><ul>
 <li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
-<li>\(P(\theta)\)为的取值与参数\(\theta\)相关,是关于\(\theta\)的一个先验概率<ul>
-<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不确定,除了\(\sum_{i=1}^{k}P(\theta_{i})=1\)</li>
+<li>\(P(\theta)\)为的取值与参数\(\theta\)相关,是关于\(\theta\)的一个先验概率【不同的参数\(\theta\)出现的概率可能不同】<ul>
+<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(\sum_{i=1}^{k}P(\theta_{i})=1\)，但\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不能确定，也不一定相等</li>
 </ul>
 </li>
 <li>\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)积分结果与\(\theta\)不相关,分母的值不影响后验概率最大值的参数值,直接忽略(设置为\(P(X)=1\))即可</li>
@@ -1721,14 +1907,14 @@
 </li>
 <li>结论<ul>
 <li>最大后验概率估计: \(\theta^{\star}=\arg\max_{\theta}P(X|\theta)P(\theta)\)</li>
-<li>文字解释: 最大后验概率估计的目标是找一个参数\(\theta\),使得在参数\(\theta\)在已知先验分布\(P(\theta)\)和数据集\(X\)的情况下,对应的后验概率\(P(\theta|X)\)最大(等价于\(P(X,\theta)=P(X|\theta)P(\theta)\)最大)</li>
+<li>文字解释: 最大后验概率估计的目标是找一个参数\(\theta\),使得在参数\(\theta\)服从已知先验分布\(P(\theta)\)和数据集\(X\)的情况下,对应的后验概率\(P(\theta|X)\)最大(等价于\(P(X,\theta)=P(X|\theta)P(\theta)\)最大)</li>
 </ul>
 </li>
 </ul>
 <h4 id="贝叶斯估计-BPE"><a href="#贝叶斯估计-BPE" class="headerlink" title="贝叶斯估计(BPE)"></a>贝叶斯估计(BPE)</h4><ul>
 <li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
 <li>\(P(\theta)\)为的取值与参数\(\theta\)相关,是关于\(\theta\)的一个先验概率<ul>
-<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不确定,除了\(\sum_{i=1}^{k}P(\theta_{i})=1\)</li>
+<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(\sum_{i=1}^{k}P(\theta_{i})=1\)，但\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不确定，也不一定相等</li>
 </ul>
 </li>
 <li>\(P(X)\)的取值与\(\theta\)本身不相关,但是为了求出后验分布\(P(\theta|X)\),\(P(X)\)作为归一化因子需要计算<ul>
@@ -1846,7 +2032,7 @@
 </li>
 <li>必须计算的情况<ul>
 <li>判断数据集\(D\)由两个模型\(M_{1},M_{2}\)生成的概率谁大,必须计算\(P(X)\)<ul>
-<li>因为对于不同模型\(M_{1},M_{2}\),\(P(X)\)相同不同,此时仅仅比较\(P(D_{1},X)\)和\(P(D_{2},X)\)谁大不能确定\(P(D_{1}|X)\)和\(P(D_{2}|X)\)谁大</li>
+<li>因为对于不同模型\(M_{1},M_{2}\),\(P(X)\)不相同【每个模型生成\(X\)的概率不同】,此时仅仅比较\(P(D_{1},X)\)和\(P(D_{2},X)\)谁大不能确定\(P(D_{1}|X)\)和\(P(D_{2}|X)\)谁大</li>
 </ul>
 </li>
 <li>利用模型M采样生成新数据(预测问题),必须计算\(P(X)\)<ul>
@@ -2088,164 +2274,6 @@ source deactivate python3</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Mac/Mac——HomeBrew简介.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Mac/Mac——HomeBrew简介.html" itemprop="url">Mac——HomeBrew简介</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
-                2017-09-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="HomeBrew是什么？"><a href="#HomeBrew是什么？" class="headerlink" title="HomeBrew是什么？"></a>HomeBrew是什么？</h3><ul>
-<li>HomeBrew是一个Mac OS上的软件包管理器，命令是brew，类似于Ubuntu上的DPKG(apt-get)或者Centos上的RPM(yum)等</li>
-</ul>
-<hr>
-<h3 id="HomeBrew的安装"><a href="#HomeBrew的安装" class="headerlink" title="HomeBrew的安装"></a>HomeBrew的安装</h3><ul>
-<li><p>安装命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/bin/ruby -e&quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看安装结果</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew -v</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="HomeBrew管理软件包"><a href="#HomeBrew管理软件包" class="headerlink" title="HomeBrew管理软件包"></a>HomeBrew管理软件包</h3><ul>
-<li><em>HomeBrew的安装的软件包默认在<code>/usr/local/Cellar</code>下</em></li>
-<li><em>HomeBrew用<code>@</code>指明版本号</em></li>
-</ul>
-<h4 id="搜索云端软件"><a href="#搜索云端软件" class="headerlink" title="搜索云端软件"></a>搜索云端软件</h4><p><em>返回结果中可以看到版本号，后续安装可指定版本号安装</em></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew search key_str</span><br></pre></td></tr></table></figure>
-
-<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install pkg_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew remove pkg_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew upgrade pkg_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="列出所有已安装软件"><a href="#列出所有已安装软件" class="headerlink" title="列出所有已安装软件"></a>列出所有已安装软件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew list</span><br></pre></td></tr></table></figure>
-
-<h4 id="查看某个云端软件包信息"><a href="#查看某个云端软件包信息" class="headerlink" title="查看某个云端软件包信息"></a>查看某个云端软件包信息</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew info pkg_name</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="HomeBrew管理服务"><a href="#HomeBrew管理服务" class="headerlink" title="HomeBrew管理服务"></a>HomeBrew管理服务</h3><h4 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew services start service_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="停止服务"><a href="#停止服务" class="headerlink" title="停止服务"></a>停止服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew services stop service_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="重启服务"><a href="#重启服务" class="headerlink" title="重启服务"></a>重启服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew services restart service_name</span><br></pre></td></tr></table></figure>
-
-<h4 id="列出所有HomeBrew管理的服务"><a href="#列出所有HomeBrew管理的服务" class="headerlink" title="列出所有HomeBrew管理的服务"></a>列出所有HomeBrew管理的服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew services list</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2298,7 +2326,7 @@ source deactivate python3</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">201</span>
+                  <span class="site-state-item-count">202</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
