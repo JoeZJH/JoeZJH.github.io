@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——深度学习中降低过拟合的方法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——深度学习中降低过拟合的方法.html" itemprop="url">DL——深度学习中降低过拟合的方法</a></h1>
         
 
         <div class="post-meta">
@@ -346,62 +346,84 @@
       
         
           
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <h4 id="添加Dropout"><a href="#添加Dropout" class="headerlink" title="添加Dropout"></a>添加Dropout</h4><ul>
+<li>详情可参考: <a href="/DL/DL%E2%80%94%E2%80%94%E4%B8%BA%E4%BB%80%E4%B9%88Dropout%E8%83%BD%E9%98%B2%E6%AD%A2%E8%BF%87%E6%8B%9F%E5%90%88.html">DL——为什么Dropout能防止过拟合</a></li>
+</ul>
+<h4 id="参数范书惩罚"><a href="#参数范书惩罚" class="headerlink" title="参数范书惩罚"></a>参数范书惩罚</h4><p><em>相关参数: Weight decay(权重衰减)</em><br><em>添加L2或L1正则化, 详情可参考: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差</a></em></p>
 <ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
-</ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+<li><p>L1正则化: </p>
+<ul>
+<li>L1又称为: <strong>Lasso Regularization(稀疏规则算子)</strong></li>
+<li>计算公式为: <strong>参数绝对值求和</strong> </li>
+<li>意义: 趋向于让一些参数为0, 可以起到特征选择的作用</li>
 </ul>
 </li>
+<li><p>L2正则化:</p>
+<ul>
+<li>L2又称为: <strong>Ridge Regression(岭回归)</strong></li>
+<li>Weight decay 是放在正则项(Regularization)前面的一个系数,正则项一般指模型的复杂度</li>
+<li>Weight decay 控制模型复杂度对损失函数的影响, 若Weight Decay很大,则模型的损失函数值也就大</li>
+<li>pytorch中实现了L2正则化，也叫做权重衰减，具体实现是在优化器中，参数是 <code>weight_decay</code>, 默认为0</li>
 </ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
+</li>
+<li><p>PyTorch中的<code>weight_decay</code>参数说明</p>
+</li>
 </ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+<blockquote>
+<p>weight_decay (float, optional): weight decay (L2 penalty) (default: 0)</p>
+</blockquote>
+<ul>
+<li><p>我之前的实现代码:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># zero the parameter gradients</span><br><span class="line">optimizer.zero_grad()</span><br><span class="line"># forward</span><br><span class="line">outputs = model(inputs)</span><br><span class="line"># _, preds = torch.max(outputs.data, 1)</span><br><span class="line">loss = loss_criterion(outputs, labels)</span><br><span class="line"></span><br><span class="line"># L1 regularization</span><br><span class="line">l1_loss = 0</span><br><span class="line">for w in model.parameters():</span><br><span class="line">    l1_loss += torch.sum(torch.abs(w))</span><br><span class="line">loss += l1_rate * l1_loss</span><br><span class="line"></span><br><span class="line"># backward + optimize only if in training phase</span><br><span class="line">if phase == &apos;train&apos;:</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br></pre></td></tr></table></figure>
 
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
-
-</li>
-</ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
-</li>
-</ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
 <ul>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
-<ul>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
+<li>其中 <code># L1 regularization</code>后面是添加的L1 正则化</li>
 </ul>
 </li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
+<li><p>就整体而言，对比加入正则化和未加入正则化的模型，训练输出的loss和Accuracy信息，我们可以发现，加入正则化后，loss下降的速度会变慢，准确率Accuracy的上升速度会变慢，并且未加入正则化模型的loss和Accuracy的浮动比较大（或者方差比较大），而加入正则化的模型训练loss和Accuracy，表现的比较平滑。并且随着正则化的权重lambda越大，表现的更加平滑。这其实就是正则化的对模型的惩罚作用，通过正则化可以使得模型表现的更加平滑，即通过正则化可以有效解决模型过拟合的问题。</p>
+</li>
+</ul>
+<h4 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h4><ul>
+<li>提高模型的泛化能力最好的办法是, <strong>使用更多的训练数据进行训练</strong></li>
+<li>创造一些假数据添加到训练集中</li>
+<li>实例: <ul>
+<li>AlexNet中使用对图片旋转等方式生成新的图片作为样本加入训练, 误差能降低1%</li>
+</ul>
+</li>
+</ul>
+<h4 id="提前终止训练"><a href="#提前终止训练" class="headerlink" title="提前终止训练"></a>提前终止训练</h4><ul>
+<li>当发现数据在验证集上的损失趋于收敛甚至开始增加时,停止训练</li>
+<li>即使模型在验证集上的损失还在减小</li>
+</ul>
+<h4 id="参数绑定与参数共享"><a href="#参数绑定与参数共享" class="headerlink" title="参数绑定与参数共享"></a>参数绑定与参数共享</h4><p><em>Soft Weight Sharing</em></p>
+<ul>
+<li>类似于CNN中卷积层的权重共享方法</li>
+<li>RNN中也有权重共享, 整条时间链上的参数共享</li>
+</ul>
+<h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><ul>
+<li>其实bagging的方法是可以起到正则化的作用,因为正则化就是要减少泛化误差,而bagging的方法可以组合多个模型起到减少泛化误差的作用</li>
+<li>在深度学习中同样可以使用此方法,但是其会增加计算和存储的成本<ul>
+<li>这一点在Kaggle比赛中有用过,的确有很大提高</li>
+</ul>
+</li>
+</ul>
+<h4 id="Batch-Normalization"><a href="#Batch-Normalization" class="headerlink" title="Batch Normalization"></a>Batch Normalization</h4><ul>
+<li>在Google Inception V2中所采用,是一种非常有用的正则化方法,可以让大型的卷积网络训练速度加快很多倍,同事收敛后分类的准确率也可以大幅度的提高.</li>
+<li>N在训练某层时,会对每一个mini-batch数据进行标准化(normalization)处理,使输出规范到N(0,1)的正太分布,减少了Internal convariate shift(内部神经元分布的改变),传统的深度神经网络在训练是,每一层的输入的分布都在改变,因此训练困难,只能选择用一个很小的学习速率,但是每一层用了BN后,可以有效的解决这个问题,学习速率可以增大很多倍</li>
+<li>更多信息参考: <a href="/Notes/DL/DL%E2%80%94%E2%80%94BN-LN-IN-GN-LRN-WN.html">DL——BN-LN-IN-GN-LRN-WN</a></li>
+</ul>
+<h4 id="辅助分类节点"><a href="#辅助分类节点" class="headerlink" title="辅助分类节点"></a>辅助分类节点</h4><p><em>(auxiliary classifiers)</em></p>
+<ul>
+<li>在Google Inception V1中,采用了辅助分类节点的策略,即将<strong>中间某一层的输出用作分类,并按一个较小的权重加到最终的分类结果中</strong>,这样相当于做了模型的融合,同时给网络增加了反向传播的梯度信号,提供了额外的正则化的思想.</li>
+</ul>
+<h4 id="尝试不同神经网络架构"><a href="#尝试不同神经网络架构" class="headerlink" title="尝试不同神经网络架构"></a>尝试不同神经网络架构</h4><ul>
+<li>尝试替换以下方面:<ul>
+<li>激活函数</li>
+<li>层数</li>
+<li>权重?</li>
+<li>层的参数?</li>
+</ul>
+</li>
 </ul>
 
           
@@ -451,7 +473,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——各种常用函数总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -470,7 +492,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——各种常用函数总结.html" itemprop="url">PyTorch——各种常用函数总结</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——迁移学习.html" itemprop="url">DL——迁移学习</a></h1>
         
 
         <div class="post-meta">
@@ -522,43 +544,10 @@
       
         
           
-            <p><em>PyTorch封装了很多有用的函数,本文主要介绍介绍其中常用的函数</em></p>
-<hr>
-<h3 id="torch-max"><a href="#torch-max" class="headerlink" title="torch.max"></a>torch.max</h3><p><em><code>torch.min</code>与<code>torch.max</code>完全类似</em></p>
-<h4 id="单参数"><a href="#单参数" class="headerlink" title="单参数"></a>单参数</h4><ul>
-<li><p>用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input) -&gt; Tensor</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
-<li>return: 返回<code>input</code>变量中的最大值</li>
+            <ul>
+<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a><br>[待更新]</li>
 </ul>
-</li>
-</ul>
-<h4 id="多参数"><a href="#多参数" class="headerlink" title="多参数"></a>多参数</h4><ul>
-<li><p>用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input, dim, keepdim=False, out=None) -&gt; tuple[Tensor, Tensor]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
-<li><code>dim</code>: 指明维度<ul>
-<li><code>dim=0</code>: 生成的结果是第一维的数据为1, 对每个元素, 当前数据是遍历第一维的数据后的最大值<ul>
-<li>如果数据为2维, 则搜索每一列中最大的那个元素, 且返回最大元素的行索引(实际上相当于对每个列我们要求出来一个数,这个数是遍历第一维(行)得到的), 每列返回一个行索引(该索引就是当前列中数字最大的行)</li>
-<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(1,3)</code></li>
-</ul>
-</li>
-<li><code>dim=1</code>: <ul>
-<li>如果数据为2维, 则搜索每一行中最大的那个元素, 且返回最大元素的列索引(实际上相当于对每个行我们要求出来一个数,这个数是遍历第2维(列)得到的), 每列返回一个列索引(该索引就是当前行中数字最大的列)</li>
-<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(2,1)</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><code>keepdim</code>: 指明是否</li>
-</ul>
-</li>
-</ul>
-
+<h3 id="迁移学习的描述"><a href="#迁移学习的描述" class="headerlink" title="迁移学习的描述"></a>迁移学习的描述</h3>
           
         
       
@@ -792,7 +781,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——各种常用函数总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -811,7 +800,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——各种常用函数总结.html" itemprop="url">PyTorch——各种常用函数总结</a></h1>
         
 
         <div class="post-meta">
@@ -863,76 +852,39 @@
       
         
           
-            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
+            <p><em>PyTorch封装了很多有用的函数,本文主要介绍介绍其中常用的函数</em></p>
 <hr>
-<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
-<li><p>ImageFolder</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>COCO</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>MNIST</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>LSUN</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>CIFAR10</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
-<li><p><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</p>
-</li>
-<li><p>构造函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
+<h3 id="torch-max"><a href="#torch-max" class="headerlink" title="torch.max"></a>torch.max</h3><p><em><code>torch.min</code>与<code>torch.max</code>完全类似</em></p>
+<h4 id="单参数"><a href="#单参数" class="headerlink" title="单参数"></a>单参数</h4><ul>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input) -&gt; Tensor</span><br></pre></td></tr></table></figure>
 
 <ul>
-<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
-<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
-<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
+<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
+<li>return: 返回<code>input</code>变量中的最大值</li>
 </ul>
 </li>
-<li>target_transform：对label的转换, 默认会自动编码<ul>
-<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
-<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
-<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
-<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
 </ul>
-</li>
-<li>loader：从硬盘读取图片的函数<ul>
-<li>不同的图像读取应该用不同的loader</li>
-<li>默认读取为RGB格式的PIL Image对象</li>
-<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
+<h4 id="多参数"><a href="#多参数" class="headerlink" title="多参数"></a>多参数</h4><ul>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input, dim, keepdim=False, out=None) -&gt; tuple[Tensor, Tensor]</span><br></pre></td></tr></table></figure>
 
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
-<li><p>包导入</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
 <ul>
-<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
-<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
-<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
+<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
+<li><code>dim</code>: 指明维度<ul>
+<li><code>dim=0</code>: 生成的结果是第一维的数据为1, 对每个元素, 当前数据是遍历第一维的数据后的最大值<ul>
+<li>如果数据为2维, 则搜索每一列中最大的那个元素, 且返回最大元素的行索引(实际上相当于对每个列我们要求出来一个数,这个数是遍历第一维(行)得到的), 每列返回一个行索引(该索引就是当前列中数字最大的行)</li>
+<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(1,3)</code></li>
 </ul>
 </li>
-<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
+<li><code>dim=1</code>: <ul>
+<li>如果数据为2维, 则搜索每一行中最大的那个元素, 且返回最大元素的列索引(实际上相当于对每个行我们要求出来一个数,这个数是遍历第2维(列)得到的), 每列返回一个列索引(该索引就是当前行中数字最大的列)</li>
+<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(2,1)</code></li>
+</ul>
 </li>
-<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
-<ul>
-<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
-
+</ul>
 </li>
+<li><code>keepdim</code>: 指明是否</li>
 </ul>
 </li>
 </ul>
@@ -1178,6 +1130,198 @@
 </ul>
 </li>
 <li></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
+<hr>
+<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
+<li><p>ImageFolder</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>COCO</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>MNIST</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>LSUN</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CIFAR10</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
+<li><p><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</p>
+</li>
+<li><p>构造函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
+<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
+<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
+</ul>
+</li>
+<li>target_transform：对label的转换, 默认会自动编码<ul>
+<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
+<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
+<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
+<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
+</ul>
+</li>
+<li>loader：从硬盘读取图片的函数<ul>
+<li>不同的图像读取应该用不同的loader</li>
+<li>默认读取为RGB格式的PIL Image对象</li>
+<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
+<li><p>包导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
+<ul>
+<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
+<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
+<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
+</ul>
+</li>
+<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
+<ul>
+<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
 </ul>
 
           
@@ -1722,177 +1866,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html" itemprop="url">ML——MLE和MAP的区别举例说明</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-10-18T00:00:00+08:00">
-                2017-10-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文用一个简单的例子在直观上说明极大似然估计与最大后验估计的区别</em></p>
-<hr>
-<h3 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h3><ul>
-<li><p>事件定义</p>
-<ul>
-<li>A = 好好学习 </li>
-<li>B = 作弊</li>
-<li>C = 班级第一</li>
-</ul>
-</li>
-<li><p>条件概率</p>
-<ul>
-<li>P(C|A) = 0.1</li>
-<li>P(C|B) = 0.5</li>
-</ul>
-</li>
-<li><p>已知某同学考了年级第一</p>
-<ul>
-<li>此时可得概率：<ul>
-<li>P(C) = 1</li>
-</ul>
-</li>
-<li>ML(极大似然估计，找一个使得结果发生可能性最大的条件<br>  <strong>计算条件概率P(结果|条件)</strong><ul>
-<li>参数为e</li>
-<li>P(C|e = A) = 0.1</li>
-<li>P(C|e = B) = 0.5</li>
-<li>该同学更可能是作弊了</li>
-</ul>
-</li>
-<li>若此时添加先验：<ul>
-<li>P(A) = 0.99</li>
-<li>P(B) = 0.01</li>
-</ul>
-</li>
-<li>MAP(计算后验概率,在结果发生时,最可能是什么产生的?<br>  <strong>计算后验概率:P(条件|结果)</strong>,令P(C)=1<ul>
-<li>P(A|C) = P(C|A)P(A)/P(C) = 0.1*0.99/1 = 0.099</li>
-<li>P(B|C) = P(C|B)P(B)/P(C) = 0.5*0.01/1 = 0.005</li>
-<li>此时可发现该同学更可能是好好学习了</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="深入分析：MLE与MAP的区别"><a href="#深入分析：MLE与MAP的区别" class="headerlink" title="深入分析：MLE与MAP的区别"></a>深入分析：MLE与MAP的区别</h3><ul>
-<li>MAP比MLE多考虑了一个先验概率，这个先验概率指明了条件概率的条件(例如 P(C|A)的先验是P(A))</li>
-<li>MAP的是比较后验概率，ML的是比较条件概率，但是两者本质上都是找一个使得结果发生的最可能的原因</li>
-<li>MLE可以认为是特殊的MAP<ul>
-<li>ML是先验概率为均匀分布时的MAP(上例中： 若P(A) = P(B), 则MLE等价于MAP)</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——参数估计MLE-MAP-BEP.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2338,7 +2311,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">203</span>
+                  <span class="site-state-item-count">204</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

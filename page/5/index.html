@@ -275,6 +275,277 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Transformer.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——Transformer.html" itemprop="url">DL——Transformer</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-04T00:00:00+08:00">
+                2019-01-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="相关论文介绍"><a href="#相关论文介绍" class="headerlink" title="相关论文介绍"></a>相关论文介绍</h3><ul>
+<li>Transformer原始文章: <ul>
+<li><a href="https://arxiv.org/pdf/1706.03762.pdf" target="_blank" rel="noopener">Google Brain, NIPS 2017: Attention Is All You Need</a></li>
+<li>文章中介绍了一种应用Attention机制的新型特征提取器,命名为Transformer, 实验证明Transformer优于RNN(LSTM),CNN等常规的特征提取器</li>
+</ul>
+</li>
+<li>Transformer的使用: <ul>
+<li>GPT: <a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf" target="_blank" rel="noopener">Improving Language Understanding by Generative Pre-Training</a></li>
+<li>BERT: <a href="https://arxiv.org/pdf/1810.04805.pdf" target="_blank" rel="noopener">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</a></li>
+<li>以上两个工作都使用了Transformer作为特征提取器, 使用两阶段训练的方式实现迁移学习(Pre-Training and Fine-Training)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="相关博客介绍"><a href="#相关博客介绍" class="headerlink" title="相关博客介绍"></a>相关博客介绍</h3><ul>
+<li>强烈推荐看看jalammar的博客: <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">illustrated-transformer</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>一篇很多个人理解的博客 <a href="https://kexue.fm/archives/4765" target="_blank" rel="noopener">《Attention is All You Need》浅读</a></li>
+</ul>
+<hr>
+<h3 id="Transformer讲解"><a href="#Transformer讲解" class="headerlink" title="Transformer讲解"></a>Transformer讲解</h3><ul>
+<li>最直观的动态图理解<img src="/Notes/DL/DL——Transformer/transform_dynamic.gif"></li>
+<li>本文讲解主要按照<a href="https://arxiv.org/pdf/1706.03762.pdf" target="_blank" rel="noopener">Google Brain, NIPS 2017: Attention Is All You Need</a>的思路走,该论文的亮点在于:<ul>
+<li>不同于以往主流机器翻译使用基于 RNN 的 Seq2Seq 模型框架，该论文用 <strong>Attention 机制代替了 RNN</strong> 搭建了整个模型框架, 这是一个从换自行车零件到把自行车换成汽车的突破</li>
+<li>提出了<strong>多头注意力</strong>(Multi-Head Attention)机制方法，在编码器和解码器中大量的使用了多头自注意力机制(Multi-Head self-attention)</li>
+<li>在WMT2014语料库的英德和英法语言翻译任务上取得了先进结果</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Transformer是什么"><a href="#Transformer是什么" class="headerlink" title="Transformer是什么?"></a>Transformer是什么?</h3><ul>
+<li>本质上是个序列转换器 <img src="/Notes/DL/DL——Transformer/the_transformer_high_level.png"></li>
+<li>进一步讲,是个 Encoder-Decoder 模型的序列转换器<img src="/Notes/DL/DL——Transformer/The_transformer_encoders_decoders.png"></li>
+<li>更进一步的讲,是个 6层Encoder + 6层Decoder 结构的序列转换器<img src="/Notes/DL/DL——Transformer/The_transformer_encoder_decoder_stack.png"></li>
+<li>上面的图中,每个 Encoder 是<img src="/Notes/DL/DL——Transformer/Transformer_encoder.png"></li>
+<li>详细的讲, 每个Encoder是<img src="/Notes/DL/DL——Transformer/encoder_with_tensors.png"></li>
+<li>展开看里面 Encoder 中的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm.png"></li>
+<li>更进一步的展开看 Encoder 中的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm_2.png"></li>
+<li>两层 Encoder + 两层Decoder (其中一个Decoder没有完全画出来) 的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm_3.png"></li>
+<li>带细节动图查看数据流向<img src="/Notes/DL/DL——Transformer/transformer_decoding_1.gif">
+</li>
+<li>最后,我们给出Transformer的结构图(来自原文中)<img src="/Notes/DL/DL——Transformer/Transfomer_Architecture.png">
+
+
+</li>
+</ul>
+<hr>
+<h3 id="Transformer中的Attention"><a href="#Transformer中的Attention" class="headerlink" title="Transformer中的Attention"></a>Transformer中的Attention</h3><p><em>Transformer中使用了 Multi-Head Attention, 同时也是一种 Self Attention</em></p>
+<ul>
+<li>由于Transformer的Multi_Head Attention中 <strong>Query == Key == Query</strong>, 所以也是一种 <strong>Self Attention</strong><ul>
+<li>即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+<li>更多关于广义Attention的理解请参考: <a href="/Notes/DL/DL%E2%80%94%E2%80%94Attention.html">DL——Attention</a></li>
+</ul>
+<h4 id="Multi-Head-Attention"><a href="#Multi-Head-Attention" class="headerlink" title="Multi-Head Attention"></a>Multi-Head Attention</h4><ul>
+<li>Muti-Head Attention 由 \(h\) 个 Scaled Dot-Product Attention和其他线性层和Concat操作等组成<img src="/Notes/DL/DL——Transformer/Scaled_dot_product_attention_and_Multi_head_attention.png">
+<ul>
+<li>Scaled Dot Product Attention中Mask操作是可选的</li>
+<li>Scaled Dot Product Attention数学定义为(没有Mask操作)<br>$$<br>\begin{align}<br>Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = softmax\left(\frac{\boldsymbol{Q}\boldsymbol{K}^{\top}}{\sqrt{d_k}}\right)\boldsymbol{V}<br>\end{align}<br>$$</li>
+<li>Multi-Head Attention的某个输出的数学定义为<br>$$<br>\begin{align}<br>MultiHead(\boldsymbol{Q}, \boldsymbol{K}, \boldsymbol{V}) &amp;= Concat(head_1,\dots,head_h)\boldsymbol{W}^{O} \\<br>where \quad head_i &amp;= Attention(\boldsymbol{Q}\boldsymbol{W}_i^Q,\boldsymbol{K}\boldsymbol{W}_i^K,\boldsymbol{V}\boldsymbol{W}_i^V)<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+<h5 id="有关Multi-Head-Attention的理解"><a href="#有关Multi-Head-Attention的理解" class="headerlink" title="有关Multi-Head Attention的理解"></a>有关Multi-Head Attention的理解</h5><ul>
+<li>原论文的描述:</li>
+</ul>
+<blockquote>
+<p>Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions, </p>
+</blockquote>
+<ul>
+<li>理解:<ul>
+<li>所谓多头,就是多做几次(\(h\)次)同样的事情(参数\((W_i^Q, W_i^K, W_i^V)\)不共享, 即当 \(i \neq j \) 时, \((W_i^Q, W_i^K, W_i^V) \neq (W_j^Q, W_j^K, W_j^V)\)),然后把结果拼接</li>
+<li>Multi-Head Attention中, 每个头(Scaled Dot-Product Attention)负责不同的子空间(subspaces at differect positions)</li>
+<li>每个头权重不同, 所以他们的关注点也会不同,注意, 初始化时他们的参数不能相同, 否则会造成他们的参数永远相同, 因为他们是同构的</li>
+<li>个人理解: 多头的作用可以类比于CNN中的卷积层, 负责从不同的角度提取原始数据的特征</li>
+</ul>
+</li>
+</ul>
+<h4 id="Self-Attention"><a href="#Self-Attention" class="headerlink" title="Self Attention"></a>Self Attention</h4><ul>
+<li>Self Attention是只 Key和Query相同的 Attention, 这里因为 Key 和 Value 也相同,所以有 <strong>Query == Key == Query</strong></li>
+<li>即$$ \boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+<h4 id="Transformer中的Attention-1"><a href="#Transformer中的Attention-1" class="headerlink" title="Transformer中的Attention"></a>Transformer中的Attention</h4><ul>
+<li>既是Multi-Head Attention, 也是 Self Attention</li>
+<li>所以有$$\boldsymbol{Y_{AttentionOutput}} = MultiHead(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+<hr>
+<h3 id="Transformer-输入层"><a href="#Transformer-输入层" class="headerlink" title="Transformer 输入层"></a>Transformer 输入层</h3><ul>
+<li>Transformer的输入层使用了 Word Embedding + Position Embedding</li>
+<li>由于Transformer去除RNN的Attention机制完全不考虑词的顺序, 也就是说, 随机打乱句子中词的顺序 (也就是将键值对\((\boldsymbol{K}, \boldsymbol{V})\)对随机打乱), Transformer中Attention的结果不变</li>
+<li>实际上, <strong>目前为止, Transformer中的Attention模型顶多是个非常精妙的”词袋模型”</strong> (这句话来自博客:<a href="https://kexue.fm/archives/4765" target="_blank" rel="noopener">https://kexue.fm/archives/4765</a>)</li>
+</ul>
+<h4 id="Word-Embedding"><a href="#Word-Embedding" class="headerlink" title="Word Embedding"></a>Word Embedding</h4><ul>
+<li>和之前的词嵌入一样, 将One-Hot值映射成词向量嵌入模型中</li>
+</ul>
+<h4 id="Position-Embedding"><a href="#Position-Embedding" class="headerlink" title="Position Embedding"></a>Position Embedding</h4><p><em>FaceBook的《Convolutional Sequence to Sequence Learning》中曾经用过Position Embedding</em></p>
+<ul>
+<li>在不使用RNN的情况下建模词的顺序, 弥补”词袋模型”的不足</li>
+<li>用 Position Embedding来为每个位置一个向量化表示<ul>
+<li>将每个位置编号，然后每个编号对应一个向量</li>
+<li>通过结合位置向量和词向量，就给每个词都引入了一定的位置信息，这样Attention就可以分辨出不同位置的词了</li>
+</ul>
+</li>
+<li>原始论文中, 作者提出了一种周期性位置编码的表示, 数学公式如下:<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin(pos/10000^{2i/d_{\text{model}}}) \\<br>  PE(pos, 2i+1) &amp;= cos(pos/10000^{2i/d_{\text{model}}})<br>  \end{align}<br>  $$</li>
+<li>我觉得上述公式太丑了,转换一下写法可能更容易理解<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right) \\<br>  PE(pos, 2i+1) &amp;= cos\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right)<br>  \end{align}<br>  $$<ul>
+<li>\(pos\) 是位置编号</li>
+<li>\(i\) 表示位置向量的第 \(i\) 维</li>
+<li>为什么选择\(10000^{\frac{2i}{d_{\text{model}}}}\)? [待更新]</li>
+<li>每个维度的位置编码对应着一个正弦函数, 周期为 \(2\pi\)到 \(10000\cdot 2\pi\)</li>
+<li>选择正弦函数的原因是假设这将允许模型学到相对位置信息<ul>
+<li>因为对于固定的 \(k\), \(PE_{pos+k} = LinearFuction(PE_{pos})\), 所以这给模型提供了表达相对位置的可能性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="与之前的Position-Embedding的区别"><a href="#与之前的Position-Embedding的区别" class="headerlink" title="与之前的Position Embedding的区别"></a>与之前的Position Embedding的区别</h5><ul>
+<li>Position Embedding对模型的意义不同:<ul>
+<li>以前在RNN、CNN模型中Position Embedding是锦上添花的辅助手段，也就是“有它会更好、没它也就差一点点”的情况，因为RNN、CNN本身就能捕捉到位置信息</li>
+<li>在Transformer这个纯Attention模型中，Position Embedding是位置信息的唯一来源，因此它是模型的核心成分之一，并非仅仅是简单的辅助手段</li>
+</ul>
+</li>
+<li>Position Embedding的向量构造方式不同<ul>
+<li>在以往的Position Embedding中，基本都是根据任务训练出来的向量</li>
+<li>而Google直接给出了一个构造Position Embedding的公式:<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right) \\<br>  PE(pos, 2i+1) &amp;= cos\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right)<br>  \end{align}<br>  $$</li>
+<li>Google经过实验, 学到的位置嵌入和这种计算得到的位置嵌入结果很相近</li>
+<li>Google选用这种嵌入方式的原因是这种方式允许模型以后可以<strong>扩展到比训练时遇到的序列长度更长的句子</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="输入层的输出-Attention的输入"><a href="#输入层的输出-Attention的输入" class="headerlink" title="输入层的输出(Attention的输入)"></a>输入层的输出(Attention的输入)</h4><ul>
+<li>综合词嵌入和位置嵌入信息,我们可以得到下面的公式<br>$$<br>\begin{align}<br>\boldsymbol{x} = \boldsymbol{x}_{WE} + \boldsymbol{x}_{PE}<br>\end{align}<br>$$<ul>
+<li>\(\boldsymbol{x}\) 为输入层经过词嵌入和位置嵌入后的 输出, 也就是Attention的输入</li>
+<li>\(\boldsymbol{x}_{WE}\) 指词嵌入的结果</li>
+<li>\(\boldsymbol{x}_{PE}\) 指位置嵌入的结果</li>
+</ul>
+</li>
+</ul>
+<h3 id="Transformer总结"><a href="#Transformer总结" class="headerlink" title="Transformer总结"></a>Transformer总结</h3><ul>
+<li>Transformer是一个特征提取能力非常强(超越LSTM)的特征提取器</li>
+<li>一些讨论<ul>
+<li>Transformer与CNN没关系,但是Transformer中使用多个 Scaled Dot-Product Attention 来最后拼接的方法(Multi-Head Attention), 就是CNN的多个卷积核的思想</li>
+<li>Transformer论文原文中提到的残差结构也来源于CNN</li>
+<li>无法对位置信息进行很好地建模，这是硬伤。尽管可以引入Position Embedding，但我认为这只是一个缓解方案，并没有根本解决问题。举个例子，用这种纯Attention机制训练一个文本分类模型或者是机器翻译模型，效果应该都还不错，但是用来训练一个序列标注模型（分词、实体识别等），效果就不怎么好了。那为什么在机器翻译任务上好？我觉得原因是机器翻译这个任务并不特别强调语序，因此Position Embedding 所带来的位置信息已经足够了，此外翻译任务的评测指标BLEU也并不特别强调语序</li>
+<li>Attention如果作为一个和CNN,RNN平级的组件来使用,可能会集成到各自的优点, 而不是”口气”很大的 “Attention is All You Need”</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1959,142 +2230,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——ProcessPoolExecutor和ThreadPoolExecutor.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——ProcessPoolExecutor和ThreadPoolExecutor.html" itemprop="url">Python——ProcessPoolExecutor和ThreadPoolExecutor</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-19T00:00:00+08:00">
-                2018-11-19
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Python 中如何使用CPU的多个核</em></p>
-<hr>
-<h3 id="全局解释器锁-GIL"><a href="#全局解释器锁-GIL" class="headerlink" title="全局解释器锁(GIL)"></a>全局解释器锁(GIL)</h3><ul>
-<li>由于CPython解释器本身就不是线程安全的，所以需要一个全局解释器锁，以保证同一时刻仅有一个线程在执行Python的字节码</li>
-<li>由于GIL的存在，造成了Python多线程不是不能真正并行，尽管有多个CPU核心也不能全都用上</li>
-<li>由于标准库中执行所有阻塞型IO操作的函数，在等待操作系统返回结果时都会释放GIL，这意味着Python在这个层次上可以使用多线程，所以对于IO密集型任务来说，多线程是有作用的</li>
-</ul>
-<hr>
-<h3 id="ThreadPoolExecutor"><a href="#ThreadPoolExecutor" class="headerlink" title="ThreadPoolExecutor"></a>ThreadPoolExecutor</h3><ul>
-<li>使用多线程，适用于IO密集型的任务<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="ProcessPoolExecutor"><a href="#ProcessPoolExecutor" class="headerlink" title="ProcessPoolExecutor"></a>ProcessPoolExecutor</h3><ul>
-<li>使用多进程，突破GIL的限制，绕开GIL，成功使用多个CPU核<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2147,7 +2282,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">203</span>
+                  <span class="site-state-item-count">204</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
