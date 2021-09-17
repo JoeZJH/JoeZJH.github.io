@@ -275,6 +275,353 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
+<hr>
+<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
+<li><p>ImageFolder</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>COCO</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>MNIST</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>LSUN</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CIFAR10</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
+<li><p><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</p>
+</li>
+<li><p>构造函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
+<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
+<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
+</ul>
+</li>
+<li>target_transform：对label的转换, 默认会自动编码<ul>
+<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
+<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
+<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
+<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
+</ul>
+</li>
+<li>loader：从硬盘读取图片的函数<ul>
+<li>不同的图像读取应该用不同的loader</li>
+<li>默认读取为RGB格式的PIL Image对象</li>
+<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
+<li><p>包导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
+<ul>
+<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
+<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
+<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
+</ul>
+</li>
+<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
+<ul>
+<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——各种常用函数总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——各种常用函数总结.html" itemprop="url">PyTorch——各种常用函数总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>PyTorch封装了很多有用的函数,本文主要介绍介绍其中常用的函数</em></p>
+<hr>
+<h3 id="torch-max"><a href="#torch-max" class="headerlink" title="torch.max"></a>torch.max</h3><p><em><code>torch.min</code>与<code>torch.max</code>完全类似</em></p>
+<h4 id="单参数"><a href="#单参数" class="headerlink" title="单参数"></a>单参数</h4><ul>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input) -&gt; Tensor</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
+<li>return: 返回<code>input</code>变量中的最大值</li>
+</ul>
+</li>
+</ul>
+<h4 id="多参数"><a href="#多参数" class="headerlink" title="多参数"></a>多参数</h4><ul>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input, dim, keepdim=False, out=None) -&gt; tuple[Tensor, Tensor]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
+<li><code>dim</code>: 指明维度<ul>
+<li><code>dim=0</code>: 生成的结果是第一维的数据为1, 对每个元素, 当前数据是遍历第一维的数据后的最大值<ul>
+<li>如果数据为2维, 则搜索每一列中最大的那个元素, 且返回最大元素的行索引(实际上相当于对每个列我们要求出来一个数,这个数是遍历第一维(行)得到的), 每列返回一个行索引(该索引就是当前列中数字最大的行)</li>
+<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(1,3)</code></li>
+</ul>
+</li>
+<li><code>dim=1</code>: <ul>
+<li>如果数据为2维, 则搜索每一行中最大的那个元素, 且返回最大元素的列索引(实际上相当于对每个行我们要求出来一个数,这个数是遍历第2维(列)得到的), 每列返回一个列索引(该索引就是当前行中数字最大的列)</li>
+<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(2,1)</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>keepdim</code>: 指明是否</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——归一化与标准化.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1820,376 +2167,6 @@ source deactivate python3</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Markdown/Markdown——基本语法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Markdown/Markdown——基本语法.html" itemprop="url">Markdown——基本语法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-21T00:00:00+08:00">
-                2017-09-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Markdown基本语法</em></p>
-<hr>
-<h3 id="上下标"><a href="#上下标" class="headerlink" title="上下标"></a>上下标</h3><pre><code>&lt;sup&gt;上标&lt;/sup&gt;</code></pre>
-<blockquote>
-<p>文字<sup>上标</sup></p>
-</blockquote>
-<pre><code>&lt;sub&gt;下标&lt;/sub&gt;</code></pre>
-<blockquote>
-<p>文字<sub>下标</sub></p>
-</blockquote>
-<hr>
-<h3 id="删除线"><a href="#删除线" class="headerlink" title="删除线"></a>删除线</h3><pre><code>~~删除线~~</code></pre>
-<blockquote>
-<p><del>删除线</del></p>
-</blockquote>
-<hr>
-<h3 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h3><pre><code>&gt; 一级引用
-&gt;&gt; 二级引用
-&gt;&gt;&gt; 三级引用</code></pre>
-<blockquote>
-<p>一级引用</p>
-<blockquote>
-<p>二级引用</p>
-<blockquote>
-<p>三级引用</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<hr>
-<h3 id="列表"><a href="#列表" class="headerlink" title="列表"></a>列表</h3><pre><code>* 一级列表
-    * 二级列表
-    - 二级列表
-    + 二级列表
-* 一级列表
-- 一级列表
-+ 一级列表</code></pre>
-<blockquote>
-<ul>
-<li>一级列表<ul>
-<li>二级列表</li>
-</ul>
-<ul>
-<li>二级列表</li>
-</ul>
-<ul>
-<li>二级列表</li>
-</ul>
-</li>
-</ul>
-</blockquote>
-<ul>
-<li>一级列表</li>
-</ul>
-<ul>
-<li>一级列表</li>
-</ul>
-<ul>
-<li><p>一级列表</p>
-<ol>
-<li>有序列表<ul>
-<li>无序列表</li>
-<li>无序列表</li>
-</ul>
-</li>
-<li>有序列表</li>
-</ol>
-</li>
-</ul>
-<blockquote>
-<ol>
-<li>有序列表<ul>
-<li>无序列表</li>
-<li>无序列表</li>
-</ul>
-</li>
-<li>有序列表</li>
-</ol>
-</blockquote>
-<hr>
-<h3 id="分割线"><a href="#分割线" class="headerlink" title="分割线"></a>分割线</h3><pre><code>分割线
-***
----</code></pre>
-<blockquote>
-<p>分割线</p>
-<hr>
-<hr>
-</blockquote>
-<hr>
-<h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><pre><code>[链接](https://joezjh.github.io/ &quot;鼠标放到链接上显示此提示&quot;)</code></pre>
-<blockquote>
-<p><a href="https://joezjh.github.io/" title="鼠标放到链接上显示此提示">链接</a></p>
-</blockquote>
-<hr>
-<h3 id="图片"><a href="#图片" class="headerlink" title="图片"></a>图片</h3><pre><code>![图片标题](图片链接 &quot;鼠标放到图片上显示此提示&quot;)</code></pre>
-<blockquote>
-<p><img src="%E5%9B%BE%E7%89%87%E9%93%BE%E6%8E%A5" alt="图片标题" title="鼠标放到图片上显示此提示"></p>
-</blockquote>
-<hr>
-<h3 id="表格"><a href="#表格" class="headerlink" title="表格"></a>表格</h3><pre><code>| 左对齐标题 | 右对齐标题 | 居中对齐标题 |
-| :------| ------: | :------: |
-| 短文本 | 中等文本 | 稍微长一点的文本 |
-| 稍微长一点的文本 | 短文本 | 中等文本 |</code></pre>
-<blockquote>
-<table>
-<thead>
-<tr>
-<th align="left">左对齐标题</th>
-<th align="right">右对齐标题</th>
-<th align="center">居中对齐标题</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">短文本</td>
-<td align="right">中等文本</td>
-<td align="center">稍微长一点的文本</td>
-</tr>
-<tr>
-<td align="left">稍微长一点的文本</td>
-<td align="right">短文本</td>
-<td align="center">中等文本</td>
-</tr>
-</tbody></table>
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——相关问题汇总.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hexo/Hexo——相关问题汇总.html" itemprop="url">Hexo——使用总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
-                2017-09-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文记录Hexo使用过程中可能遇到的问题</em></p>
-<hr>
-<h3 id="Hexo生成的html文件是空的"><a href="#Hexo生成的html文件是空的" class="headerlink" title="Hexo生成的html文件是空的"></a>Hexo生成的html文件是空的</h3><ul>
-<li>表现为部署到云端后，显示为空白页面</li>
-</ul>
-<h4 id="问题起因"><a href="#问题起因" class="headerlink" title="问题起因"></a>问题起因</h4><ul>
-<li>由于node版本问题导致的，可能是node版本太新了</li>
-<li>重新安装node为旧版本即可，本文使用的暂时是node 12版本</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2242,7 +2219,7 @@ source deactivate python3</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">208</span>
+                  <span class="site-state-item-count">210</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2255,7 +2232,7 @@ source deactivate python3</code></pre>
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-count">42</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
