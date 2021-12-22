@@ -1612,7 +1612,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——硬盘操作-分区和挂载.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1631,7 +1631,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Centos——硬盘操作-分区和挂载.html" itemprop="url">Centos——硬盘操作-分区和挂载</a></h1>
         
 
         <div class="post-meta">
@@ -1683,80 +1683,154 @@
       
         
           
-            <p><em>以Centos7为例, Ubuntu相似</em></p>
+            <ul>
+<li>参考博客:<a href="https://www.cnblogs.com/lizhangshu/p/9719018.html" target="_blank" rel="noopener">https://www.cnblogs.com/lizhangshu/p/9719018.html</a></li>
+</ul>
 <hr>
-<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>配置exports文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
-<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
+<h3 id="磁盘分区类型"><a href="#磁盘分区类型" class="headerlink" title="磁盘分区类型"></a>磁盘分区类型</h3><ul>
+<li>三种分区<ul>
+<li>主分区</li>
+<li>扩展分区</li>
+<li>逻辑分区</li>
 </ul>
 </li>
-<li><p>使exports的配置生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>-r生效</li>
-<li>-v显示结果</li>
+<li>分区规则<ul>
+<li>主分区 + 扩展分区的数量不能超过4个</li>
+<li>扩展分区只能有1个</li>
+<li>逻辑分区要在扩展分区之上进行划分，逻辑分区没有数量限制，可以任意个</li>
+<li>扩展分区是不能直接用的，他是以逻辑分区的方式来使用的，所以说扩展分区可分成若干逻辑分区。他们的关系是包含的关系，所有的逻辑分区都是扩展分区的一部分。</li>
 </ul>
 </li>
-<li><p>查看是否生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
-
+<li>硬盘的容量<ul>
+<li>硬盘容量 = 主分区的容量 + 扩展分区的容量</li>
+<li>扩展分区的容量 = 各个逻辑分区的容量之和</li>
+</ul>
+</li>
+<li>为什么 主分区 + 扩展分区数量不能超过4个<ul>
+<li>主分区就是普通磁盘分盘，但是由于磁盘设备由大量的扇区组成，一个扇区的容量为512字节。磁盘的第一个扇区最为重要，记录了主引导记录与分区表信息。就第一个扇区而言，主引导信息记录需要占用466个字节，分区表64个字节，结束符占用2个字节；其中分区表中每记录一个分区信息就需要16个字节，所以最多只有4个分区信息可以记录在第一个扇区中，所以主分区+扩展分区的数量不能超过4个。但是为了创建更多的分区，就使用扩展分区做份下若干个分区的指针，划分若干个逻辑分区，来满足分区数大于4个的需求。扩展分区不需要挂载，但是可以格式化。</li>
+</ul>
 </li>
 </ul>
 <hr>
-<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
+<h3 id="分区操作"><a href="#分区操作" class="headerlink" title="分区操作"></a>分区操作</h3><ul>
+<li><p>查看当前设备上的磁盘信息及分区信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk -l</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>设置开机启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看服务器哪些目录可以共享</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>新建文件夹以作为mount目标</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>挂载操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看挂载情况</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解除挂载</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
+<li><p>选取需要分区的磁盘</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/[disk_name]</span><br></pre></td></tr></table></figure>
 
+<ul>
+<li>注意这里disk_name是硬盘名不是分区名称</li>
+<li>一般来说硬盘名都是<code>sda</code>, <code>sdb</code>, <code>vda</code>, <code>vdb</code>等</li>
+<li>一般来说硬盘<code>sda</code>上的分区名成为<code>sda1</code>,<code>sda2</code>等</li>
+</ul>
+</li>
+<li><p>在进入分区磁盘后打印操作帮助</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">m</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>新建分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">n</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>选择是主分区还是扩展分区</p>
+<ul>
+<li><p>主分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>拓展分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>选择分区号[1-4]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>起始扇区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2048</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>一般默认值即可</li>
+</ul>
+</li>
+<li><p>结束扇区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">+200G</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>结束扇区在起始扇区基础上+200G, 表示该分区大小为200G</li>
+<li>默认是全部分配给当前分区</li>
+</ul>
 </li>
 </ul>
 <hr>
-<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
-<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
+<h3 id="格式化分区"><a href="#格式化分区" class="headerlink" title="格式化分区"></a>格式化分区</h3><ul>
+<li><p>先输入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>Tab</code>键,查看所有可能的命令</p>
+</li>
+</ul>
+<blockquote>
+<p>mkfs.bfs     mkfs.exfat   mkfs.ext3    mkfs.fat     mkfs.msdos   mkfs.vfat<br>mkfs.cramfs  mkfs.ext2    mkfs.ext4    mkfs.minix   mkfs.ntfs </p>
+</blockquote>
 <ul>
-<li>mount.nfs: No route to host</li>
-<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.ntfs</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>说明:</p>
+<ul>
+<li>mkfs.ntfs命令可以将文件分区为</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="挂载分区"><a href="#挂载分区" class="headerlink" title="挂载分区"></a>挂载分区</h3><ul>
+<li><p>新建挂载文件夹</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir /mnt/data</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>建议新建在<code>/mnt/</code>文件夹下</li>
+<li>比如我本地的机器为<code>/mnt/SSD</code>和<code>/mnt/HDD</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="临时挂载"><a href="#临时挂载" class="headerlink" title="临时挂载"></a>临时挂载</h4><ul>
+<li><p>分区临时挂载</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount /dev/[part_name] /mnt/[dir_name]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>没有文件系统的分区不能挂载</li>
+</ul>
+</li>
+<li><p>分区临时卸载</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount /dev/[part_name]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="开机重启自动挂载"><a href="#开机重启自动挂载" class="headerlink" title="开机重启自动挂载"></a>开机重启自动挂载</h4><h5 id="修改文件"><a href="#修改文件" class="headerlink" title="修改文件"></a>修改文件</h5><ul>
+<li><p>查看想要挂载分区的UUID</p>
+<ul>
+<li><p>查看所有UUID</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blkid</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看某个分区的UUID</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blkid /dev/[part_name]</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
 </li>
-<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
+<li><p>编辑文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/fstab</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UUID=[UUID_NUMBER]   /data/[dir_name]  ext4  defaults   0 0</span><br><span class="line">分区临时卸 	挂载路径 		分区格式 	 	参数     是否备份 		引导分区相关(引导分区为1,其他分区为0或者2)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h5 id="修改生效的两种方式"><a href="#修改生效的两种方式" class="headerlink" title="修改生效的两种方式"></a>修改生效的两种方式</h5><ul>
+<li><p>使用命令重新加载<code>/etc/fstab</code>的内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -a</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重新启动机器</p>
 <ul>
-<li>mount.nfs: Stale file handle</li>
-<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
+<li>如果配置有错机器可能无法正常进入系统,但是会进入Emergency模式,我们可以在Emergency模式下修改<code>/etc/fstab</code>然后重新启动来修复问题</li>
 </ul>
 </li>
 </ul>
@@ -1799,7 +1873,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/21/">21</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/22/">22</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1847,7 +1921,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">210</span>
+                  <span class="site-state-item-count">211</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1860,7 +1934,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">42</span>
+                  <span class="site-state-item-count">43</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
