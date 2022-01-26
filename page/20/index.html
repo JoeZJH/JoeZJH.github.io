@@ -275,6 +275,821 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
+<hr>
+<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
+<li><p>ImageFolder</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>COCO</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>MNIST</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>LSUN</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CIFAR10</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
+<li><p><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</p>
+</li>
+<li><p>构造函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
+<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
+<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
+</ul>
+</li>
+<li>target_transform：对label的转换, 默认会自动编码<ul>
+<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
+<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
+<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
+<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
+</ul>
+</li>
+<li>loader：从硬盘读取图片的函数<ul>
+<li>不同的图像读取应该用不同的loader</li>
+<li>默认读取为RGB格式的PIL Image对象</li>
+<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
+<li><p>包导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
+<ul>
+<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
+<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
+<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
+</ul>
+</li>
+<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
+<ul>
+<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Shell/Shell——进程查找.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Shell/Shell——进程查找.html" itemprop="url">Shell——进程查找</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="ps"><a href="#ps" class="headerlink" title="ps"></a>ps</h3><ul>
+<li>应用场景：当使用命令<code>sh run.sh</code>启动一个进程后，想要删除，却不知道进程号</li>
+<li>查找步骤：<ul>
+<li>首先使用<code>ps aux | grep run.sh</code>列出进程</li>
+<li>杀死进程<code>kill -9 [PID]</code></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——归一化与标准化.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——归一化与标准化.html" itemprop="url">ML——归一化与标准化</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-01T00:00:00+08:00">
+                2018-02-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文总结归一化与标准化的理解和使用, 涉及到无量纲,中心化等知识, 但是并不完全</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="归一化"><a href="#归一化" class="headerlink" title="归一化"></a>归一化</h3><p><em>Normalization</em></p>
+<ul>
+<li><p>把数据变成<strong>[0,1]或[-1,1]</strong>的小数</p>
+</li>
+<li><p>把有量纲表达式变成<strong>无量纲</strong>表达式，便于不同单位或量级的指标能够进行比较和加权</p>
+</li>
+<li><p>归一化是一种简化计算的方式，即将有量纲的表达式，经过变换，化为无量纲的表达式，成为纯量</p>
+<ul>
+<li>无量纲的理解: <ul>
+<li>通过某种数值变换去掉单位,的影响,比如”kg”和”g”都可以表示体重,但是前者的数字比后者小</li>
+<li>不管是”kg”还是”g”作为单位,无量纲后他们的数值应该是一样的 </li>
+<li><strong>无量纲的本质</strong>是说: <strong>变换后, 单位不再影响数据的数值</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>应用:</p>
+<ul>
+<li>LR等用梯度下降时, 先使用数据归一化可以使得梯度下降速度加快(否则可能下降方向并不是最好方向)</li>
+</ul>
+</li>
+</ul>
+<h4 id="归一化的不同方法"><a href="#归一化的不同方法" class="headerlink" title="归一化的不同方法"></a>归一化的不同方法</h4><h5 id="线性归一化"><a href="#线性归一化" class="headerlink" title="线性归一化"></a>线性归一化</h5><ul>
+<li>Min-Max Normalization<br>$$ x_i’ = \frac{x_i-min(X)}{max(X)-min(X)}$$</li>
+<li>平均归一化<br>$$ x_i’ = \frac{x_i-mean(X)}{max(X)-min(X)}$$</li>
+<li>上面两种归一化在新数据加入时最大最小值会变化,所以不能在线归一化</li>
+</ul>
+<h5 id="非线性归一化"><a href="#非线性归一化" class="headerlink" title="非线性归一化"></a>非线性归一化</h5><ul>
+<li>对数函数转换等</li>
+</ul>
+<hr>
+<h3 id="标准化"><a href="#标准化" class="headerlink" title="标准化"></a>标准化</h3><p><em>Standardization</em></p>
+<ul>
+<li>使每个特征中的数值平均变为0(将每个特征的值都减掉原始资料中该特征的平均)、标准差变为1</li>
+<li>数学描述<br>$$x_i’ = \frac{x-mean(X)}{std(X)}$$</li>
+</ul>
+<hr>
+<h3 id="中心化"><a href="#中心化" class="headerlink" title="中心化"></a>中心化</h3><ul>
+<li>平均值为0，对标准差无要求</li>
+<li>数学描述<br>$$x_i’ = x-mean(X)$$</li>
+</ul>
+<hr>
+<h3 id="归一化-vs-标准化"><a href="#归一化-vs-标准化" class="headerlink" title="归一化 vs 标准化"></a>归一化 vs 标准化</h3><h4 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h4><ul>
+<li>归一化是将样本的特征值转换到同一量纲下把数据映射到[0,1]或者[-1, 1]区间内，仅由变量的极值决定，因区间放缩法是归一化的一种</li>
+<li>标准化是依照特征矩阵的列处理数据，其通过求z-score的方法，转换为标准正态分布，和整体样本分布相关，每个样本点都能对标准化产生影响</li>
+</ul>
+<h4 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h4><ul>
+<li>都能取消由于量纲不同引起的误差</li>
+<li>都是一种线性变换(都是对向量X按照比例压缩再进行平移)</li>
+<li>个人理解: <strong>标准化可以看作是一种特殊的归一化</strong></li>
+</ul>
+<h3 id="中心化-vs-标准化"><a href="#中心化-vs-标准化" class="headerlink" title="中心化 vs 标准化"></a>中心化 vs 标准化</h3><ul>
+<li>标准化 = 中心化 + 数据除以标准差(使得数据标准差为1)</li>
+<li>有些地方也把零均值归一化(Z-Score Normalization)称为标准化,公式与标准化相同</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>一些模型一般需要归一化<ul>
+<li>LR: 加快梯度下降过程(因为不同维度使用相同的学习率,所以容易造成走弯路)</li>
+<li>KNN: 防止计算距离时大数吃小数的情况发生</li>
+<li>PCA: 归一化后 \(X^TX\) 才能表示数据的协方差矩阵</li>
+<li><strong>神经网络</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="关于神经网络为什么需要归一化"><a href="#关于神经网络为什么需要归一化" class="headerlink" title="关于神经网络为什么需要归一化?"></a>关于神经网络为什么需要归一化?</h4><h5 id="数值问题"><a href="#数值问题" class="headerlink" title="数值问题"></a>数值问题</h5><ul>
+<li>归一化可以避免很多不必要的数值问题<ul>
+<li>我理解的一种情况: 输入太大时, 权重太小, 容易造成精度问题, 数值太小时同理</li>
+</ul>
+</li>
+<li>归一化可以避免梯度爆炸等问题<ul>
+<li>个人理解: 如果数值很大的话, 梯度一般也会对应很大, 连续乘以后就容易造成梯度爆炸, 数值太小, 同理, 容易造成梯度消失</li>
+</ul>
+</li>
+<li>加快学习<ul>
+<li>与LR一样, 使用梯度下降优化神经网络参数时, 如果数值差别太大, 可能造成优化时梯度优化走弯路(因为不同维度使用的是相同的学习率)</li>
+</ul>
+</li>
+<li>避免某些数值小的神经元输出被数值大的输出吞掉的情况<ul>
+<li>个人理解: 虽然说我们找到合适权重后,可以使得二者到下一个神经元的差值没那么大, 但是我的理解是初始化的时候不知道数值,所以权重是随机的,之后如果两个神经元数值差距太大的话,是否会大值吞小值很难说</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于LR为什么需要归一化"><a href="#关于LR为什么需要归一化" class="headerlink" title="关于LR为什么需要归一化?"></a>关于LR为什么需要归一化?</h4><p><em>不是必要的</em></p>
+<ul>
+<li>因为LR使用梯度下降法求解参数时, 特征之间差别太大容易影响收敛速度, 归一化可以提升LR的收敛速度, 同时不影响分类结果</li>
+</ul>
+<h4 id="关于SVM为什么需要归一化"><a href="#关于SVM为什么需要归一化" class="headerlink" title="关于SVM为什么需要归一化?"></a>关于SVM为什么需要归一化?</h4><p><em>是必要的</em></p>
+<ul>
+<li>因为SVM寻找的是所谓的<strong>间隔</strong>(margin), 就是两个支持向量的间隔</li>
+<li>如果<strong>不归一化</strong>的话, 这个间隔会因为不同特征的单位等, 数值被放大或者缩小, 从而造成<strong>无法评估间隔</strong>, 所以归一化对于SVM很重要</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Sklearn/Sklearn——总体介绍.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Sklearn/Sklearn——总体介绍.html" itemprop="url">Sklearn——总体介绍</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-12-13T00:00:00+08:00">
+                2017-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Sklearn 总体介绍</em></p>
+<hr>
+<h3 id="总结介绍图"><a href="#总结介绍图" class="headerlink" title="总结介绍图"></a>总结介绍图</h3><img src="/Notes/ML/Sklearn/Sklearn——总体介绍/sklearn-summary.png" title="sklearn-summary">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Mac/Mac——环境变量配置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Mac/Mac——环境变量配置.html" itemprop="url">Mac——环境变量配置.md</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-10-23T00:00:00+08:00">
+                2017-10-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="Mac环境变量配置文件"><a href="#Mac环境变量配置文件" class="headerlink" title="Mac环境变量配置文件"></a>Mac环境变量配置文件</h3><ul>
+<li><code>/etc/profile</code><ul>
+<li>全局的</li>
+</ul>
+</li>
+<li><code>~/.bash_profile</code><ul>
+<li>用户自己的，可能需要自己生成</li>
+</ul>
+</li>
+<li>生效方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.bash_profile</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="Terminal自动导入环境变量"><a href="#Terminal自动导入环境变量" class="headerlink" title="Terminal自动导入环境变量"></a>Terminal自动导入环境变量</h3><ul>
+<li><p>默认Terminal打开后不会导入用户自定义的环境变量</p>
+</li>
+<li><p>自动导入可以设置为</p>
+<ul>
+<li><p>在<code>~/.zshrc</code>（这个文件没有的话需要自己生成）中添加一行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.bash_profile</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>也可直接在<code>~/.zshrc</code>中直接定义环境变量，使用<code>~/.bash_profile</code>是为了和Linux匹配且方便切换不同的Bash工具</p>
+</li>
+<li><p>原理：Terminal打开的是zsh工具，这个工具启动时会自动执行<code>~/.zshrc</code></p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Idea"><a href="#Idea" class="headerlink" title="Idea"></a>Idea</h3><ul>
+<li>Idea中Terminal打开后可能不会跟系统一样自动导入环境变量<ul>
+<li>如果使用的Terminal是zsh的话，也会自动导入</li>
+</ul>
+</li>
+<li>可以自己手动添加（一次添加，以后都可以自动使用）</li>
+<li>或者每次打开Terminal后执行<code>source ~/.bash_profile</code></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1325,889 +2140,6 @@ source deactivate python3</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Markdown/Markdown——基本语法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Markdown/Markdown——基本语法.html" itemprop="url">Markdown——基本语法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-21T00:00:00+08:00">
-                2017-09-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Markdown基本语法</em></p>
-<hr>
-<h3 id="上下标"><a href="#上下标" class="headerlink" title="上下标"></a>上下标</h3><pre><code>&lt;sup&gt;上标&lt;/sup&gt;</code></pre>
-<blockquote>
-<p>文字<sup>上标</sup></p>
-</blockquote>
-<pre><code>&lt;sub&gt;下标&lt;/sub&gt;</code></pre>
-<blockquote>
-<p>文字<sub>下标</sub></p>
-</blockquote>
-<hr>
-<h3 id="删除线"><a href="#删除线" class="headerlink" title="删除线"></a>删除线</h3><pre><code>~~删除线~~</code></pre>
-<blockquote>
-<p><del>删除线</del></p>
-</blockquote>
-<hr>
-<h3 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h3><pre><code>&gt; 一级引用
-&gt;&gt; 二级引用
-&gt;&gt;&gt; 三级引用</code></pre>
-<blockquote>
-<p>一级引用</p>
-<blockquote>
-<p>二级引用</p>
-<blockquote>
-<p>三级引用</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<hr>
-<h3 id="列表"><a href="#列表" class="headerlink" title="列表"></a>列表</h3><pre><code>* 一级列表
-    * 二级列表
-    - 二级列表
-    + 二级列表
-* 一级列表
-- 一级列表
-+ 一级列表</code></pre>
-<blockquote>
-<ul>
-<li>一级列表<ul>
-<li>二级列表</li>
-</ul>
-<ul>
-<li>二级列表</li>
-</ul>
-<ul>
-<li>二级列表</li>
-</ul>
-</li>
-</ul>
-</blockquote>
-<ul>
-<li>一级列表</li>
-</ul>
-<ul>
-<li>一级列表</li>
-</ul>
-<ul>
-<li><p>一级列表</p>
-<ol>
-<li>有序列表<ul>
-<li>无序列表</li>
-<li>无序列表</li>
-</ul>
-</li>
-<li>有序列表</li>
-</ol>
-</li>
-</ul>
-<blockquote>
-<ol>
-<li>有序列表<ul>
-<li>无序列表</li>
-<li>无序列表</li>
-</ul>
-</li>
-<li>有序列表</li>
-</ol>
-</blockquote>
-<hr>
-<h3 id="分割线"><a href="#分割线" class="headerlink" title="分割线"></a>分割线</h3><pre><code>分割线
-***
----</code></pre>
-<blockquote>
-<p>分割线</p>
-<hr>
-<hr>
-</blockquote>
-<hr>
-<h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><pre><code>[链接](https://joezjh.github.io/ &quot;鼠标放到链接上显示此提示&quot;)</code></pre>
-<blockquote>
-<p><a href="https://joezjh.github.io/" title="鼠标放到链接上显示此提示">链接</a></p>
-</blockquote>
-<hr>
-<h3 id="图片"><a href="#图片" class="headerlink" title="图片"></a>图片</h3><pre><code>![图片标题](图片链接 &quot;鼠标放到图片上显示此提示&quot;)</code></pre>
-<blockquote>
-<p><img src="%E5%9B%BE%E7%89%87%E9%93%BE%E6%8E%A5" alt="图片标题" title="鼠标放到图片上显示此提示"></p>
-</blockquote>
-<hr>
-<h3 id="表格"><a href="#表格" class="headerlink" title="表格"></a>表格</h3><pre><code>| 左对齐标题 | 右对齐标题 | 居中对齐标题 |
-| :------| ------: | :------: |
-| 短文本 | 中等文本 | 稍微长一点的文本 |
-| 稍微长一点的文本 | 短文本 | 中等文本 |</code></pre>
-<blockquote>
-<table>
-<thead>
-<tr>
-<th align="left">左对齐标题</th>
-<th align="right">右对齐标题</th>
-<th align="center">居中对齐标题</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">短文本</td>
-<td align="right">中等文本</td>
-<td align="center">稍微长一点的文本</td>
-</tr>
-<tr>
-<td align="left">稍微长一点的文本</td>
-<td align="right">短文本</td>
-<td align="center">中等文本</td>
-</tr>
-</tbody></table>
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——相关问题汇总.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hexo/Hexo——相关问题汇总.html" itemprop="url">Hexo——使用总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
-                2017-09-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文记录Hexo使用过程中可能遇到的问题</em></p>
-<hr>
-<h3 id="Hexo生成的html文件是空的"><a href="#Hexo生成的html文件是空的" class="headerlink" title="Hexo生成的html文件是空的"></a>Hexo生成的html文件是空的</h3><ul>
-<li>表现为部署到云端后，显示为空白页面</li>
-</ul>
-<h4 id="问题起因"><a href="#问题起因" class="headerlink" title="问题起因"></a>问题起因</h4><ul>
-<li>由于node版本问题导致的，可能是node版本太新了</li>
-<li>重新安装node为旧版本即可，本文使用的暂时是node 12版本</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Sklearn/Sklearn——LogisticRegression.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Sklearn/Sklearn——LogisticRegression.html" itemprop="url">Sklearn——LogisticRegression</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-18T00:00:00+08:00">
-                2017-09-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Sklearn解析之LogisticRegression</em></p>
-<hr>
-<h3 id="parameter"><a href="#parameter" class="headerlink" title="parameter"></a>parameter</h3><ul>
-<li>penalty: str, ‘l1’ or ‘l2’, default: ‘l2’</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Ubuntu-Jupyter——Python2与Python3共存.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Jupyter/Ubuntu-Jupyter——Python2与Python3共存.html" itemprop="url">Ubuntu-Jupyter——Python2与Python3共存</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-10T00:00:00+08:00">
-                2017-09-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>在Jupyter中同时配置Python 2和Python 3环境</em></p>
-<hr>
-<h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><ul>
-<li><p>检查对应的虚拟环境(Python2和Python3)是否都已经安装成功，如没有的话请安装相应版本号，下面是管理包时常用的一些命令</p>
-<ul>
-<li><p>检查版本号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda env list # check all python versions</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>创建虚拟环境</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create -n Python3 Python=3.6 # Python3可以是自己自定义的名字</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>激活虚拟环境</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source activate Python3 # Windows中不需要`source`</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>停止虚拟环境</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deactivate Python3</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从硬盘删除虚拟环境</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda remove -n Python3 --all</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Jupyter-on-Python-3"><a href="#Jupyter-on-Python-3" class="headerlink" title="Jupyter on Python 3"></a>Jupyter on Python 3</h3><p><em>还需要配置Python2</em></p>
-<ul>
-<li><p>检查Python2对应的pip版本大于等于9.0</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python2 -m pip --version</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>注意，如果<code>python2</code>指的是我们想设置的版本，如果电脑上对应多个版本的Python2，请选择对应的那个，后面的pip会根据Python2版本自动被确定下来，比如可使用<code>/home/jiahong/anaconda2/envs/Python3.6/python</code>绝对路径来指定确定的Python版本</li>
-<li>这里的<code>python2 -m</code>是用于指定<code>pip</code>版本的修饰，用于指明<code>pip</code>的版本，所以上一步中的路径指定也可以直接直接pip的绝对路径</li>
-</ul>
-</li>
-<li><p>安装方法1</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">python2 -m pip install ipykernel</span><br><span class="line">python2 -m ipykernel install --user</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这种安装方法是可以随意重复的，不会造成重复安装，所以可以直接将Python 2和Python 3两个版本都安装一遍</li>
-</ul>
-</li>
-<li><p>安装方法2</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">conda create -n ipykernel_py2 python=2 ipykernel</span><br><span class="line">source activate ipykernel_py2 # On Windows, remove the word &apos;source&apos;</span><br><span class="line">python -m ipykernel install --user</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="Jupyter-on-Python-2"><a href="#Jupyter-on-Python-2" class="headerlink" title="Jupyter on Python 2"></a>Jupyter on Python 2</h3><ul>
-<li>将上面的Python2全都指定为Python3即可<ul>
-<li>比如<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">python3 -m pip install ipykernel</span><br><span class="line">python3 -m ipykernel install --user</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——使用总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hexo/Hexo——使用总结.html" itemprop="url">Hexo——使用总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-09-09T00:00:00+08:00">
-                2017-09-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Hexo 使用总结</em></p>
-<hr>
-<h3 id="在博客中引用自己的博客"><a href="#在博客中引用自己的博客" class="headerlink" title="在博客中引用自己的博客"></a>在博客中引用自己的博客</h3><ul>
-<li><p>在 _config.yml 中设置属性</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">permalink: :title.html</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>引用方式</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 引用文档，以引用本文为例</span><br><span class="line"># 引用的应该是生成时使用的文件路径或者title,后面跟上.html,但是还要根据不同设置来修改,总之就是访问时的链接</span><br><span class="line">[引用示例](/Notes/Hexo/Hexo——使用总结.html &quot;/Notes/Hexo/Hexo——使用总结.html&quot;)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<p><a href="/Notes/Hexo/Hexo%E2%80%94%E2%80%94%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93.html" title="/Notes/Hexo/Hexo——使用总结.html">引用示例</a></p>
-</blockquote>
-<hr>
-<h3 id="导入图片"><a href="#导入图片" class="headerlink" title="导入图片"></a>导入图片</h3><ul>
-<li>在同目录下新建与Markdown文档文件名相同的文件夹，将图片存入文件夹中</li>
-<li>在Markdown文档中使用特殊语法导入  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;% asset_img picture.png descreption %&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<img src="/Notes/Hexo/Hexo——使用总结/picture.png" title="descreption">
-</blockquote>
-<hr>
-<h3 id="插入LaTex公式"><a href="#插入LaTex公式" class="headerlink" title="插入LaTex公式"></a>插入LaTex公式</h3><h4 id="LaTex公式"><a href="#LaTex公式" class="headerlink" title="LaTex公式"></a>LaTex公式</h4><ul>
-<li><a href="https://www.codecogs.com/latex/eqneditor.php" title="https://www.codecogs.com/latex/eqneditor.php" target="_blank" rel="noopener">在线公式编辑地址</a></li>
-<li>LaTex公式用法参见<a href="/Notes/Others/LaTex%E2%80%94%E2%80%94%E7%AC%94%E8%AE%B0.html">LaTex——笔记</a></li>
-</ul>
-<h4 id="借助工具插入公式"><a href="#借助工具插入公式" class="headerlink" title="借助工具插入公式"></a>借助工具插入公式</h4><h5 id="MathJax引擎-推荐"><a href="#MathJax引擎-推荐" class="headerlink" title="MathJax引擎(推荐)"></a>MathJax引擎(推荐)</h5><ul>
-<li>这种方式只需要在是实现时首先添加引擎代码,后面就可以完全像是Latex一样写公式</li>
-</ul>
-<h6 id="头部添加"><a href="#头部添加" class="headerlink" title="头部添加"></a>头部添加</h6><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>添加头部如下<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script src=&quot;//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML&quot;  type=&quot;text/javascript&quot;&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot; src=&quot;http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default&quot;&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<pre><code>* 说明:
-    * 第一个头部可用,在各种浏览器均能正确加载
-    * 第二个涉及到https的安全性问题,在部署到GitHub时,某些浏览器上不能正确加载</code></pre>
-<ul>
-<li>测试说明: <ul>
-<li>yilla主题下Chrome和Firefox浏览器中不添加上面的头部当前文档也能识别出公式, 其他浏览器未测试</li>
-<li>next主题下必须加上这个头部才行</li>
-</ul>
-</li>
-</ul>
-<h6 id="写公式"><a href="#写公式" class="headerlink" title="写公式"></a>写公式</h6><ul>
-<li>行内公式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">公式如下:\\(\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;\\)所示</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<p>公式如下:\(\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}\)所示</p>
-</blockquote>
-<ul>
-<li>行间公式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">公式如下:$$\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;$$所示</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<p>公式如下:$$\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}$$所示</p>
-</blockquote>
-<ul>
-<li><p>公式等号对齐</p>
-<ul>
-<li><p>公式如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$$</span><br><span class="line">\begin&#123;align&#125;</span><br><span class="line">Q(\theta, \theta^&#123;i&#125;) &amp;= E_&#123;Z&#125;[logP(Y,Z|\theta)|Y,\theta^&#123;i&#125;] \\\\</span><br><span class="line">	&amp;= E_&#123;Z\sim P(Z|Y,\theta^&#123;i&#125;)&#125;[logP(Y,Z|\theta)] \\\\</span><br><span class="line">	&amp;= \sum_&#123;Z&#125; P(Z|Y,\theta^&#123;i&#125;)logP(Y,Z|\theta) \\\\</span><br><span class="line">	&amp;= \sum_&#123;Z&#125; logP(Y,Z|\theta)P(Z|Y,\theta^&#123;i&#125;)</span><br><span class="line">\end&#123;align&#125;</span><br><span class="line">$$</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p>$$<br>\begin{align}<br>Q(\theta, \theta^{i}) &amp;= E_{Z}[logP(Y,Z|\theta)|Y,\theta^{i}] \\<br>    &amp;= E_{Z\sim P(Z|Y,\theta^{i})}[logP(Y,Z|\theta)] \\<br>    &amp;= \sum_{Z} P(Z|Y,\theta^{i})logP(Y,Z|\theta) \\<br>    &amp;= \sum_{Z} logP(Y,Z|\theta)P(Z|Y,\theta^{i})<br>\end{align}<br>$$</p>
-</blockquote>
-<h5 id="Google-Chart服务器"><a href="#Google-Chart服务器" class="headerlink" title="Google Chart服务器"></a>Google Chart服务器</h5><ul>
-<li>引用方式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># &lt;img src=&quot;http://chart.googleapis.com/chart?cht=tx&amp;chl=Latex公式&quot; style=&quot;border:none;&quot;&gt;</span><br><span class="line">&lt;img src=&quot;http://chart.googleapis.com/chart?cht=tx&amp;chl=\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;&quot; style=&quot;border:none;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<img src="http://chart.googleapis.com/chart?cht=tx&chl=\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" style="border:none;">
-</blockquote>
-<h5 id="forkosh服务器"><a href="#forkosh服务器" class="headerlink" title="forkosh服务器"></a>forkosh服务器</h5><ul>
-<li>引用方式  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=&quot;http://www.forkosh.com/mathtex.cgi? Latex公式&quot;&gt;</span><br><span class="line">&lt;img src=&quot;http://www.forkosh.com/mathtex.cgi?\Large x=\frac&#123;-b\pm\sqrt&#123;b^2-4ac&#125;&#125;&#123;2a&#125;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<blockquote>
-<img src="http://www.forkosh.com/mathtex.cgi? \Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}">
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2260,7 +2192,7 @@ source deactivate python3</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">215</span>
+                  <span class="site-state-item-count">220</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
