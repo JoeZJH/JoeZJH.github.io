@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="TensorFlow封装了很多有用的函数,本文主要介绍介绍其中常用的函数  优秀参考链接： https://www.cnblogs.com/ying-chease/p/9723309.html https://www.cnblogs.com/wuzhitj/p/6298004.html     tf.identify() 参考链接： https://blog.csdn.net/qq_2398133">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2022-02-16T03:47:52.420Z">
+<meta property="og:updated_time" content="2022-03-01T13:25:49.404Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TensorFlow——使用笔记">
 <meta name="twitter:description" content="TensorFlow封装了很多有用的函数,本文主要介绍介绍其中常用的函数  优秀参考链接： https://www.cnblogs.com/ying-chease/p/9723309.html https://www.cnblogs.com/wuzhitj/p/6298004.html     tf.identify() 参考链接： https://blog.csdn.net/qq_2398133">
@@ -492,6 +492,34 @@
 <h3 id="一般TensorFlow模型存储为PB文件"><a href="#一般TensorFlow模型存储为PB文件" class="headerlink" title="一般TensorFlow模型存储为PB文件"></a>一般TensorFlow模型存储为PB文件</h3><ul>
 <li>参考链接：<a href="https://zhuanlan.zhihu.com/p/32887066" target="_blank" rel="noopener">TensorFlow 保存模型为 PB 文件</a></li>
 </ul>
+<hr>
+<h3 id="variable-scope-vs-name-scope"><a href="#variable-scope-vs-name-scope" class="headerlink" title="variable_scope vs name_scope"></a>variable_scope vs name_scope</h3><ul>
+<li>测试代码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">def test():</span><br><span class="line">    data = tf.ones(shape=[3,5], dtype=tf.float32)</span><br><span class="line">    with tf.variable_scope(&quot;vs_test&quot;):</span><br><span class="line">        x = tf.get_variable(&quot;x&quot;, initializer=[10])</span><br><span class="line">        y = tf.constant(20)</span><br><span class="line">        z = tf.layers.dense(inputs=data, units=1, name=&quot;output&quot;)</span><br><span class="line">        a = tf.Variable(&quot;a&quot;)</span><br><span class="line">    with tf.name_scope(&quot;ns_test&quot;):</span><br><span class="line">        x1 = tf.get_variable(&quot;x&quot;, initializer=[10])</span><br><span class="line">        y1 = tf.constant(20)</span><br><span class="line">        z1 = tf.layers.dense(inputs=data, units=1, name=&quot;output&quot;)</span><br><span class="line">        a1 = tf.Variable(&quot;a&quot;)</span><br><span class="line">test()</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<blockquote>
+<p>&lt;tf.Variable ‘vs_test/x:0’ shape=(1,) dtype=int32_ref&gt;<br>Tensor(“vs_test/Const:0”, shape=(), dtype=int32)<br>Tensor(“vs_test/output/BiasAdd:0”, shape=(3, 1), dtype=float32)<br>&lt;tf.Variable ‘vs_test/Variable:0’ shape=() dtype=string_ref&gt;<br>==========<br>&lt;tf.Variable ‘x:0’ shape=(1,) dtype=int32_ref&gt;<br>Tensor(“ns_test/Const:0”, shape=(), dtype=int32)<br>Tensor(“ns_test/output/BiasAdd:0”, shape=(3, 1), dtype=float32)<br>&lt;tf.Variable ‘ns_test/Variable:0’ shape=() dtype=string_ref&gt;</p>
+</blockquote>
+<ul>
+<li>说明：<ul>
+<li>对于<code>variable_scope()</code>来说，所有方式获取的变量或layer等调用都会被加上前缀</li>
+<li>对于<code>name_scope()</code>来说，通过<code>tf.get_variable</code>获取到的变量不会被加上前缀</li>
+</ul>
+</li>
+<li>参考链接：<a href="https://blog.csdn.net/shenxiaoming77/article/details/79141078" target="_blank" rel="noopener">https://blog.csdn.net/shenxiaoming77/article/details/79141078</a><blockquote>
+<p>name_scope: 为了更好地管理变量的命名空间而提出的。比如在 tensorboard 中，因为引入了 name_scope， 我们的 Graph 看起来才井然有序。<br>variable_scope: 大大大部分情况下，跟 tf.get_variable() 配合使用，实现变量共享的功能。</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h3 id="变量的reuse和trainable"><a href="#变量的reuse和trainable" class="headerlink" title="变量的reuse和trainable"></a>变量的reuse和trainable</h3><ul>
+<li>reuse和trainable互不影响<ul>
+<li>两次resue变量时使用不同的trainable是不会影响变量复用的，只要name相同，符合reuse条件即可</li>
+<li>变量的trainable属性(是否被加入<code>tf.GraphKeys.TRAINABLE_VARIABLES</code>)由其第一次被定义时决定，后续对该变量的复用(<code>reuse=true</code>)将不会影响变量的trainable属性(不管后续变量申明时使用<code>trainable=True</code> or <code>trainable=False</code>)</li>
+</ul>
+</li>
+</ul>
 
       
     </div>
@@ -524,8 +552,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/Shell/Shell——进程查找.html" rel="next" title="Shell——进程查找">
-                <i class="fa fa-chevron-left"></i> Shell——进程查找
+              <a href="/Notes/ML/ML——归一化与标准化.html" rel="next" title="ML——归一化与标准化">
+                <i class="fa fa-chevron-left"></i> ML——归一化与标准化
               </a>
             
           </div>
@@ -534,8 +562,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" rel="prev" title="PyTorch——计算机视觉torchvision">
-                PyTorch——计算机视觉torchvision <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Shell/Shell——进程查找.html" rel="prev" title="Shell——进程查找">
+                Shell——进程查找 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -615,7 +643,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">221</span>
+                  <span class="site-state-item-count">222</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -677,7 +705,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-identify"><span class="nav-number">1.</span> <span class="nav-text">tf.identify()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string与数字类型的转换"><span class="nav-number">2.</span> <span class="nav-text">string与数字类型的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-pad"><span class="nav-number">3.</span> <span class="nav-text">tf.pad()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-slice"><span class="nav-number">4.</span> <span class="nav-text">tf.slice()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-map-fn"><span class="nav-number">5.</span> <span class="nav-text">tf.map_fn()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符串转固定二维数组"><span class="nav-number">6.</span> <span class="nav-text">字符串转固定二维数组</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式1"><span class="nav-number">6.1.</span> <span class="nav-text">转换方式1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式2"><span class="nav-number">6.2.</span> <span class="nav-text">转换方式2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据mask处理"><span class="nav-number">7.</span> <span class="nav-text">数据mask处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-layers-max-pooling1d"><span class="nav-number">8.</span> <span class="nav-text">tf.layers.max_pooling1d</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#人工转换数值型特征为类别型"><span class="nav-number">9.</span> <span class="nav-text">人工转换数值型特征为类别型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#慎用随机算子"><span class="nav-number">10.</span> <span class="nav-text">慎用随机算子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-stop-gradient"><span class="nav-number">11.</span> <span class="nav-text">tf.stop_gradient</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-AUTO-REUSE"><span class="nav-number">12.</span> <span class="nav-text">tf.AUTO_REUSE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#minimize分解为compute-gradients和apply-gradients两步骤"><span class="nav-number">13.</span> <span class="nav-text">minimize分解为compute_gradients和apply_gradients两步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-GraphKeys-UPDATE-OPS"><span class="nav-number">14.</span> <span class="nav-text">tf.GraphKeys.UPDATE_OPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-train-get-or-create-global-step"><span class="nav-number">15.</span> <span class="nav-text">tf.train.get_or_create_global_step()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Estimator-export-savedmodel"><span class="nav-number">16.</span> <span class="nav-text">Estimator.export_savedmodel()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一般TensorFlow模型存储为PB文件"><span class="nav-number">17.</span> <span class="nav-text">一般TensorFlow模型存储为PB文件</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-identify"><span class="nav-number">1.</span> <span class="nav-text">tf.identify()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string与数字类型的转换"><span class="nav-number">2.</span> <span class="nav-text">string与数字类型的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-pad"><span class="nav-number">3.</span> <span class="nav-text">tf.pad()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-slice"><span class="nav-number">4.</span> <span class="nav-text">tf.slice()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-map-fn"><span class="nav-number">5.</span> <span class="nav-text">tf.map_fn()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符串转固定二维数组"><span class="nav-number">6.</span> <span class="nav-text">字符串转固定二维数组</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式1"><span class="nav-number">6.1.</span> <span class="nav-text">转换方式1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式2"><span class="nav-number">6.2.</span> <span class="nav-text">转换方式2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据mask处理"><span class="nav-number">7.</span> <span class="nav-text">数据mask处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-layers-max-pooling1d"><span class="nav-number">8.</span> <span class="nav-text">tf.layers.max_pooling1d</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#人工转换数值型特征为类别型"><span class="nav-number">9.</span> <span class="nav-text">人工转换数值型特征为类别型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#慎用随机算子"><span class="nav-number">10.</span> <span class="nav-text">慎用随机算子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-stop-gradient"><span class="nav-number">11.</span> <span class="nav-text">tf.stop_gradient</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-AUTO-REUSE"><span class="nav-number">12.</span> <span class="nav-text">tf.AUTO_REUSE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#minimize分解为compute-gradients和apply-gradients两步骤"><span class="nav-number">13.</span> <span class="nav-text">minimize分解为compute_gradients和apply_gradients两步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-GraphKeys-UPDATE-OPS"><span class="nav-number">14.</span> <span class="nav-text">tf.GraphKeys.UPDATE_OPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-train-get-or-create-global-step"><span class="nav-number">15.</span> <span class="nav-text">tf.train.get_or_create_global_step()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Estimator-export-savedmodel"><span class="nav-number">16.</span> <span class="nav-text">Estimator.export_savedmodel()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一般TensorFlow模型存储为PB文件"><span class="nav-number">17.</span> <span class="nav-text">一般TensorFlow模型存储为PB文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#variable-scope-vs-name-scope"><span class="nav-number">18.</span> <span class="nav-text">variable_scope vs name_scope</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#变量的reuse和trainable"><span class="nav-number">19.</span> <span class="nav-text">变量的reuse和trainable</span></a></li></ol></div>
             
 
           </div>
