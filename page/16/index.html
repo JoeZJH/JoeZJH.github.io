@@ -275,6 +275,776 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html" itemprop="url">ML——XGBoost-vs-传统GBDT</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-18T00:00:00+08:00">
+                2018-04-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍XGBoost和其他传统GBDT的比较的优劣</em><br><em>XGBoost又叫(Newton Boosting Tree)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>GBDT推导: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT-%E6%A2%AF%E5%BA%A6%E6%8F%90%E5%8D%87%E6%A0%91-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——GBDT-梯度提升树-推导过程</a></li>
+<li>XGBoost推导: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——XGBoost-推导过程</a></li>
+</ul>
+<hr>
+<h3 id="XGBoost的优点"><a href="#XGBoost的优点" class="headerlink" title="XGBoost的优点"></a>XGBoost的优点</h3><p><em>参考博客: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a></em></p>
+<ul>
+<li><p>XGBoost<strong>损失函数</strong>是<strong>二阶泰勒</strong>展开(与牛顿法对应),GBDT是<strong>一阶泰勒</strong>展开(与梯度下降法对应)</p>
+<ul>
+<li>传统 GBDT 在优化时只用到一阶导数信息, 所以传统GBDT也叫 (Gradient Boosting)</li>
+<li>XGBoost 则对目标函数进行了二阶泰勒展开，同时用到了一阶和二阶导数, 所以XGBoost又叫(Newton Boosting Tree)</li>
+</ul>
+</li>
+<li><p>XGBoost加了<strong>正则项</strong>,普通的GBDT没有,所以XGBoost学出来的模型更简单,能防止过拟合,提高模型的泛化性能</p>
+</li>
+<li><p>XGBoost Shrinkage(缩减)</p>
+<ul>
+<li>每次进行完一次迭代后,将叶子节点的权重乘以该系数(一般叫做<code>eta</code>\(\eta\))</li>
+<li>可以理解为这里Shrinkage是将学习速率调小,从而需要的迭代次数增多</li>
+<li>减小学习率实际上是减弱了每棵树对整体的影响,从而让后面的树有更多的学习空间</li>
+<li>下面的表述还有待确定:<ul>
+<li>进一步惩罚决策树叶节点的值(惩罚的意思是叶节点越大,惩罚越多,损失函数越大)</li>
+<li>对叶节点的惩罚本身可以理解为一个正则化</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>结点分裂的<strong>增益计算公式</strong>不同</p>
+<ul>
+<li>传统 GBDT 一般采用的是<strong>最小二乘法</strong>作为内部分裂的增益计算指标(因为用的都是回归树)<ul>
+<li>注意: 这里论文中描述的最小绝对偏差回归(LAD)是第一步损失函数的定义,不是这一步中的信息增益计算</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>在分裂结点时可以选择三种方式:<ul>
+<li><code>friedman_mse</code>(默认), mean squared error with improvement score by Friedman</li>
+<li><code>mse</code>: mean squared error</li>
+<li><code>mae</code>: mean absolute error</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>而 XGBoost 使用的是经过优化推导后的式子<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>注意: XGBoost中的信息增益计算形式固定为上面的计算方式,但是具体的值与损失函数的定义相关(因为 \(g_i\) 和 \(h_i\) 的是损失函数的一阶和二阶梯度)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost<strong>支持自定义的损失函数</strong>,支持一阶和二阶可导就行</p>
+<ul>
+<li>注意,这里的损失函数指的是 \(l(y_i,\hat{y}_i)\), 单个样本预测值与目标值的差异, 也就是单个样本的损失函数</li>
+<li>从<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——XGBoost-推导过程</a>中可知:<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li>XGBoost中只要损失函数二次可微分即可得到 \(g_i\) 和 \(h_i\)<ul>
+<li>\(g_i\) 和 \(h_i\) 本身与损失函数的定义形式无关, 只要求损失函数二阶可微分即可</li>
+</ul>
+</li>
+<li>只要有了 \(g_i\) 和 \(h_i\) 我们即可<ul>
+<li>根据预先推导的叶子节点分数表达式 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\) 求得叶子结点的分数</li>
+<li>根据预先推导的信息增益公式 \(Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma\) 确定分裂特征和分裂点</li>
+</ul>
+</li>
+<li>GBDT 损失函数关系一般选择<strong>最小二乘回归</strong>或者<strong>最小绝对偏差回归</strong><ul>
+<li><strong>最小方差回归</strong>: (Least-Squares Regression, LSR)<br>$$\begin{align} L(y,F(x)) = \frac{1}{2}(y-F(x))^{2} \end{align}$$</li>
+<li><strong>最小绝对偏差回归</strong>: (Least Absolute Deviation Regression, LAD)<br>$$\begin{align} L(y,F(x)) = |y-F(x)| \end{align}$$</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>的损失函数是定义好的, 不能自己定义, 详细如下源码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">LOSS_FUNCTIONS = &#123;&apos;ls&apos;: LeastSquaresError,</span><br><span class="line">                  &apos;lad&apos;: LeastAbsoluteError,</span><br><span class="line">                  &apos;huber&apos;: HuberLossFunction,</span><br><span class="line">                  &apos;quantile&apos;: QuantileLossFunction,</span><br><span class="line">                  &apos;deviance&apos;: None,    # for both, multinomial and binomial</span><br><span class="line">                  &apos;exponential&apos;: ExponentialLoss,</span><br><span class="line">                  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">_SUPPORTED_LOSS = (&apos;deviance&apos;, &apos;exponential&apos;)</span><br><span class="line">....</span><br><span class="line"></span><br><span class="line">if (self.loss not in self._SUPPORTED_LOSS</span><br><span class="line">                or self.loss not in LOSS_FUNCTIONS):</span><br><span class="line">            raise ValueError(&quot;Loss &apos;&#123;0:s&#125;&apos; not supported. &quot;.format(self.loss))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost 借鉴了随机森林的做法，<strong>支持列采样</strong>，不仅能降低过拟合，还能减少计算量，这也是 XGBoost 异于传统 GBDT 的一个特性</p>
+<ul>
+<li>列采样: 这借鉴于随机森林中的做法,每棵树不使用所有特征,而是部分特征参与训练</li>
+<li>可以减少计算量,同时还能降低过拟合,简直优秀</li>
+</ul>
+</li>
+<li><p>XGBoost 有<strong>缺失值自动处理</strong>, 在计算分裂增益时不会考虑带有缺失值的样本，这样就减少了时间开销,在分裂点确定了之后，将带有缺失值的样本分别放在左子树和右子树，比较两者分裂增益，选择增益较大的那一边作为默认分裂方向</p>
+<ul>
+<li>进一步理解稀疏数据的支持: [待更新]</li>
+</ul>
+</li>
+<li><p><strong>并行化处理</strong>：由于 Boosting 本身的特性，传统 GBDT 无法像随机森林那样树与树之间的并行化</p>
+<ul>
+<li>XGBoost 的并行主要体现在特征粒度上，在对结点进行分裂时，由于已预先对特征排序并保存为block 结构，每个特征的增益计算就可以开多线程进行，极大提升了训练速度</li>
+</ul>
+</li>
+<li><p><strong>剪枝策略</strong>不同</p>
+<ul>
+<li>传统 GBDT 在损失不再减少时会停止分裂，这是一种预剪枝的贪心策略，容易欠拟合</li>
+<li>XGBoost采用的是后剪枝的策略，先分裂到指定的最大深度 (max_depth) 再进行剪枝<ul>
+<li>而且和一般的后剪枝不同， XGBoost 的后剪枝是不需要验证集的[待更新:XGBoost剪枝的策略是怎样的?只依赖信息增益指标吗?]</li>
+<li>和<a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">博客</a>作者指出的一样,我这里并不是”纯粹的”后剪枝,因为提前设定了最大深度</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>基分类器的选择不同:</p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li><strong>XGBoost</strong>后面的各种损失计算等都包含着树模型的复杂度,叶子节点分类等,所以是<strong>只能用CART,不能使用逻辑回归</strong>的</li>
+<li>(从函数空间定义和后面的公式推导来看)<strong>XGBoost中基函数只使用CART回归树，不能使用逻辑回归</strong></li>
+<li>但是事实上XGBoost的实现中是支持线性分类器作为基分类器的, 参数<code>booster[default=&#39;gbtree&#39;]</code>,可选为<code>booster=gblinear</code><ul>
+<li>使用<strong>线性分类器作为基分类器</strong>时, XGBoost相当于带有L1正则化和L2正则化的:<ul>
+<li>Logistic回归(分类问题)</li>
+<li>线性回归(回归问题)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>分桶策略</strong>算法不同</p>
+<ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost的缺点"><a href="#XGBoost的缺点" class="headerlink" title="XGBoost的缺点"></a>XGBoost的缺点</h3><p><em>注意这里是</em></p>
+<ul>
+<li><strong>空间消耗大</strong><ul>
+<li>因为要在训练之前先对<strong>每个特征</strong>进行<strong>预排序</strong>并将结果存储起来，所以空间消耗较大</li>
+<li>GBDT无需预排序,但是每次重新排序很耗时间</li>
+</ul>
+</li>
+<li>速度慢<ul>
+<li>虽然XGBoost速度比传统 GBDT 快了不少, 但是不如 LightGBM 快, 且 LightGBM 占用内存更低</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost为什么能够并行"><a href="#XGBoost为什么能够并行" class="headerlink" title="XGBoost为什么能够并行?"></a>XGBoost为什么能够并行?</h3><p><em>而GBDT是不能并行的，原因是：<a href="https://www.136.la/shida/show-187480.html" target="_blank" rel="noopener">https://www.136.la/shida/show-187480.html</a></em></p>
+<ul>
+<li>GBDT不能并行的原因是没有预排序（XGB的预排序结果会存储到block结构）等，在有了预排序结果后，同一个特征的切割方式可以并行尝试计算增益</li>
+<li>决策树最耗时间(包括GBDT)的步骤是对特征值的排序<ul>
+<li>用于确定最佳分割点</li>
+</ul>
+</li>
+<li>XGBoost训练前,预先对数据进行了排序,称为预排序<ul>
+<li>将预先排序的结果保存为block结构, 后面迭代的时候重复使用这个结构,从而实现一次排序,多次使用,大大减少计算量</li>
+</ul>
+</li>
+<li>这个结构减少计算量的同时还为并行化提供了可能([待更新]实际上不用预排序也能并行的吧?只是每次需要先使用一个单一线程排序,然后再多个线程并行?只是不够并行)<ul>
+<li>进行结点的分裂时,需要计算每个特征的增益,然后选择增益最大的那个特征分裂</li>
+<li>这里我们可以同时使用多个线程计算不同特征的增益, 从而实现并行化</li>
+</ul>
+</li>
+<li>总结为三方面的并行, ([待更新]但是具体实现了哪些并行不确定)<ul>
+<li>同一层级的结点间每个结点的分裂可以并行</li>
+<li>同一个结点内部不同特征增益的计算可以并行</li>
+<li>同一个结点同一个特征的不同分裂点的增益计算可以并行</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GBDT为什么不能自定义损失函数"><a href="#GBDT为什么不能自定义损失函数" class="headerlink" title="GBDT为什么不能自定义损失函数?"></a>GBDT为什么不能自定义损失函数?</h3><p><em>GBDT为什么不能像XGBoost一样自定义损失函数?</em></p>
+<ul>
+<li>查看<code>sklearn.ensemble.GradientBoostingClassifier</code>的源码发现, 确实不支持自定义的损失函数</li>
+<li>[待更新],因为涉及到后面的参数更新方式?</li>
+</ul>
+<hr>
+<h3 id="XGBoost如何使用自定义的损失函数"><a href="#XGBoost如何使用自定义的损失函数" class="headerlink" title="XGBoost如何使用自定义的损失函数?"></a>XGBoost如何使用自定义的损失函数?</h3><p><em>模型直接调用<code>fit</code>函数无法传入自定义的损失函数, 需要在模型开始定义的时候传入或者使用<code>xgb.train</code>函数调用</em></p>
+<ul>
+<li><p>使用方法1:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier(objective=MyLossFunction)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用方法2:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier()</span><br><span class="line">xgb.train(xgb_model=clf, obj=MyLossFunction)</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Algorithm——AVL树和红黑树等各种树结构总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Algorithm——AVL树和红黑树等各种树结构总结.html" itemprop="url">Algorithm——AVL树和红黑树等各种树结构总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-09T00:00:00+08:00">
+                2018-04-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="各种树的介绍"><a href="#各种树的介绍" class="headerlink" title="各种树的介绍"></a>各种树的介绍</h3><h4 id="树"><a href="#树" class="headerlink" title="树"></a>树</h4><ul>
+<li>一个根节点,每个结点可能有多个子节点</li>
+</ul>
+<h4 id="二叉树"><a href="#二叉树" class="headerlink" title="二叉树"></a>二叉树</h4><ul>
+<li>一个根节点,或者为空</li>
+<li>每个结点只有两个子节点</li>
+</ul>
+<h4 id="二叉搜索树"><a href="#二叉搜索树" class="headerlink" title="二叉搜索树"></a>二叉搜索树</h4><p><em>也叫二叉查找树</em></p>
+<ul>
+<li>首先是一棵二叉树</li>
+<li>左边孩子结点的值都小于当前结点</li>
+<li>右边孩子结点的值都大于当前结点</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>极端情况下,树模型会退化成链表,查找变成了 O(n) 复杂度的</li>
+</ul>
+<h4 id="平衡二叉搜索树-AVL树"><a href="#平衡二叉搜索树-AVL树" class="headerlink" title="平衡二叉搜索树(AVL树)"></a>平衡二叉搜索树(AVL树)</h4><p><em>也叫平衡二叉查找树</em></p>
+<ul>
+<li>首先是一棵二叉搜索树</li>
+<li>对<strong>每个结点</strong>而言, <strong>左右孩子结点的深度差值不能超过1</strong>, 从而保证查找是 O(log n) 的</li>
+<li>控制平衡方法: 参考链接<a href="https://mp.weixin.qq.com/s/dYP5-fM22BgM3viWg4V44A?utm_source=wechat_session&utm_medium=social&utm_oi=675997552948678656" target="_blank" rel="noopener">AVL树详解</a><ul>
+<li>左-左型: 右旋</li>
+<li>右-右型: 左旋</li>
+<li>左-右型: 左旋 + 右旋<ul>
+<li>第一步左旋后面部分,变成 左-左 型</li>
+<li>第二步使用右旋修正 左-左 型</li>
+</ul>
+</li>
+<li>右-左型: 右旋 + 左旋<ul>
+<li>第一步右旋后面部分,变成 右-右 型</li>
+<li>第二步使用左旋修正 右-右 型</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>每棵树的<strong>左右子树高度最多差1</strong>这个<strong>要求太严</strong>了</li>
+<li>几乎每次插入或者删除结点时都会造成规则破坏, 也就需要频繁的通过左旋或者右旋操作来修正</li>
+<li>插入和删除太频繁的场景中不太适合使用AVL树, 性能会因为<strong>左右子树高度最多差1</strong>这个<strong>规则频繁被打破</strong>而降低</li>
+</ul>
+<h4 id="红黑树"><a href="#红黑树" class="headerlink" title="红黑树"></a>红黑树</h4><ul>
+<li>首先是一棵<strong>二叉搜索树</strong></li>
+<li>每个结点不是黑色就是红色</li>
+<li><strong>根节点为黑色</strong></li>
+<li>每个<strong>叶子结点都为黑色</strong>的<strong>空结点</strong>(NULL)<ul>
+<li>注意: 叶子节点不存数据</li>
+</ul>
+</li>
+<li>任何<strong>相邻</strong>结点<strong>不同时</strong>为<strong>红色</strong><ul>
+<li>注意,相邻结点可以为黑色,且可以某条路径上全是黑色</li>
+</ul>
+</li>
+<li>对<strong>每个</strong>结点而言,<strong>当前结点</strong>到<strong>叶子结点</strong>的<strong>所有路径</strong>包含<strong>相同</strong>的<strong>黑色结点数</strong></li>
+</ul>
+<h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>能保证查找时间复杂度是 O(log n) 的, 和AVL树差不多<ul>
+<li>证明: [待更新]</li>
+</ul>
+</li>
+<li>插入和删除操作中不会频繁破坏红黑树的规则</li>
+</ul>
+<h5 id="红黑树的应用"><a href="#红黑树的应用" class="headerlink" title="红黑树的应用"></a>红黑树的应用</h5><ul>
+<li>容器集合 HashMap, TreeMap等<ul>
+<li>HashMap是 链表 + 红黑树的实现, 当冲突时就需要使用红黑树加快检索</li>
+<li>HashMap中 链表长度太短时使用链表, 太长时使用红黑树, 这个阈值一般设置为8</li>
+</ul>
+</li>
+</ul>
+<h4 id="二三树"><a href="#二三树" class="headerlink" title="二三树"></a>二三树</h4><ul>
+<li>红黑树是二三树的一个变形,一般用红黑树就够了<br>[待更新]</li>
+</ul>
+<h4 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h4><ul>
+<li>B树在大量的数据库和文件系统场景中都有使用<br>[待更新]</li>
+</ul>
+<h4 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h4><p>[待更新]</p>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>可以说<strong>红黑树是一种不严格的平衡树</strong></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——heapq模块-最大堆最小堆.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——heapq模块-最大堆最小堆.html" itemprop="url">Python——heapq模块-最大堆最小堆</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
+                2018-03-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>由于<code>queue</code>不是Python标准库,所以在LeetCode等OJ上面不能直接使用,我们可以选择<code>heapq</code>来使用最大最小堆</em></p>
+<hr>
+<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><ul>
+<li><p>堆排序示例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [2, 3, 5, 1, 54, 23, 132]</span><br><span class="line">heap = []</span><br><span class="line">for num in nums:</span><br><span class="line">    heapq.heappush(heap, num)</span><br><span class="line"># 等价于</span><br><span class="line">heapq.heapify(nums)</span><br><span class="line"></span><br><span class="line"># heap sort by incresing</span><br><span class="line">print([heapq.heappop(heap) for _ in range(len(nums))])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>加入元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">heapq.heappush(heap, num)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>弹出元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">num = heapq.heappop(heap)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取最大最小值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [1, 3, 4, 5, 2]</span><br><span class="line">print(heapq.nlargest(3, nums))</span><br><span class="line">print(heapq.nsmallest(3, nums))</span><br><span class="line"></span><br><span class="line">#Output:</span><br><span class="line">[5, 4, 3]</span><br><span class="line">[1, 2, 3]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取堆顶元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top = nums[0]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="最大堆的实现"><a href="#最大堆的实现" class="headerlink" title="最大堆的实现"></a>最大堆的实现</h3><ul>
+<li>由于Python <code>heapq</code>模块只实现了最小堆, 最大堆需要我们自己实现</li>
+<li>一种简单可行的实现方案:<ul>
+<li>在加入和弹出时,<strong>把元素取反</strong>,从而<strong>实现最大堆</strong></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html" itemprop="url">Python——为什么Python中没有自增++和自减--操作?</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
+                2018-03-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>C++和Java等语言都有++和–操作,为什么以方便自居的Python却没有这种操作呢?</em></p>
+<hr>
+<h3 id="Python的数值对象"><a href="#Python的数值对象" class="headerlink" title="Python的数值对象"></a>Python的数值对象</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">a = 1</span><br><span class="line">b = 1</span><br><span class="line">c = 1000123</span><br><span class="line">d = 1000123</span><br><span class="line"></span><br><span class="line">print id(a)</span><br><span class="line">print id(b)</span><br><span class="line">print id(c)</span><br><span class="line">print id(d)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">94181316498840</span><br><span class="line">94181316498840</span><br><span class="line">94181323965720</span><br><span class="line">94181323965720</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Python数值对象都是不可变类型,与String一样,所以不能修改对象内部数据</li>
+<li>C++中的<code>i++</code>修改内存中对象本身,数值增加1,而Python不能修改对象本身</li>
+<li>与C++中字符串可以修改,Python中不能修改是一个道理</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——优先队列PriorityQueue.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1076,807 +1846,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——HMM-MEMM-CRF.html" itemprop="url">ML——HMM-MEMM-CRF</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要区分隐马尔可夫模型(HMM),最大熵马尔可夫模型(MEMM),和条件随机场(CRF)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="HMM"><a href="#HMM" class="headerlink" title="HMM"></a>HMM</h3><ul>
-<li>生成式模型</li>
-<li>有向图模型,贝叶斯网络</li>
-</ul>
-<h4 id="模型描述"><a href="#模型描述" class="headerlink" title="模型描述"></a>模型描述</h4><ul>
-<li>模型参数: \(\lambda = (A, B, \pi)\)<ul>
-<li>A为状态转移矩阵</li>
-<li>B为观测概率矩阵</li>
-<li>\(\pi\)为初始状态概率向量</li>
-</ul>
-</li>
-<li>HMM对</li>
-</ul>
-<h4 id="假设"><a href="#假设" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>观测序列之间独立</li>
-<li>当前状态仅仅依赖于上一个状态</li>
-</ul>
-<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>概率计算问题: 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),计算在给定模型下观测序列出现的概率\(P(O|\lambda)\)</li>
-<li>学习问题: 已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),估计模型参数\(\lambda = (A, B, \pi)\),使得在该模型下观测序列出现的概率\(P(O|\lambda)\)最大.(极大似然法,EM算法)</li>
-<li>预测问题(解码问题): 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O;\lambda)\)最大,(维特比算法)</li>
-</ul>
-<h4 id="序列标注问题"><a href="#序列标注问题" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>序列标注问题是已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O)\)最大</li>
-<li>实际上序列标注问题包括学习问题和预测问题两个问题:<ul>
-<li>学习问题: 根据观测序列确定模型参数\(\lambda = (A, B, \pi)\), 极大似然法或EM算法(EM算法会同时估计得到最优状态序列(隐变量))</li>
-<li>预测问题: 根据模型参数和观测序列确定最优状态序列\(I=(i_{1}, i_{2},,,i_{n})\),维特比算法</li>
-</ul>
-</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>算法成熟</li>
-<li>效率高, 模型简单, 容易训练</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>序列标注问题中,当前状态(标注)往往不仅仅和前一个状态相关,还可能和观察序列相关(这里指的是整个序列)</li>
-<li>也就是说每个状态可能还与整个观察序列的(除了当前观察值以外的)其他观察值(观察序列上下文)相关</li>
-</ul>
-<hr>
-<h3 id="MEMM"><a href="#MEMM" class="headerlink" title="MEMM"></a>MEMM</h3><ul>
-<li>判别式模型</li>
-<li>有向图模型,贝叶斯网络</li>
-</ul>
-<h4 id="假设-1"><a href="#假设-1" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是MEMM,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
-</ul>
-<h4 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>MEMM似乎只用于序列标注,也就是在已知观测序列的情况下,寻找最优的状态序列</li>
-<li><em>有其他应用的话再添加</em></li>
-</ul>
-<h4 id="序列标注问题-1"><a href="#序列标注问题-1" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>用于序列标注时,一般也包括两个问题: 学习问题和预测问题<ul>
-<li>学习问题: 根据观测序列确定模型参数(每条边的(概率)值和初始状态?)</li>
-<li>预测问题: 根据模型和观测序列确定维特比算法</li>
-</ul>
-</li>
-</ul>
-<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>解决了观测独立性问题(观测独立性是只当前观测序列只与当前状态相关)[问题: 在MEMM中并不关心观测序列由谁影响,而是关心观测序列如何影响了状态序列]</li>
-</ul>
-<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>标签偏置(labeling bias)问题<ul>
-<li>MEMM中概率最大路径往往容易出现在转移少的状态中</li>
-<li>MEMM归一化在加和函数\(\sum\)计算内部,而CRF的归一化在加和函数\(\sum\)的外部,这使得MEMM只会关注加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]的局部特征,而不是的整体特征,所以MEMM存在偏置问题</li>
-</ul>
-</li>
-<li>比HMM复杂</li>
-</ul>
-<hr>
-<h3 id="CRF"><a href="#CRF" class="headerlink" title="CRF"></a>CRF</h3><ul>
-<li>判别式模型</li>
-<li>无向图模型,马尔科夫网络</li>
-</ul>
-<h4 id="假设-2"><a href="#假设-2" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是线性CRFs,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
-<li>与MEMM的区别就是无向图模型与有向图模型的区别</li>
-</ul>
-<h4 id="问题-2"><a href="#问题-2" class="headerlink" title="问题"></a>问题</h4><h4 id="序列标注问题-2"><a href="#序列标注问题-2" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>模型复杂,能建模更多可能的特征</li>
-<li>全局归一化(这里与MEMM的区别是,MEMM归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)计算内部,而CRF的归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)的外部)</li>
-</ul>
-<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型复杂,速度慢</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——MCMC采样.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——MCMC采样.html" itemprop="url">ML——MCMC采样</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
-<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
-</ul>
-<hr>
-<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
-<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
-</ul>
-<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
-<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
-</ul>
-<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
-<ul>
-<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
-<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
-<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
-</ul>
-</li>
-</ul>
-<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
-<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
-<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
-<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
-<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
-<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
-</ul>
-<hr>
-<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
-<li>对于原始目标分布\(p(x)\)</li>
-<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
-<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
-</ul>
-</li>
-<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
-<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
-</ul>
-</li>
-</ul>
-<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li>随机选取初始样本x^{0}</li>
-<li>for t = 1,2,3,…:<ul>
-<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
-<li>均匀分布采样\(u \sim U(0,1)\)</li>
-<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
-</ul>
-</li>
-<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></li>
-</ul>
-<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
-<li>MH采样基于拒绝采样来逼近平稳分布</li>
-<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
-<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
-<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
-<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
-</ul>
-</li>
-</ul>
-<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
-<li><p>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</p>
-</li>
-<li><p><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$</p>
-<ul>
-<li>上式为细致平稳分布条件(detailed balance condition)</li>
-<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
-</ul>
-</li>
-<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
-<ul>
-<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
-</ul>
-</li>
-<li><p>在MH采样法中</p>
-<ul>
-<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
-<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
-<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
-<li>即可</li>
-</ul>
-</li>
-<li><p>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率</p>
-<ul>
-<li>使用原始接受率的方法称为一般MCMC方法</li>
-<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
-</ul>
-</li>
-<li><p>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$</p>
-<ul>
-<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li><p>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</p>
-</li>
-</ul>
-<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
-<ul>
-<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
-<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
-</ul>
-<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
-<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
-</ul>
-<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li><p>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</p>
-</li>
-<li><p>for t = 1,2,3,…:</p>
-<ul>
-<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
-<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
-</ul>
-</li>
-<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
-</ul>
-</li>
-<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
-<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
-</ul>
-</li>
-<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——EM算法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——EM算法.html" itemprop="url">ML——EM算法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>期望最大化(Exception Maximization Algorithm)EM算法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="不同教材的不同形式"><a href="#不同教材的不同形式" class="headerlink" title="不同教材的不同形式"></a>不同教材的不同形式</h3><h4 id="李航统计学习方法"><a href="#李航统计学习方法" class="headerlink" title="李航统计学习方法"></a>李航统计学习方法</h4><h5 id="算法步骤"><a href="#算法步骤" class="headerlink" title="算法步骤"></a>算法步骤</h5><ul>
-<li><p>输入: 观测变量数据Y</p>
-</li>
-<li><p>输出: 模型(参数\(\theta\))</p>
-</li>
-<li><p><strong>E步:</strong> 计算\(Q(\theta, \theta^{i})\)<br>$$<br>\begin{align}<br>Q(\theta, \theta^{i}) &amp;= E_{Z}[logP(Y,Z|\theta)|Y,\theta^{i}] \\<br>  &amp;= E_{Z\sim P(Z|Y,\theta^{i})}[logP(Y,Z|\theta)] \\<br>  &amp;= \sum_{Z} P(Z|Y,\theta^{i})logP(Y,Z|\theta) \\<br>  &amp;= \sum_{Z} logP(Y,Z|\theta)P(Z|Y,\theta^{i})<br>\end{align}<br>$$</p>
-</li>
-<li><p><strong>M步:</strong> 求使得\(Q(\theta, \theta^{i})\)极大化的参数\(\theta=\theta^{i+1}\)<br>$$\theta^{i+1} = \arg\max_{\theta}Q(\theta, \theta^{i})$$</p>
-</li>
-<li><p>重复E步和M步,直到收敛</p>
-</li>
-<li><p>理解: \(Q(\theta, \theta^{i})\)可以理解为\(Q(\theta|\theta^{i})\),表示在参数\(\theta^{i}\)已知的情况下,对数似然函数关于隐变量后验分布的期望函数,函数的参数为\(\theta\)</p>
-</li>
-</ul>
-<h5 id="隐变量的期望还是分布"><a href="#隐变量的期望还是分布" class="headerlink" title="隐变量的期望还是分布?"></a>隐变量的期望还是分布?</h5><p><em>参考博客:<a href="https://www.jianshu.com/p/c3ff1ae5cb66" target="_blank" rel="noopener">https://www.jianshu.com/p/c3ff1ae5cb66</a></em></p>
-<h6 id="仅考虑隐变量的期望"><a href="#仅考虑隐变量的期望" class="headerlink" title="仅考虑隐变量的期望"></a>仅考虑隐变量的期望</h6><ul>
-<li>应用场景为k-means聚类,但是k-means聚类E步求的是最可能的\(Z\)值(概率最大的\(Z\)值),而不是\(Z\)的期望</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th align="center">步骤</th>
-<th align="center">具体细节</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">E步</td>
-<td align="center">基于\(\theta^{i}\)推断隐变量\(Z\)的期望,记为\(Z^{i}\)</td>
-</tr>
-<tr>
-<td align="center">M步</td>
-<td align="center">基于已观测变量\(Y\)和\(Z^{i}\)对参数\(\theta\)做极大似然估计,得到\(\theta^{i+1}\) $$\theta^{i+1}=\arg\max_{\theta}P(Y,Z^{i}\mid\theta)$$</td>
-</tr>
-</tbody></table>
-<h6 id="考虑隐变量的分布"><a href="#考虑隐变量的分布" class="headerlink" title="考虑隐变量的分布"></a>考虑隐变量的分布</h6><ul>
-<li>应用场景为GMM模型聚类</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th align="center">步骤</th>
-<th align="center">具体细节</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">E步</td>
-<td align="center">基于\(\theta^{i}\)推断隐变量\(Z\)的后验分布\(P(Z\mid Y,\theta^{i})\)</td>
-</tr>
-<tr>
-<td align="center">E步M步均可</td>
-<td align="center">基于隐变量的后验分布\(P(Z\mid Y,\theta^{i})\)<br>计算对数似然函数\(logP(Y,Z\mid\theta)\)关于隐变量\(Z\)的后验分布\(P(Z\mid Y,\theta^{i})\)的期望\(Q(\theta,\theta^{i})\)<br>$$Q(\theta,\theta^{i}) = E_{P(Z\mid Y,\theta^{i})}logP(Y,Z\mid \theta)$$</td>
-</tr>
-<tr>
-<td align="center">M步</td>
-<td align="center">基于期望函数\(Q(\theta, \theta^{i})\),对参数\(\theta\)求极值(极大似然估计),得到$$\theta^{i+1}=\arg\max_{\theta}Q(\theta, \theta^{i})=\arg\max_{\theta}E_{P(Z\mid Y,\theta^{i})}logP(Y,Z\mid \theta)$$</td>
-</tr>
-</tbody></table>
-<h5 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h5><ul>
-<li><p>已知数据是观测数据Y,像极大似然法一样,使得<strong>似然函数最大化</strong>即可,这里为了方便计算使用<strong>对数似然</strong></p>
-</li>
-<li><p>我们的终极目标与极大似然法一样,求一个使得似然函数最大(可能是极大)的参数$$\theta^{\star}=\arg\max_{\theta}L(\theta)$$<br>其中<br>$$<br>\begin{align}<br>L(\theta)&amp;=logP(Y|\theta)\\<br>  &amp;=log\sum_{Z}P(Y,Z|\theta)\\<br>  &amp;=log\left(\sum_{Z}P(Y|Z,\theta)P(Z|\theta)\right)<br>\end{align}<br>$$</p>
-</li>
-<li><p>显然,上述似然函数比较难以求解,非凸,且涉及和(积分或加法)的对数等操作,难以展开(可能还有其他的原因)</p>
-</li>
-<li><p>所以我们使用EM算法迭代不断逼近原始似然函数的最优解\(\theta^{\star}\)(注意:我们只能得到局部最优,但是一般来说局部最优也够用了)</p>
-</li>
-<li><p>可用<strong>Jensen不等式</strong>得到\(L(\theta)\)的下界来作为优化目标不断迭代<br>$$<br>\begin{align}<br>L(\theta)&amp;=log\left(\sum_{Z}P(Y|Z,\theta)P(Z|\theta)\right)\\<br>  &amp;=log\left(\sum_{Z}P(Z|Y,\theta^{i})\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\right)\\<br>  &amp;\geq \sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\\<br>  &amp;=B(\theta,\theta^{i})<br>\end{align}<br>$$</p>
-</li>
-<li><p>由于此时\(B(\theta, \theta^{i})\)是\(L(\theta)\)的下界(\(B(\theta, \theta^{i})\)是固定\(\theta^{i}\)时关于\(\theta\)的凸函数且容易求导,可以求极大值),所以使得前者增大的参数\(\theta\)也能使得后者增大,为了使得后者尽可能的增大,我们对前者取极大值</p>
-<ul>
-<li>下面的推导基于事实: <strong>消去与\(\theta\)无关的项,极大值点(\(\theta^{i+1}\))不变</strong></li>
-</ul>
-</li>
-</ul>
-<p>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}B(\theta,\theta^{i})\\<br>    &amp;=\arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\right)\\<br>    &amp;=\arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta)-\sum_{Z}P(Z|Y,\theta^{i})logP(Z|Y,\theta^{i})\right)\\<br>    &amp;= \arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta)\right)\\<br>    &amp;=\arg\max_{\theta}Q(\theta,\theta^{i})<br>\end{align}<br>$$</p>
-<ul>
-<li>由上式可知,我们的EM算法步骤中E步和M步是正确的</li>
-<li>问题:推导第二步中为什么选择\(P(Z|Y,\theta^{i})\)而不是其他分布呢?<ul>
-<li>解答: \(B(\theta, \theta^{i})\)和\(L(\theta)\)什么时候相等呢?(前面推导中<strong>Jensen不等式</strong>什么时候能取等号呢?)</li>
-<li><strong>Jensen不等式</strong>取等号当且仅当<strong>Jensen不等式</strong>中函数的值为常数,此处函数的值为\(log\frac{P(Y,Z|\theta)}{Q(Z)}\)<br>$$<br>\begin{align}<br>L(\theta)&amp;=log\left(\sum_{Z}P(Y,Z|\theta)\right)\\<br>&amp;=log\left(\sum_{Z}Q(Z)\frac{P(Y,Z|\theta)}{Q(Z)}\right)\\<br>&amp;\geq \sum_{Z}Q(Z)log\frac{P(Y,Z|\theta)}{Q(Z)}\\<br>\end{align}<br>$$</li>
-<li>不等式中当且仅当\(log\frac{P(Y,Z|\theta)}{Q(Z)}\)为常数,也就是\(\frac{P(Y,Z|\theta)}{Q(Z)}=c\), c为常数,时等号成立</li>
-<li>此时由于\(Q(Z)\)是一个分布(注意:正因为\(Q(Z)\)是一个分布才能用Jensen不等式),所以有<br>$$<br>\begin{align}<br>Q(Z)=\frac{P(Y,Z|\theta)}{\sum_{Z}P(Y,Z|\theta)}=\frac{P(Y,Z|\theta)}{P(Y|\theta)}=P(Z|Y,\theta)<br>\end{align}<br>$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="吴恩达CS229"><a href="#吴恩达CS229" class="headerlink" title="吴恩达CS229"></a>吴恩达CS229</h4><ul>
-<li>E步: 计算\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)</li>
-<li>M步: 求使得原始似然函数下界极大化的参数\(\theta=\theta^{i+1}\)<br>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}\sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})} \\<br>  &amp;= \arg\max_{\theta}\sum_{Z}Q_{i}(Z)log\frac{P(Y|Z,\theta)P(Z|\theta)}{Q_{i}(Z)}<br>\end{align}<br>$$<ul>
-<li>进一步消除与\(\theta\)无关的项可以得到<br>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}\sum_{Z}Q_{i}(Z)logP(Y|Z,\theta)P(Z|\theta)<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>推导步骤和李航统计学习方法一样,核心是运用<strong>Jensen不等式</strong></li>
-</ul>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
-<li>以上两个不同课程的E步不同,但完全等价,吴恩达CS229课程中E步计算\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)就等价于计算出了李航统计学习方法中的\(Q(\theta, \theta^{i})\),二者关系如下:<br>$$<br>\begin{align}<br>Q(\theta, \theta^{i})&amp;=\sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta) \\<br>  &amp;= \sum_{Z}Q_{i}(Z)logP(Y|Z,\theta)P(Z|\theta)<br>\end{align}<br>$$</li>
-<li>M步中,二者本质上完全相同,但是吴恩达CS229中没消去与\(\theta\)无关的项,所以看起来不太简洁</li>
-</ul>
-<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><h5 id="实例一"><a href="#实例一" class="headerlink" title="实例一"></a>实例一</h5><ul>
-<li>三个硬币的抛硬币问题<ul>
-<li>第一次:抛硬币A,决定第二次抛C还是B,选中B的概率为\(\pi\)</li>
-<li>第二次:抛硬币B或C,正面为1,反面为0</li>
-</ul>
-</li>
-<li>(第一个硬币A抛中B的概率为隐变量)</li>
-</ul>
-<h5 id="实例二"><a href="#实例二" class="headerlink" title="实例二"></a>实例二</h5><ul>
-<li>200个人不知道男女的身高拟合问题(性别为隐变量)</li>
-<li>这里是高斯混合模型的代表</li>
-</ul>
-<h5 id="实例三"><a href="#实例三" class="headerlink" title="实例三"></a>实例三</h5><ul>
-<li>K-Means聚类</li>
-<li>参考&lt;&lt;百面机器学习&gt;&gt;P100-P101</li>
-</ul>
-<h4 id="进一步理解"><a href="#进一步理解" class="headerlink" title="进一步理解"></a>进一步理解</h4><h5 id="我的理解"><a href="#我的理解" class="headerlink" title="我的理解"></a>我的理解</h5><ul>
-<li><p>初始化参数\(\theta^{0}\)</p>
-</li>
-<li><p>1.根据参数\(\theta^{i}\)计算当前隐变量的分布函数\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)</p>
-<ul>
-<li>这一步的本质是使得在参数 \(\theta = \theta^i\) 时, 求得一个隐变量 \(Z\) 的分布,使得原始式子中的不等式取等号</li>
-</ul>
-</li>
-<li><p>2.根据\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)得到对数似然函数下界函数\(B(\theta, \theta^{i})\)(求原始似然函数的下界B函数是因为直接对原始似然函数求极大值很难)或者\(Q(\theta,\theta^{i})\)<br>$$\arg\max_{\theta}B(\theta, \theta^{i})=\arg\max_{\theta}Q(\theta,\theta^{i})$$<br>(\(Q(\theta,\theta^{i})\)可以看作是\(B(\theta, \theta^{i})\)的简化版,\(B(\theta, \theta^{i})\)才是原始似然函数的下界,\(Q(\theta,\theta^{i})\)不是原始似然函数的下界)</p>
-<ul>
-<li>这里 \(B(\theta, \theta^{i})\) 就是原始似然函数的下界(也就是不等式取到等号)</li>
-</ul>
-</li>
-<li><p>3.求使得函数\(B(\theta, \theta^{i})\)极大化的参数\(\theta=\theta^{i+1}\)</p>
-<ul>
-<li>这一步是在固定隐变量 \(Z\) 的分布时, 用极大似然求一个使得下界 \(B(\theta, \theta^{i})\) 最大的参数 \(\theta = \theta^{i+1}\) 使得 \(B(\theta^{i+1}, \theta^{i}) = \text{max} B(\theta, \theta^{i})\) </li>
-</ul>
-</li>
-<li><p>4.循环1,2,3直到收敛(相邻<strong>两次参数的变化</strong>或者是<strong>似然函数的变化</strong>足够小即可判断为收敛)</p>
-<ul>
-<li>\(||\theta^{i+1}-\theta^{i}||&lt;\epsilon_{1}\)或者\(||Q(\theta^{i+1},\theta^{i})-Q(\theta^{i},\theta^{i})||&lt;\epsilon_{2}\)</li>
-</ul>
-</li>
-<li><p>总结:</p>
-<ul>
-<li>在吴恩达CS229课程中: E步包含1, M步包含2,3,其中第2步中求的是\(B(\theta, \theta^{i})\)</li>
-<li>在李航&lt;&lt;统计学习方法&gt;&gt;中: E步包含1,2, M步包含3,其中第2步中求的是\(Q(\theta,\theta^{i})\)</li>
-<li>两种表达等价</li>
-</ul>
-</li>
-</ul>
-<h5 id="图示理解"><a href="#图示理解" class="headerlink" title="图示理解"></a>图示理解</h5><ul>
-<li>迭代图示如下图(图来自博客:<a href="https://www.cnblogs.com/xieyue/p/4384915.html" target="_blank" rel="noopener">https://www.cnblogs.com/xieyue/p/4384915.html</a>)</li>
-</ul>
-<img src="/Notes/ML/ML——EM算法/EM_explain.png">
-
-<ul>
-<li>也可参考李航&lt;&lt;统计学习方法&gt;&gt;第160页的图和解释</li>
-</ul>
-<h4 id="收敛性"><a href="#收敛性" class="headerlink" title="收敛性"></a>收敛性</h4><ul>
-<li>参考李航&lt;&lt;统计学习方法&gt;&gt;第160页-第162页推导过程</li>
-<li>参考&lt;&lt;百面机器学习&gt;&gt;第P099页-第P100页<ul>
-<li>核心思想<strong>原始函数单调有界</strong></li>
-<li>原始函数为\(L(\theta)\),函数下界为\(B(\theta,\theta^{i})\)</li>
-<li>E步:<ul>
-<li>找到使得在当前\(\theta^{i}\)确定时,原始函数的下界\(B(\theta, \theta^{i})\),在\(\theta^{i}\)处有<br>\(\)<br>$$<br>\begin{align}<br>L(\theta^{i}) = B(\theta,\theta^{i})<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>M步: <ul>
-<li>找到使得函数\(B(\theta,\theta^{i})\)取得极大值的\(\theta^{i+1}\)</li>
-</ul>
-</li>
-<li>i = i + 1,然后重新开始E和M步<br>$$<br>\begin{align}<br>L(\theta^{i+1}) &gt;= L(\theta^{i+1})<br>\end{align}<br>$$</li>
-<li>所以函数是单调的</li>
-<li>由于\(L(\theta)\)有界(这里原始函数有界可以从似然函数的定义得到)</li>
-<li><strong>函数单调有界=&gt;函数收敛</strong>(数学分析中的定理)</li>
-</ul>
-</li>
-</ul>
-<h4 id="优劣性"><a href="#优劣性" class="headerlink" title="优劣性"></a>优劣性</h4><h5 id="优势"><a href="#优势" class="headerlink" title="优势"></a>优势</h5><ul>
-<li>简单性</li>
-<li>普适性</li>
-</ul>
-<h5 id="劣势"><a href="#劣势" class="headerlink" title="劣势"></a>劣势</h5><ul>
-<li>不能保证收敛到最大值,只能保证收敛到极大值</li>
-<li>对初始值敏感,不同初始值可能收敛到不同极值点</li>
-<li>实际使用时通常采用多次选择不同的初始值来进行迭代,最终对估计值选最好的</li>
-</ul>
-<h4 id="EM算法的推广"><a href="#EM算法的推广" class="headerlink" title="EM算法的推广"></a>EM算法的推广</h4><ul>
-<li>引入F函数</li>
-</ul>
-<h5 id="GEM1"><a href="#GEM1" class="headerlink" title="GEM1"></a>GEM1</h5><p><em>F函数极大-极大法</em></p>
-<ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 求使得\(F(\tilde{P},\theta^{i})\)极大化的\(\tilde{P}^{i+1}\)</li>
-<li>M步: 求使得\(F(\tilde{P}^{i+1},\theta)\)极大化的\(\theta^{i+1}\)</li>
-<li>重复E,M,直到收敛</li>
-</ul>
-<h5 id="GEM2"><a href="#GEM2" class="headerlink" title="GEM2"></a>GEM2</h5><ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 计算\(Q(\theta,\theta^{i})\)</li>
-<li>M步: 求\(\theta^{i+1}\)使得\(Q(\theta^{i+1},\theta^{i}) &gt; Q(\theta^{i},\theta^{i})\)</li>
-<li>重复E,M,直到收敛</li>
-<li>总结: \(Q(\theta,\theta^{i})\)的极大化难求时,这种方法可以简化计算</li>
-</ul>
-<h5 id="GEM3"><a href="#GEM3" class="headerlink" title="GEM3"></a>GEM3</h5><ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 计算\(Q(\theta,\theta^{i})\)</li>
-<li>M步: 对参数\(\theta^{i}\)的每一个维度k,固定参数的其他维度,求使得\(Q(\theta,\theta^{i})\)极大化的\(\theta_{k}^{i+1}\),最终得到\(\theta^{i+1}\)<ul>
-<li>使得\(Q(\theta^{i+1},\theta^{i}) &gt; Q(\theta^{i},\theta^{i})\)</li>
-</ul>
-</li>
-<li>重复E,M,直到收敛</li>
-<li>总结: 一种特殊的GEM算法,将M步分解为参数\(\theta\)的维度次来条件极大化</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2039,317 +2008,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最优化方法-无约束参数优化方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html" itemprop="url">ML——最优化方法-无约束参数优化方法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>本文介绍无约束的参数优化方法：梯度下降法(Gradient Descent)、牛顿法(Newton’s Method)和拟牛顿法(Quasi-Newton Methods)</strong></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<hr>
-<h3 id="无约束参数优化方法概览"><a href="#无约束参数优化方法概览" class="headerlink" title="无约束参数优化方法概览"></a>无约束参数优化方法概览</h3><h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><p>$$<br>\begin{align}<br>\theta^{\star} = \arg\max_{\theta}L(\theta)<br>\end{align}<br>$$</p>
-<h4 id="直接法"><a href="#直接法" class="headerlink" title="直接法"></a>直接法</h4><h5 id="使用直接法需要满足两个条件"><a href="#使用直接法需要满足两个条件" class="headerlink" title="使用直接法需要满足两个条件"></a>使用直接法需要满足两个条件</h5><ul>
-<li>\(L(\theta)\)为关于\(\theta\)的凸函数</li>
-<li>\(\nabla L(\theta)=0\)有解析解(又名闭式解，指的是有限个常见运算的组合给出的形式)</li>
-</ul>
-<h5 id="求解"><a href="#求解" class="headerlink" title="求解"></a>求解</h5><ul>
-<li>目标函数直接对参数求导后令目标函数导数为0: $$\nabla L(\theta)=0$$</li>
-</ul>
-<h4 id="迭代法"><a href="#迭代法" class="headerlink" title="迭代法"></a>迭代法</h4><ul>
-<li>包括梯度下降法和牛顿法，牛顿法又可以拓展为拟牛顿法</li>
-</ul>
-<hr>
-<h3 id="梯度下降法"><a href="#梯度下降法" class="headerlink" title="梯度下降法"></a>梯度下降法</h3><p><em>更详细的说明参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E4%B8%8E%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D.html" title="/Notes/ML/ML——最小二乘与梯度下降.html">ML——最小二乘与梯度下降</a>中的介绍</em></p>
-<ul>
-<li>梯度下降法通过每次迭代沿着梯度下降最快的方向(梯度的负方向)前进一个\(\Delta \theta\)长度</li>
-<li>\(\Delta \theta\)为步长\(\alpha\)(参数)乘以梯度的模(变化率)的方法，实现对极大(小)值的一步步逼近</li>
-</ul>
-<hr>
-<h3 id="牛顿法"><a href="#牛顿法" class="headerlink" title="牛顿法"></a>牛顿法</h3><h4 id="数学中的牛顿法"><a href="#数学中的牛顿法" class="headerlink" title="数学中的牛顿法"></a>数学中的牛顿法</h4><ul>
-<li>牛顿法的本质是求函数值\(f(x)\)为零(\(f(x)=0\))时参数(自变量\(x\))的值</li>
-<li>本质上说，牛顿法是用逼近的方法来<strong>解方程</strong>的一种方法</li>
-</ul>
-<h5 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>对于确定的方程\(f(x)=0\)，我们的目标是求解自变量\(x\)的值</li>
-<li>1.初始值定义为\(x=x_{0}\)</li>
-<li>2.牛顿法通过迭代每次从当前点\(x={k}\)沿着斜率\(\frac{\partial f(x)}{\partial x}, x=x_{k}\)出发做一条直线,并求出其表达式</li>
-<li>3.求出该直线与x轴的交点\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)</li>
-<li>4.设置下一次迭代的点为\(x=x_{k+1}\)</li>
-<li>5.重复2到4，直到斜率小于某个阈值\(\epsilon\)时停止迭代</li>
-<li>6.迭代停止时\(x=x_{k+1}\)就是方程的近似解</li>
-<li>迭代过程图示化如下：</li>
-<li>图片引用自博客：<a href="https://www.cnblogs.com/lyr2015/p/9010532.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyr2015/p/9010532.html</a>*
-
-</li>
-</ul>
-<h5 id="迭代公式推导"><a href="#迭代公式推导" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h5><ul>
-<li>上述迭代流程中迭代公式\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)的推导如下：
-
-
-</li>
-</ul>
-<h4 id="最优化方法中的牛顿法"><a href="#最优化方法中的牛顿法" class="headerlink" title="最优化方法中的牛顿法"></a>最优化方法中的牛顿法</h4><ul>
-<li>最优化方法的目标是学习函数\(f(\theta)\)的极小/大值(若\(f(\theta)\)是凸函数，则为最小/大值)</li>
-<li>可以证明，目标函数(凸函数)取最优点(最大/小值)时，目标函数的导数\(\frac{\partial f(\theta)}{\partial \theta}=0, 其中\theta=\theta^{\star}\)</li>
-<li>基于这个事实，在知道目标函数的导数\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)的表达式后，我们可以列出方程\(f{}’(\theta)=0\)<ul>
-<li>此时方程的解\(\theta^{\star}\)就是原始目标函数的最优解</li>
-</ul>
-</li>
-<li>解上述方程\(\frac{\partial f(\theta)}{\partial \theta}=0\)时我们即可使用<strong>数学中的牛顿法</strong></li>
-</ul>
-<h5 id="算法流程-1"><a href="#算法流程-1" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>具体算法步骤与<strong>数学中的算法流程</strong>小节一致，不同的地方在于此时迭代公式变为\(\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}\)</li>
-<li>在具体的实现中，我们一般会直接推导出每一步的迭代公式，按照公式迭代即可得到最优解</li>
-</ul>
-<h4 id="迭代公式推导-1"><a href="#迭代公式推导-1" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h4><ul>
-<li>根据上述事实，此时我们的目标函数为\(f(\theta)\)，目标方程方程为\(f{}’(\theta)=0\)</li>
-<li>此时迭代公式为$$\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}$$</li>
-<li>当参数数量不止一个时，\(\theta\)表示一个向量，此时迭代公式为$$\theta_{k+1}=\theta_{k}-H_{k}^{-1}\nabla_{\theta}f(\theta_{k})$$<ul>
-<li>其中\(H_{k}^{-1}\)为海森矩阵\(H_{k}\)的逆, \(H_{k}=H(\theta_{k})\)</li>
-<li>\(H_{k}^{-1}\)和\(\frac{1}{f{}’{}’(\theta_{k})}\)分别是多维和一维参数时目标函数的二阶导</li>
-<li>海森矩阵是目标函数对参数的二阶导数，\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>推导步骤和上面的<strong>数学中的迭代公式</strong>推导一致</li>
-</ul>
-<hr>
-<h3 id="牛顿法与梯度下降法的一种简单推导方法"><a href="#牛顿法与梯度下降法的一种简单推导方法" class="headerlink" title="牛顿法与梯度下降法的一种简单推导方法"></a>牛顿法与梯度下降法的一种简单推导方法</h3><ul>
-<li>用泰勒展开来推导,详情待更新(参考&lt;&lt;百面&gt;&gt;P149)</li>
-</ul>
-<h4 id="迭代法的思想"><a href="#迭代法的思想" class="headerlink" title="迭代法的思想"></a>迭代法的思想</h4><ul>
-<li>最小化目标函数<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>\end{align}<br>$$</li>
-<li>注意,如果这里是max最大化目标函数的话,对应的是梯度上升法,此时后面推导的步骤中加入L2正则项时为了使得\(\left | \delta \right |_{2}^{2}\)的值最小,正则项的权重应该为负数,这样整体目标函数最大时正则项才能取得最小值,最终推导得到的结果也将变成梯度上升的表达式,(\(\alpha &gt; 0\)时对应的参数迭代公式变成加好而不是减号)</li>
-<li>但是实际上最大化目标函数可以价格负号转变为最小化目标函数,所以其实掌握最小化目标函数的优化方法即可</li>
-</ul>
-<h4 id="一阶法——梯度下降法"><a href="#一阶法——梯度下降法" class="headerlink" title="一阶法——梯度下降法"></a>一阶法——梯度下降法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做一阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta \\<br>\end{align}<br>$$</li>
-<li>由于上式在\(\delta\)非常小时才成立，所以我们一般加上加入L2正则项（L2正则项可以保证\(\delta\)的值不会太大),为了保证\(\left | \delta \right |_{2}^{2}\)的值最小,要求\(\alpha &gt; 0\), 才能保证目标函数最小时正则项也对应最小 (梯度提升法中要求\(\alpha &lt; 0\)或者需要在正则项前面的系数加上负号,才能保证目标函数最大时正则项最小)<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2} \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2}) \\<br>&amp;= -\alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="二阶法——牛顿迭代法"><a href="#二阶法——牛顿迭代法" class="headerlink" title="二阶法——牛顿迭代法"></a>二阶法——牛顿迭代法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做二阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta)  \\<br>&amp;= -\nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t}) \\<br>&amp;= -H(\theta_{t})^{-1}\nabla L(\theta_{t}) \\<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<hr>
-<h3 id="比较梯度下降法与牛顿法"><a href="#比较梯度下降法与牛顿法" class="headerlink" title="比较梯度下降法与牛顿法"></a>比较梯度下降法与牛顿法</h3><ul>
-<li>一般来说，牛顿法收敛速度快<ul>
-<li>一种解释是梯度下降法用<strong>一次平面去拟合局部区域</strong>牛顿法是用<strong>二次曲面去拟合局部区域</strong>，所以后者能得到更好的拟合效果，迭代的方向也就越精确</li>
-<li>另一种解释是梯度下降只能看到当前目标函数的下降方向，牛顿法可以看到当前当前目标函数的下降方向，同时还能看到一阶导数的变化趋势，所以拟合更快</li>
-</ul>
-</li>
-<li>梯度下降法中有个超参数\(\alpha\)<ul>
-<li>牛顿法中海森矩阵的逆在迭代过程中不断减小，可以起到逐步减小步长的效果(这里的步长与梯度下降中的\(\alpha\)步长不一样,梯度下降中的\(\alpha\)是超参数,表示每次向着负梯度移动的长度,而牛顿法中没有超参数)</li>
-<li>为了防止震荡,这个步长\(\alpha\)也可以随着迭代次数不断减小</li>
-</ul>
-</li>
-<li>梯度下降法可能造成震荡<ul>
-<li>越接近最优值时，步长\(\alpha\)应该不断减小，否则会在最优值附近来回震荡</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第一版附录A中,\(\alpha\)是不断变化的,能保证不会造成震荡</li>
-</ul>
-</li>
-<li>牛顿法在多变量时需要求海森矩阵H的逆,比较复杂,时间和空间上有要求,不如梯度下降法来的容易</li>
-</ul>
-<hr>
-<h3 id="拟牛顿法"><a href="#拟牛顿法" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h3><ul>
-<li>解决牛顿法求取海森矩阵\(H\)的逆\(H^{-1}\)时比较耗时间的难题</li>
-<li>用一个近似矩阵\(B\)代替海森矩阵\(H\)的逆\(H^{-1}\)</li>
-<li>不同算法近似矩阵\(B\)的计算有差异</li>
-<li>常见的拟牛顿法：BFGS,L-BFGS和OWL-QN等<ul>
-<li>&lt;&lt;统计学习方法&gt;&gt;中讲解了三个拟牛顿算法: DFP,BFGS和Broyden类算法</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><em>归纳自&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<h4 id="相同迭代公式"><a href="#相同迭代公式" class="headerlink" title="相同迭代公式"></a>相同迭代公式</h4><ul>
-<li>目标函数为\(f(\theta)\),最优化方法的终极目标是求\(f(\theta)\)的最大值点(或极大值点)</li>
-<li>目标函数的一阶导数<ul>
-<li>参数一维时为:\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)</li>
-<li>参数多维时为:\(\nabla f(\theta)\)</li>
-</ul>
-</li>
-<li>目标函数的二阶导数<ul>
-<li>参数一维时为:\(f{}’{}’(\theta)\)</li>
-<li>参数多维时为:(海森矩阵)\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>梯度下降法,牛顿法和拟牛顿法的迭代参数均可表示为下面的迭代形式:<br>$$\theta_{k+1}=\theta_{k}+\lambda_{k}p_{k}$$</li>
-<li>均通过一阶导数\(\left | \nabla f(\theta) \right |&lt;\epsilon\)为<strong>收敛判断条件</strong><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中,梯度下降法还可以通过\(\left | \theta_{k+1}-\theta_{k+} \right |&lt;\epsilon\)或\(\left | f(\theta_{k+1})-f(\theta_{k+}) \right |&lt;\epsilon\)来判断收敛</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降法-1"><a href="#梯度下降法-1" class="headerlink" title="梯度下降法"></a>梯度下降法</h4><ul>
-<li>\(p_{k}=\nabla f(x)\) </li>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h4 id="牛顿法-1"><a href="#牛顿法-1" class="headerlink" title="牛顿法"></a>牛顿法</h4><ul>
-<li>\(p_{k}=-H_{k}^{-1}\nabla f(\theta)\)</li>
-<li>\(\lambda_{k}=1\)是固定长度的,详情见<strong>数学中的牛顿法</strong>的推导,每次迭代到斜率与横轴的交点<br>$$\lambda_{k}=1$$</li>
-</ul>
-<h4 id="拟牛顿法-1"><a href="#拟牛顿法-1" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h4><ul>
-<li>核心思想是找一个容易计算的近似矩阵(可以迭代计算,而不是每次重新计算逆矩阵的矩阵)替代原始牛顿法中的海森矩阵\(H\)(\(B\))或者海森矩阵的逆矩阵\(H^{-1}\)(\(G\))</li>
-</ul>
-<h5 id="DFP算法"><a href="#DFP算法" class="headerlink" title="DFP算法"></a>DFP算法</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>\(p_{k}=-G_{k}\nabla f(\theta)\)<ul>
-<li>关于\(G_{k}\)的计算:<ul>
-<li>初始化\(G(0)\)为正定对称矩阵</li>
-<li>\(G_{k+1}=G_{k}+\frac{\delta_{k}\delta_{k}^{T}}{\delta_{k}^{T}y_{k}}-\frac{G_{k}y_{k}y_{k}^{T}G_{k}}{y_{k}^{T}G_{k}y_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="BFGS算法"><a href="#BFGS算法" class="headerlink" title="BFGS算法"></a>BFGS算法</h5><ul>
-<li>使用\(B_{k}\)逼近海森矩阵\(H_{k}\)</li>
-<li>\(p_{k}=-B_{k}^{-1}\nabla f(\theta)\)<ul>
-<li>关于\(B_{k}\)的计算:<ul>
-<li>初始化\(B(0)\)为正定对称矩阵</li>
-<li>\(B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{T}}{y_{k}^{T}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{T}B_{k}}{\delta_{k}^{T}B_{k}\delta_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="Broyden类算法-Broyden’s-algorithm"><a href="#Broyden类算法-Broyden’s-algorithm" class="headerlink" title="Broyden类算法(Broyden’s algorithm)"></a>Broyden类算法(Broyden’s algorithm)</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>在BFGS中取\(G^{BFGS}=B^{-1}\)</li>
-<li>利用DFP和BFGS二者的<strong>线性组合</strong>选择合适的海森矩阵的逆矩阵\(H^{-1}\)的替代矩阵<br>$$G_{k+1}=\alpha G^{DFP}+(1-\alpha)G^{BFGS}$$</li>
-<li>可以证明\(G\)此时是正定的</li>
-<li>\(0\leq \alpha \leq 1\)</li>
-<li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2402,7 +2060,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">222</span>
+                  <span class="site-state-item-count">228</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2415,7 +2073,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">45</span>
+                  <span class="site-state-item-count">46</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

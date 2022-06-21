@@ -275,6 +275,1012 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考博客:<ul>
+<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
+<p>[待更新]</p>
+<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
+<ul>
+<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
+<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
+<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
+<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c \in C\)对特定项目\(s_{c}’ \in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
+<li>基于启发式的方法(Heuristic-based method): <ul>
+<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
+<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
+</ul>
+</li>
+<li>基于机器学习的方法(Machine learning-based mehod):<ul>
+<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
+<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \arg\max_{s \in S} u(c,s)$$</li>
+</ul>
+<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
+<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
+<li>直接对User-Item矩阵进行研究<ul>
+<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
+<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
+</ul>
+</li>
+</ul>
+<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
+<li>Traditional SVD<ul>
+<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
+<li>缺点:<ul>
+<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
+<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
+<li>计算复杂度高,空间消耗大</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FunkSVD<ul>
+<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
+<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
+<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
+<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
+</ul>
+</li>
+<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
+<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
+<li>正则项是两个参数的L2正则</li>
+<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>BiasSVD<ul>
+<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
+<li>带有偏执项的SVD分解</li>
+<li>基于假设: <ul>
+<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
+<li>这些用户的固有属性与商品无关</li>
+</ul>
+</li>
+<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
+<li>这些商品的固有属性与用户无关</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}_{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum_{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
+<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
+<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
+<li>\(b_{u}\)[待更新]</li>
+<li>\(b_{i}\)[待更新]</li>
+<li>\(u\)[待更新]</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>SVD++<ul>
+<li>SVD++是对BiasSVD进行改进的</li>
+<li>基于假设:<ul>
+<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
+</ul>
+</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>TimeSVD++<ul>
+<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>BiasSVDwithU</li>
+<li>NMF</li>
+<li>非负矩阵分解Nonnegative Matrix Factorization*</li>
+<li>PMF</li>
+<li>概率矩阵分解Probabilistic Matrix Factorization*</li>
+<li>WRMF</li>
+<li>weighted regularized matrix factorization*</li>
+</ul>
+<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
+<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
+<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
+<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94Ensemble-%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0.html">ML——Ensemble-集成学习</a></li>
+</ul>
+<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
+<ul>
+<li>核心目的: 填充User-Item矩阵中的缺失值</li>
+<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
+</ul>
+<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
+<ul>
+<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
+<li>模型衡量指标: Precision@K, Recall@K等</li>
+</ul>
+<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
+<ul>
+<li>核心目的: 将候选商品分类,然后用于推荐</li>
+<li>模型衡量指标: Accuracy</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
+<hr>
+<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
+<ul>
+<li>m个基础模型</li>
+<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
+
+</li>
+</ul>
+<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
+<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
+<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
+</ul>
+<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
+<ul>
+<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
+<li>训练过程为阶梯状</li>
+<li>基础模型按照次序依次训练(实现时可做到并行)</li>
+<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
+
+</li>
+</ul>
+<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
+<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
+</ul>
+<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
+<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
+<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
+</ul>
+<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
+<ul>
+<li>训练所有基础模型</li>
+<li>获取所有基础模型的预测结果</li>
+<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
+<li>基于新的训练集进行训练,得到预测模型M()</li>
+<li>测试时也要将特征转换后再用M进行预测</li>
+<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
+<li>理论上可以堆叠各种各样的分类器
+
+</li>
+</ul>
+<hr>
+<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
+<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——DT-决策树.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——DT-决策树.html" itemprop="url">ML——DT-决策树</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><ul>
+<li>决策树(DT)是一种基本的分类和回归方法</li>
+<li>分类问题中可以理解为if-then规则的集合</li>
+<li>分类问题中也可以理解为定义在特征空间-&gt;类空间上的条件概率分布</li>
+<li>分类问题中使用的是ID3和C4.5<ul>
+<li>ID3 基于 最大化信息增益 来选择特征</li>
+<li>C4.5基于 最大化信息增益比 来选择特征</li>
+</ul>
+</li>
+<li>回归问题使用的是分类与回归树(Classification And Regression Tree, CART)<ul>
+<li>分类树: 基于 最小化基尼(Gini Index)指数 来选择特征</li>
+<li>回归树: 基于 最小化平方误差 来选择特征</li>
+</ul>
+</li>
+<li>关于树模型的复杂度可以用下面的方式评估, 统计学习方法中<strong>CART</strong>选择使用树的<strong>节点总数</strong>来评估树的复杂度<ul>
+<li>叶子节点的数量</li>
+<li>节点总数</li>
+<li>树的深度</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="树模型的优缺点"><a href="#树模型的优缺点" class="headerlink" title="树模型的优缺点"></a>树模型的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(?)</li>
+<li>具体伸缩不变性(不用归一化特征,LR模型需要归一化特征) </li>
+<li>有特征组合的作用</li>
+<li>可自然地处理缺失值(神经网络不能处理缺失值)</li>
+<li>对异常点鲁棒</li>
+<li>有特征选择作用</li>
+<li>可扩展性强，容易并行</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>缺乏平滑性(回归预测时输出值只能 输出有限的若干种数值)</li>
+<li>不适合处理高维稀疏数据<ul>
+<li>数据稀疏时<ul>
+<li>比如某个数据集有10000个样本</li>
+<li>某个特征只有10个样本存在值，其他样本都不存在值</li>
+</ul>
+</li>
+<li>决策树： </li>
+<li>这样的话树容易将当前特征选中作为分类特征，这种划分可能在训练集上看起来很好，但测试集中表现可能不太好(这里不是简单的缺失值，而是数据很稀疏，这里需要进一步的理解[待更新])</li>
+<li>LR等线性模型：<ul>
+<li>因为现在的模型普遍都会带着正则项，而LR等线性模型的正则项是对权重的惩罚，也就是特征对应的权重一旦过大，惩罚就会很大，进一步压缩权重的值，使他不至于过大，而树模型则不一样，树模型的惩罚项通常为叶子节点数和深度等，而我们都知道，对于上面这种 case，树只需要一个节点就可以完美分割9990和10个样本，惩罚项极其之小.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="决策树训练的三个步骤"><a href="#决策树训练的三个步骤" class="headerlink" title="决策树训练的三个步骤"></a>决策树训练的三个步骤</h3><h4 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h4><h5 id="信息增益"><a href="#信息增益" class="headerlink" title="信息增益"></a>信息增益</h5><ul>
+<li>对数据集D的经验熵:\(H(D)=-\sum_{k=1}^{K}\frac{|C_{k}|}{|D|}log_{2}\frac{|C_{k}|}{|D|}\)</li>
+<li>对特征A对数据集D的经验条件熵:\(H(D|A)=\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}H(D_{i})=-\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}\sum_{k=1}^{K}\frac{|D_{ik}|}{|D_{i}|}log_{2}\frac{|D_{ik}|}{|D_{i}|}\), n为特征A的取值个数</li>
+</ul>
+<h5 id="信息增益比"><a href="#信息增益比" class="headerlink" title="信息增益比"></a>信息增益比</h5><ul>
+<li>特征A对训练数据D的信息增益比:\(g_{R}(D,A)=\frac{g(D,A)}{H_{A}(D)}\)<ul>
+<li>其中\(H_{A}=-\sum_{i=1}^{n}\frac{|D_{i}|}{|D|}log_{2}\frac{|D_{i}|}{|D|}\), n为特征A的取值个数</li>
+</ul>
+</li>
+</ul>
+<h5 id="基尼指数"><a href="#基尼指数" class="headerlink" title="基尼指数"></a>基尼指数</h5><ul>
+<li>对于分布\(p=(p_{1},…,p_{k})\)的基尼指数:\(Gini(p)=\sum_{k=1}^{K}p_{k}(1-p_{k})=1-\sum_{k=1}^{K}p_{k}^{2}\)</li>
+<li>对样本集合D,基尼指数为:\(Gini(p)=1-\sum_{k=1}^{K}\left(\frac{|C_{k}|}{|D|}\right)^{2}\)</li>
+<li>在特征A的条件下,集合D的基尼指数:\(Gini(D,A)=\frac{|C_{1}|}{|D|}Gini(D_{1})+\frac{|C_{2}|}{|D|}Gini(D_{2})\)<ul>
+<li>我们将集合D根据特征A分为两类: </li>
+<li>是否取特征A的某个值,其中\(A=a\)的是\(D_{1}\),\(A\neq a\)的是\(D_{2}\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="决策树的生成"><a href="#决策树的生成" class="headerlink" title="决策树的生成"></a>决策树的生成</h4><h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>基于<strong>最大化信息增益</strong>来选择特征</li>
+<li>选取所有信息增益最大的特征作为当前结点的特征</li>
+<li>对取值数目较多的属性有所偏好</li>
+<li>只有分类树,没有回归树</li>
+<li>ID3相当于用极大似然法对模型进行选择(问题:如何理解?)</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>基于<strong>最大化信息增益比</strong>来选择特征</li>
+<li>选取信息增益比最大的特征作为当前结点的特征<ul>
+<li>由于使用最大的信息增益比特征可能对取值数目少的特征属性有所偏好,所以C4.5算法一般不会直接选信息增益比最大的,而是<ul>
+<li><strong>先从候选区属性中找出信息增益高于平均水平的</strong></li>
+<li><strong>再从筛选结果中寻找信息增益比最大的</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>处理连续型特征时使用二分法(bi-partition)</li>
+<li>只有分类树,没有回归树</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>CART的决策树是二叉树</li>
+<li>分类树: 基于<strong>最小化基尼指数</strong>来选择特征<ul>
+<li>输出变量为离散变量</li>
+<li>基于基尼指数选取所有可能的特征A和所有可能的切分点a中,选择基尼指数最小的特征和切分点为最优特征和最优且分点</li>
+</ul>
+</li>
+<li>回归树: 基于<strong>最小化平方误差</strong>来选择特征<ul>
+<li>CART回归树一般称为最小二乘回归树(因为目标函数的优化是最小化误差的平方和实现的)</li>
+<li>输出变量为连续变量</li>
+<li>选取时选择最优划分变量(特征)j和最优切分点s,然后按照变量j的划分点s将结点分为两个结点,大于s的为第一个结点,小于s的为第二个结点</li>
+</ul>
+</li>
+<li>一点说明:<ul>
+<li>*&lt;&lt;统计学习方法&gt;&gt;*中:<ul>
+<li>回归树的特征默认是连续变量,选取划分点s时使用的是<strong>连续变量的各种中间值</strong>作为候选值,<strong>大于s的分为一个结点,小于s的分为一个结点</strong></li>
+<li>分类树的特征默认是离散变量,选取划分点a时使用的是<strong>离散变量的值</strong>作为候选值,<strong>等于a的分为一个结点,不等于a的分为另一个结点</strong></li>
+<li>但是实际上无论时分类树还是回归树,CART都可以用相同手段处理连续值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h4><ul>
+<li>剪枝的核心思想:<ul>
+<li>就是加入考虑树的复杂度考量(决策树的生成时仅仅是考虑到信息增益和信息增益比,没有考量树的复杂度)<ul>
+<li>树的深度越深,树越复杂</li>
+</ul>
+</li>
+<li>整体上再考虑树变得更简单的同时保证分类误差较小</li>
+</ul>
+</li>
+</ul>
+<h5 id="预剪枝"><a href="#预剪枝" class="headerlink" title="预剪枝"></a>预剪枝</h5><ul>
+<li>预剪枝发生在决策树生成过程中</li>
+<li>在每个节点划分前先进行估计</li>
+<li>若当前节点划分不能带来决策树准确率提升,则停止划分</li>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中未提到这个方法,只讲了一种简单的后剪枝算法</li>
+<li>时间复杂度小,欠拟合风险大</li>
+</ul>
+<h5 id="后剪枝"><a href="#后剪枝" class="headerlink" title="后剪枝"></a>后剪枝</h5><ul>
+<li>后剪枝发生在决策树生成后</li>
+<li>自底向上的对非叶子节点进行考察(注意千万不可从根节点开始自顶向下的剪枝,可能失去整体最优的决策树)</li>
+<li>若将该节点换成叶子节点能带来决策树准确率提升,则将该节点替换为叶子节点</li>
+<li>时间复杂度大,欠拟合风险小</li>
+</ul>
+<h6 id="常见的后剪枝方法"><a href="#常见的后剪枝方法" class="headerlink" title="常见的后剪枝方法"></a>常见的后剪枝方法</h6><p><em>各种方法各有优劣,关注不同的优化角度</em></p>
+<ul>
+<li>REP 错误率降低剪枝(Reduced Error Pruning)</li>
+<li>PEP 悲观剪枝(Pessimistic Error Pruning)</li>
+<li>CCP 代价复杂度剪枝(Cost Complexity Pruning), 详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CPP剪枝算法描述</a></li>
+<li>MEP 最小误差剪枝(Minimum Error Pruning)</li>
+<li>CVP (Critical Value Pruning)</li>
+<li>OPP (Optimal Pruning)</li>
+</ul>
+<h5 id="ID3和C4-5的剪枝"><a href="#ID3和C4-5的剪枝" class="headerlink" title="ID3和C4.5的剪枝"></a>ID3和C4.5的剪枝</h5><h5 id="CART的剪枝"><a href="#CART的剪枝" class="headerlink" title="CART的剪枝"></a>CART的剪枝</h5><p><em>CART使用的是CCP剪枝</em></p>
+<ul>
+<li>对任意的子树,我们可以定义子树的损失<ul>
+<li>\(C_{a}(T)=C(T)+\alpha|T|\)</li>
+<li>子树的损失 = 子树的预测误差 + \(\alpha\) * 子树的节点数</li>
+<li>对于回归树和分类树,子树的预测误差定义不一样,前者是误差的平方和,后者是基尼指数</li>
+</ul>
+</li>
+<li>可以证明对于给定的Alpha,一定存在某个损失最小的子树,也就是我们要的最优子树</li>
+<li>现实中实现时可以使用递归的方法实现</li>
+</ul>
+<h6 id="CCP剪枝算法描述"><a href="#CCP剪枝算法描述" class="headerlink" title="CCP剪枝算法描述"></a>CCP剪枝算法描述</h6><p><em>CPP剪枝也是一种后剪枝算法</em><br><strong>修正：统计学习方法CART算法第六步中应该跳到第二步，而不是第三步</strong></p>
+<ul>
+<li>1：计算所有节点对应的\(\alpha\)值: \(\alpha=\frac{C(t)-C(T_{t})}{|T_{t}|-1}\)<ul>
+<li>\(C(t)\)是以<strong>t节点单一节点为树</strong>时单一节点树的损失函数</li>
+<li>\(C(T_{t})\)是以<strong>t节点为根节点的子树</strong>时整棵子树的损失函数</li>
+<li>\(|T_{t}|\)是以<strong>t节点为根节点的子树</strong>时整棵子树的节点数量</li>
+</ul>
+</li>
+<li>2：对当前\(\alpha\)值最小的节点t剪枝，并存储中间结果的\(\alpha\)值和剪枝后的树结构<ul>
+<li>当\(\alpha\)确定时，存在唯一的最小子树\(T_{\alpha}\)使损失函数\(C_{\alpha}(T)\)最小</li>
+</ul>
+</li>
+<li>3：选取当前树为剪枝后的树，跳转到第1步，直到剪枝到只有三个节点的树时截止</li>
+<li>4：截止后得到节点数量从大到小的多个子树\(T_{\alpha_{0}}, T_{\alpha_{1}},…,T_{\alpha_{n}}\). (其中\(T_{\alpha_{i}}\)也就对应着第i个\(\alpha\)值\(\alpha_{i}\))</li>
+<li>5：用交叉验证法对\(\alpha\)的值进行选择(CART算法执行时\(\alpha\)类似超参数，整个算法学习的过程类似于用交叉验证法确定超参数的过程，\(\alpha\)的值确定了，对应的决策树也就确定了！)</li>
+</ul>
+<h4 id="关于连续特征"><a href="#关于连续特征" class="headerlink" title="关于连续特征"></a>关于连续特征</h4><h5 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法"></a>统计学习方法</h5><ul>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中回归树的特征默认是连续变量,分类树的特征默认是离散变量</li>
+</ul>
+<h5 id="机器学习-周志华"><a href="#机器学习-周志华" class="headerlink" title="机器学习 周志华"></a>机器学习 周志华</h5><ul>
+<li>在&lt;&lt;机器学习&gt;&gt;中提到连续特征的一种解决方案:<ul>
+<li>把该连续特征所有出现的取值排序</li>
+<li>取临近两两之间的平均值作为划分点</li>
+<li>像处理离散的点一样,使用信息增益最大化,信息增益率最大化,或者是基尼指数最小化实现对应的划分选择</li>
+</ul>
+</li>
+</ul>
+<h5 id="个人总结"><a href="#个人总结" class="headerlink" title="个人总结"></a>个人总结</h5><ul>
+<li>处理连续型变量(特征的能力)<ul>
+<li>ID3 不能处理连续型特征<ul>
+<li>因为连续型特征往往使得每一个样本该特征取值都不一样,造成该特征对数据集D的经验条件熵为0?</li>
+<li>使得ID3算法趋向于选择这个特征?</li>
+</ul>
+</li>
+<li>C4.5 能处理连续型特征<ul>
+<li>将数据排序后找到类别不同的分割线作为切分点</li>
+<li>根据切分点把连续属性二分类装换为布尔类型</li>
+<li>可多次使用连续属性分类</li>
+</ul>
+</li>
+<li>CART 能处理连续型特征<ul>
+<li>实际对连续型特征的处理<strong>与C4.5一样</strong></li>
+<li>由于CART树构建时每次都会对特征进行二值化分,所以可以很好的适用与连续型变量</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="一些总结"><a href="#一些总结" class="headerlink" title="一些总结"></a>一些总结</h4><ul>
+<li>算法ID3生成可能是多叉树,而CART一定是二叉树，*&lt;&lt;统计学习方法&gt;&gt;*中二者生成相同的数是巧合，除了不同评价方式的特征选择结果一样以外，还需要被选中的特征都是二值的！</li>
+<li>ID3相当于用极大似然法对模型进行选择</li>
+</ul>
+<h4 id="一种很好的理解思路"><a href="#一种很好的理解思路" class="headerlink" title="一种很好的理解思路"></a>一种很好的理解思路</h4><h5 id="ID3-1"><a href="#ID3-1" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>ID3算法就是用<strong>信息增益</strong>大小来判断当前节点应该用什么特征来构建决策树，用计算出的<strong>信息增益最大的特征</strong>来建立决策树的当前节点</li>
+</ul>
+<h6 id="ID3的缺点"><a href="#ID3的缺点" class="headerlink" title="ID3的缺点:"></a>ID3的缺点:</h6><ul>
+<li>ID3<strong>不能处理连续特征</strong></li>
+<li>ID3对取值较多的特征有着偏好<strong>在相同条件下，取值比较多的特征比取值少的特征信息增益大</strong></li>
+<li>ID3<strong>不能处理缺失值</strong></li>
+<li>没有考虑过拟合的问题(问题: ID3没有剪枝吗?)</li>
+</ul>
+<h5 id="C4-5-1"><a href="#C4-5-1" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>C4.5可以看成是对ID3进行改进</li>
+</ul>
+<h6 id="C4-5对ID3的改进"><a href="#C4-5对ID3的改进" class="headerlink" title="C4.5对ID3的改进"></a>C4.5对ID3的改进</h6><ul>
+<li><p>对于ID3不能处理连续特征，C4.5的思路是将连续的特征离散化.</p>
+<ul>
+<li>样本(m个样本)按照特征的取值排列后取相邻样本的平均值作为划分点(m-1个划分点),分别计算以每个划分点作为二元分类时的信息增益. 最终选择信息增益高的(问题:这里是C4.5,为什么不是使用信息增益比而是信息增益来作为区分?)</li>
+<li>C4.5选择连续特征作为分类特征时,只分两类,但是后面(其他层结点)可以使用该特征分类,也就是说连续特征在C4.5中可以多次使用,但每次只分为两部分</li>
+</ul>
+</li>
+<li><p>对于ID3信息增益最大指标会造成偏向于取值较多的特征的问题. C4.5使用信息增益比来解决问题</p>
+</li>
+<li><p>对于ID3不能处理缺失值的问题,C4.5主要解决两个问题</p>
+<ul>
+<li>1) 如何在属性值缺失条件下进行<strong>属性选择</strong><ul>
+<li>没有缺失值的属性,正常处理</li>
+<li>每个属性A有缺失值:<ul>
+<li>对该特征进行划分时仅仅考虑在属性A上没有缺失的部分数据,有缺失的数据不考虑.</li>
+<li>无缺失的数据计算收益时需要乘以一个权重(无缺失的样本总数/样本总数)</li>
+<li>相当于信息增益适当缩小</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>2) 给定划分属性,若<strong>样本在该属性上的值缺失,如何对样本进行划分</strong><ul>
+<li>在A属性没有缺失值的样本,正常划分</li>
+<li>在A属性有缺失值的样本:<ul>
+<li>给每个样本引入权重,初始值都为1 </li>
+<li>同一个样本按照不同概率划入到不同的结点(当前叶节点)中去(概率是当前结点中样本数量/无缺失样本总数) </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>对于没有考虑过拟合的问题:</p>
+<ul>
+<li>C4.5引入了正则化系数剪枝(问题: ID3没有剪枝吗?)</li>
+</ul>
+</li>
+</ul>
+<h6 id="C4-5的缺点"><a href="#C4-5的缺点" class="headerlink" title="C4.5的缺点"></a>C4.5的缺点</h6><ul>
+<li>[这个问题存疑,没有任何书籍显示C4.5的剪枝策略是PEP,&lt;&lt;统计学习方法&gt;&gt;中只是简单的介绍了<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#%E5%90%8E%E5%89%AA%E6%9E%9D">后剪枝</a>]C4.5的剪枝方法时PEP,PEP准确度高,但是存在下面两个子问题:<ul>
+<li>1) PEP使用由上而下的剪枝策略,会导致与预先剪枝相同的问题,造成过度剪枝</li>
+<li>2) 会造成剪枝失败的情况</li>
+</ul>
+</li>
+<li>C4.5生成多叉树,计算机中很多时候多叉树运算效率不如二叉树来的高</li>
+<li>C4.5只能用于分类</li>
+<li>C4.5需要进行大量的对数运算(计算熵)</li>
+</ul>
+<h5 id="CART-1"><a href="#CART-1" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>可以理解为对C4.5进一步的改进</li>
+</ul>
+<h6 id="CART对C4-5的改进"><a href="#CART对C4-5的改进" class="headerlink" title="CART对C4.5的改进"></a>CART对C4.5的改进</h6><ul>
+<li>CART使用CPP代价复杂度剪枝算法<ul>
+<li>详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CCP剪枝算法描述</a></li>
+</ul>
+</li>
+<li>CART使用二叉树只生成二叉树,即使是离散特征<ul>
+<li>CART对连续特征的处理与C4.5完全相同</li>
+<li>CART对离散特征也是二分类且也是可以多次使用同一特征(ID3与C4.5中离散特征只能使用一次,且是多分叉)</li>
+<li>所以CART是一颗二叉树</li>
+</ul>
+</li>
+<li>CART可有分类树和回归树两种<ul>
+<li>回归树的目标函数的优化是: 最小化误差的平方和</li>
+<li>分类树以概率最大的类别作为叶节点的类别</li>
+<li>回归树以中位数或者均值作为预测结果</li>
+</ul>
+</li>
+<li>CART使用基尼指数作为结点混乱度的度量指标<ul>
+<li>避免了对数计算(与熵比较)</li>
+</ul>
+</li>
+</ul>
+<h5 id="ID3-C4-5-CART的缺点"><a href="#ID3-C4-5-CART的缺点" class="headerlink" title="ID3,C4.5,CART的缺点"></a>ID3,C4.5,CART的缺点</h5><ul>
+<li>每次之全责一个最优特征作为分类决策,而实际中其实可能需要多个特征一起决策<ul>
+<li>解决方案: 多变量决策树(每次选择多个特征一起决策)<ul>
+<li>单个特征决策可以看成是直线</li>
+<li>多个特征决策可以看成是斜线</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>样本改变一点点都会造成树的结构改变很大<ul>
+<li>解决方案: 随机森林等集成学习方法</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1552,856 +2558,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html" itemprop="url">PyTorch——关于Variable类和Tensor类的类型判断</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-07T00:00:00+08:00">
-                2018-02-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><h4 id="requires-grad-True"><a href="#requires-grad-True" class="headerlink" title="requires_grad=True"></a><code>requires_grad=True</code></h4><p><em>等价于<code>requires_grad=a</code>, <code>a</code>为任意非0整数,不能为浮点数</em><br><em>浮点数会报错: TypeError: integer argument expected, got float</em></p>
-<ul>
-<li><p>测试代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.], requires_grad=True)</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/home/jiahong/JupyterWorkspace/test.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    print(variable.numpy())</span><br><span class="line">RuntimeError: Can&apos;t call numpy() on Variable that requires grad. Use var.detach().numpy() instead.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li><code>Variable</code>和<code>Tensor</code>在判断类型时都是<code>torch.Tensor</code><ul>
-<li><code>type(tensor) == type(variable) == torch.Tensor</code> </li>
-</ul>
-</li>
-<li>几乎所有操作都相同<ul>
-<li><code>tensor.data == variable.data</code></li>
-<li><code>tensor.data.numpy() == varible.data.numpy()</code></li>
-</ul>
-</li>
-<li>直接输出变量结果不相同<ul>
-<li><code>tensor</code>输出时没有<code>requires_grad=True</code></li>
-<li><code>variable</code>输出时有<code>requires_grad=True</code></li>
-</ul>
-</li>
-<li><code>variable</code>不能直接调用函数<code>variable.numpy()</code>,会报异常<ul>
-<li>异常描述为: 当前<code>Variable</code>变量要求<code>requires grad</code>,也就是<code>requires_grad</code>属性为真时,变量不能直接使用</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="requires-grad-False"><a href="#requires-grad-False" class="headerlink" title="requires_grad=False"></a><code>requires_grad=False</code></h4><p><em>等价于<code>requires_grad=0</code></em><br><em>不等价于<code>requires_grad=None</code>, <code>None</code>会报错: TypeError: an integer is required</em></p>
-<ul>
-<li><p>测试代码:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=False)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type4: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li>当<code>variable</code>变量的<code>requires_grad=False</code>时,<code>variable</code>完全退化为<code>tensor</code><ul>
-<li>直接输出变量时没有<code>requires_grad=False</code>属性</li>
-<li>可以直接使用<code>variable.numpy()</code>函数</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Variable的三种等价定义"><a href="#Variable的三种等价定义" class="headerlink" title="Variable的三种等价定义"></a><code>Variable</code>的三种等价定义</h4><p><em>下面三种定义的<code>Variable</code>类型变量<code>varible</code>等价</em></p>
-<ul>
-<li><p><code>requires_grad=False</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=False)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>没有<code>requires_grad</code>参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>requires_grad=True</code>,然后<code>variable = variable.detach()</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">variable = variable.detach()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面三种定义都等价于原始的<code>tensor</code></p>
-<ul>
-<li>这里的等价并未经过详细测试,但是至少以下方面等价:<ul>
-<li>自身类型相同<code>type</code>, 类型为<code>torch.Tensor</code></li>
-<li>可以调用属性<code>.data</code>,类型为<code>torch.Tensor</code></li>
-<li>可以调用<code>.grad</code>,只不过都为<code>None</code></li>
-<li>直接输出对象完全相同,都不包含<code>requires_grad=True</code>属性</li>
-<li>可以调用相同的函数<code>.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-<li>可以调用相同的函数<code>.data.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Attention的原理和变种</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
-<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
-<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
-<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
-</ul>
-<hr>
-<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
-<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
-<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
-
-</li>
-</ul>
-<hr>
-<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
-<li>Attention机制的根本优势在于对不同的</li>
-<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
-<ul>
-<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
-<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
-<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
-<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>动态图理解 Attention 机制<ul>
-<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
-<li>上图中Encoder使用的是双层双向的RNN<ul>
-<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
-<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
-<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
-</ul>
-</li>
-<li>流程说明:<ul>
-<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
-<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
-<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
-<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
-<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
-<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
-<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
-<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
-<ul>
-<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
-<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
-<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
-<li>多源注意力机制：Attend到多种源语言语句</li>
-<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
-<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
-<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
-<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
-<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
-<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
-</ul>
-<hr>
-<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
-<ul>
-<li>Attention的本质: <ul>
-<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
-<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
-<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
-</ul>
-</li>
-<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
-<li>如上图所示,在计算 Attention 时主要分为三步<ul>
-<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
-<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
-<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
-</ul>
-</li>
-<li>Attention过程还可以大致分为两步理解:<ul>
-<li><ol>
-<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
-<li>变换一般包括 <ul>
-<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
-<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
-<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
-<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
-</ul>
-</li>
-<li>Query和Key在不同任务中是不同的东西<ul>
-<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
-<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><ol start="2">
-<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
-<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
-<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
-<li>简单文本分类中, Value指句子</li>
-<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
-<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
-<li>现有查询<strong>向量</strong> q </li>
-<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
-<li>要求是样本与 q 越相关，权重越大</li>
-</ul>
-</li>
-<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
-<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
-<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
-<li>按照这个比例将 Value 中的样本加权输出结果</li>
-<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
-<li>也就是 q 对应的结果</li>
-</ul>
-<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
-<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
-<li>相当于重复 m 次做单个请求为向量的运算</li>
-<li>每个 q 都能得到一个结果</li>
-<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
-</ul>
-<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
-<li>当 Key 与 Value 相同时<ul>
-<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
-<li>NLP中一般都是这样的</li>
-</ul>
-</li>
-<li>当 Key 与 Query 相同时，<ul>
-<li>其实是找自身不同样本间的相关性</li>
-<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
-<li>NLP中Self-Attention是这样的</li>
-</ul>
-</li>
-<li>Self-Attention是 Key == Value == Query 的情况</li>
-</ul>
-<hr>
-<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
-</ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
-</ul>
-</li>
-</ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
-
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
-
-</li>
-</ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
-</li>
-</ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
-<ul>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
-<ul>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
-</ul>
-</li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
-<hr>
-<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
-<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
-<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
-</ul>
-<hr>
-<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
-<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
-</ul>
-<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
-<li>NNLM网络结构图如下：</li>
-</ul>
-<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
-
-<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
-<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
-</ul>
-<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
-<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
-<li>将构造的数据集作为训练样本集</li>
-<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
-</ul>
-<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
-<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
-<ul>
-<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
-</ul>
-</li>
-<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
-<ul>
-<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
-</ul>
-</li>
-</ul>
-<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
-<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
-</li>
-<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
-</li>
-<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
-</li>
-<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
-</li>
-<li><p>b:输出层的偏执参数</p>
-</li>
-<li><p>d:隐含层的偏执参数</p>
-</li>
-</ul>
-<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
-<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
-<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
-<li>\(R(\theta)\)是正则项</li>
-</ul>
-</li>
-<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T} log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
-<li>我们选择优化对数似然函数，原因如下：<ul>
-<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
-<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
-<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
-<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
-</ul>
-</li>
-</ul>
-<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
-<li>最大化对数似然函数(等价于最大化似然函数)</li>
-</ul>
-<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
-<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
-<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
-<li>\(\lambda\)为步长</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
-<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
-<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
-</ul>
-</li>
-<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2454,7 +2610,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">222</span>
+                  <span class="site-state-item-count">228</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2467,7 +2623,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">45</span>
+                  <span class="site-state-item-count">46</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

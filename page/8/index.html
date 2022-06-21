@@ -275,6 +275,629 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——缺失值处理.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——缺失值处理.html" itemprop="url">ML——缺失值处理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-13T00:00:00+08:00">
+                2018-10-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>missing值处理</em></p>
+<hr>
+<h3 id="对于数值类型的特征"><a href="#对于数值类型的特征" class="headerlink" title="对于数值类型的特征"></a>对于数值类型的特征</h3><h4 id="中位数填充"><a href="#中位数填充" class="headerlink" title="中位数填充"></a>中位数填充</h4><ul>
+<li>用当前特征所有未缺失的值的中位数(median)填充当前特征的缺失值</li>
+</ul>
+<h4 id="均值填充"><a href="#均值填充" class="headerlink" title="均值填充"></a>均值填充</h4><ul>
+<li>用当前特征所有未缺失的值的均值填充当前特征的缺失值</li>
+</ul>
+<h4 id="加权填充"><a href="#加权填充" class="headerlink" title="加权填充"></a>加权填充</h4><ul>
+<li>引入相似性矩阵,评估缺失样本与其他未缺失样本的相似性,按照相似性分配权重</li>
+<li>效果更好,但是需要更多时间</li>
+</ul>
+<hr>
+<h3 id="对于Category类型"><a href="#对于Category类型" class="headerlink" title="对于Category类型"></a>对于Category类型</h3><h4 id="特殊字符填充"><a href="#特殊字符填充" class="headerlink" title="特殊字符填充"></a>特殊字符填充</h4><ul>
+<li>使用某种未出现过的特殊字符填充</li>
+<li>等价于将缺失值看成是个特殊类别</li>
+</ul>
+<h4 id="填充众数"><a href="#填充众数" class="headerlink" title="填充众数"></a>填充众数</h4><ul>
+<li>寻找所有未缺失数据中样本最多的类别,然后将缺失值填充为该众数类别</li>
+</ul>
+<hr>
+<h3 id="什么情况下不用填充"><a href="#什么情况下不用填充" class="headerlink" title="什么情况下不用填充"></a>什么情况下不用填充</h3><h4 id="树模型"><a href="#树模型" class="headerlink" title="树模型"></a>树模型</h4><h5 id="普通树模型"><a href="#普通树模型" class="headerlink" title="普通树模型"></a>普通树模型</h5><ul>
+<li>ID3不支持缺失值处理(也可能可以,但是我没看到具体介绍)</li>
+<li>C4.5和CART都使用下面的方法进行缺失值处理</li>
+<li>结点分裂时:<ul>
+<li><em>参考自周志华机器学习书籍中</em></li>
+<li>先按照无缺失的数据正常划分(缺失数据不参与计算)</li>
+<li>对于无缺失值的样本,正常分配到对应叶子节点</li>
+<li>对于缺失值的样本,每个样本以不同的概率分配到各个叶子节点, 概率值为: <strong>子节点中无缺失样本的数量 / 无缺失样本的总数</strong></li>
+</ul>
+</li>
+<li>问题: 如果是训练时没有缺失,预测时有缺失怎么办?<ul>
+<li>一种可能的方式是直接放到某个结点中</li>
+<li>[待更新]</li>
+</ul>
+</li>
+</ul>
+<h5 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h5><ul>
+<li>如果使用的是树模型(CART)作为基分类器是否可以直接借用树模型对缺失值的处理方法?</li>
+<li>如果使用的是逻辑回归模型作为基分类器,需要自己对缺失值进行处理</li>
+</ul>
+<h5 id="XGBoost"><a href="#XGBoost" class="headerlink" title="XGBoost"></a>XGBoost</h5><ul>
+<li>寻找分裂点时(split point):<ul>
+<li>不遍历缺失值对应的样本,只使用无缺失的样本确定分裂点(节省开销)</li>
+<li>尝试将缺失值分配到左叶子结点或者右叶子结点,分别计算增益(保证完备性)</li>
+<li>选择增益大的点即可</li>
+</ul>
+</li>
+<li>如果训练时没有缺失值,预测时有缺失值:<ul>
+<li>将缺失值自动放到右子树中即可</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="不同模型对缺失值的敏感度总结"><a href="#不同模型对缺失值的敏感度总结" class="headerlink" title="不同模型对缺失值的敏感度总结"></a>不同模型对缺失值的敏感度总结</h3><h4 id="不敏感模型"><a href="#不敏感模型" class="headerlink" title="不敏感模型"></a>不敏感模型</h4><ul>
+<li>树模型</li>
+<li>神经网络的鲁棒性强, 数据量够的话不敏感? <ul>
+<li>神经网络的输入必须是没有缺失值的,需要我们使用特征工程的方法填充缺失值</li>
+<li>其实我觉得自己需要填充数据的其实都有点敏感吧, 所以神经网络在使用时有时候感觉并不敏感,因为缺失值被我们填充后总能得到不错的效果</li>
+</ul>
+</li>
+</ul>
+<h4 id="敏感模型"><a href="#敏感模型" class="headerlink" title="敏感模型"></a>敏感模型</h4><ul>
+<li>距离度量模型: KNN, SVM等<ul>
+<li>在尽量保证缺失值是随机的前提下使用基于统计分布的填充方法可能降低缺失值造成的负面影响</li>
+<li>但是SVM这样的模型对缺失值的抗性非常差,不恰当的非随机缺失值可能导致模型出现意外</li>
+</ul>
+</li>
+<li>线性模型的损失函数往往也涉及到距离的计算?</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Chrome——常用插件总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Chrome——常用插件总结.html" itemprop="url">Chrome——常用插件总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-11T00:00:00+08:00">
+                2018-10-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Chrome是最好用的浏览器没有之一，本文将总结Chrome中功能强大的插件</em></p>
+<hr>
+<h3 id="Markdown-Viewer"><a href="#Markdown-Viewer" class="headerlink" title="Markdown Viewer"></a>Markdown Viewer</h3><ul>
+<li>用于浏览markdown文件内容</li>
+<li>自动为markdown文件生成HTML源码</li>
+<li>安装后记得设置允许该插件访问文件URL</li>
+</ul>
+<hr>
+<h3 id="油猴插件-Tampermonkey"><a href="#油猴插件-Tampermonkey" class="headerlink" title="油猴插件(Tampermonkey)"></a>油猴插件(Tampermonkey)</h3><ul>
+<li>脚本引擎，用于管理其他脚本</li>
+<li>功能强大，里面有形形色色黑科技油猴脚本</li>
+</ul>
+<hr>
+<h3 id="Postman"><a href="#Postman" class="headerlink" title="Postman"></a>Postman</h3><ul>
+<li>程序员必备，测试API首选</li>
+<li>各种http接口（如GET, POST）和数据格式（如表格）</li>
+</ul>
+<hr>
+<h3 id="AdBlock"><a href="#AdBlock" class="headerlink" title="AdBlock"></a>AdBlock</h3><ul>
+<li>能屏蔽大部分的广告</li>
+</ul>
+<hr>
+<h3 id="SwitchyOmega"><a href="#SwitchyOmega" class="headerlink" title="SwitchyOmega"></a>SwitchyOmega</h3><ul>
+<li>shadowsocks的伴侣</li>
+<li>特别是Ubuntu必备</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/FS——文件系统总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/FS——文件系统总结.html" itemprop="url">FS——文件系统总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-11T00:00:00+08:00">
+                2018-10-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="FAT32"><a href="#FAT32" class="headerlink" title="FAT32"></a>FAT32</h3><p><em>常用于闪存</em></p>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>通用格式,任何USB都会预装FAT32,任何操作系统平台上都能读写</li>
+<li>节约空间</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>单个文件的大小限制为4GB</li>
+<li>无读写日志,不能记录磁盘上文件的修改记录?</li>
+</ul>
+<hr>
+<h3 id="ExFAT"><a href="#ExFAT" class="headerlink" title="ExFAT"></a>ExFAT</h3><p><em>微软自家创建的用来取代FAT32的新型文件格式类型</em></p>
+<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>跨平台</li>
+<li>能支持4GB以上的单个文件</li>
+</ul>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>无读写日志,不能记录磁盘上文件的修改记录</li>
+</ul>
+<hr>
+<h3 id="NTFS"><a href="#NTFS" class="headerlink" title="NTFS"></a>NTFS</h3><p><em>New Technology File System</em><br><em>微软为硬盘和固态硬盘创建的默认新型文件系统</em><br><em>几乎集成了所有文件系统的优点</em></p>
+<h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>日志功能</li>
+<li>无文件大小限制</li>
+<li>支持文件压缩和长文件名</li>
+<li>服务器文件管理权限</li>
+</ul>
+<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>MacOS不能写,只能读(严格来说并不能算是NTFS的问题,是苹果自己不适配吧)</li>
+</ul>
+<hr>
+<h3 id="MacOS日志式"><a href="#MacOS日志式" class="headerlink" title="MacOS日志式"></a>MacOS日志式</h3><h4 id="优点-3"><a href="#优点-3" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>没啥缺点也是一种优点</li>
+</ul>
+<h4 id="缺点-3"><a href="#缺点-3" class="headerlink" title="缺点"></a>缺点</h4><hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>如果要在MacOS上访问使用就用ExFAT,否则一律使用NTFS</li>
+<li>对于移动硬盘可以考虑部分分区格式化为ExFAT,部分分区格式化为NTFS</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/IDEA——一些常见的问题解决方案.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/IDEA——一些常见的问题解决方案.html" itemprop="url">IDEA——一些常见的问题解决方案</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-11T00:00:00+08:00">
+                2018-10-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文总结一些IDEA使用过程中遇到的问题和解决方案</em></p>
+<hr>
+<h3 id="模块导入问题"><a href="#模块导入问题" class="headerlink" title="模块导入问题"></a>模块导入问题</h3><ul>
+<li>同一目录下Python模块导入有红色波浪线,但是可以运行<ul>
+<li>解决方案:<ul>
+<li>将当前文件夹标记成Source Root</li>
+<li>如果是使用的<code>from</code>,可使用当前文档标记符来解决问题<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from .test_module import test_function</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/机器码——源码-补码-反码.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1225,610 +1848,6 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Matplotlib/Matplotlib——各种参数的一般含义总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Matplotlib/Matplotlib——各种参数的一般含义总结.html" itemprop="url">Matplotlib——各种参数的一般含义总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-05T00:00:00+08:00">
-                2018-10-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Matplotlib中有很多画图函数，画图时又有很多参数，本文从一般性的角度说明每个参数的一般含义</em></p>
-<hr>
-<h3 id="loc"><a href="#loc" class="headerlink" title="loc"></a>loc</h3><ul>
-<li>这个参数一般是指明图标的位置<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">plt.legend(loc=&apos;upper left&apos;)</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——数据库导入导出.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/MySQL/MySQL——数据库导入导出.html" itemprop="url">MySQL——数据库导入导出</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-04T00:00:00+08:00">
-                2018-10-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>参考博客: <a href="https://blog.csdn.net/u013626215/article/details/88548342" target="_blank" rel="noopener">https://blog.csdn.net/u013626215/article/details/88548342</a></em></p>
-<hr>
-<h3 id="从MySQL中导出数据库信息"><a href="#从MySQL中导出数据库信息" class="headerlink" title="从MySQL中导出数据库信息"></a>从MySQL中导出数据库信息</h3><ul>
-<li><p>导出所有表结构</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h [host_ip] -u [user_name] -p -d [db_name] &gt; [file_name]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导出所有表结构和数据</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h [host_ip] -u [user_name] -p [db_name] &gt; [file_name]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导出某一张表结构</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h [host_ip] -u [user_name] -p -d [db_name] [table_name] &gt; [file_name]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导出某一张表结构和数据</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h [host_ip] -u [user_name] -p [db_name] [table_name] &gt; [file_name]</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="导入数据库到MySQL"><a href="#导入数据库到MySQL" class="headerlink" title="导入数据库到MySQL"></a>导入数据库到MySQL</h3><ul>
-<li><p>登录数据库</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -h [host_ip] -u [user_name] -p</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>执行导入命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source [file_name]</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p><em>注意:数据导入需要提前创建数据库</em></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——抽象类和继承与Java的不同点.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——抽象类和继承与Java的不同点.html" itemprop="url">Python——抽象类和继承与Java的不同点</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-03T00:00:00+08:00">
-                2018-10-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Python也开始支持抽象类和多态了，但是Python的继承与Java有很多不同的地方</em></p>
-<hr>
-<h3 id="Python只有私有属性"><a href="#Python只有私有属性" class="headerlink" title="Python只有私有属性"></a>Python只有私有属性</h3><p><em>(双下划线<code>__</code>属性)和公有属性(默认属性)，没有protected属性</em></p>
-<ul>
-<li>解决方案是Python提出命名时单下划线的属性为protected属性<ul>
-<li>但是这只是一种口头约定，Python解释器并不做强制处理</li>
-</ul>
-</li>
-<li>模块中的函数如果是单下划线开头的，那么该函数属于当前模块保护的<ul>
-<li>此时某些IDE，比如Idea能够给出提示，但是用户仍可访问</li>
-<li>编程时建议将模块中不被调用的文件定义为_开头的，这样可以提示自己和别人当前函数不会在模块外被调用</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Python类属性定义"><a href="#Python类属性定义" class="headerlink" title="Python类属性定义"></a>Python类属性定义</h3><p><em>属性定义在<code>__init__</code>函数中才能在对象中通过<code>__dict__</code>属性读取到</em></p>
-<hr>
-<h3 id="Python支持虚拟继承"><a href="#Python支持虚拟继承" class="headerlink" title="Python支持虚拟继承"></a>Python支持虚拟继承</h3><p><em>可以欺骗编译器，不用真正实现虚拟基类的所有接口</em></p>
-<hr>
-<h3 id="都是强类型语言"><a href="#都是强类型语言" class="headerlink" title="都是强类型语言"></a>都是强类型语言</h3><p><strong><em>这是他们的相同点，但我觉得写在这里是必要的</em></strong></p>
-<hr>
-<h3 id="方法类型不同"><a href="#方法类型不同" class="headerlink" title="方法类型不同"></a>方法类型不同</h3><ul>
-<li><strong>Java</strong>中有<strong>一般方法</strong>(实例方法)，<strong>静态方法</strong>(<code>static</code>类名和对象均可直接调用)两种<ul>
-<li>Java中这两种方法也都可以被<strong>继承</strong>和<strong>隐藏</strong>，而<strong>不能被重写</strong>(隐藏的意思时换成对应的父类指针还能访问到父类的静态属性和方法)</li>
-</ul>
-</li>
-<li><strong>Python</strong>中有<strong>一般方法</strong>(实例方法)，<strong>静态方法</strong>(<code>@staticmethod</code>类名和对象均可直接调用)和<strong>类方法</strong><code>@classmethod</code><ul>
-<li>对<code>@staticmethod</code>方法的理解是，该方法与类密切相关，但是不需要访问这个类</li>
-<li>Python的<code>@staticmethod</code>和<code>@classmethod</code>方法调用方式一样，唯一的区别在于<code>@classmethod</code>方法第一个参数必须是当前类(一般命名为<code>cls</code>)</li>
-<li>Python中的这<strong>三种方法都可以被继承和重写</strong></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="函数定义"><a href="#函数定义" class="headerlink" title="函数定义"></a>函数定义</h3><ul>
-<li>三种函数, 普通函数(实例函数), 类函数(classmethod), 静态函数(staticmethod)</li>
-</ul>
-<h4 id="普通函数"><a href="#普通函数" class="headerlink" title="普通函数"></a>普通函数</h4><ul>
-<li>无需任何装饰器</li>
-<li>无论如何定义,函数的第一个参数都会被当成实例对象本身(一般用self)</li>
-</ul>
-<h4 id="类函数"><a href="#类函数" class="headerlink" title="类函数"></a>类函数</h4><ul>
-<li>装饰器 @classmethod</li>
-<li>无论如何定义,函数的第一个参数都会被当成实例对象本身(一般用cls)</li>
-</ul>
-<h4 id="静态函数"><a href="#静态函数" class="headerlink" title="静态函数"></a>静态函数</h4><ul>
-<li>装饰器 @staticmethod</li>
-<li>所有参数都是函数所有,不被占用</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——Copy-and-Deepcopy.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——Copy-and-Deepcopy.html" itemprop="url">Python——Copy-and-Deepcopy</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-02T00:00:00+08:00">
-                2018-10-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>deepcopy与copy的本质区别——是否为可变对象创建新的对象(内存空间)</em><br><strong>以下图片截取自<a href="http://www.pythontutor.com/" title="http://www.pythontutor.com" target="_blank" rel="noopener">Python Tutorial</a></strong></p>
-<hr>
-<h3 id="代码片段一"><a href="#代码片段一" class="headerlink" title="代码片段一"></a>代码片段一</h3><ul>
-<li>可变对象list中包含着可变list和不可变对象tuple, 且tuple中不包含可变对象<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">l1 = [3, [66, 55, 44], (7, 8, 9)]</span><br><span class="line">l2 = list(l1) # &lt;==&gt; l2 = copy.copy(l1)</span><br><span class="line">			  #	&lt;==&gt; l2 = l1[:]</span><br><span class="line">l3 = copy.deepcopy(l1)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<img src="/Notes/Python/Python——Copy-and-Deepcopy/copy-and-deepcopy_normal.png" title="copy-and-deepcopy_normal">
-
-<hr>
-<h3 id="代码片段二"><a href="#代码片段二" class="headerlink" title="代码片段二"></a>代码片段二</h3><ul>
-<li>可变对象list中包含着可变list和不可变对象tuple, 且tuple中包含可变对象list<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">l1 = [3, [66, 55, 44], (7, 8, [1, 2])]</span><br><span class="line">l2 = list(l1) # &lt;==&gt; l2 = copy.copy(l1) </span><br><span class="line">			  #	&lt;==&gt; l2 = l1[:]</span><br><span class="line">l3 = copy.deepcopy(l1)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<img src="/Notes/Python/Python——Copy-and-Deepcopy/copy-and-deepcopy_list-tuple-list.png" title="copy-and-deepcopy_list-tuple-list">
-
-<hr>
-<h3 id="代码片段三"><a href="#代码片段三" class="headerlink" title="代码片段三"></a>代码片段三</h3><ul>
-<li>不可变对象中包含可变对象</li>
-<li><strong>值得强调的是，copy复制tuple时，不会像list那样直接创建新对象，无论tuple中是否有可变对象*</strong></li>
-<li><strong>除非包含不可变对象，否则deepcopy复制tuple时也不会创建新对象*</strong><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">t1 = (3, [66, 55, 44], (7, 8, [1, 2]))</span><br><span class="line">t2 = t1</span><br><span class="line">t3 = tuple(t1) # &lt;==&gt; t4 = t1[:]</span><br><span class="line">			   # t5 = copy.copy(t1)</span><br><span class="line">t6 = copy.deepcopy(t1)</span><br><span class="line">t1[1].append(100)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<img src="/Notes/Python/Python——Copy-and-Deepcopy/copy-and-deepcopy_tuple-list.png" title="copy-and-deepcopy_tuple-list">
-
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li><p>对于不可变对象</p>
-<ul>
-<li>deepcopy与copy操作一样，都不为创建新对象，而是直接引用</li>
-<li>在后面如果有修改该不可变对象的操作时再创建新对象，此时两个版本的不可变对象地址变得不同</li>
-<li>这里是Python的常态，比如<code>tuple(tuple1)</code>将返回一个tuple1对象的引用而不是副本，当修改tuple1时才会创建新对象</li>
-<li>因为无论如何，修改不可变对象的不可变部分都不会修改原始对象，所以为了节约内存，Python解释器完全可以将创建新对象保留到修改内容时</li>
-</ul>
-</li>
-<li><p>对于可变对象</p>
-<ul>
-<li>deepcopy将创建新对象</li>
-<li>copy只复制对象地址</li>
-<li>后面修改该可变对象时地址不变，而是直接修改内容</li>
-</ul>
-</li>
-</ul>
-<p><strong><em>总之</em></strong><br><strong><em>deepcopy的目的就是确保，无论如何修改，原始对象和副本之间都完全独立</em></strong><br><strong><em>所以</em></strong><br><strong><em>只要是可能被修改的对象都要复制！！！</em></strong><br><strong><em>不可变对象在复制时会自动新建</em></strong><br><strong><em>故而deepcopy时不可变对象不用创建新对象</em></strong></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1881,7 +1900,7 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">222</span>
+                  <span class="site-state-item-count">228</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1894,7 +1913,7 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">45</span>
+                  <span class="site-state-item-count">46</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

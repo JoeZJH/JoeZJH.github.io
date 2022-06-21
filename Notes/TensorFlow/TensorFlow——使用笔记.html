@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="TensorFlow封装了很多有用的函数,本文主要介绍介绍其中常用的函数  优秀参考链接： https://www.cnblogs.com/ying-chease/p/9723309.html https://www.cnblogs.com/wuzhitj/p/6298004.html     tf.identify() 参考链接： https://blog.csdn.net/qq_2398133">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2022-03-01T13:25:49.404Z">
+<meta property="og:updated_time" content="2022-03-29T12:07:02.830Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TensorFlow——使用笔记">
 <meta name="twitter:description" content="TensorFlow封装了很多有用的函数,本文主要介绍介绍其中常用的函数  优秀参考链接： https://www.cnblogs.com/ying-chease/p/9723309.html https://www.cnblogs.com/wuzhitj/p/6298004.html     tf.identify() 参考链接： https://blog.csdn.net/qq_2398133">
@@ -520,6 +520,58 @@
 </ul>
 </li>
 </ul>
+<hr>
+<h3 id="tf-layers-batch-normalization-方法"><a href="#tf-layers-batch-normalization-方法" class="headerlink" title="tf.layers.batch_normalization()方法"></a>tf.layers.batch_normalization()方法</h3><ul>
+<li>需要注意两个参数<ul>
+<li><code>training</code>: 是否处于train模式？默认为False<ul>
+<li>True表示会根据当前的batch滑动平均更新均值和方差参数</li>
+<li>False则表示不会更新该值，如果训练阶段设置为False，则滑动平均的均值和方差不会被更新</li>
+</ul>
+</li>
+<li><code>trainable</code>: 是否将参数加入<code>GraphKeys.TRAINABLE_VARIABLES</code>中<ul>
+<li>这里的参数不包括均值和方差（均值和方差由滑动平均根据Batch数据更新，不是训练参数）</li>
+<li>参数指beta和gamma</li>
+<li>只有参数被加入<code>GraphKeys.TRAINABLE_VARIABLES</code>中时才会被更新</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>总结，参数<code>training</code>和<code>trainable</code>参数在训练阶段一般设置为True，其他阶段设置为False<ul>
+<li>其中<code>training</code>负责滑动平均的均值和方差更新，设置为False，相当于均值和方差都不会自动更新</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="tf-identity、tf-Print与tf-gradients"><a href="#tf-identity、tf-Print与tf-gradients" class="headerlink" title="tf.identity、tf.Print与tf.gradients"></a>tf.identity、tf.Print与tf.gradients</h3><ul>
+<li><code>tf.Print</code>与<code>tf.identity</code>类似，可以认为是增加打印其他变量的<code>tf.identity</code></li>
+<li><code>tf.Print</code>与<code>tf.identity</code>操作可以认为是复制操作，梯度为1</li>
+<li>注意:<code>tf.Print</code>与<code>tf.identity</code>都是图里面的一个操作，会分支出来一个节点，在求梯度时，必须保证目标自变量和因变量在同一个路径上(注意判断<code>identity</code>节点是否在梯度路径上)</li>
+</ul>
+<hr>
+<h3 id="梯度裁剪相关函数"><a href="#梯度裁剪相关函数" class="headerlink" title="梯度裁剪相关函数"></a>梯度裁剪相关函数</h3><ul>
+<li>参考链接：<a href="https://www.cnblogs.com/marsggbo/p/10055760.html" target="_blank" rel="noopener">https://www.cnblogs.com/marsggbo/p/10055760.html</a></li>
+</ul>
+<hr>
+<h3 id="不可导梯度处理"><a href="#不可导梯度处理" class="headerlink" title="不可导梯度处理"></a>不可导梯度处理</h3><ul>
+<li>在神经网络中，有许多包含不可导点的函数，常用的比如<ul>
+<li>MAE损失函数在x=0(或pred和label相等)时不可导</li>
+<li>ReLU在x=0处不可导</li>
+</ul>
+</li>
+<li>在TensorFlow中，定义这些函数时都可以直接正常定义，在计算梯度tf.gradients时，会自动处理不可导点，处理逻辑如下：<ul>
+<li>MAE中，x&lt;0梯度为-1，x&gt;0梯度为1，则x=0取两者之间的值均可，比如TensorFlow中默认取0</li>
+<li>ReLU类似的，在x&lt;0时梯度为0，x&gt;0时梯度为1，则x=0时取两者之间的值均可，比如TensorFlow中默认取0</li>
+</ul>
+</li>
+<li>注意，整数可以做MAE运算，但是不能求梯度，会报错<code>TypeError: Fetch argument None has invalid type &lt;type &#39;NoneType&#39;&gt;</code><ul>
+<li>这一点上，所有运算都一样，整数不能求梯度</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="tf-squeeze慎用"><a href="#tf-squeeze慎用" class="headerlink" title="tf.squeeze慎用"></a><code>tf.squeeze</code>慎用</h3><ul>
+<li>在预估服务中，往往是单个请求输入的，输入会导致<code>tf.squeeze</code>将该维度丢弃，从而产生一些意想不到的问题</li>
+</ul>
 
       
     </div>
@@ -552,8 +604,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/ML/ML——归一化与标准化.html" rel="next" title="ML——归一化与标准化">
-                <i class="fa fa-chevron-left"></i> ML——归一化与标准化
+              <a href="/Notes/Shell/Shell——进程查找.html" rel="next" title="Shell——进程查找">
+                <i class="fa fa-chevron-left"></i> Shell——进程查找
               </a>
             
           </div>
@@ -562,8 +614,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/Shell/Shell——进程查找.html" rel="prev" title="Shell——进程查找">
-                Shell——进程查找 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Spark/Spark——DataFrame读取Array类型.html" rel="prev" title="Spark——DataFrame读取Array类型">
+                Spark——DataFrame读取Array类型 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -643,7 +695,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">222</span>
+                  <span class="site-state-item-count">228</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -656,7 +708,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">45</span>
+                  <span class="site-state-item-count">46</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
@@ -705,7 +757,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-identify"><span class="nav-number">1.</span> <span class="nav-text">tf.identify()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string与数字类型的转换"><span class="nav-number">2.</span> <span class="nav-text">string与数字类型的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-pad"><span class="nav-number">3.</span> <span class="nav-text">tf.pad()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-slice"><span class="nav-number">4.</span> <span class="nav-text">tf.slice()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-map-fn"><span class="nav-number">5.</span> <span class="nav-text">tf.map_fn()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符串转固定二维数组"><span class="nav-number">6.</span> <span class="nav-text">字符串转固定二维数组</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式1"><span class="nav-number">6.1.</span> <span class="nav-text">转换方式1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式2"><span class="nav-number">6.2.</span> <span class="nav-text">转换方式2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据mask处理"><span class="nav-number">7.</span> <span class="nav-text">数据mask处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-layers-max-pooling1d"><span class="nav-number">8.</span> <span class="nav-text">tf.layers.max_pooling1d</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#人工转换数值型特征为类别型"><span class="nav-number">9.</span> <span class="nav-text">人工转换数值型特征为类别型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#慎用随机算子"><span class="nav-number">10.</span> <span class="nav-text">慎用随机算子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-stop-gradient"><span class="nav-number">11.</span> <span class="nav-text">tf.stop_gradient</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-AUTO-REUSE"><span class="nav-number">12.</span> <span class="nav-text">tf.AUTO_REUSE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#minimize分解为compute-gradients和apply-gradients两步骤"><span class="nav-number">13.</span> <span class="nav-text">minimize分解为compute_gradients和apply_gradients两步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-GraphKeys-UPDATE-OPS"><span class="nav-number">14.</span> <span class="nav-text">tf.GraphKeys.UPDATE_OPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-train-get-or-create-global-step"><span class="nav-number">15.</span> <span class="nav-text">tf.train.get_or_create_global_step()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Estimator-export-savedmodel"><span class="nav-number">16.</span> <span class="nav-text">Estimator.export_savedmodel()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一般TensorFlow模型存储为PB文件"><span class="nav-number">17.</span> <span class="nav-text">一般TensorFlow模型存储为PB文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#variable-scope-vs-name-scope"><span class="nav-number">18.</span> <span class="nav-text">variable_scope vs name_scope</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#变量的reuse和trainable"><span class="nav-number">19.</span> <span class="nav-text">变量的reuse和trainable</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-identify"><span class="nav-number">1.</span> <span class="nav-text">tf.identify()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string与数字类型的转换"><span class="nav-number">2.</span> <span class="nav-text">string与数字类型的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-pad"><span class="nav-number">3.</span> <span class="nav-text">tf.pad()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-slice"><span class="nav-number">4.</span> <span class="nav-text">tf.slice()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-map-fn"><span class="nav-number">5.</span> <span class="nav-text">tf.map_fn()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符串转固定二维数组"><span class="nav-number">6.</span> <span class="nav-text">字符串转固定二维数组</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式1"><span class="nav-number">6.1.</span> <span class="nav-text">转换方式1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#转换方式2"><span class="nav-number">6.2.</span> <span class="nav-text">转换方式2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据mask处理"><span class="nav-number">7.</span> <span class="nav-text">数据mask处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-layers-max-pooling1d"><span class="nav-number">8.</span> <span class="nav-text">tf.layers.max_pooling1d</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#人工转换数值型特征为类别型"><span class="nav-number">9.</span> <span class="nav-text">人工转换数值型特征为类别型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#慎用随机算子"><span class="nav-number">10.</span> <span class="nav-text">慎用随机算子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-stop-gradient"><span class="nav-number">11.</span> <span class="nav-text">tf.stop_gradient</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-AUTO-REUSE"><span class="nav-number">12.</span> <span class="nav-text">tf.AUTO_REUSE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#minimize分解为compute-gradients和apply-gradients两步骤"><span class="nav-number">13.</span> <span class="nav-text">minimize分解为compute_gradients和apply_gradients两步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-GraphKeys-UPDATE-OPS"><span class="nav-number">14.</span> <span class="nav-text">tf.GraphKeys.UPDATE_OPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-train-get-or-create-global-step"><span class="nav-number">15.</span> <span class="nav-text">tf.train.get_or_create_global_step()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Estimator-export-savedmodel"><span class="nav-number">16.</span> <span class="nav-text">Estimator.export_savedmodel()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一般TensorFlow模型存储为PB文件"><span class="nav-number">17.</span> <span class="nav-text">一般TensorFlow模型存储为PB文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#variable-scope-vs-name-scope"><span class="nav-number">18.</span> <span class="nav-text">variable_scope vs name_scope</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#变量的reuse和trainable"><span class="nav-number">19.</span> <span class="nav-text">变量的reuse和trainable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-layers-batch-normalization-方法"><span class="nav-number">20.</span> <span class="nav-text">tf.layers.batch_normalization()方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-identity、tf-Print与tf-gradients"><span class="nav-number">21.</span> <span class="nav-text">tf.identity、tf.Print与tf.gradients</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#梯度裁剪相关函数"><span class="nav-number">22.</span> <span class="nav-text">梯度裁剪相关函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不可导梯度处理"><span class="nav-number">23.</span> <span class="nav-text">不可导梯度处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tf-squeeze慎用"><span class="nav-number">24.</span> <span class="nav-text">tf.squeeze慎用</span></a></li></ol></div>
             
 
           </div>
