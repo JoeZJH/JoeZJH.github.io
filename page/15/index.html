@@ -80,7 +80,7 @@
 
 
 <meta name="description" content="本博客主要用于记录个人学习笔记">
-<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git">
+<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git, DL,">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jiahong的个人博客">
 <meta property="og:url" content="https://JoeZJH.github.io/page/15/index.html">
@@ -161,7 +161,7 @@
       </a>
     </div>
       
-        <p class="site-subtitle">凡事预则立不预则废</p>
+        <p class="site-subtitle">凡事预则立，不预则废</p>
       
   </div>
 
@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——RF-随机森林.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——RNN.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——RF-随机森林.html" itemprop="url">ML——RF</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——RNN.html" itemprop="url">DL——RNN</a></h1>
         
 
         <div class="post-meta">
@@ -308,8 +308,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-09T00:00:00+08:00">
+                2018-07-09
               </time>
             
 
@@ -348,74 +348,210 @@
       
         
           
-            <p><em>随机森林是一种集成学习(Ensemble)方法,属于集成学习中的Bagging族,是一种典型的Bagging方法</em></p>
+            <p><em>本文将介绍一般RNN,RNN的变种GRU(门控循环单元)和LSTM(长短期记忆网络)等神经网络结构</em></p>
+<ul>
+<li>LSTM原始论文: <a href="https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf" target="_blank" rel="noopener">NIPS 2014, Sequence to Sequence Learning with Neural Networks</a></li>
+<li>GRU原始论文: <a href="https://www.aclweb.org/anthology/D14-1179" target="_blank" rel="noopener">EMNLP 2014, Learning Phrase Representations using RNN Encoder–Decoder for Statistical Machine Translation</a></li>
+</ul>
 <hr>
-<h3 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h3><h4 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h4><ul>
-<li>假设训练集总大小为N,特征总数为K</li>
-<li>有放回抽样N个训练样本<ul>
-<li>说明:这种有放回的抽样技术又称为自助法(Bootstrap)重采样技术 </li>
+<h3 id="一般的RNN"><a href="#一般的RNN" class="headerlink" title="一般的RNN"></a>一般的RNN</h3><p><em>循环神经网络(Recurrent Neural Network, RNN)</em></p>
+<ul>
+<li>将神经单元展开后的示意图如下:<img src="/Notes/DL/DL——RNN/RNN_Overview.png">
+</li>
+</ul>
+<h4 id="RNN与CNN优缺点比较"><a href="#RNN与CNN优缺点比较" class="headerlink" title="RNN与CNN优缺点比较"></a>RNN与CNN优缺点比较</h4><p><em>此处我们之比较CNN和RNN在序列预测问题中的优劣</em></p>
+<ul>
+<li>关于前馈神经网络:<ul>
+<li>是一种最简单的神经网络</li>
+<li>各神经元分层排列, 每个神经元只接受前一层的输入,输出到下一层,已知到输出层,</li>
+<li>整个网络中没有反馈(后面的backward求梯度不能算反馈,这里指一次输入到输出计算各层间没有反馈,数据流只能从上一层到下一层单向流动)</li>
+<li>可以用一个有向无环图表示</li>
 </ul>
 </li>
-<li><strong>随机</strong>从所有特征中<strong>选取k个特征</strong>(k一般远小于总特征数K)</li>
-<li>用bootstrap采样的结果(N个样本)和k个特征训练一棵决策树(训练时不剪枝,每棵树都尽可能生长)</li>
-<li>重复上述三个步骤:bootstrap采样和训练新的决策树,直到生成m棵决策树</li>
-<li>将m棵决策树组合成随机森林</li>
-</ul>
-<h4 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h4><ul>
-<li>对于一个确定的未标记样本</li>
-<li>经过每一棵决策树预测</li>
-<li>投票产生结果,确定最终分类</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>避免过拟合(bootstrap采样[随机]和随机选择部分特征)</li>
-<li>便于处理高维度的数据</li>
-<li>对高维度的数据无需做特征选择,全部保留也无所谓</li>
-<li>可并行计算 </li>
-<li>模型实现简单</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型训练多棵树,所以训练时间长</li>
-<li>预测时经过多棵树,预测时间长</li>
-</ul>
-<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><ul>
-<li>决策树类型: 三种(ID3,C4.5,CART)均可选,默认均分的三种算法混合到一起<ul>
-<li>决策树详细信息可参考<a href="/Notes/ML/Models/ML——DT.html" title="/Notes/ML/Models/ML——DT.html">ML——DT</a></li>
+<li>CNN:<ul>
+<li>是一种前馈神经网络(多层感知机),是多层感知机的变体</li>
+<li>采用固定大小的输入并生成固定大小的输出</li>
+<li>CNN是图像和视频处理的理想选择</li>
 </ul>
 </li>
-<li>树的数量m:<ul>
-<li>n_estimators</li>
-<li>int i: n_estimators = i</li>
-<li>默认为10</li>
+<li>RNN:<ul>
+<li>不是前馈神经网络, 有环</li>
+<li>可以处理任意长度的输入输出</li>
+<li>使用时间序列信息,能用之前的状态影响下一个状态</li>
+<li>RNN是文本和语音分析的理想选择</li>
 </ul>
 </li>
-<li>特征个数k(以Sklearn库为例):<ul>
-<li>max_features = k</li>
-<li>int i: k = i</li>
-<li>float f: k = f * K</li>
-<li>sqrt: k = sqrt(K)</li>
-<li>log2: k = log2(K)</li>
-<li>None: k = K </li>
-<li>Sklearn.ensemble.RandomRorestClassifier默认是”auto”,也就是sqrt(K)</li>
-</ul>
-</li>
-<li>树的深度: <ul>
-<li>max_depth</li>
-<li>单棵树的深度</li>
-<li>默认是None,不做限制</li>
-<li>int i: 指定树的深度为i</li>
-</ul>
-</li>
-<li>叶子节点最小样本数:<ul>
-<li>int i: min_samples_leaf = i</li>
-<li>float f: min_samples_leaf = f * N</li>
-<li>默认为1</li>
+<li>RNN在处理序列信息的缺点:<ul>
+<li>对短期输入非常敏感,但是对长期输入不敏感</li>
+<li>难以处理长文本中长距离的单词间的关系</li>
 </ul>
 </li>
 </ul>
-<h4 id="问题-随机森林的随机体现在哪里"><a href="#问题-随机森林的随机体现在哪里" class="headerlink" title="问题: 随机森林的随机体现在哪里?"></a>问题: 随机森林的随机体现在哪里?</h4><ul>
-<li>个人理解<ul>
-<li>体现在<strong>每棵树的训练样本随机</strong>,有放回采样(自助法(Bootstrap)重采样技术)</li>
-<li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
+<hr>
+<h3 id="LSTM"><a href="#LSTM" class="headerlink" title="LSTM"></a>LSTM</h3><p><em>长短期记忆网络(Long Short-Term Memory, LSTM)</em></p>
+<ul>
+<li>整体示意图如下:<img src="/Notes/DL/DL——RNN/LSTM_Overview.png"></li>
+<li>核心是”(Gate)门”结构<img src="/Notes/DL/DL——RNN/Gate_Overview.png">
+<ul>
+<li>其中Sigmoid是输出0到1的数值,描述每个部分有多少量可以通过当前门</li>
+<li>0表示拒绝所有, 1表示接受所有</li>
+</ul>
+</li>
+</ul>
+<h4 id="推导流程图"><a href="#推导流程图" class="headerlink" title="推导流程图"></a>推导流程图</h4><ul>
+<li><img src="/Notes/DL/DL——RNN/LSTM_Forget.png"></li>
+<li><img src="/Notes/DL/DL——RNN/LSTM_New.png"></li>
+<li><img src="/Notes/DL/DL——RNN/LSTM_Ct.png"></li>
+<li><img src="/Notes/DL/DL——RNN/LSTM_Output.png">
+</li>
+</ul>
+<hr>
+<h3 id="GRU"><a href="#GRU" class="headerlink" title="GRU"></a>GRU</h3><p><em>门控循环单元(Gated Recurrent Unit, GRU)</em></p>
+<ul>
+<li>整体示意图及推导如下:<img src="/Notes/DL/DL——RNN/GRU_Overview.png">
+</li>
+</ul>
+<hr>
+<h3 id="GRU与LSTM对比"><a href="#GRU与LSTM对比" class="headerlink" title="GRU与LSTM对比"></a>GRU与LSTM对比</h3><ul>
+<li>二者提出的时间基本相同</li>
+<li>都是用来解决RNN不能处理长期依赖的问题</li>
+<li>LSTM有三个”门”结构, GRU只有两个”门结构”</li>
+<li>GRU较简单,参数比较少,不容易过拟合, LSTM比较复杂一点,但是常用</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——激活函数总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——激活函数总结.html" itemprop="url">DL——激活函数总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-08T00:00:00+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客: <a href="https://juejin.im/entry/5ca186c4e51d4534624698ae?from=singlemessage" target="_blank" rel="noopener">一篇写得非常好的文章:深度学习激活函数的理解与总结</a></li>
+</ul>
+<hr>
+<h3 id="ReLU"><a href="#ReLU" class="headerlink" title="ReLU"></a>ReLU</h3><p><em>修正线性单元(Rectified Linear Unit)</em></p>
+<h4 id="x为0时的导数问题"><a href="#x为0时的导数问题" class="headerlink" title="x为0时的导数问题"></a>x为0时的导数问题</h4><ul>
+<li>在实际场景中，x为0的概率非常低</li>
+<li>实际场景中，当x为0时，原函数不可导，可以给此时的导数制定一个值，如0，或1</li>
+<li>神经元永久死亡问题：<a href="https://www.zhihu.com/question/67151971" target="_blank" rel="noopener">https://www.zhihu.com/question/67151971</a><ul>
+<li>当对于任意的训练样本，某一个神经元输出都小于0时，该神经元的反向梯度为0，所以神经元上层与神经元相连接的所有节点梯度都为0(链式法则，梯度相乘)，也就是对所有的训练样本，这些节点相关的参数都不会被更新(因为梯度为0)，下一次正向计算到这些节点时值都不会变</li>
+<li>一个常见的疑问：如果当前神经元上层的神经元其他参数发生改变而导致当前神经元的输入数据发生改变呢？</li>
+<li>回答：可能有这种情况，一个神经元的反向梯度为0以后，所有只与该层该神经元相关的参数都不会变了，但与该层其他神经元相关的节点参数还是会变的！【需要进一步探讨这个问题】</li>
+<li>补充回答：可以确定的是，如果当前层的其他神经元不影响该神经元上层的相关参数，那么，这个神经元将永久性死亡</li>
+<li>所以正确的描述是：对于任意的输入(不管当前层输入为何值时，当前神经元的输出都等于0，也就是说，虽然上层的输入可能会变，但是当前节点的输出已经不会变化了！)，都有当前神经元的输出等于0，此时反向梯度永远为0</li>
+<li>注意：这不是说神经元从开始就怎么样，而是神经元相关的参数偏向太多，导致当前神经元的值永远为0</li>
 </ul>
 </li>
 </ul>
@@ -467,7 +603,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——消失的进程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -486,7 +622,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Linux——消失的进程.html" itemprop="url">Linux——消失的进程</a></h1>
         
 
         <div class="post-meta">
@@ -498,8 +634,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-01T00:00:00+08:00">
+                2018-07-01
               </time>
             
 
@@ -538,87 +674,282 @@
       
         
           
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)
-</em>梯度的数学定义:函数上升最快的方向*</p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+            <p><em>某个用户的所有进程突然消失,top,ps aux,或者时pstree都看不到相关的进程</em><br><em>但cat /proc/进程pid/status能看到进程信息,且相关端口确实被进程占用</em></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Sklearn/Sklearn——模型方法和参数使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Sklearn/Sklearn——模型方法和参数使用笔记.html" itemprop="url">Sklearn——模型方法和参数使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-06-25T00:00:00+08:00">
+                2018-06-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Sklearn——模型方法和参数使用笔记</em><br><em>本文不定期更新</em></p>
 <hr>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
+<h3 id="模型的一般使用流程"><a href="#模型的一般使用流程" class="headerlink" title="模型的一般使用流程"></a>模型的一般使用流程</h3><ul>
+<li>init</li>
+<li>fit(x_train, y_train)</li>
+<li>predict(x_test)</li>
+</ul>
+<hr>
+<h3 id="模型输出预测概率"><a href="#模型输出预测概率" class="headerlink" title="模型输出预测概率"></a>模型输出预测概率</h3><ul>
+<li>方法名称: predict_proba(x_test)</li>
+<li>该方法对于预测时使用概率或者分数的算法来说直接返回概率值,对于不能返回概率的类来说一般返回交叉验证结果的平均值等<ul>
+<li>NB: 概率值</li>
+<li>LR: 逻辑回归的分数</li>
+<li>SVM: 交叉验证生成的平均值, 这里的结果与predict预测结果可能有偏差</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
-</li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
+<h3 id="关于参数"><a href="#关于参数" class="headerlink" title="关于参数"></a>关于参数</h3><pre><code>* 
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Pandas/Pandas——为DataFrame的某一列实行OneHot编码.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Pandas/Pandas——为DataFrame的某一列实行OneHot编码.html" itemprop="url">Pandas——为DataFrame的某一列实行OneHot编码</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-06-23T00:00:00+08:00">
+                2018-06-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>为DataFrame的某一列实行OneHot编码</em></p>
+<hr>
+<h3 id="使用OneHotEncoder进行编码"><a href="#使用OneHotEncoder进行编码" class="headerlink" title="使用OneHotEncoder进行编码"></a>使用OneHotEncoder进行编码</h3><ul>
+<li><p>基本实现思路:</p>
 <ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
+<li>生成一个OneHotEncoder对象</li>
+<li>取出对应的列并处理成N*1维的数组,用其训练OneHotEncoder对象并进行编码转换</li>
+<li>将新编码的数据生成为新的DataFrame对象<ul>
+<li>为新的编码每一列生成新的列名称</li>
+<li>为新的每行索引赋值为原始DataFrame对应的索引</li>
 </ul>
 </li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
+<li>按照列合并两个DataFrame</li>
+<li>删除之前的列</li>
 </ul>
 </li>
-</ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
-<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
-<li>和LR对比: 线性模型</li>
-<li>和GBDT对比: </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
-<li>通过不同层级和类型的网络可以对时空信息建模</li>
-<li>适合图像, 声音, 文字等带有时序特质的数据</li>
-</ul>
-<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
-<li>基于树模型的GBDT则能很好地处理表格数据</li>
-<li>模型的可解释性</li>
-<li>输入数据的不变性(几乎不用格式化数据)</li>
-<li>更易于调参等特质更适合数值型数据</li>
+<li><p>实现代码:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">from sklearn.preprocessing import OneHotEncoder</span><br><span class="line"></span><br><span class="line">def one_hot_for_column(df, column):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    encode column of df with one hot method</span><br><span class="line">    :param df: an object of DataFrame</span><br><span class="line">    :param column: the name of column in df</span><br><span class="line">    :return: new object of DataFrame and object of OneHotEncoder</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    ohe = OneHotEncoder()</span><br><span class="line"></span><br><span class="line">    # ohe.fit(df[column].values.reshape(-1, 1))</span><br><span class="line">    # col_series = ohe.transform(df[column].values.reshape(-1, 1)).toarray()</span><br><span class="line">    # &lt;==&gt;</span><br><span class="line">    col_series = ohe.fit_transform(df[column].values.reshape(-1, 1)).toarray()</span><br><span class="line">    </span><br><span class="line">    columns = [&quot;%s_%s&quot; % (column, str(m)) for m in range(1, col_series.shape[1] + 1)]</span><br><span class="line">    sub_df = pd.DataFrame(col_series, columns=columns, dtype=int, index=df.index)</span><br><span class="line">    new_df = pd.concat([df, sub_df], axis=1)</span><br><span class="line">    new_df.drop(columns=column, inplace=True)</span><br><span class="line">    return new_df, ohe</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -668,7 +999,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——DT-决策树.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——Error-code-28-No-space-left-on-device.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -687,7 +1018,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——DT-决策树.html" itemprop="url">ML——DT-决策树</a></h1>
+                <a class="post-title-link" href="/Notes/MySQL/MySQL——Error-code-28-No-space-left-on-device.html" itemprop="url">MySQL——Error code 28; No space left on device</a></h1>
         
 
         <div class="post-meta">
@@ -699,8 +1030,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-06-06T00:00:00+08:00">
+                2018-06-06
               </time>
             
 
@@ -739,311 +1070,519 @@
       
         
           
-            <p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><strong>首先说明这是一个MySQL错误，描述的是MySQL临时文件不能打开，空间不足</strong></p>
+<hr>
+<h3 id="问题源头"><a href="#问题源头" class="headerlink" title="问题源头"></a>问题源头</h3><p>在Ubuntu系统中，爬取数据过多，数量百万级到千万级，而且存储都是以小文件的方式存储的，造成inode的大量使用，从而发生异常，发生异常时服务器尚有20多G的硬盘空间</p>
+<hr>
+<h3 id="解决方式"><a href="#解决方式" class="headerlink" title="解决方式"></a>解决方式</h3><p>将数据打包起来，然后删除打包后的数据</p>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>在做数据分析时最好不要使用小文件存储数据，如果非要存储收也尽量注意打包压缩暂时不必要使用的文件</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Shadowsocks——混淆设置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Shadowsocks——混淆设置.html" itemprop="url">Shadowsocks——混淆设置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-06-04T00:00:00+08:00">
+                2018-06-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>obfs: obfuscating</em></p>
+<ul>
+<li>Follow Github项目<a href="https://github.com/shadowsocks/simple-obfs" target="_blank" rel="noopener">https://github.com/shadowsocks/simple-obfs</a></li>
+<li>可选<code>http</code>和<code>tls</code>两种混淆方式,根据需求修改即可</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——词嵌入的前世今生.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/NLP/NLP——词嵌入的前世今生.html" itemprop="url">NLP——词嵌入的前世今生</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-06-01T00:00:00+08:00">
+                2018-06-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>词嵌入的发展,NNLM,CBOW,skip-gram</em><br><em>词嵌入(Word Embedding)也称为词向量(Word2Vec): 指的是将词转换成向量的形式</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <hr>
-<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><ul>
-<li>决策树(DT)是一种基本的分类和回归方法</li>
-<li>分类问题中可以理解为if-then规则的集合</li>
-<li>分类问题中也可以理解为定义在特征空间-&gt;类空间上的条件概率分布</li>
-<li>分类问题中使用的是ID3和C4.5<ul>
-<li>ID3 基于 最大化信息增益 来选择特征</li>
-<li>C4.5基于 最大化信息增益比 来选择特征</li>
+<h3 id="基本问题"><a href="#基本问题" class="headerlink" title="基本问题"></a>基本问题</h3><ul>
+<li>用语言模型做预训练<ul>
+<li>语言模型: 如何计算一段文本序列在某种语言下出现的概率?</li>
 </ul>
 </li>
-<li>回归问题使用的是分类与回归树(Classification And Regression Tree, CART)<ul>
-<li>分类树: 基于 最小化基尼(Gini Index)指数 来选择特征</li>
-<li>回归树: 基于 最小化平方误差 来选择特征</li>
+<li>如何表示文本中的一个词?</li>
+</ul>
+<hr>
+<h3 id="文本表示模型"><a href="#文本表示模型" class="headerlink" title="文本表示模型"></a>文本表示模型</h3><h4 id="词袋模型"><a href="#词袋模型" class="headerlink" title="词袋模型"></a>词袋模型</h4><ul>
+<li>One-Hot: 向量维度与词的数量相同,某个维度为1,其他都为0</li>
+<li>TF-IDF: 计算词对文档的贡献(权重)</li>
+<li>TextRank: 类似于PageRank的思想<ul>
+<li>如果一个单词出现在很多单词后面的话，那么说明这个单词比较重要</li>
+<li>一个TextRank值很高的单词后面跟着的一个单词，那么这个单词的TextRank值会相应地因此而提高</li>
 </ul>
 </li>
-<li>关于树模型的复杂度可以用下面的方式评估, 统计学习方法中<strong>CART</strong>选择使用树的<strong>节点总数</strong>来评估树的复杂度<ul>
-<li>叶子节点的数量</li>
-<li>节点总数</li>
-<li>树的深度</li>
+</ul>
+<h5 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>OneHot:<ul>
+<li>维度灾难</li>
+<li>语义鸿沟</li>
+</ul>
+</li>
+<li>TF-IDF和TextRank<ul>
+<li>[个人理解]也无法表示语义,所以存在语义鸿沟</li>
+</ul>
+</li>
+</ul>
+<h4 id="主题模型"><a href="#主题模型" class="headerlink" title="主题模型"></a>主题模型</h4><ul>
+<li>LSA: 矩阵分解(SVD)的方式,又名 Latent Semantic Indexing</li>
+<li>pLSA: 简单的概率隐式语义模型</li>
+<li>LDA: 无监督聚类常用的模型,有Gibbs Sampling和变分推断等实现,网上有很多资料,也有很多实现</li>
+<li>L-LDA: LDA的有监督版本,核心思想就是在LDA吉布斯实现的版本基础上加上采样限制,使得每次采样只能控制在对应主题上,效果比较好,网上没有官方的实现,大部分实现不完全,感兴趣可以试试我的实现<a href="https://github.com/JoeZJH/Labeled-LDA-Python" target="_blank" rel="noopener">Labeled-LDA-Python</a><ul>
+<li>L-LDA理论上可以得到比LDA质量更高,效果更好的词向量</li>
+</ul>
+</li>
+</ul>
+<h5 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点:"></a>优缺点:</h5><ul>
+<li>LSA:<ul>
+<li>利用全局语料特征</li>
+<li>但SVD求解计算复杂度大</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于词向量的固定表征"><a href="#基于词向量的固定表征" class="headerlink" title="基于词向量的固定表征"></a>基于词向量的固定表征</h4><ul>
+<li>Word2vec: 基于上下文训练, 拥有相同上下文的词相近,基于分布式假设(相同上下文语境的词有似含义)</li>
+<li>FastText: 通过对”词-词”共现矩阵进行分解从而得到词表示的方法,基于分布式假设(相同上下文语境的词有似含义)</li>
+<li>GloVe: 基于全局预料，结合了LSA和word2vec的优点, 论文: <a href="https://www.aclweb.org/anthology/D14-1162" target="_blank" rel="noopener">GloVe: Global Vectors for Word Representation</a></li>
+</ul>
+<h5 id="优缺点-2"><a href="#优缺点-2" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>目前提到的以上所有都是静态词向量,无法解决一次多义等问题</li>
+<li>Word2vec和FastText: <ul>
+<li>优化效率高，但是基于局部语料</li>
+<li>本质上二者也都是语言模型</li>
+</ul>
+</li>
+<li>GloVe: <ul>
+<li>基于全局语料库、并结合上下文语境构建词向量, 结合了LSA和word2vec的优点</li>
+<li>可以看作是更换了目标函数和权重函数的全局word2vec</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于词向量的动态表征"><a href="#基于词向量的动态表征" class="headerlink" title="基于词向量的动态表征"></a>基于词向量的动态表征</h4><ul>
+<li>ELMo: <ul>
+<li>采样LSTM提取特征</li>
+<li>采用双向语言模型</li>
+<li>实际上是两个单向语言模型（方向相反）的拼接，这种融合特征的能力比BERT一体化融合特征方式弱</li>
+</ul>
+</li>
+<li>GPT: <ul>
+<li>采样Transformer进行特征提取</li>
+<li>采用单向语言模型</li>
+</ul>
+</li>
+<li>BERT: <ul>
+<li>采用Transformer进行特征提取</li>
+<li>采用双向语言模型</li>
+</ul>
+</li>
+</ul>
+<h5 id="优缺点-3"><a href="#优缺点-3" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>三者都是基于语言模型的动态词向量,能解决一次多义问题</li>
+<li>ELMo: <ul>
+<li>采用1层静态向量+2层LSTM，多层提取能力有限</li>
+</ul>
+</li>
+<li>GPT和BERT: <ul>
+<li>Transformer可采用多层，并行计算能力强</li>
+</ul>
+</li>
+<li>很多任务表明: <ul>
+<li>Transformer特征提取能力强于LSTM</li>
+</ul>
+</li>
+<li>GPT和BERT都采用Transformer，Transformer是encoder-decoder结构，GPT的单向语言模型采用decoder部分，decoder的部分见到的都是不完整的句子；BERT的双向语言模型则采用encoder部分，采用了完整句子</li>
+</ul>
+<h4 id="NNLM-RNNLM"><a href="#NNLM-RNNLM" class="headerlink" title="NNLM/RNNLM"></a>NNLM/RNNLM</h4><ul>
+<li>词向量为副产物，存在效率不高等问题；</li>
+</ul>
+<hr>
+<h3 id="不同模型的对比"><a href="#不同模型的对比" class="headerlink" title="不同模型的对比"></a>不同模型的对比</h3><h4 id="word2vec-vs-NNLM"><a href="#word2vec-vs-NNLM" class="headerlink" title="word2vec vs NNLM"></a>word2vec vs NNLM</h4><ul>
+<li>本质上都可以看做是语言模型</li>
+<li>对NNLM来说,目不是词向量,是语言模型</li>
+<li>word2vec虽然本质上也是语言模型,但是更关注词向量本身,因此做了很多优化来提高计算效率<ul>
+<li>与NNLM相比,词向量直接sum(CBOW),而不是拼接,并取消隐藏层</li>
+<li>考虑到Softmax需要遍历整个词汇表,采用 Hierarcal Softmax和 Negative Sampling进行优化</li>
+<li>word2vec所做的一切都是为了一切为了快速生成词向量</li>
+</ul>
+</li>
+</ul>
+<h4 id="word2vec-vs-fastText"><a href="#word2vec-vs-fastText" class="headerlink" title="word2vec vs fastText"></a>word2vec vs fastText</h4><ul>
+<li>都可以进行无监督学习, fastText训练词向量时会考虑subword(子词)<ul>
+<li>在fastText中，每个中心词被表示成子词的集合。下面我们用单词<code>“where”</code>作为例子来了解子词是如何产生的。首先，我们在单词的首尾分别添加特殊字符<code>“&lt;”</code>和<code>“&gt;”</code>以区分作为前后缀的子词。然后，将单词当成一个由字符构成的序列来提取n元语法。例如，当n=3时，我们得到所有长度为3的子词：<code>“&lt;wh&gt;”</code> <code>“whe”</code> <code>“her”</code> <code>“ere”</code> <code>“&lt;re&gt;”</code>以及特殊子词<code>“&lt;where&gt;”</code>。</li>
+</ul>
+</li>
+<li>fastText还可以进行有监督学习进行文本分类:<ul>
+<li>结构与CBOW类似，但学习目标是人工标注的分类结果, 而不是中心词 \(w\)</li>
+<li>采用hierarchical softmax对输出的分类标签建立哈夫曼树，样本中标签多的类别被分配短的搜寻路径；</li>
+<li>引入N-gram，考虑词序特征；</li>
+<li><strong>引入subword(子词)来处理长词，处理未登陆词问题</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="word2vec-vs-GloVe-vs-LSA"><a href="#word2vec-vs-GloVe-vs-LSA" class="headerlink" title="word2vec vs GloVe vs LSA"></a>word2vec vs GloVe vs LSA</h4><ul>
+<li>word2vec vs GloVe <ul>
+<li>语料库:<ul>
+<li>word2vec是局部语料库训练的,特征提取基于滑动窗口,可以在线学习</li>
+<li>GloVe的滑动窗口是为了建立”词-词”共现矩阵,需要统计共现概率,不能在线学习</li>
+</ul>
+</li>
+<li>无监督学习:<ul>
+<li>word2vec是无监督学习</li>
+<li>GloVe通常被认为是无监督学习(无需标注)，但实际上GloVe还是有label的，即共现次数 \(log(X_{ij})\)</li>
+</ul>
+</li>
+<li>损失函数:<ul>
+<li>word2vec损失函数实质上是带权重的交叉熵，权重固定；</li>
+<li>GloVe的损失函数是最小平方损失函数，权重可以做映射变换</li>
+</ul>
+</li>
+<li>总结:<ul>
+<li>word2vec的损失函数是<strong>带权重的交叉熵</strong>, <strong>权重是固定</strong>的</li>
+<li>GloVe可以看作是<strong>目标函数为MSE</strong>,<strong>权重函数可变</strong>的全局word2vec</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>GloVe vs LSA<ul>
+<li>LSA（Latent Semantic Analysis）可以基于co-occurance matrix构建词向量，实质上是基于全局语料采用SVD进行矩阵分解，然而SVD计算复杂度高；</li>
+<li>GloVe可看作是对LSA一种优化的高效矩阵分解算法，采用Adagrad对最小平方损失进行优化；</li>
+</ul>
+</li>
+</ul>
+<h4 id="ELMo、GPT、BERT"><a href="#ELMo、GPT、BERT" class="headerlink" title="ELMo、GPT、BERT"></a>ELMo、GPT、BERT</h4><ul>
+<li>三者使用了两种不同的NN组件提取特征<ul>
+<li>ELMo: LSTM</li>
+<li>GPT, BERT: Transformer</li>
+</ul>
+</li>
+<li>三者使用了两种不同的语言模型:<ul>
+<li>GPT: 单向语言模型</li>
+<li>ELMo, BERT: 双向语言模型</li>
+<li>ELMo实际上是两个方向相反的单向语言模型的拼接, 融合特征的能力比BERT那种一体化的融合特征方式弱</li>
+<li>GPT和BERT都采用Transformer,Transformer是 Encoder-Decoder结构<ul>
+<li>GPT为单向语言模型,采用的是Decoder部分, Decoder部分见到的都是不完整的句子</li>
+<li>BERT为双向语言模型,采用的是Encoder部分,采用了完整的句子</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="树模型的优缺点"><a href="#树模型的优缺点" class="headerlink" title="树模型的优缺点"></a>树模型的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>可解释性强</li>
-<li>可处理混合类型特征(?)</li>
-<li>具体伸缩不变性(不用归一化特征,LR模型需要归一化特征) </li>
-<li>有特征组合的作用</li>
-<li>可自然地处理缺失值(神经网络不能处理缺失值)</li>
-<li>对异常点鲁棒</li>
-<li>有特征选择作用</li>
-<li>可扩展性强，容易并行</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>缺乏平滑性(回归预测时输出值只能 输出有限的若干种数值)</li>
-<li>不适合处理高维稀疏数据<ul>
-<li>数据稀疏时<ul>
-<li>比如某个数据集有10000个样本</li>
-<li>某个特征只有10个样本存在值，其他样本都不存在值</li>
-</ul>
-</li>
-<li>决策树： </li>
-<li>这样的话树容易将当前特征选中作为分类特征，这种划分可能在训练集上看起来很好，但测试集中表现可能不太好(这里不是简单的缺失值，而是数据很稀疏，这里需要进一步的理解[待更新])</li>
-<li>LR等线性模型：<ul>
-<li>因为现在的模型普遍都会带着正则项，而LR等线性模型的正则项是对权重的惩罚，也就是特征对应的权重一旦过大，惩罚就会很大，进一步压缩权重的值，使他不至于过大，而树模型则不一样，树模型的惩罚项通常为叶子节点数和深度等，而我们都知道，对于上面这种 case，树只需要一个节点就可以完美分割9990和10个样本，惩罚项极其之小.</li>
-</ul>
-</li>
-</ul>
+<p><strong><em>下面是一些模型的详细介绍</em></strong></p>
+<hr>
+<h3 id="NNLM"><a href="#NNLM" class="headerlink" title="NNLM"></a>NNLM</h3><h4 id="模型目标"><a href="#模型目标" class="headerlink" title="模型目标"></a>模型目标</h4><ul>
+<li>给定一段长度为m的序列时,预测下一个词(第m+1)个词出现的概率</li>
+<li>参考博客<a href="/Notes/DL/DL——NNLM.html">DL——NNLM</a><img src="/Notes/NLP/NLP——词嵌入的前世今生/NNLM_Overview.png">
 </li>
 </ul>
 <hr>
-<h3 id="决策树训练的三个步骤"><a href="#决策树训练的三个步骤" class="headerlink" title="决策树训练的三个步骤"></a>决策树训练的三个步骤</h3><h4 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h4><h5 id="信息增益"><a href="#信息增益" class="headerlink" title="信息增益"></a>信息增益</h5><ul>
-<li>对数据集D的经验熵:\(H(D)=-\sum_{k=1}^{K}\frac{|C_{k}|}{|D|}log_{2}\frac{|C_{k}|}{|D|}\)</li>
-<li>对特征A对数据集D的经验条件熵:\(H(D|A)=\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}H(D_{i})=-\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}\sum_{k=1}^{K}\frac{|D_{ik}|}{|D_{i}|}log_{2}\frac{|D_{ik}|}{|D_{i}|}\), n为特征A的取值个数</li>
+<h3 id="word2vec"><a href="#word2vec" class="headerlink" title="word2vec"></a>word2vec</h3><ul>
+<li>此处只做简单介绍,更详细的讲解请参考博客<a href="http://xtf615.com/2018/10/05/word2vec/" target="_blank" rel="noopener">word2vec学习笔记</a></li>
+<li>损失函数: 带权重的交叉熵损失函数(权重固定)</li>
 </ul>
-<h5 id="信息增益比"><a href="#信息增益比" class="headerlink" title="信息增益比"></a>信息增益比</h5><ul>
-<li>特征A对训练数据D的信息增益比:\(g_{R}(D,A)=\frac{g(D,A)}{H_{A}(D)}\)<ul>
-<li>其中\(H_{A}=-\sum_{i=1}^{n}\frac{|D_{i}|}{|D|}log_{2}\frac{|D_{i}|}{|D|}\), n为特征A的取值个数</li>
-</ul>
-</li>
-</ul>
-<h5 id="基尼指数"><a href="#基尼指数" class="headerlink" title="基尼指数"></a>基尼指数</h5><ul>
-<li>对于分布\(p=(p_{1},…,p_{k})\)的基尼指数:\(Gini(p)=\sum_{k=1}^{K}p_{k}(1-p_{k})=1-\sum_{k=1}^{K}p_{k}^{2}\)</li>
-<li>对样本集合D,基尼指数为:\(Gini(p)=1-\sum_{k=1}^{K}\left(\frac{|C_{k}|}{|D|}\right)^{2}\)</li>
-<li>在特征A的条件下,集合D的基尼指数:\(Gini(D,A)=\frac{|C_{1}|}{|D|}Gini(D_{1})+\frac{|C_{2}|}{|D|}Gini(D_{2})\)<ul>
-<li>我们将集合D根据特征A分为两类: </li>
-<li>是否取特征A的某个值,其中\(A=a\)的是\(D_{1}\),\(A\neq a\)的是\(D_{2}\)</li>
+<h4 id="两类实现"><a href="#两类实现" class="headerlink" title="两类实现"></a>两类实现</h4><ul>
+<li>一般实现: 每次训练一个样本 \((w_{in}, w_{out})\), 需要计算所有词和当前词一起对应的 softmax, 很耗时间,需要 \(O(V)\)复杂度的时间</li>
+<li>优化实现: Hierarcal Softmax 和 Negative Sampling 两种方式<ul>
+<li>Hierarcal Softmax: 每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新平均 \(O(log V)\) 个非叶子节点(每个非叶子结点就是一个词向量)即可</li>
+<li>Negative Sampling: 每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新 \({w_j|w_j\in {w_O}\bigcup W_{neg}}\)个词向量, 通常负样本的集合大小取 \(log(V)\) 量级甚至更小</li>
 </ul>
 </li>
 </ul>
-<h4 id="决策树的生成"><a href="#决策树的生成" class="headerlink" title="决策树的生成"></a>决策树的生成</h4><h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
-<li>基于<strong>最大化信息增益</strong>来选择特征</li>
-<li>选取所有信息增益最大的特征作为当前结点的特征</li>
-<li>对取值数目较多的属性有所偏好</li>
-<li>只有分类树,没有回归树</li>
-<li>ID3相当于用极大似然法对模型进行选择(问题:如何理解?)</li>
-</ul>
-<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
-<li>基于<strong>最大化信息增益比</strong>来选择特征</li>
-<li>选取信息增益比最大的特征作为当前结点的特征<ul>
-<li>由于使用最大的信息增益比特征可能对取值数目少的特征属性有所偏好,所以C4.5算法一般不会直接选信息增益比最大的,而是<ul>
-<li><strong>先从候选区属性中找出信息增益高于平均水平的</strong></li>
-<li><strong>再从筛选结果中寻找信息增益比最大的</strong></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>处理连续型特征时使用二分法(bi-partition)</li>
-<li>只有分类树,没有回归树</li>
-</ul>
-<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><ul>
-<li>CART的决策树是二叉树</li>
-<li>分类树: 基于<strong>最小化基尼指数</strong>来选择特征<ul>
-<li>输出变量为离散变量</li>
-<li>基于基尼指数选取所有可能的特征A和所有可能的切分点a中,选择基尼指数最小的特征和切分点为最优特征和最优且分点</li>
-</ul>
-</li>
-<li>回归树: 基于<strong>最小化平方误差</strong>来选择特征<ul>
-<li>CART回归树一般称为最小二乘回归树(因为目标函数的优化是最小化误差的平方和实现的)</li>
-<li>输出变量为连续变量</li>
-<li>选取时选择最优划分变量(特征)j和最优切分点s,然后按照变量j的划分点s将结点分为两个结点,大于s的为第一个结点,小于s的为第二个结点</li>
-</ul>
-</li>
-<li>一点说明:<ul>
-<li><em>&lt;&lt;统计学习方法&gt;&gt;</em>中:<ul>
-<li>回归树的特征默认是连续变量,选取划分点s时使用的是<strong>连续变量的各种中间值</strong>作为候选值,<strong>大于s的分为一个结点,小于s的分为一个结点</strong></li>
-<li>分类树的特征默认是离散变量,选取划分点a时使用的是<strong>离散变量的值</strong>作为候选值,<strong>等于a的分为一个结点,不等于a的分为另一个结点</strong></li>
-<li>但是实际上无论时分类树还是回归树,CART都可以用相同手段处理连续值</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h4><ul>
-<li>剪枝的核心思想:<ul>
-<li>就是加入考虑树的复杂度考量(决策树的生成时仅仅是考虑到信息增益和信息增益比,没有考量树的复杂度)<ul>
-<li>树的深度越深,树越复杂</li>
-</ul>
-</li>
-<li>整体上再考虑树变得更简单的同时保证分类误差较小</li>
-</ul>
-</li>
-</ul>
-<h5 id="预剪枝"><a href="#预剪枝" class="headerlink" title="预剪枝"></a>预剪枝</h5><ul>
-<li>预剪枝发生在决策树生成过程中</li>
-<li>在每个节点划分前先进行估计</li>
-<li>若当前节点划分不能带来决策树准确率提升,则停止划分</li>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中未提到这个方法,只讲了一种简单的后剪枝算法</li>
-<li>时间复杂度小,欠拟合风险大</li>
-</ul>
-<h5 id="后剪枝"><a href="#后剪枝" class="headerlink" title="后剪枝"></a>后剪枝</h5><ul>
-<li>后剪枝发生在决策树生成后</li>
-<li>自底向上的对非叶子节点进行考察(注意千万不可从根节点开始自顶向下的剪枝,可能失去整体最优的决策树)</li>
-<li>若将该节点换成叶子节点能带来决策树准确率提升,则将该节点替换为叶子节点</li>
-<li>时间复杂度大,欠拟合风险小</li>
-</ul>
-<h6 id="常见的后剪枝方法"><a href="#常见的后剪枝方法" class="headerlink" title="常见的后剪枝方法"></a>常见的后剪枝方法</h6><p><em>各种方法各有优劣,关注不同的优化角度</em></p>
+<h5 id="层次Softmax模型框架"><a href="#层次Softmax模型框架" class="headerlink" title="层次Softmax模型框架"></a>层次Softmax模型框架</h5><p><em>层次Softmax Hierarchical Softmax模型</em></p>
 <ul>
-<li>REP 错误率降低剪枝(Reduced Error Pruning)</li>
-<li>PEP 悲观剪枝(Pessimistic Error Pruning)</li>
-<li>CCP 代价复杂度剪枝(Cost Complexity Pruning), 详细过程参考<a href="/Notes/ML/Models/ML——DT-决策树.html#CCP剪枝算法描述">CPP剪枝算法描述</a></li>
-<li>MEP 最小误差剪枝(Minimum Error Pruning)</li>
-<li>CVP (Critical Value Pruning)</li>
-<li>OPP (Optimal Pruning)</li>
-</ul>
-<h5 id="ID3和C4-5的剪枝"><a href="#ID3和C4-5的剪枝" class="headerlink" title="ID3和C4.5的剪枝"></a>ID3和C4.5的剪枝</h5><h5 id="CART的剪枝"><a href="#CART的剪枝" class="headerlink" title="CART的剪枝"></a>CART的剪枝</h5><p><em>CART使用的是CCP剪枝</em></p>
-<ul>
-<li>对任意的子树,我们可以定义子树的损失<ul>
-<li>\(C_{a}(T)=C(T)+\alpha|T|\)</li>
-<li>子树的损失 = 子树的预测误差 + \(\alpha\) * 子树的节点数</li>
-<li>对于回归树和分类树,子树的预测误差定义不一样,前者是误差的平方和,后者是基尼指数</li>
-</ul>
-</li>
-<li>可以证明对于给定的Alpha,一定存在某个损失最小的子树,也就是我们要的最优子树</li>
-<li>现实中实现时可以使用递归的方法实现</li>
-</ul>
-<h6 id="CCP剪枝算法描述"><a href="#CCP剪枝算法描述" class="headerlink" title="CCP剪枝算法描述"></a>CCP剪枝算法描述</h6><p><em>CPP剪枝也是一种后剪枝算法</em><br><strong>修正：统计学习方法CART算法第六步中应该跳到第二步，而不是第三步</strong></p>
-<ul>
-<li>1：计算所有节点对应的\(\alpha\)值: \(\alpha=\frac{C(t)-C(T_{t})}{|T_{t}|-1}\)<ul>
-<li>\(C(t)\)是以<strong>t节点单一节点为树</strong>时单一节点树的损失函数</li>
-<li>\(C(T_{t})\)是以<strong>t节点为根节点的子树</strong>时整棵子树的损失函数</li>
-<li>\(|T_{t}|\)是以<strong>t节点为根节点的子树</strong>时整棵子树的节点数量</li>
-</ul>
-</li>
-<li>2：对当前\(\alpha\)值最小的节点t剪枝，并存储中间结果的\(\alpha\)值和剪枝后的树结构<ul>
-<li>当\(\alpha\)确定时，存在唯一的最小子树\(T_{\alpha}\)使损失函数\(C_{\alpha}(T)\)最小</li>
-</ul>
-</li>
-<li>3：选取当前树为剪枝后的树，跳转到第1步，直到剪枝到只有三个节点的树时截止</li>
-<li>4：截止后得到节点数量从大到小的多个子树\(T_{\alpha_{0}}, T_{\alpha_{1}},…,T_{\alpha_{n}}\). (其中\(T_{\alpha_{i}}\)也就对应着第i个\(\alpha\)值\(\alpha_{i}\))</li>
-<li>5：用交叉验证法对\(\alpha\)的值进行选择(CART算法执行时\(\alpha\)类似超参数，整个算法学习的过程类似于用交叉验证法确定超参数的过程，\(\alpha\)的值确定了，对应的决策树也就确定了！)</li>
-</ul>
-<h4 id="关于连续特征"><a href="#关于连续特征" class="headerlink" title="关于连续特征"></a>关于连续特征</h4><h5 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法"></a>统计学习方法</h5><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中回归树的特征默认是连续变量,分类树的特征默认是离散变量</li>
-</ul>
-<h5 id="机器学习-周志华"><a href="#机器学习-周志华" class="headerlink" title="机器学习 周志华"></a>机器学习 周志华</h5><ul>
-<li>在&lt;&lt;机器学习&gt;&gt;中提到连续特征的一种解决方案:<ul>
-<li>把该连续特征所有出现的取值排序</li>
-<li>取临近两两之间的平均值作为划分点</li>
-<li>像处理离散的点一样,使用信息增益最大化,信息增益率最大化,或者是基尼指数最小化实现对应的划分选择</li>
-</ul>
-</li>
-</ul>
-<h5 id="个人总结"><a href="#个人总结" class="headerlink" title="个人总结"></a>个人总结</h5><ul>
-<li>处理连续型变量(特征的能力)<ul>
-<li>ID3 不能处理连续型特征<ul>
-<li>因为连续型特征往往使得每一个样本该特征取值都不一样,造成该特征对数据集D的经验条件熵为0?</li>
-<li>使得ID3算法趋向于选择这个特征?</li>
-</ul>
-</li>
-<li>C4.5 能处理连续型特征<ul>
-<li>将数据排序后找到类别不同的分割线作为切分点</li>
-<li>根据切分点把连续属性二分类装换为布尔类型</li>
-<li>可多次使用连续属性分类</li>
-</ul>
-</li>
-<li>CART 能处理连续型特征<ul>
-<li>实际对连续型特征的处理<strong>与C4.5一样</strong></li>
-<li>由于CART树构建时每次都会对特征进行二值化分,所以可以很好的适用与连续型变量</li>
+<li>核心思想: 输出层由语料库中<strong>词出现的频数当作权值</strong>构造出的<strong>哈夫曼树</strong>作为输出</li>
+<li>引入<strong>哈夫曼树</strong>, Hierarcal Softmax是一种有效计算Softmax的方式,使用二叉树来表示</li>
+<li>其中Hierarchical Softmax模型的输出层由语料库中<strong>词出现的频数当作权值</strong>构造出的<strong>哈夫曼树</strong>作为输出<img src="/Notes/NLP/NLP——词嵌入的前世今生/hierarchical_overview.jpg"></li>
+<li>CBOW<ul>
+<li>输入层: 2c个词向量</li>
+<li>投影层: 2c个词向量的累加</li>
+<li>输出层: 哈夫曼树(重点是词w所在的叶子节点, 以及w到根节点的路径)<ul>
+<li>所有单词没有输出向量表示形式,每个内部结点有一个输出向量 \(v\)</li>
+<li>输出层共有 \(V - 1\) 个非叶节点, 也就是要学习 \(V - 1\) 个输出向量</li>
+<li>看起来并没有什么优化,但是每次迭代训练一个样本\(w_{in}, w_{out}\) 时,我们只需要优化从根节点到输出单词 \(w_{out}\) 的路径上的输出向量即可, 平均共 \(O(log V)\) 个向量</li>
+<li>每个单词的概率计算需要考虑叶子节点来求出[待更新]</li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-<h4 id="一些总结"><a href="#一些总结" class="headerlink" title="一些总结"></a>一些总结</h4><ul>
-<li>算法ID3生成可能是多叉树,而CART一定是二叉树，<em>&lt;&lt;统计学习方法&gt;&gt;</em>中二者生成相同的数是巧合，除了不同评价方式的特征选择结果一样以外，还需要被选中的特征都是二值的！</li>
-<li>ID3相当于用极大似然法对模型进行选择</li>
-</ul>
-<h4 id="一种很好的理解思路"><a href="#一种很好的理解思路" class="headerlink" title="一种很好的理解思路"></a>一种很好的理解思路</h4><h5 id="ID3-1"><a href="#ID3-1" class="headerlink" title="ID3"></a>ID3</h5><ul>
-<li>ID3算法就是用<strong>信息增益</strong>大小来判断当前节点应该用什么特征来构建决策树，用计算出的<strong>信息增益最大的特征</strong>来建立决策树的当前节点</li>
-</ul>
-<h6 id="ID3的缺点"><a href="#ID3的缺点" class="headerlink" title="ID3的缺点:"></a>ID3的缺点:</h6><ul>
-<li>ID3<strong>不能处理连续特征</strong></li>
-<li>ID3对取值较多的特征有着偏好<strong>在相同条件下，取值比较多的特征比取值少的特征信息增益大</strong></li>
-<li>ID3<strong>不能处理缺失值</strong></li>
-<li>没有考虑过拟合的问题(问题: ID3没有剪枝吗?)</li>
-</ul>
-<h5 id="C4-5-1"><a href="#C4-5-1" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
-<li>C4.5可以看成是对ID3进行改进</li>
-</ul>
-<h6 id="C4-5对ID3的改进"><a href="#C4-5对ID3的改进" class="headerlink" title="C4.5对ID3的改进"></a>C4.5对ID3的改进</h6><ul>
-<li><p>对于ID3不能处理连续特征，C4.5的思路是将连续的特征离散化.</p>
-<ul>
-<li>样本(m个样本)按照特征的取值排列后取相邻样本的平均值作为划分点(m-1个划分点),分别计算以每个划分点作为二元分类时的信息增益. 最终选择信息增益高的(问题:这里是C4.5,为什么不是使用信息增益比而是信息增益来作为区分?)</li>
-<li>C4.5选择连续特征作为分类特征时,只分两类,但是后面(其他层结点)可以使用该特征分类,也就是说连续特征在C4.5中可以多次使用,但每次只分为两部分</li>
-</ul>
-</li>
-<li><p>对于ID3信息增益最大指标会造成偏向于取值较多的特征的问题. C4.5使用信息增益比来解决问题</p>
-</li>
-<li>对于ID3不能处理缺失值的问题,C4.5主要解决两个问题<ul>
-<li>1) 如何在属性值缺失条件下进行<strong>属性选择</strong><ul>
-<li>没有缺失值的属性,正常处理</li>
-<li>每个属性A有缺失值:<ul>
-<li>对该特征进行划分时仅仅考虑在属性A上没有缺失的部分数据,有缺失的数据不考虑.</li>
-<li>无缺失的数据计算收益时需要乘以一个权重(无缺失的样本总数/样本总数)</li>
-<li>相当于信息增益适当缩小</li>
+<li>Skip-gram<ul>
+<li>输入层：词w的向量</li>
+<li>投影层：依旧是词w的向量</li>
+<li>输出层：哈夫曼树（重点是词w的上下文窗内2c个词所在的叶子节点，以及各自到根节点的路径）</li>
 </ul>
 </li>
 </ul>
-</li>
-<li>2) 给定划分属性,若<strong>样本在该属性上的值缺失,如何对样本进行划分</strong><ul>
-<li>在A属性没有缺失值的样本,正常划分</li>
-<li>在A属性有缺失值的样本:<ul>
-<li>给每个样本引入权重,初始值都为1 </li>
-<li>同一个样本按照不同概率划入到不同的结点(当前叶节点)中去(概率是当前结点中样本数量/无缺失样本总数) </li>
+<h5 id="Negative-Sampling模型框架"><a href="#Negative-Sampling模型框架" class="headerlink" title="Negative Sampling模型框架"></a>Negative Sampling模型框架</h5><ul>
+<li>实际上就是简单的对每一个样本中每一个词都进行负例采样(本质上就是用负采样代替了层次softmax的哈弗曼树)</li>
+<li>负采样是噪声对比估计的一个简化版本,目的是提高训练速度并改善所得词向量的质量</li>
+<li>核心思想: 在每次迭代过程中, 有大量的输出向量需要更新,为了解决这一困难, Negative Sampling的做法是只更新其中一部分输出向量</li>
+<li>利用不同词在语料中出现的频次多少来决定被采样到的概率(单词出现的频次越大,越可能被选做负样本)</li>
+<li>负采样: 利用不同词在语料库中出现的频次多少来决定该词被采样到的概率</li>
+<li>每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新 \({w_j|w_j\in {w_O}\bigcup W_{neg}}\)个词向量, 通常负样本的集合大小取 \(log(V)\) 量级甚至更小</li>
+<li>CBOW<ul>
+<li>输入层： 2c个词向量</li>
+<li>投影层：2c个词向量的累加</li>
+<li>输出层：负采样词集(重点是词w的负词词集的参数 \(\theta\) ，负词的概率永远是1-Sigmoid函数值)</li>
 </ul>
 </li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对于没有考虑过拟合的问题:<ul>
-<li>C4.5引入了正则化系数剪枝(问题: ID3没有剪枝吗?)</li>
-</ul>
-</li>
-</ul>
-<h6 id="C4-5的缺点"><a href="#C4-5的缺点" class="headerlink" title="C4.5的缺点"></a>C4.5的缺点</h6><ul>
-<li>[这个问题存疑,没有任何书籍显示C4.5的剪枝策略是PEP,&lt;&lt;统计学习方法&gt;&gt;中只是简单的介绍了<a href="/Notes/ML/Models/ML——DT-决策树.html#后剪枝">后剪枝</a>]C4.5的剪枝方法时PEP,PEP准确度高,但是存在下面两个子问题:<ul>
-<li>1) PEP使用由上而下的剪枝策略,会导致与预先剪枝相同的问题,造成过度剪枝</li>
-<li>2) 会造成剪枝失败的情况</li>
-</ul>
-</li>
-<li>C4.5生成多叉树,计算机中很多时候多叉树运算效率不如二叉树来的高</li>
-<li>C4.5只能用于分类</li>
-<li>C4.5需要进行大量的对数运算(计算熵)</li>
-</ul>
-<h5 id="CART-1"><a href="#CART-1" class="headerlink" title="CART"></a>CART</h5><ul>
-<li>可以理解为对C4.5进一步的改进</li>
-</ul>
-<h6 id="CART对C4-5的改进"><a href="#CART对C4-5的改进" class="headerlink" title="CART对C4.5的改进"></a>CART对C4.5的改进</h6><ul>
-<li>CART使用CPP代价复杂度剪枝算法<ul>
-<li>详细过程参考<a href="/Notes/ML/Models/ML——DT-决策树.html#CCP剪枝算法描述">CCP剪枝算法描述</a></li>
-</ul>
-</li>
-<li>CART使用二叉树只生成二叉树,即使是离散特征<ul>
-<li>CART对连续特征的处理与C4.5完全相同</li>
-<li>CART对离散特征也是二分类且也是可以多次使用同一特征(ID3与C4.5中离散特征只能使用一次,且是多分叉)</li>
-<li>所以CART是一颗二叉树</li>
-</ul>
-</li>
-<li>CART可有分类树和回归树两种<ul>
-<li>回归树的目标函数的优化是: 最小化误差的平方和</li>
-<li>分类树以概率最大的类别作为叶节点的类别</li>
-<li>回归树以中位数或者均值作为预测结果</li>
-</ul>
-</li>
-<li>CART使用基尼指数作为结点混乱度的度量指标<ul>
-<li>避免了对数计算(与熵比较)</li>
+<li>Skip-gram模型:<ul>
+<li>输入层：词w的向量</li>
+<li>投影层：依旧是词w的向量</li>
+<li>输出层：每个上下文词u的负采样(重点是词w的负词词集的参数 \(\theta\) ，负词的概率永远是1-Sigmoid函数值)</li>
 </ul>
 </li>
 </ul>
-<h5 id="ID3-C4-5-CART的缺点"><a href="#ID3-C4-5-CART的缺点" class="headerlink" title="ID3,C4.5,CART的缺点"></a>ID3,C4.5,CART的缺点</h5><ul>
-<li>每次之全责一个最优特征作为分类决策,而实际中其实可能需要多个特征一起决策<ul>
-<li>解决方案: 多变量决策树(每次选择多个特征一起决策)<ul>
-<li>单个特征决策可以看成是直线</li>
-<li>多个特征决策可以看成是斜线</li>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><ul>
+<li>层次Softmax模型:<ul>
+<li>CBOW模型的一次更新是：<ul>
+<li>输入2c个词向量的累加(简单的<code>sum</code>,而不是拼接)</li>
+<li>对中心词 \(w\) 上的路径节点系数进行更新(输出层)</li>
+<li>对所有的上下文词的词向量进行整体一致更新(输入层到隐藏层的参数, 修改多个词向量)</li>
 </ul>
 </li>
+<li>Skip-gram模型的一次更新是：<ul>
+<li>输入中心词 \(w\) 的词向量(直接输入,无其他操作)</li>
+<li>对每个上下文词 \(u(i)\) 所在的路径上的节点系数进行更新(输出层,修改多个上下文的结点)</li>
+<li>对词w的词向量进行单独更新(输入层到隐藏层的参数,只修改一个词向量)</li>
 </ul>
 </li>
-<li>样本改变一点点都会造成树的结构改变很大<ul>
-<li>解决方案: 随机森林等集成学习方法</li>
+<li>CBOW一次训练更新计算量小,Skip-gram一次训练计算量大(更新的系数更多?)</li>
+</ul>
+</li>
+<li>CBOW看起来更新的更平滑，适合小量文本集上的词向量构建，Skip-gram每次更新都更加有针对性，所以对于大文本集上表现更好</li>
+</ul>
+<h4 id="word2vec的缺陷"><a href="#word2vec的缺陷" class="headerlink" title="word2vec的缺陷"></a>word2vec的缺陷</h4><ul>
+<li>不能解决多义词问题(只能把几种意思同时编码进向量里)<ul>
+<li>这是所有固定词向量的通病</li>
+<li>解决方案是动态词向量(允许不同上下文使用不同词向量表达同一个词),包括ELMo, GPT, BERT</li>
 </ul>
 </li>
 </ul>
@@ -1095,7 +1634,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——EM算法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1114,7 +1653,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——EM算法.html" itemprop="url">ML——EM算法</a></h1>
+                <a class="post-title-link" href="/Notes/Others/GitHub——主题推荐算法.html" itemprop="url">GitHub——主题推荐算法</a></h1>
         
 
         <div class="post-meta">
@@ -1126,8 +1665,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-30T00:00:00+08:00">
+                2018-05-30
               </time>
             
 
@@ -1166,211 +1705,100 @@
       
         
           
-            <p><em>期望最大化(Exception Maximization Algorithm)EM算法</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
+            <p><em>Topic Suggestions for Millions of Repositories</em></p>
+<p><a href="https://githubengineering.com/topics/" title="https://githubengineering.com/topics/" target="_blank" rel="noopener">Github官网原文</a></p>
 <hr>
-<h3 id="不同教材的不同形式"><a href="#不同教材的不同形式" class="headerlink" title="不同教材的不同形式"></a>不同教材的不同形式</h3><h4 id="李航统计学习方法"><a href="#李航统计学习方法" class="headerlink" title="李航统计学习方法"></a>李航统计学习方法</h4><h5 id="算法步骤"><a href="#算法步骤" class="headerlink" title="算法步骤"></a>算法步骤</h5><ul>
-<li>输入: 观测变量数据Y</li>
-<li>输出: 模型(参数\(\theta\))</li>
-<li><strong>E步:</strong> 计算\(Q(\theta, \theta^{i})\)<br>$$<br>\begin{align}<br>Q(\theta, \theta^{i}) &amp;= E_{Z}[logP(Y,Z|\theta)|Y,\theta^{i}] \\<br>  &amp;= E_{Z\sim P(Z|Y,\theta^{i})}[logP(Y,Z|\theta)] \\<br>  &amp;= \sum_{Z} P(Z|Y,\theta^{i})logP(Y,Z|\theta) \\<br>  &amp;= \sum_{Z} logP(Y,Z|\theta)P(Z|Y,\theta^{i})<br>\end{align}<br>$$</li>
-<li><p><strong>M步:</strong> 求使得\(Q(\theta, \theta^{i})\)极大化的参数\(\theta=\theta^{i+1}\)<br>$$\theta^{i+1} = \arg\max_{\theta}Q(\theta, \theta^{i})$$</p>
-</li>
-<li><p>重复E步和M步,直到收敛</p>
-</li>
-<li>理解: \(Q(\theta, \theta^{i})\)可以理解为\(Q(\theta|\theta^{i})\),表示在参数\(\theta^{i}\)已知的情况下,对数似然函数关于隐变量后验分布的期望函数,函数的参数为\(\theta\)</li>
-</ul>
-<h5 id="隐变量的期望还是分布"><a href="#隐变量的期望还是分布" class="headerlink" title="隐变量的期望还是分布?"></a>隐变量的期望还是分布?</h5><p><em>参考博客:<a href="https://www.jianshu.com/p/c3ff1ae5cb66" target="_blank" rel="noopener">https://www.jianshu.com/p/c3ff1ae5cb66</a></em></p>
-<h6 id="仅考虑隐变量的期望"><a href="#仅考虑隐变量的期望" class="headerlink" title="仅考虑隐变量的期望"></a>仅考虑隐变量的期望</h6><ul>
-<li>应用场景为k-means聚类,但是k-means聚类E步求的是最可能的\(Z\)值(概率最大的\(Z\)值),而不是\(Z\)的期望</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">步骤</th>
-<th style="text-align:center">具体细节</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">E步</td>
-<td style="text-align:center">基于\(\theta^{i}\)推断隐变量\(Z\)的期望,记为\(Z^{i}\)</td>
-</tr>
-<tr>
-<td style="text-align:center">M步</td>
-<td style="text-align:center">基于已观测变量\(Y\)和\(Z^{i}\)对参数\(\theta\)做极大似然估计,得到\(\theta^{i+1}\) $$\theta^{i+1}=\arg\max_{\theta}P(Y,Z^{i}\mid\theta)$$</td>
-</tr>
-</tbody>
-</table>
-<h6 id="考虑隐变量的分布"><a href="#考虑隐变量的分布" class="headerlink" title="考虑隐变量的分布"></a>考虑隐变量的分布</h6><ul>
-<li>应用场景为GMM模型聚类</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">步骤</th>
-<th style="text-align:center">具体细节</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">E步</td>
-<td style="text-align:center">基于\(\theta^{i}\)推断隐变量\(Z\)的后验分布\(P(Z\mid Y,\theta^{i})\)</td>
-</tr>
-<tr>
-<td style="text-align:center">E步M步均可</td>
-<td style="text-align:center">基于隐变量的后验分布\(P(Z\mid Y,\theta^{i})\)<br>计算对数似然函数\(logP(Y,Z\mid\theta)\)关于隐变量\(Z\)的后验分布\(P(Z\mid Y,\theta^{i})\)的期望\(Q(\theta,\theta^{i})\)<br>$$Q(\theta,\theta^{i}) = E_{P(Z\mid Y,\theta^{i})}logP(Y,Z\mid \theta)$$</td>
-</tr>
-<tr>
-<td style="text-align:center">M步</td>
-<td style="text-align:center">基于期望函数\(Q(\theta, \theta^{i})\),对参数\(\theta\)求极值(极大似然估计),得到$$\theta^{i+1}=\arg\max_{\theta}Q(\theta, \theta^{i})=\arg\max_{\theta}E_{P(Z\mid Y,\theta^{i})}logP(Y,Z\mid \theta)$$</td>
-</tr>
-</tbody>
-</table>
-<h5 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h5><ul>
-<li>已知数据是观测数据Y,像极大似然法一样,使得<strong>似然函数最大化</strong>即可,这里为了方便计算使用<strong>对数似然</strong></li>
-<li>我们的终极目标与极大似然法一样,求一个使得似然函数最大(可能是极大)的参数$$\theta^{\star}=\arg\max_{\theta}L(\theta)$$<br>其中<br>$$<br>\begin{align}<br>L(\theta)&amp;=logP(Y|\theta)\\<br>  &amp;=log\sum_{Z}P(Y,Z|\theta)\\<br>  &amp;=log\left(\sum_{Z}P(Y|Z,\theta)P(Z|\theta)\right)<br>\end{align}<br>$$</li>
-<li>显然,上述似然函数比较难以求解,非凸,且涉及和(积分或加法)的对数等操作,难以展开(可能还有其他的原因)</li>
-<li><p>所以我们使用EM算法迭代不断逼近原始似然函数的最优解\(\theta^{\star}\)(注意:我们只能得到局部最优,但是一般来说局部最优也够用了)</p>
-</li>
-<li><p>可用<strong>Jensen不等式</strong>得到\(L(\theta)\)的下界来作为优化目标不断迭代<br>$$<br>\begin{align}<br>L(\theta)&amp;=log\left(\sum_{Z}P(Y|Z,\theta)P(Z|\theta)\right)\\<br>  &amp;=log\left(\sum_{Z}P(Z|Y,\theta^{i})\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\right)\\<br>  &amp;\geq \sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\\<br>  &amp;=B(\theta,\theta^{i})<br>\end{align}<br>$$</p>
-</li>
-<li><p>由于此时\(B(\theta, \theta^{i})\)是\(L(\theta)\)的下界(\(B(\theta, \theta^{i})\)是固定\(\theta^{i}\)时关于\(\theta\)的凸函数且容易求导,可以求极大值),所以使得前者增大的参数\(\theta\)也能使得后者增大,为了使得后者尽可能的增大,我们对前者取极大值</p>
+<h3 id="总体流程图"><a href="#总体流程图" class="headerlink" title="总体流程图"></a>总体流程图</h3><!-- ![process-flow](Github-topics-method/Github-topics-process-flow.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png" title="process-flow">
+<h3 id="分为七个步骤："><a href="#分为七个步骤：" class="headerlink" title="分为七个步骤："></a>分为七个步骤：</h3><hr>
+<h4 id="Readme-预处理与清除"><a href="#Readme-预处理与清除" class="headerlink" title="Readme 预处理与清除"></a>Readme 预处理与清除</h4><p><em>(Readme preprocessing and cleanup)</em></p>
 <ul>
-<li>下面的推导基于事实: <strong>消去与\(\theta\)无关的项,极大值点(\(\theta^{i+1}\))不变</strong></li>
+<li>移除不要的文本块(Remove unwanted blocks)<ul>
+<li>去除没用文本：一些块是没用的，比如code, table 和image链接等</li>
+</ul>
+</li>
+<li>文本划分(Text segmentation)<ul>
+<li>提取有用的文本：一个启发式的README tagger，借助格式分析：分析缩进(indentation)，空格(spacing)，和反撇号( `, backtick)等决定是否是有用信息【说明：这里语法分析是没必要的，我们只关心有用的文本，其他的都是为噪音(noise)】</li>
+<li>提取到有用文本后，删除拓展部分：HTML标签，路径和其他处理出来的部分等</li>
+<li>最后将剩下的文本进行粗粒度分割【用标点符号(punctuation marks)和README中的一些符号，比如临近哈希符号(contiguous hash symbols)】</li>
 </ul>
 </li>
 </ul>
-<p>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}B(\theta,\theta^{i})\\<br>    &amp;=\arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})}\right)\\<br>    &amp;=\arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta)-\sum_{Z}P(Z|Y,\theta^{i})logP(Z|Y,\theta^{i})\right)\\<br>    &amp;= \arg\max_{\theta}\left( \sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta)\right)\\<br>    &amp;=\arg\max_{\theta}Q(\theta,\theta^{i})<br>\end{align}<br>$$</p>
+<hr>
+<h4 id="生成候选主题"><a href="#生成候选主题" class="headerlink" title="生成候选主题"></a>生成候选主题</h4><p><em>(Generate candidate topics)</em></p>
 <ul>
-<li>由上式可知,我们的EM算法步骤中E步和M步是正确的</li>
-<li>问题:推导第二步中为什么选择\(P(Z|Y,\theta^{i})\)而不是其他分布呢?<ul>
-<li>解答: \(B(\theta, \theta^{i})\)和\(L(\theta)\)什么时候相等呢?(前面推导中<strong>Jensen不等式</strong>什么时候能取等号呢?)</li>
-<li><strong>Jensen不等式</strong>取等号当且仅当<strong>Jensen不等式</strong>中函数的值为常数,此处函数的值为\(log\frac{P(Y,Z|\theta)}{Q(Z)}\)<br>$$<br>\begin{align}<br>L(\theta)&amp;=log\left(\sum_{Z}P(Y,Z|\theta)\right)\\<br>&amp;=log\left(\sum_{Z}Q(Z)\frac{P(Y,Z|\theta)}{Q(Z)}\right)\\<br>&amp;\geq \sum_{Z}Q(Z)log\frac{P(Y,Z|\theta)}{Q(Z)}\\<br>\end{align}<br>$$</li>
-<li>不等式中当且仅当\(log\frac{P(Y,Z|\theta)}{Q(Z)}\)为常数,也就是\(\frac{P(Y,Z|\theta)}{Q(Z)}=c\), c为常数,时等号成立</li>
-<li>此时由于\(Q(Z)\)是一个分布(注意:正因为\(Q(Z)\)是一个分布才能用Jensen不等式),所以有<br>$$<br>\begin{align}<br>Q(Z)=\frac{P(Y,Z|\theta)}{\sum_{Z}P(Y,Z|\theta)}=\frac{P(Y,Z|\theta)}{P(Y|\theta)}=P(Z|Y,\theta)<br>\end{align}<br>$$</li>
+<li>用自定义的停用词去将词单元划分出来(Use custom stop words to break text into word units)<ul>
+<li>停用词去除</li>
+<li>n-gram分段小于等于4(测试发现小于4的比较好，太长的主题过于具体了，不合适)</li>
 </ul>
 </li>
 </ul>
-<h4 id="吴恩达CS229"><a href="#吴恩达CS229" class="headerlink" title="吴恩达CS229"></a>吴恩达CS229</h4><ul>
-<li>E步: 计算\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)</li>
-<li>M步: 求使得原始似然函数下界极大化的参数\(\theta=\theta^{i+1}\)<br>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}\sum_{Z}P(Z|Y,\theta^{i})log\frac{P(Y|Z,\theta)P(Z|\theta)}{P(Z|Y,\theta^{i})} \\<br>  &amp;= \arg\max_{\theta}\sum_{Z}Q_{i}(Z)log\frac{P(Y|Z,\theta)P(Z|\theta)}{Q_{i}(Z)}<br>\end{align}<br>$$<ul>
-<li>进一步消除与\(\theta\)无关的项可以得到<br>$$<br>\begin{align}<br>\theta^{i+1} &amp;= \arg\max_{\theta}\sum_{Z}Q_{i}(Z)logP(Y|Z,\theta)P(Z|\theta)<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>推导步骤和李航统计学习方法一样,核心是运用<strong>Jensen不等式</strong></li>
-</ul>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
-<li>以上两个不同课程的E步不同,但完全等价,吴恩达CS229课程中E步计算\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)就等价于计算出了李航统计学习方法中的\(Q(\theta, \theta^{i})\),二者关系如下:<br>$$<br>\begin{align}<br>Q(\theta, \theta^{i})&amp;=\sum_{Z}P(Z|Y,\theta^{i})logP(Y|Z,\theta)P(Z|\theta) \\<br>  &amp;= \sum_{Z}Q_{i}(Z)logP(Y|Z,\theta)P(Z|\theta)<br>\end{align}<br>$$</li>
-<li>M步中,二者本质上完全相同,但是吴恩达CS229中没消去与\(\theta\)无关的项,所以看起来不太简洁</li>
-</ul>
-<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><h5 id="实例一"><a href="#实例一" class="headerlink" title="实例一"></a>实例一</h5><ul>
-<li>三个硬币的抛硬币问题<ul>
-<li>第一次:抛硬币A,决定第二次抛C还是B,选中B的概率为\(\pi\)</li>
-<li>第二次:抛硬币B或C,正面为1,反面为0</li>
-</ul>
-</li>
-<li>(第一个硬币A抛中B的概率为隐变量)</li>
-</ul>
-<h5 id="实例二"><a href="#实例二" class="headerlink" title="实例二"></a>实例二</h5><ul>
-<li>200个人不知道男女的身高拟合问题(性别为隐变量)</li>
-<li>这里是高斯混合模型的代表</li>
-</ul>
-<h5 id="实例三"><a href="#实例三" class="headerlink" title="实例三"></a>实例三</h5><ul>
-<li>K-Means聚类</li>
-<li>参考&lt;&lt;百面机器学习&gt;&gt;P100-P101</li>
-</ul>
-<h4 id="进一步理解"><a href="#进一步理解" class="headerlink" title="进一步理解"></a>进一步理解</h4><h5 id="我的理解"><a href="#我的理解" class="headerlink" title="我的理解"></a>我的理解</h5><ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>1.根据参数\(\theta^{i}\)计算当前隐变量的分布函数\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)<ul>
-<li>这一步的本质是使得在参数 \(\theta = \theta^i\) 时, 求得一个隐变量 \(Z\) 的分布,使得原始式子中的不等式取等号</li>
-</ul>
-</li>
-<li>2.根据\(Q_{i}(Z)=P(Z|Y,\theta^{i})\)得到对数似然函数下界函数\(B(\theta, \theta^{i})\)(求原始似然函数的下界B函数是因为直接对原始似然函数求极大值很难)或者\(Q(\theta,\theta^{i})\)<br>$$\arg\max_{\theta}B(\theta, \theta^{i})=\arg\max_{\theta}Q(\theta,\theta^{i})$$<br>(\(Q(\theta,\theta^{i})\)可以看作是\(B(\theta, \theta^{i})\)的简化版,\(B(\theta, \theta^{i})\)才是原始似然函数的下界,\(Q(\theta,\theta^{i})\)不是原始似然函数的下界)<ul>
-<li>这里 \(B(\theta, \theta^{i})\) 就是原始似然函数的下界(也就是不等式取到等号)</li>
-</ul>
-</li>
-<li>3.求使得函数\(B(\theta, \theta^{i})\)极大化的参数\(\theta=\theta^{i+1}\)<ul>
-<li>这一步是在固定隐变量 \(Z\) 的分布时, 用极大似然求一个使得下界 \(B(\theta, \theta^{i})\) 最大的参数 \(\theta = \theta^{i+1}\) 使得 \(B(\theta^{i+1}, \theta^{i}) = \text{max} B(\theta, \theta^{i})\) </li>
-</ul>
-</li>
-<li><p>4.循环1,2,3直到收敛(相邻<strong>两次参数的变化</strong>或者是<strong>似然函数的变化</strong>足够小即可判断为收敛)</p>
+<hr>
+<h4 id="移除噪音主题"><a href="#移除噪音主题" class="headerlink" title="移除噪音主题"></a>移除噪音主题</h4><p><em>(Eliminate noisy topics)</em></p>
 <ul>
-<li>\(||\theta^{i+1}-\theta^{i}||&lt;\epsilon_{1}\)或者\(||Q(\theta^{i+1},\theta^{i})-Q(\theta^{i},\theta^{i})||&lt;\epsilon_{2}\)</li>
+<li>用逻辑回归模型删减“bad”主题(Use a logistic regression model to prune “bad” topics)<ul>
+<li>监督逻辑回归模型(supervised logistic regression model)主要针对除了频数比较小的外，一些不好的，比如”great”, “cool”等，<strong>这里的模型是一个分类模型，分为两类(good[positive] and bad(negative))</strong>, 我们称之为关键词过滤模型<ul>
+<li>手动收集大约300个数据集作为训练集</li>
+<li>单个动词一般都是Bad类<code>请教师兄</code></li>
+<li>其他的(<code>Other features we used were occurrence of user names, n-gram size of a phrase, length of a phrase, and numeric content within a phrase.</code>)</li>
+<li>以后打算加入回馈机制(来自用户的)去更新这个关键词过滤模型：接受度高的词作为positive的，接受度低的作为停用词或者negative的</li>
 </ul>
 </li>
-<li><p>总结:</p>
+</ul>
+</li>
+<li>移除不满足最小频数的主题(Eliminate topics not satisfying minimum frequency count)</li>
+</ul>
+<hr>
+<h4 id="给主题评分"><a href="#给主题评分" class="headerlink" title="给主题评分"></a>给主题评分</h4><p><em>(Score Topics)</em></p>
 <ul>
-<li>在吴恩达CS229课程中: E步包含1, M步包含2,3,其中第2步中求的是\(B(\theta, \theta^{i})\)</li>
-<li>在李航&lt;&lt;统计学习方法&gt;&gt;中: E步包含1,2, M步包含3,其中第2步中求的是\(Q(\theta,\theta^{i})\)</li>
-<li>两种表达等价</li>
+<li>用混合tf-idf分数，以主题频率和n元词作为打分标准(Use combination of tf-idf scores, topic frequency and n-gram size for scoring)<ul>
+<li>评估多种指标后，选择了点互信息指标(PMI)： <a href="https://blog.csdn.net/luo123n/article/details/48574123" title="https://blog.csdn.net/luo123n/article/details/48574123" target="_blank" rel="noopener">Pointwise Mutual Information</a></li>
+<li>考虑另一种指标tf-idf：参考论文<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" title="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" target="_blank" rel="noopener">Using TF-IDF to Determine Word Relevance in Document Queries.pdf</a>或者<a href="https://blog.csdn.net/baimafujinji/article/details/51476117" title="https://blog.csdn.net/baimafujinji/article/details/51476117" target="_blank" rel="noopener">Python的实现</a></li>
+<li><code>The second approach we tried uses the average tf-idf scores of individual words in a phrase weighted by the phrase frequency (if it’s more than one word long) and n-gram size.</code></li>
+<li>两种方法比较：<ul>
+<li>PMI： 强调独特性，越特殊的短语评分越高，但有些可能只是拼写错误(Typo)或者是没有被删除的代码片段</li>
+<li>tf-idf： 不强调独特性，最终选择是tf-idf,原因是这个指标较好的平衡了独特性和主题与仓库(repository)的相关程度</li>
+</ul>
+</li>
+<li>在tf-idf的基础上还添加了一下其他的比如boosting scores等方法<br><strong>下面是TF-IDF的说明</strong><!-- ![tf-idf](Github-topics-method/tf-idf.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/tf-idf.png" title="tf-idf">
+</li>
 </ul>
 </li>
 </ul>
-<h5 id="图示理解"><a href="#图示理解" class="headerlink" title="图示理解"></a>图示理解</h5><ul>
-<li>迭代图示如下图(图来自博客:<a href="https://www.cnblogs.com/xieyue/p/4384915.html" target="_blank" rel="noopener">https://www.cnblogs.com/xieyue/p/4384915.html</a>)</li>
-</ul>
-<img src="/Notes/ML/ML——EM算法/EM_explain.png">
+<hr>
+<h4 id="规范化主题"><a href="#规范化主题" class="headerlink" title="规范化主题"></a>规范化主题</h4><p><em>(Canonicalize topics)</em></p>
 <ul>
-<li>也可参考李航&lt;&lt;统计学习方法&gt;&gt;第160页的图和解释</li>
-</ul>
-<h4 id="收敛性"><a href="#收敛性" class="headerlink" title="收敛性"></a>收敛性</h4><ul>
-<li>参考李航&lt;&lt;统计学习方法&gt;&gt;第160页-第162页推导过程</li>
-<li>参考&lt;&lt;百面机器学习&gt;&gt;第P099页-第P100页<ul>
-<li>核心思想<strong>原始函数单调有界</strong></li>
-<li>原始函数为\(L(\theta)\),函数下界为\(B(\theta,\theta^{i})\)</li>
-<li>E步:<ul>
-<li>找到使得在当前\(\theta^{i}\)确定时,原始函数的下界\(B(\theta, \theta^{i})\),在\(\theta^{i}\)处有<br>\(\)<br>$$<br>\begin{align}<br>L(\theta^{i}) = B(\theta,\theta^{i})<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>M步: <ul>
-<li>找到使得函数\(B(\theta,\theta^{i})\)取得极大值的\(\theta^{i+1}\)</li>
-</ul>
-</li>
-<li>i = i + 1,然后重新开始E和M步<br>$$<br>\begin{align}<br>L(\theta^{i+1}) &gt;= L(\theta^{i+1})<br>\end{align}<br>$$</li>
-<li>所以函数是单调的</li>
-<li>由于\(L(\theta)\)有界(这里原始函数有界可以从似然函数的定义得到)</li>
-<li><strong>函数单调有界=&gt;函数收敛</strong>(数学分析中的定理)</li>
-</ul>
-</li>
-</ul>
-<h4 id="优劣性"><a href="#优劣性" class="headerlink" title="优劣性"></a>优劣性</h4><h5 id="优势"><a href="#优势" class="headerlink" title="优势"></a>优势</h5><ul>
-<li>简单性</li>
-<li>普适性</li>
-</ul>
-<h5 id="劣势"><a href="#劣势" class="headerlink" title="劣势"></a>劣势</h5><ul>
-<li>不能保证收敛到最大值,只能保证收敛到极大值</li>
-<li>对初始值敏感,不同初始值可能收敛到不同极值点</li>
-<li>实际使用时通常采用多次选择不同的初始值来进行迭代,最终对估计值选最好的</li>
-</ul>
-<h4 id="EM算法的推广"><a href="#EM算法的推广" class="headerlink" title="EM算法的推广"></a>EM算法的推广</h4><ul>
-<li>引入F函数</li>
-</ul>
-<h5 id="GEM1"><a href="#GEM1" class="headerlink" title="GEM1"></a>GEM1</h5><p><em>F函数极大-极大法</em></p>
+<li><p>使用内部词典规范主题形式(Use an in-house dictionary to suggest canonical form of topics)</p>
 <ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 求使得\(F(\tilde{P},\theta^{i})\)极大化的\(\tilde{P}^{i+1}\)</li>
-<li>M步: 求使得\(F(\tilde{P}^{i+1},\theta)\)极大化的\(\theta^{i+1}\)</li>
-<li>重复E,M,直到收敛</li>
-</ul>
-<h5 id="GEM2"><a href="#GEM2" class="headerlink" title="GEM2"></a>GEM2</h5><ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 计算\(Q(\theta,\theta^{i})\)</li>
-<li>M步: 求\(\theta^{i+1}\)使得\(Q(\theta^{i+1},\theta^{i}) &gt; Q(\theta^{i},\theta^{i})\)</li>
-<li>重复E,M,直到收敛</li>
-<li>总结: \(Q(\theta,\theta^{i})\)的极大化难求时,这种方法可以简化计算</li>
-</ul>
-<h5 id="GEM3"><a href="#GEM3" class="headerlink" title="GEM3"></a>GEM3</h5><ul>
-<li>初始化参数\(\theta^{0}\)</li>
-<li>E步: 计算\(Q(\theta,\theta^{i})\)</li>
-<li>M步: 对参数\(\theta^{i}\)的每一个维度k,固定参数的其他维度,求使得\(Q(\theta,\theta^{i})\)极大化的\(\theta_{k}^{i+1}\),最终得到\(\theta^{i+1}\)<ul>
-<li>使得\(Q(\theta^{i+1},\theta^{i}) &gt; Q(\theta^{i},\theta^{i})\)</li>
+<li><p>解决文字层面的差别和变化等,比如下面四个主题</p>
+<blockquote>
+<p>neural-network<br>neural-networks<br>neuralnetwork<br>neuralnetworks</p>
+</blockquote>
+</li>
 </ul>
 </li>
-<li>重复E,M,直到收敛</li>
-<li>总结: 一种特殊的GEM算法,将M步分解为参数\(\theta\)的维度次来条件极大化</li>
 </ul>
-
+<hr>
+<h4 id="移除相似的主题"><a href="#移除相似的主题" class="headerlink" title="移除相似的主题"></a>移除相似的主题</h4><p><em>(Eliminate near similar topics)</em></p>
+<ul>
+<li><p>用基于Jaccard相似性评分的贪心算法(Greedy approach using Jaccard similarity scoring)</p>
+<ul>
+<li><p>motivation：在得到Top-N的主题后，有些主题其实很相似，虽然都有用，但是他们只是在不同粒度描述了同一个主题而已，因此我们需要删除一些重复的，比如下面的例子</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>general-purpose machine learning<br>machine learning library<br>machine learning algorithms<br>distributed machine learning<br>machine learning framework<br>deep learning library<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+<li><p>method： 两个短语的相似性计算使用的是基于词的Jaccard相似性(两个短语的差集与并集的比值，因为它对较短的短语很有效，而且分数是[0-1]的，很方便设置阈值(thresholds))，用贪心算法，如果两个主题相似，去除分数较低的那一个，上面的例子去除相似主题后的结果是：</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="返回Top-K主题作为最终结果"><a href="#返回Top-K主题作为最终结果" class="headerlink" title="返回Top-K主题作为最终结果"></a>返回Top-K主题作为最终结果</h4>
           
         
       
@@ -1418,7 +1846,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Go/Go语言——String与Slice深度解析.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1437,7 +1865,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——HMM-MEMM-CRF.html" itemprop="url">ML——HMM-MEMM-CRF</a></h1>
+                <a class="post-title-link" href="/Notes/Go/Go语言——String与Slice深度解析.html" itemprop="url">Go语言——String与Slice深度解析</a></h1>
         
 
         <div class="post-meta">
@@ -1449,8 +1877,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-29T00:00:00+08:00">
+                2018-05-29
               </time>
             
 
@@ -1489,1114 +1917,51 @@
       
         
           
-            <p><em>本文主要区分隐马尔可夫模型(HMM),最大熵马尔可夫模型(MEMM),和条件随机场(CRF)</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
+            <p><em>Note: 他们都是struct类型的</em></p>
 <hr>
-<h3 id="HMM"><a href="#HMM" class="headerlink" title="HMM"></a>HMM</h3><ul>
-<li>生成式模型</li>
-<li>有向图模型,贝叶斯网络</li>
-</ul>
-<h4 id="模型描述"><a href="#模型描述" class="headerlink" title="模型描述"></a>模型描述</h4><ul>
-<li>模型参数: \(\lambda = (A, B, \pi)\)<ul>
-<li>A为状态转移矩阵</li>
-<li>B为观测概率矩阵</li>
-<li>\(\pi\)为初始状态概率向量</li>
-</ul>
-</li>
-<li>HMM对</li>
-</ul>
-<h4 id="假设"><a href="#假设" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>观测序列之间独立</li>
-<li>当前状态仅仅依赖于上一个状态</li>
-</ul>
-<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>概率计算问题: 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),计算在给定模型下观测序列出现的概率\(P(O|\lambda)\)</li>
-<li>学习问题: 已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),估计模型参数\(\lambda = (A, B, \pi)\),使得在该模型下观测序列出现的概率\(P(O|\lambda)\)最大.(极大似然法,EM算法)</li>
-<li>预测问题(解码问题): 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O;\lambda)\)最大,(维特比算法)</li>
-</ul>
-<h4 id="序列标注问题"><a href="#序列标注问题" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>序列标注问题是已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O)\)最大</li>
-<li>实际上序列标注问题包括学习问题和预测问题两个问题:<ul>
-<li>学习问题: 根据观测序列确定模型参数\(\lambda = (A, B, \pi)\), 极大似然法或EM算法(EM算法会同时估计得到最优状态序列(隐变量))</li>
-<li>预测问题: 根据模型参数和观测序列确定最优状态序列\(I=(i_{1}, i_{2},,,i_{n})\),维特比算法</li>
-</ul>
-</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>算法成熟</li>
-<li>效率高, 模型简单, 容易训练</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>序列标注问题中,当前状态(标注)往往不仅仅和前一个状态相关,还可能和观察序列相关(这里指的是整个序列)</li>
-<li>也就是说每个状态可能还与整个观察序列的(除了当前观察值以外的)其他观察值(观察序列上下文)相关</li>
-</ul>
+<h3 id="String"><a href="#String" class="headerlink" title="String"></a>String</h3><pre><code>type StringHeader struct {
+    Data uintptr
+    Len  int
+}
+</code></pre><hr>
+<h3 id="Slice"><a href="#Slice" class="headerlink" title="Slice"></a>Slice</h3><pre><code>type SliceHeader struct {
+    Data uintptr
+    Len  int
+    Cap  int
+}
+</code></pre><hr>
+<h3 id="把Slice转换为String的语法为"><a href="#把Slice转换为String的语法为" class="headerlink" title="把Slice转换为String的语法为"></a>把Slice转换为String的语法为</h3><pre><code>[]byte(&quot;string&quot;)
+string([]byte{1,2,3})
+</code></pre><p><strong>注意：这种实现会有拷贝操作</strong></p>
 <hr>
-<h3 id="MEMM"><a href="#MEMM" class="headerlink" title="MEMM"></a>MEMM</h3><ul>
-<li>判别式模型</li>
-<li>有向图模型,贝叶斯网络</li>
-</ul>
-<h4 id="假设-1"><a href="#假设-1" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是MEMM,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
-</ul>
-<h4 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>MEMM似乎只用于序列标注,也就是在已知观测序列的情况下,寻找最优的状态序列</li>
-<li><em>有其他应用的话再添加</em></li>
-</ul>
-<h4 id="序列标注问题-1"><a href="#序列标注问题-1" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>用于序列标注时,一般也包括两个问题: 学习问题和预测问题<ul>
-<li>学习问题: 根据观测序列确定模型参数(每条边的(概率)值和初始状态?)</li>
-<li>预测问题: 根据模型和观测序列确定维特比算法</li>
-</ul>
-</li>
-</ul>
-<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>解决了观测独立性问题(观测独立性是只当前观测序列只与当前状态相关)[问题: 在MEMM中并不关心观测序列由谁影响,而是关心观测序列如何影响了状态序列]</li>
-</ul>
-<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>标签偏置(labeling bias)问题<ul>
-<li>MEMM中概率最大路径往往容易出现在转移少的状态中</li>
-<li>MEMM归一化在加和函数\(\sum\)计算内部,而CRF的归一化在加和函数\(\sum\)的外部,这使得MEMM只会关注加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]的局部特征,而不是的整体特征,所以MEMM存在偏置问题</li>
-</ul>
-</li>
-<li>比HMM复杂</li>
-</ul>
-<hr>
-<h3 id="CRF"><a href="#CRF" class="headerlink" title="CRF"></a>CRF</h3><ul>
-<li>判别式模型</li>
-<li>无向图模型,马尔科夫网络</li>
-</ul>
-<h4 id="假设-2"><a href="#假设-2" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是线性CRFs,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
-<li>与MEMM的区别就是无向图模型与有向图模型的区别</li>
-</ul>
-<h4 id="问题-2"><a href="#问题-2" class="headerlink" title="问题"></a>问题</h4><h4 id="序列标注问题-2"><a href="#序列标注问题-2" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>模型复杂,能建模更多可能的特征</li>
-<li>全局归一化(这里与MEMM的区别是,MEMM归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)计算内部,而CRF的归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)的外部)</li>
-</ul>
-<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型复杂,速度慢</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
-<hr>
-<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
-<li>学得的模型能适用于训练过程中从未观察到的数据</li>
-<li>也就是说:测试集未知</li>
-</ul>
-<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
-<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
-<li>也就是说:测试集就是训练时观察到的未标记数据</li>
-</ul>
-<hr>
-<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
-<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
-<li>都是迭代扩充标记数据集的算法:<ul>
-<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
-<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
-<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
-</ul>
-<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
-<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
-<li>半监督学习和主动学习的测试集都是未知数据</li>
-<li>半监督学习是基于”开放世界”假设的</li>
-<li>直推学习是基于”封闭世界”假设的</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
-<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
-<thead>
-<tr>
-<th style="text-align:left">学习算法</th>
-<th style="text-align:center">是否需要专家知识(人工)</th>
-<th style="text-align:center">是否具有泛化性</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">半监督学习</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td style="text-align:left">主动学习</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td style="text-align:left">直推学习</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
-</tr>
-</tbody>
-</table>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——采样方法.html" itemprop="url">ML——采样方法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍几种采样的方法</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="计算机能做什么样的采样"><a href="#计算机能做什么样的采样" class="headerlink" title="计算机能做什么样的采样"></a>计算机能做什么样的采样</h3><h4 id="Uniform"><a href="#Uniform" class="headerlink" title="Uniform"></a>Uniform</h4><ul>
-<li>本质上来讲,计算机只能实现对<strong>均匀分布</strong>(Uniform Distribution)的采样</li>
-</ul>
-<h4 id="numpy-random模块功能介绍"><a href="#numpy-random模块功能介绍" class="headerlink" title="numpy.random模块功能介绍"></a><code>numpy.random</code>模块功能介绍</h4><p><em><code>numpy.random</code>是用来实现随机数生成的库</em></p>
-<ul>
-<li>生成随机数<code>random</code></li>
-<li>生成某个随机数的随机样本<code>random_sample</code></li>
-<li>对序列做随机<code>shuffle</code>,<code>choice</code>等</li>
-</ul>
-<h4 id="numpy-random模块的采样"><a href="#numpy-random模块的采样" class="headerlink" title="numpy.random模块的采样"></a><code>numpy.random</code>模块的采样</h4><p><em><code>numpy.random</code>模块下实现了很多常见分布的采样函数(他们本质上都是计算机通过多次均匀分布采样实现的)</em></p>
-<h5 id="单变量分布"><a href="#单变量分布" class="headerlink" title="单变量分布"></a>单变量分布</h5><ul>
-<li><code>beta</code>:beta分布</li>
-<li><code>binomial</code>:二项分布</li>
-<li><code>chisquare</code>:卡方分布</li>
-<li><code>exponential</code>:指数分布</li>
-<li>还有更多…</li>
-</ul>
-<h5 id="多变量分布"><a href="#多变量分布" class="headerlink" title="多变量分布"></a>多变量分布</h5><ul>
-<li><code>dirichlet</code> : Multivariate generalization of Beta distribution. 狄利克雷分布</li>
-<li><code>multinomial</code>: Multivariate generalization of the binomial distribution. 多项分布</li>
-<li><code>multivariate_normal</code>: Multivariate generalization of the normal distribution. 多变量正太(高斯)分布</li>
-</ul>
-<h5 id="标准分布"><a href="#标准分布" class="headerlink" title="标准分布"></a>标准分布</h5><ul>
-<li><code>standard_cauchy</code>:      Standard Cauchy-Lorentz distribution.</li>
-<li><code>standard_exponential</code>: Standard exponential distribution.</li>
-<li><code>standard_gamma</code>:       Standard Gamma distribution.</li>
-<li><code>standard_normal</code>:      Standard normal distribution.</li>
-<li><code>standard_t</code>:           Standard Student’s t-distribution.</li>
-</ul>
-<hr>
-<h3 id="复杂分布的采样方式"><a href="#复杂分布的采样方式" class="headerlink" title="复杂分布的采样方式"></a>复杂分布的采样方式</h3><p><em>在实践中,往往有很多复杂的分布,复杂到我们无法直接对他进行采样</em><br><em>有些时候我们甚至不知道目标函数的分布函数</em></p>
-<h4 id="逆变换采样"><a href="#逆变换采样" class="headerlink" title="逆变换采样"></a>逆变换采样</h4><p><em>Inverse Transform Sampling</em></p>
-<ul>
-<li>目标函数: \(p(x)\)</li>
-<li><p>相关补充: </p>
-<ul>
-<li>求函数的累积分布函数\(\Phi^{-1}(x) = \int_{- \infty}^{x}p(t)d_{t}\)</li>
-<li>求累计分布函数的逆函数(反函数)</li>
-</ul>
-</li>
-<li><p>采样步骤:</p>
-<ul>
-<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
-<li>计算: \(x_{i} = \Phi^{-1}(u_{i})\), 其中\(\Phi^{-1}(\cdot)\)是\(p(x)\)的<strong>累积分布函数(CDF)的逆函数</strong></li>
-<li>\(x_{i}\)服从\(p(x)\)分布</li>
-</ul>
-</li>
-<li><p>优缺点:</p>
-<ul>
-<li>优点:<ul>
-<li>仅需进行一个均匀分布采样即可</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li>需要求解累积分布函数的逆函数</li>
-<li>累积分布函数的逆函数不一定容易求解,有些甚至无法求解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>证明:</p>
-<ul>
-<li>示意图如下:  <img src="/Notes/ML/ML——采样方法/inverse_transform_sampling.png"></li>
-<li>图中纵轴就是均匀分布采样的结果,然后丛纵轴对应到的累计分布函数\(\Phi(x)\)的曲线上概率越大的地方实际上也就是累积分布函数的导数(原始分布函数\(p(x)\))最大的地方</li>
-<li>这个对应过程等价于我们将\(x\)轴和\(y\)轴互换,也就是求累积分布函数的逆函数即可</li>
-</ul>
-</li>
-</ul>
-<h4 id="拒绝采样"><a href="#拒绝采样" class="headerlink" title="拒绝采样"></a>拒绝采样</h4><p><em>别名: Accept-Reject Sampling, <strong>接受-拒绝采样</strong></em></p>
-<ul>
-<li>目标函数: \(p(x)\)</li>
-<li><p>相关补充: </p>
-<ul>
-<li><strong>(参考分布寻找)</strong>: 寻找一个容易采样的分布\(q(x)\),满足\(p(x) \leq M\cdot q(x)\)</li>
-<li>一般选择正太分布等</li>
-<li>\(M &gt; 1\),从后面的证明可以知道, M越小越好</li>
-</ul>
-</li>
-<li><p>采样步骤:</p>
-<ul>
-<li>参考分布采样:\(x_{i} \sim q(x)\)</li>
-<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
-<li>判断是否接受: 如果\(u_{i} &lt; \frac{p(x_{i})}{M\cdot q(x_{i})}\),则接受采样,否则拒绝本次采样(丢弃本次采样的\(x_{i}\))</li>
-<li>\(x_{i}\)服从\(p(x)\)分布(不包括被拒绝的样本)</li>
-</ul>
-</li>
-<li>证明: <ul>
-<li>由采样步骤得到,最终得到的分布服从$$q(x)\cdot \frac{p(x)}{M\cdot q(x)} = \frac{1}{M}p(x)$$</li>
-<li>对上述分布进行归一化即可得到采样的样本服从\(p(x)\)</li>
-<li><em>从\(\frac{1}{M}p(x)\)这里也可以看出来采样的效率由M值的大小决定,M越小,采样效率越高</em></li>
-</ul>
-</li>
-<li>优缺点:<ul>
-<li>优点:<ul>
-<li>复杂分布变成简单分布采样+一个均匀分布,有时候甚至可以将参考分布也使用均匀分布</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li>参考分布\(q(x)\)的选择很难的</li>
-<li>不合适的参考分布可能导致采样效率低下</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>解决\(q(x)\)难以寻找的一种解决方案: <strong>自适应拒绝采样</strong>(Adaptive Rejection Sampling)<ul>
-<li>只适用于目标函数为凸函数</li>
-<li>使用分段线性函数来覆盖目标函数</li>
-<li>下面是示意图片(图片来源: <a href="https://www.jianshu.com/p/3fb6f4d39c60" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb6f4d39c60</a>)<img src="/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="重要性采样"><a href="#重要性采样" class="headerlink" title="重要性采样"></a>重要性采样</h4><p><em>Importance Sampling</em></p>
-<ul>
-<li>重要性采样与前面两者不同,重要性采样解决的问题是在求一个函数的关于原始分布的期望时</li>
-<li>目标定义: \(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
-<li>直接对\(p(x)\)采样可能存在的两个问题:<ul>
-<li>\(p(x)\)可能难以采样</li>
-<li>\(p(x)\)采样到的样本大多都在\(f(x)\)比较小的地方,即\(f(x)\)与\(p(x)\)的差别太大导致有限次采样无法正确评估原始期望,采样次数不够大的话偏差可能很大<ul>
-<li>这里一种解决方案是采样足够多的次数,多花点时间保证所有样本量足够,降低偏差</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>解决方案:</p>
-<ul>
-<li><p>引入一个容易采样的参考分布\(q(x)\),满足<br>$$<br>\begin{align}<br>E_{x\sim p(x)}[f(x)] &amp;= \int_{x}f(x)p(x)d_{x} \\<br>&amp;= \int_{x}f(x)\frac{p(x)}{q(x)}q(x)d_{x} \\<br>&amp;= \int_{x}f(x)w(x)q(x)d_{x} \\<br>\end{align}<br>$$</p>
-</li>
-<li><p>其中\(w(x) = \frac{p(x)}{q(x)}\)称为样本\(x\)的重要性权重(Importance Weight),不同样本的重要性权重不同</p>
-</li>
-<li>与直接从\(p(x)\)中采样相比,相同采样次数,最终得到期望偏差会更小,因为\(p(x)\)会<strong>增大在\(f(x)\)大但是\(p(x)\)极小处</strong>的样本被采样的概率,然后调低这个样本的权重</li>
-<li>示意图片:
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li><strong>逆采样和拒绝采样</strong>都是在通过简单分布采样来采样原始分布的样本,最终的样本就是服从原始分布的样本\(x_{i}\sim p(x)\)</li>
-<li><strong>重要性采样</strong>本质上是通过简单分布来采样和重要性权重来估计某个函数在原始分布上的期望\(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
-<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC),MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法,关于MCMC详情可参考我的博客<a href="/Notes/ML/ML——MCMC采样.html">ML——MCMC采样</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型的方差与偏差.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——模型的方差与偏差.html" itemprop="url">ML——模型的方差与偏差</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="偏差与方差的定义"><a href="#偏差与方差的定义" class="headerlink" title="偏差与方差的定义"></a>偏差与方差的定义</h3><ul>
-<li>方差：模型的预测值之间的离散程度</li>
-<li>偏差：模型整体的预测值与真实值的偏离程度<img src="/Notes/ML/ML——模型的方差与偏差/Variance&Bias.png">
-</li>
-</ul>
-<hr>
-<h3 id="正则化与方差和偏差"><a href="#正则化与方差和偏差" class="headerlink" title="正则化与方差和偏差"></a>正则化与方差和偏差</h3><ul>
-<li>参考博客：<a href="https://www.cnblogs.com/qkloveslife/p/9885500.html" target="_blank" rel="noopener">https://www.cnblogs.com/qkloveslife/p/9885500.html</a></li>
-</ul>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
-<li>\(\lambda\)为正则化系数</li>
-<li>当\(\lambda\)很小时，模型处于“高方差”状态，“训练误差”很小，“交叉验证误差”较大</li>
-<li>当\(\lambda\)很大时，模型处于“高偏差”状态，“训练误差”和“交叉验证误差”都很大</li>
-</ul>
-<hr>
-<h3 id="集成学习与方差和偏差"><a href="#集成学习与方差和偏差" class="headerlink" title="集成学习与方差和偏差"></a>集成学习与方差和偏差</h3><ul>
-<li>参考博客：<a href="https://blog.csdn.net/xmu_jupiter/article/details/47314927" target="_blank" rel="noopener">https://blog.csdn.net/xmu_jupiter/article/details/47314927</a></li>
-</ul>
-<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><h5 id="集成学习分两类"><a href="#集成学习分两类" class="headerlink" title="集成学习分两类"></a>集成学习分两类</h5><ul>
-<li>平均方法：例如随机森林， Bagging methods。在平均方法中，系统分别去建立多个基分类器，分类器之间没有任何联系。然后在分类或者回归阶段，各个分类器根据测试数据给出自己的答案，然后系统根据各个分类器给出的结果去综合出最后的结果，比如可以使投票的形式。</li>
-<li>提升方法：例如梯度提升决策树GBDT，AdaBoost。在提升方法中，系统模型在训练过程中会先后建立一系列分类器，这些分类器单个可能是弱分类器，但是组合起来就成为一个强分类器。</li>
-</ul>
-<h5 id="不同类别的偏差与方差"><a href="#不同类别的偏差与方差" class="headerlink" title="不同类别的偏差与方差"></a>不同类别的偏差与方差</h5><ul>
-<li>平均方法尝试去降低模型的方差<ul>
-<li>所以平均方法通常比其任何一个基分类器效果好</li>
-</ul>
-</li>
-<li>而提升方法尝试去降低模型的偏差</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
-<hr>
-<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
-<li>训练集: 用于模型训练</li>
-<li>验证集: 用于模型选择</li>
-<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
-</ul>
-<hr>
-<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
-<li>训练集: 用于模型拟合的数据样本</li>
-<li>验证集: 用于模型的选择<ul>
-<li>不参与训练过程</li>
-<li>可用于超参数的调整</li>
-<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
-<li>可多次使用</li>
-</ul>
-</li>
-<li>测试集: 用于模型的评估 <ul>
-<li>不参与训练过程</li>
-<li>不可用于超参数的调整</li>
-<li>只可以使用一次</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
-<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
-<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
-<li>此时从验证集中划分一部分验证集</li>
-</ul>
-<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
-<li>需要训练集用于训练,验证集用于模型选择</li>
-<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
-</ul>
-<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
-<hr>
-<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
-<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
-<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
-</ul>
-<hr>
-<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
-<li>用来调超参数的一部分正好称为验证集</li>
-<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
-</ul>
-<hr>
-<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
-<li>训练集：测试集 = 7：3</li>
-<li>训练集：验证集：测试集 = 6：2：2</li>
-<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——MCMC采样.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——MCMC采样.html" itemprop="url">ML——MCMC采样</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
-<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
-</ul>
-<hr>
-<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
-<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
-</ul>
-<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
-<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
-</ul>
-<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
-<ul>
-<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
-<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
-<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
-</ul>
-</li>
-</ul>
-<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
-<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
-<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
-<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
-<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
-<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
-</ul>
-<hr>
-<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
-<li>对于原始目标分布\(p(x)\)</li>
-<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
-<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
-</ul>
-</li>
-<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
-<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
-</ul>
-</li>
-</ul>
-<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li>随机选取初始样本x^{0}</li>
-<li>for t = 1,2,3,…:<ul>
-<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
-<li>均匀分布采样\(u \sim U(0,1)\)</li>
-<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
-</ul>
-</li>
-<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP——LLDA的Gibbs采样实现.html">NLP——LLDA的Gibbs采样实现</a></li>
-</ul>
-<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
-<li>MH采样基于拒绝采样来逼近平稳分布</li>
-<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
-<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
-<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
-<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
-</ul>
-</li>
-</ul>
-<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
-<li>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</li>
-<li><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$<ul>
-<li>上式为细致平稳分布条件(detailed balance condition)</li>
-<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
-</ul>
-</li>
-<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
-<ul>
-<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
-</ul>
-</li>
-<li>在MH采样法中<ul>
-<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
-<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
-<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
-<li>即可</li>
-</ul>
-</li>
-<li>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率<ul>
-<li>使用原始接受率的方法称为一般MCMC方法</li>
-<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
-</ul>
-</li>
-<li>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$<ul>
-<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
-</ul>
-<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
-<ul>
-<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
-<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
-</ul>
-<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
-<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
-</ul>
-<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</li>
-<li><p>for t = 1,2,3,…:</p>
-<ul>
-<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
-<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
-</ul>
-</li>
-<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
-</ul>
-</li>
-<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
-<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
-</ul>
-</li>
-<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP——LLDA的Gibbs采样实现.html">NLP——LLDA的Gibbs采样实现</a></p>
-</li>
-</ul>
-
+<h3 id="如何避免拷贝操作呢？"><a href="#如何避免拷贝操作呢？" class="headerlink" title="如何避免拷贝操作呢？"></a>如何避免拷贝操作呢？</h3><p>答案是自己实现指针转换（也可用反射实现头部转换），省去复制数据部分，同时注意这种实现后底层的数据不能再更改了，不然容易引发错误</p>
+<h4 id="直接修改指针类型并构建相应头部"><a href="#直接修改指针类型并构建相应头部" class="headerlink" title="直接修改指针类型并构建相应头部"></a>直接修改指针类型并构建相应头部</h4><pre><code>func String2Slice(s string) []byte {
+    sp := *(*[2]uintptr)(unsafe.Pointer(&amp;s))
+    bp := [3]uintptr{sp[0], sp[1], sp[1]}
+    return *(*[]byte)(unsafe.Pointer(&amp;bp))
+}
+
+func BytesToString(b []byte) string {
+    return *(*string)(unsafe.Pointer(&amp;b))
+}
+</code></pre><h4 id="使用反射机制获取到头部再进行转换"><a href="#使用反射机制获取到头部再进行转换" class="headerlink" title="使用反射机制获取到头部再进行转换"></a>使用反射机制获取到头部再进行转换</h4><pre><code>func Slice2String(b []byte) (s string) {
+    pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&amp;b))
+    pstring := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+    pstring.Data = pbytes.Data
+    pstring.Len = pbytes.Len
+    return
+}
+
+
+func String2Slice(s string) (b []byte) {
+    pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&amp;b))
+    pstring := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+    pbytes.Data = pstring.Data
+    pbytes.Len = pstring.Len
+    pbytes.Cap = pstring.Len
+    return
+}
+</code></pre>
           
         
       
@@ -2635,7 +2000,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/14/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><span class="page-number current">15</span><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/16/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/14/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><span class="page-number current">15</span><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/25/">25</a><a class="extend next" rel="next" href="/page/16/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2685,7 +2050,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">195</span>
+                  <span class="site-state-item-count">244</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2698,7 +2063,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">38</span>
+                  <span class="site-state-item-count">47</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
@@ -2751,7 +2116,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
