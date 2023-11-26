@@ -457,8 +457,12 @@
 <li>我觉得上述公式太丑了,转换一下写法可能更容易理解<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right) \\<br>  PE(pos, 2i+1) &amp;= cos\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right)<br>  \end{align}<br>  $$<ul>
 <li>\(pos\) 是位置编号</li>
 <li>\(i\) 表示位置向量的第 \(i\) 维</li>
-<li>为什么选择\(10000^{\frac{2i}{d_{\text{model}}}}\)? [待更新]</li>
-<li>每个维度的位置编码对应着一个正弦函数, 周期为 \(2\pi\)到 \(10000\cdot 2\pi\)</li>
+<li>从公式来看，为什么选择\(10000^{\frac{2i}{d_{\text{model}}}}\)? <ul>
+<li>\(i\)表示频率随模型embedding维度变动（模型embedding不同维度频率不同，低维度高频，高维度低频）</li>
+<li>\(pos\) 表示周期，随着位置变化，每个维度的值呈现周期变化，但是不同维度的变化周期（频率）不同</li>
+<li>10000是一个放缩因子，理论上可以换，在transformer原始论文实现中用了这个，且效果不错</li>
+</ul>
+</li>
 <li>选择正弦函数的原因是假设这将允许模型学到相对位置信息<ul>
 <li>因为对于固定的 \(k\), \(PE_{pos+k} = LinearFuction(PE_{pos})\), 所以这给模型提供了表达相对位置的可能性</li>
 </ul>
@@ -951,6 +955,149 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——关于英文单词的处理总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/NLP/NLP——关于英文单词的处理总结.html" itemprop="url">NLP——关于英文单词的处理总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-12-13T00:00:00+08:00">
+                2018-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="保留词根"><a href="#保留词根" class="headerlink" title="保留词根"></a>保留词根</h3><ul>
+<li><p>安装相关库:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pattern</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导入和使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from pattern.text.en import lemma</span><br><span class="line">lemma(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describe</span><br></pre></td></tr></table></figure>
+<ul>
+<li>需要nltk中的几个语料库包, 如果没有以下包,导入时会报出zip文件相关的错,按装这几个语料库包直接使用nltk.download(“wordent”)等语句就行<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;wordnet&quot;, &quot;wordnet_ic&quot;, &quot;sentiwordnet&quot;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="保留词干"><a href="#保留词干" class="headerlink" title="保留词干"></a>保留词干</h3><ul>
+<li><p>安装相关库:</p>
+<ul>
+<li>安装nltk即可</li>
+</ul>
+</li>
+<li><p>导入和使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">from nltk.stem.porter import PorterStemmer</span><br><span class="line"></span><br><span class="line">stemmer = PorterStemmer()</span><br><span class="line">stemmer.stem(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describ</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——LLDA的Gibbs采样实现.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1287,149 +1434,6 @@
 <li>没找到合适的神经网络模型,比如可以考虑使用一些权重共享的思想,降低由于数据太少引起的过拟合</li>
 <li>在未来的想法: 如果可以增加数据量, 或者能够使用一些新的有效模型或者词嵌入的数据集, 可以重新尝试使用神经网络模型</li>
 </ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——关于英文单词的处理总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/NLP/NLP——关于英文单词的处理总结.html" itemprop="url">NLP——关于英文单词的处理总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-12-13T00:00:00+08:00">
-                2018-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="保留词根"><a href="#保留词根" class="headerlink" title="保留词根"></a>保留词根</h3><ul>
-<li><p>安装相关库:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pattern</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导入和使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from pattern.text.en import lemma</span><br><span class="line">lemma(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describe</span><br></pre></td></tr></table></figure>
-<ul>
-<li>需要nltk中的几个语料库包, 如果没有以下包,导入时会报出zip文件相关的错,按装这几个语料库包直接使用nltk.download(“wordent”)等语句就行<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;wordnet&quot;, &quot;wordnet_ic&quot;, &quot;sentiwordnet&quot;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="保留词干"><a href="#保留词干" class="headerlink" title="保留词干"></a>保留词干</h3><ul>
-<li><p>安装相关库:</p>
-<ul>
-<li>安装nltk即可</li>
-</ul>
-</li>
-<li><p>导入和使用:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">from nltk.stem.porter import PorterStemmer</span><br><span class="line"></span><br><span class="line">stemmer = PorterStemmer()</span><br><span class="line">stemmer.stem(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describ</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
 
