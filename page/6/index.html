@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——服务器防火墙配置.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Linux——服务器防火墙配置.html" itemprop="url">Linux——服务器防火墙配置</a></h1>
         
 
         <div class="post-meta">
@@ -348,77 +348,154 @@
       
         
           
-            <p><em>以Centos7为例, Ubuntu相似</em></p>
+            <p><em>本文介绍Linux下服务器防火墙的设置</em><br>更详细的描述可以参考博客:<a href="https://blog.51cto.com/andyxu/2137046" target="_blank" rel="noopener">https://blog.51cto.com/andyxu/2137046</a></p>
 <hr>
-<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>配置exports文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
-<ul>
-<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
-<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
+<h3 id="防火墙总结"><a href="#防火墙总结" class="headerlink" title="防火墙总结"></a>防火墙总结</h3><ul>
+<li>iptables:内核层面的netfilter网络过滤器来处理</li>
+<li>firewalld: 交由内核层面的nftables包过滤框架处理</li>
 </ul>
+<hr>
+<h3 id="Centos6"><a href="#Centos6" class="headerlink" title="Centos6"></a>Centos6</h3><p><em>Centos6默认使用iptable作为防火墙</em></p>
+<h4 id="查看防火墙状态"><a href="#查看防火墙状态" class="headerlink" title="查看防火墙状态"></a>查看防火墙状态</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service iptable status</span><br></pre></td></tr></table></figure>
+<h4 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h4><ul>
+<li><p>临时</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">servcie iptables stop</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>使exports的配置生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
-<ul>
-<li>-r生效</li>
-<li>-v显示结果</li>
+<li><p>永久</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chkconfig iptables off</span><br></pre></td></tr></table></figure>
+</li>
 </ul>
+<h4 id="打开防火墙"><a href="#打开防火墙" class="headerlink" title="打开防火墙"></a>打开防火墙</h4><ul>
+<li><p>临时</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">servcie iptables start</span><br></pre></td></tr></table></figure>
 </li>
-<li>查看是否生效<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
+<li><p>永久</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chkconfig iptables on</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
 <hr>
-<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看服务器哪些目录可以共享</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>新建文件夹以作为mount目标</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>挂载操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看挂载情况</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解除挂载</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
-<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
+<h3 id="Centos7"><a href="#Centos7" class="headerlink" title="Centos7"></a>Centos7</h3><p><em>Centos7默认使用的时firewall作为防火墙, 默认使用systemctl管理服务,接下来介绍systemctl管理firewall服务的操作,其他服务也可用systemctl以类似方法管理,只需将filewall名称换成其他服务名称即可</em></p>
 <ul>
-<li>mount.nfs: No route to host</li>
-<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
-</li>
+<li>关于服务名称的命名<ul>
+<li>一般来说都是正常名称后加上一位’d.service’,比如’firewalld.service’,’mysqld.service’等</li>
 </ul>
 </li>
-<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
+</ul>
+<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><ul>
+<li>Centos7自带firewalld</li>
+<li>Ubuntu:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install firewalld</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h4><ul>
+<li>/usr/lib/firewalld/<ul>
+<li>系统配置,尽量不修改</li>
+</ul>
+</li>
+<li>/etc/firewalld/<ul>
+<li>用户配置地址</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于systemctl的使用"><a href="#关于systemctl的使用" class="headerlink" title="关于systemctl的使用"></a>关于systemctl的使用</h4><ul>
+<li><p>列出所有服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>列出所有打开的服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep enabled</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>列出某个服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep [service name]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="查看防火墙状态-1"><a href="#查看防火墙状态-1" class="headerlink" title="查看防火墙状态"></a>查看防火墙状态</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --state</span><br></pre></td></tr></table></figure>
 <ul>
-<li>mount.nfs: Stale file handle</li>
-<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
+<li>输出<code>not running</code>或者<code>running</code></li>
+</ul>
+<h4 id="查看防火墙服务"><a href="#查看防火墙服务" class="headerlink" title="查看防火墙服务"></a>查看防火墙服务</h4><ul>
+<li><p>方法一</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-unit-files|grep firewalld.service</span><br></pre></td></tr></table></figure>
+<ul>
+<li>输出<code>firewalld.service disabled</code>或者<code>firewalld.service enabled</code></li>
 </ul>
 </li>
+<li><p>方法二</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status firewalld.service</span><br></pre></td></tr></table></figure>
+<ul>
+<li>输出更详细的信息</li>
+</ul>
+</li>
+</ul>
+<h4 id="开机启动"><a href="#开机启动" class="headerlink" title="开机启动"></a>开机启动</h4><ul>
+<li><p>禁止</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl disable firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>允许</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl is-enabled firewalld.service;echo $?</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="启动防火墙服务"><a href="#启动防火墙服务" class="headerlink" title="启动防火墙服务"></a>启动防火墙服务</h4><ul>
+<li><p>启动防火墙后默认只开放22端口,其他端口都关闭</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>不能启动的解决方案</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl unmask firewalld.service </span><br><span class="line">systemctl start firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="关闭防火墙服务"><a href="#关闭防火墙服务" class="headerlink" title="关闭防火墙服务"></a>关闭防火墙服务</h4><ul>
+<li><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="端口相关操作命令"><a href="#端口相关操作命令" class="headerlink" title="端口相关操作命令"></a>端口相关操作命令</h4><ul>
+<li><p>查看所有以开放端口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --list-ports</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看某个端口是否开启</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --query-port=8080/tcp</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>开放端口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --zone=public --add-port=80/tcp --permanent</span><br></pre></td></tr></table></figure>
+<ul>
+<li>命令含义：<ul>
+<li>–zone #作用域</li>
+<li>–add-port=80/tcp #添加端口，格式为：端口/通讯协议</li>
+<li>–permanent #永久生效，没有此参数重启后失效</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>重启服务<br><em>开放端口后需要重启服务才能生效</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>移除指定端口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --remove-port=8080/tcp</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="防火墙的域"><a href="#防火墙的域" class="headerlink" title="防火墙的域"></a>防火墙的域</h4><h5 id="域的作用"><a href="#域的作用" class="headerlink" title="域的作用"></a>域的作用</h5><ul>
+<li>一共9种,常用的就一种public,开放时把所有访问该端口的用户当做公共人员,不完全信任,trusted为完全信任:<ul>
+<li>block dmz drop external home internal public trusted work</li>
+<li>下面图片来自博客:<a href="https://blog.51cto.com/13503302/2095633" target="_blank" rel="noopener">https://blog.51cto.com/13503302/2095633</a><img src="/Notes/Linux/Linux——服务器防火墙配置/firewalld-zones.png"></li>
+</ul>
+</li>
+<li>在开放端口时,可以为其添加域(默认为public),不同的域代表不同的信任</li>
+</ul>
+<h5 id="域的操作"><a href="#域的操作" class="headerlink" title="域的操作"></a>域的操作</h5><ul>
+<li><p>查看默认zone</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --get-default-zone</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改默认zone</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --set-default-zone=public</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="防火墙与SSH登录"><a href="#防火墙与SSH登录" class="headerlink" title="防火墙与SSH登录"></a>防火墙与SSH登录</h4><p><em>默认启动firewall后,防火墙不会打开22端口[已测试],但为何还能正常ssh登录呢?</em><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --list-all</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>public<br>  target: default<br>  icmp-block-inversion: no<br>  interfaces:<br>  sources:<br>  services: ssh dhcpv6-client<br>  ports:<br>  protocols:<br>  masquerade: no<br>  forward-ports:<br>  source-ports:<br>  icmp-blocks:<br>  rich rules: </p>
+</blockquote>
+<ul>
+<li>从上面的输出中可以看出来<code>ssh</code>服务默认被开启防火墙了,所以无需开启22端口即可使用ssh指令登录到服务器</li>
+<li>同时开启的还有<code>dhcpv6-client</code>服务,这个服务用于ipv6的DHCP服务(为什么ipv4不需要这个服务呢?详情参考问答:<a href="https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it</a> )</li>
 </ul>
 
           
@@ -468,7 +545,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——文件操作.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——查看服务器内核和系统版本.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -487,7 +564,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Linux——文件操作.html" itemprop="url">Linux——文件操作</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Linux——查看服务器内核和系统版本.html" itemprop="url">Linux——查看服务器内核和系统版本</a></h1>
         
 
         <div class="post-meta">
@@ -539,26 +616,299 @@
       
         
           
-            <p><em>本文记录一些Linux相关文件操作的常见问题</em></p>
+            <p><em>本文主要介绍Linux系统的内核版本和系统版本等信息用命令行如何查看</em></p>
 <hr>
-<h3 id="mv操作中断"><a href="#mv操作中断" class="headerlink" title="mv操作中断"></a>mv操作中断</h3><ul>
-<li>由于mv操作等价于先执行cp然后执行rm操作<ul>
-<li>还在cp阶段,原始数据是完整的,删除目标文档就行</li>
-<li>如果已经进入rm阶段,那么说明目标文件时完整的,删除原始文件就行</li>
+<h3 id="系统类型和版本"><a href="#系统类型和版本" class="headerlink" title="系统类型和版本"></a>系统类型和版本</h3><h4 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h4><ul>
+<li><p>文件存在表示为Centos</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/redhat-release</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>上述指令同时会输出Centos版本</p>
+</li>
+</ul>
+<h4 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h4><ul>
+<li><p>命令可以执行表示为Ubuntu</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsb_release -a</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行下面命令可以看出Ubuntu的版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/issue</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="更进一步的内核信息"><a href="#更进一步的内核信息" class="headerlink" title="更进一步的内核信息"></a>更进一步的内核信息</h3><ul>
+<li><p>内核名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -s</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>结点名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -n</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>内核发行号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -r</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>处理器类型</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>操作系统</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -o</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——硬盘操作-分区和挂载.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Centos——硬盘操作-分区和挂载.html" itemprop="url">Centos——硬盘操作-分区和挂载</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-24T00:00:00+08:00">
+                2019-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客:<a href="https://www.cnblogs.com/lizhangshu/p/9719018.html" target="_blank" rel="noopener">https://www.cnblogs.com/lizhangshu/p/9719018.html</a></li>
+</ul>
+<hr>
+<h3 id="磁盘分区类型"><a href="#磁盘分区类型" class="headerlink" title="磁盘分区类型"></a>磁盘分区类型</h3><ul>
+<li>三种分区<ul>
+<li>主分区</li>
+<li>扩展分区</li>
+<li>逻辑分区</li>
+</ul>
+</li>
+<li>分区规则<ul>
+<li>主分区 + 扩展分区的数量不能超过4个</li>
+<li>扩展分区只能有1个</li>
+<li>逻辑分区要在扩展分区之上进行划分，逻辑分区没有数量限制，可以任意个</li>
+<li>扩展分区是不能直接用的，他是以逻辑分区的方式来使用的，所以说扩展分区可分成若干逻辑分区。他们的关系是包含的关系，所有的逻辑分区都是扩展分区的一部分。</li>
+</ul>
+</li>
+<li>硬盘的容量<ul>
+<li>硬盘容量 = 主分区的容量 + 扩展分区的容量</li>
+<li>扩展分区的容量 = 各个逻辑分区的容量之和</li>
+</ul>
+</li>
+<li>为什么 主分区 + 扩展分区数量不能超过4个<ul>
+<li>主分区就是普通磁盘分盘，但是由于磁盘设备由大量的扇区组成，一个扇区的容量为512字节。磁盘的第一个扇区最为重要，记录了主引导记录与分区表信息。就第一个扇区而言，主引导信息记录需要占用466个字节，分区表64个字节，结束符占用2个字节；其中分区表中每记录一个分区信息就需要16个字节，所以最多只有4个分区信息可以记录在第一个扇区中，所以主分区+扩展分区的数量不能超过4个。但是为了创建更多的分区，就使用扩展分区做份下若干个分区的指针，划分若干个逻辑分区，来满足分区数大于4个的需求。扩展分区不需要挂载，但是可以格式化。</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="硬链接与软链接"><a href="#硬链接与软链接" class="headerlink" title="硬链接与软链接"></a>硬链接与软链接</h3><p><em>Linux中链接分为两类:硬链接(hard link)和软链接(soft link),软链接又称为符号链接(symbolic link)</em></p>
+<h3 id="分区操作"><a href="#分区操作" class="headerlink" title="分区操作"></a>分区操作</h3><ul>
+<li><p>查看当前设备上的磁盘信息及分区信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk -l</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>选取需要分区的磁盘</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/[disk_name]</span><br></pre></td></tr></table></figure>
 <ul>
-<li>如果一个文件有多个硬链接,那么需要所有硬连接都被删除,当前文件才会被删除<ul>
-<li>原始文件与硬链接是同一个物理地址的两个不同名字</li>
-<li>硬链接是相互的(个人理解: 一个普通的文件就可以理解为一个硬链接)</li>
+<li>注意这里disk_name是硬盘名不是分区名称</li>
+<li>一般来说硬盘名都是<code>sda</code>, <code>sdb</code>, <code>vda</code>, <code>vdb</code>等</li>
+<li>一般来说硬盘<code>sda</code>上的分区名成为<code>sda1</code>,<code>sda2</code>等</li>
 </ul>
 </li>
-<li>如果一个文件有一个硬链接和多个软链接(符号链接),那么删除符号链接不影响原始文件<ul>
-<li>只有文件的所有硬链接都没删除后文件才会被删除</li>
-<li>文件被删除后软链接也会自动失效,链接路径链接不上</li>
+<li><p>在进入分区磁盘后打印操作帮助</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">m</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>新建分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">n</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>选择是主分区还是扩展分区</p>
+<ul>
+<li><p>主分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>拓展分区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>选择分区号[1-4]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>起始扇区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2048</span><br></pre></td></tr></table></figure>
+<ul>
+<li>一般默认值即可</li>
+</ul>
+</li>
+<li><p>结束扇区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">+200G</span><br></pre></td></tr></table></figure>
+<ul>
+<li>结束扇区在起始扇区基础上+200G, 表示该分区大小为200G</li>
+<li>默认是全部分配给当前分区</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="格式化分区"><a href="#格式化分区" class="headerlink" title="格式化分区"></a>格式化分区</h3><ul>
+<li><p>先输入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>Tab</code>键,查看所有可能的命令</p>
+</li>
+</ul>
+<blockquote>
+<p>mkfs.bfs     mkfs.exfat   mkfs.ext3    mkfs.fat     mkfs.msdos   mkfs.vfat<br>mkfs.cramfs  mkfs.ext2    mkfs.ext4    mkfs.minix   mkfs.ntfs </p>
+</blockquote>
+<ul>
+<li><p>用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.ntfs</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>说明:</p>
+<ul>
+<li>mkfs.ntfs命令可以将文件分区为</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="挂载分区"><a href="#挂载分区" class="headerlink" title="挂载分区"></a>挂载分区</h3><ul>
+<li><p>新建挂载文件夹</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir /mnt/data</span><br></pre></td></tr></table></figure>
+<ul>
+<li>建议新建在<code>/mnt/</code>文件夹下</li>
+<li>比如我本地的机器为<code>/mnt/SSD</code>和<code>/mnt/HDD</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="临时挂载"><a href="#临时挂载" class="headerlink" title="临时挂载"></a>临时挂载</h4><ul>
+<li><p>分区临时挂载</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount /dev/[part_name] /mnt/[dir_name]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>没有文件系统的分区不能挂载</li>
+</ul>
+</li>
+<li>分区临时卸载<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount /dev/[part_name]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="开机重启自动挂载"><a href="#开机重启自动挂载" class="headerlink" title="开机重启自动挂载"></a>开机重启自动挂载</h4><h5 id="修改文件"><a href="#修改文件" class="headerlink" title="修改文件"></a>修改文件</h5><ul>
+<li><p>查看想要挂载分区的UUID</p>
+<ul>
+<li><p>查看所有UUID</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blkid</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看某个分区的UUID</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blkid /dev/[part_name]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>编辑文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/fstab</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UUID=[UUID_NUMBER]   /data/[dir_name]  ext4  defaults   0 0</span><br><span class="line">分区临时卸 	挂载路径 		分区格式 	 	参数     是否备份 		引导分区相关(引导分区为1,其他分区为0或者2)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="修改生效的两种方式"><a href="#修改生效的两种方式" class="headerlink" title="修改生效的两种方式"></a>修改生效的两种方式</h5><ul>
+<li><p>使用命令重新加载<code>/etc/fstab</code>的内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -a</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重新启动机器</p>
+<ul>
+<li>如果配置有错机器可能无法正常进入系统,但是会进入Emergency模式,我们可以在Emergency模式下修改<code>/etc/fstab</code>然后重新启动来修复问题</li>
 </ul>
 </li>
 </ul>
@@ -1464,7 +1814,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——pickle.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Numpy/Numpy——一些说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1483,7 +1833,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Python/Python——pickle.html" itemprop="url">Python——pickle</a></h1>
+                <a class="post-title-link" href="/Notes/Python/Numpy/Numpy——一些说明.html" itemprop="url">Numpy——一些说明</a></h1>
         
 
         <div class="post-meta">
@@ -1535,14 +1885,48 @@
       
         
           
-            <p><em>Python pickle</em></p>
-<hr>
-<h3 id="关于pickle模块"><a href="#关于pickle模块" class="headerlink" title="关于pickle模块"></a>关于pickle模块</h3><ul>
-<li>Python的一个序列化与反序列化模块,支持Python基本数据类型</li>
-<li>可以处理自定义的类对象,方法等</li>
+            <h3 id="关于效率"><a href="#关于效率" class="headerlink" title="关于效率"></a>关于效率</h3><p><em>Numpy包含很多高效的函数，能够替换普通的循环，实现非常快</em></p>
+<h4 id="累加变成向量运算"><a href="#累加变成向量运算" class="headerlink" title="累加变成向量运算"></a>累加变成向量运算</h4><h4 id="对向量每个元素进行某个运算生成另一个向量"><a href="#对向量每个元素进行某个运算生成另一个向量" class="headerlink" title="对向量每个元素进行某个运算生成另一个向量"></a>对向量每个元素进行某个运算生成另一个向量</h4><ul>
+<li><p>普通用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.zeros((n, 1))</span><br><span class="line"></span><br><span class="line">for i in range(n):</span><br><span class="line">	b[i] = math.exp(a[i])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>高效用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.exp(a)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>相似的还有<code>log</code>,<code>abs</code>等函数</p>
+</li>
 </ul>
-<h4 id="内存中使用"><a href="#内存中使用" class="headerlink" title="内存中使用"></a>内存中使用</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">import pickle</span><br><span class="line"></span><br><span class="line">origin = [1, 2, 3, [4, 5, 6]]</span><br><span class="line">print &quot;origin: %s&quot; % origin</span><br><span class="line">temp = pickle.dumps(origin)</span><br><span class="line">print &quot;temp: %s&quot; % temp</span><br><span class="line">new = pickle.loads(temp)</span><br><span class="line">print &quot;new: %s&quot; % new</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">origin: [1, 2, 3, [4, 5, 6]]</span><br><span class="line">temp: (lp0</span><br><span class="line">I1</span><br><span class="line">aI2</span><br><span class="line">aI3</span><br><span class="line">a(lp1</span><br><span class="line">I4</span><br><span class="line">aI5</span><br><span class="line">aI6</span><br><span class="line">aa.</span><br><span class="line">new: [1, 2, 3, [4, 5, 6]]</span><br></pre></td></tr></table></figure>
-<h4 id="硬盘中使用"><a href="#硬盘中使用" class="headerlink" title="硬盘中使用"></a>硬盘中使用</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">import pickle</span><br><span class="line"></span><br><span class="line">origin = [1, 2, 3, [4, 5, 6]]</span><br><span class="line">print &quot;origin: %s&quot; % origin</span><br><span class="line"># open a binary and write the result</span><br><span class="line">pickle.dump(origin, open(&apos;temp&apos;, &apos;wb&apos;))</span><br><span class="line"># open a binary and read the original object</span><br><span class="line">new = pickle.load(open(&apos;temp&apos;, &apos;rb&apos;))</span><br><span class="line">print &quot;new: %s&quot; % new</span><br><span class="line"></span><br><span class="line"># output</span><br><span class="line">origin: [1, 2, 3, [4, 5, 6]]</span><br><span class="line">new: [1, 2, 3, [4, 5, 6]]</span><br></pre></td></tr></table></figure>
+<h4 id="值得关注的广播机制-broadcasting"><a href="#值得关注的广播机制-broadcasting" class="headerlink" title="值得关注的广播机制(broadcasting)"></a>值得关注的广播机制(broadcasting)</h4><ul>
+<li>当两个向量（<code>numpy</code>的对象）的维度不同时，Python会将维度小的一个拓展（复制）成与维度大的相同，以便于计算</li>
+<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = a + 10</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="广播规则"><a href="#广播规则" class="headerlink" title="广播规则"></a>广播规则</h5><ul>
+<li><p>形式1</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (m,1) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按列复制第二个n次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式2</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式3</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] r # r为实数，维度为1</span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 复制r m*n 次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式4</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,1) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次,并按列复制第一个n次</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="需要注意"><a href="#需要注意" class="headerlink" title="需要注意"></a>需要注意</h5><ul>
+<li>广播机制使得书写更加美观，代码更加简洁</li>
+<li>但广播机制往往会出现用户意想不到的微妙bug, 需要开发者注意</li>
+</ul>
+<h4 id="关于矩阵运算的维度"><a href="#关于矩阵运算的维度" class="headerlink" title="关于矩阵运算的维度"></a>关于矩阵运算的维度</h4><ul>
+<li><code>axis=i</code>表示第<code>i</code>维计算后将会消失（该维度的size变成1）</li>
+</ul>
+<h4 id="多使用reshape函数"><a href="#多使用reshape函数" class="headerlink" title="多使用reshape函数"></a>多使用reshape函数</h4><ul>
+<li>reshape函数复杂度是常数的(O(1))</li>
+<li>reshape函数可确保我们的程序正确，不用随意猜测矩阵的维度</li>
+</ul>
+
           
         
       
@@ -1754,7 +2138,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Numpy/Numpy——一些说明.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——pickle.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1773,7 +2157,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Python/Numpy/Numpy——一些说明.html" itemprop="url">Numpy——一些说明</a></h1>
+                <a class="post-title-link" href="/Notes/Python/Python——pickle.html" itemprop="url">Python——pickle</a></h1>
         
 
         <div class="post-meta">
@@ -1825,281 +2209,14 @@
       
         
           
-            <h3 id="关于效率"><a href="#关于效率" class="headerlink" title="关于效率"></a>关于效率</h3><p><em>Numpy包含很多高效的函数，能够替换普通的循环，实现非常快</em></p>
-<h4 id="累加变成向量运算"><a href="#累加变成向量运算" class="headerlink" title="累加变成向量运算"></a>累加变成向量运算</h4><h4 id="对向量每个元素进行某个运算生成另一个向量"><a href="#对向量每个元素进行某个运算生成另一个向量" class="headerlink" title="对向量每个元素进行某个运算生成另一个向量"></a>对向量每个元素进行某个运算生成另一个向量</h4><ul>
-<li><p>普通用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.zeros((n, 1))</span><br><span class="line"></span><br><span class="line">for i in range(n):</span><br><span class="line">	b[i] = math.exp(a[i])</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>高效用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.exp(a)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>相似的还有<code>log</code>,<code>abs</code>等函数</p>
-</li>
-</ul>
-<h4 id="值得关注的广播机制-broadcasting"><a href="#值得关注的广播机制-broadcasting" class="headerlink" title="值得关注的广播机制(broadcasting)"></a>值得关注的广播机制(broadcasting)</h4><ul>
-<li>当两个向量（<code>numpy</code>的对象）的维度不同时，Python会将维度小的一个拓展（复制）成与维度大的相同，以便于计算</li>
-<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = a + 10</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h5 id="广播规则"><a href="#广播规则" class="headerlink" title="广播规则"></a>广播规则</h5><ul>
-<li><p>形式1</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (m,1) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按列复制第二个n次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式2</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式3</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] r # r为实数，维度为1</span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 复制r m*n 次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式4</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,1) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次,并按列复制第一个n次</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h5 id="需要注意"><a href="#需要注意" class="headerlink" title="需要注意"></a>需要注意</h5><ul>
-<li>广播机制使得书写更加美观，代码更加简洁</li>
-<li>但广播机制往往会出现用户意想不到的微妙bug, 需要开发者注意</li>
-</ul>
-<h4 id="关于矩阵运算的维度"><a href="#关于矩阵运算的维度" class="headerlink" title="关于矩阵运算的维度"></a>关于矩阵运算的维度</h4><ul>
-<li><code>axis=i</code>表示第<code>i</code>维计算后将会消失（该维度的size变成1）</li>
-</ul>
-<h4 id="多使用reshape函数"><a href="#多使用reshape函数" class="headerlink" title="多使用reshape函数"></a>多使用reshape函数</h4><ul>
-<li>reshape函数复杂度是常数的(O(1))</li>
-<li>reshape函数可确保我们的程序正确，不用随意猜测矩阵的维度</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html" itemprop="url">Linux——Ubuntu和Centos服务器管理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-04T00:00:00+08:00">
-                2019-01-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h3><h4 id="配置静态IP"><a href="#配置静态IP" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
-<li><p>查看网卡名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
-<ul>
-<li>查看网卡信息,每行的第一项为网卡名称</li>
-<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
-<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
-</ul>
-</li>
-<li><p>根据网卡名字打开相应网卡的配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line">vi /etc/sysconfig/network-scripts/ifcfg-eth0</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改相关配置内容</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">IPADDR=12.12.12.12</span><br><span class="line">NETMASK=255.255.255.0</span><br><span class="line">GATEWAY=12.12.12.1</span><br><span class="line">ONBOOT=yes</span><br><span class="line">BOOTPROTO=static</span><br><span class="line">DNS1=114.114.114.114</span><br><span class="line">DNS2=8.8.8.8</span><br></pre></td></tr></table></figure>
-<ul>
-<li>等号后面是具体的ip地址名称</li>
-<li>DNS可以有多个,用数字标识即可</li>
-</ul>
-</li>
-<li><p>重新启动网络服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service network restart</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理用户"><a href="#管理用户" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码"><a href="#修改root密码" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>默认可远程登录root用户,只需知道密码即可(SSH默认已经安装)</em></p>
-<ul>
-<li><p>修改root密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
-</li>
-</ul>
-<h5 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
-<ul>
-<li><p>添加新用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
-<ul>
-<li>centos中,以上命令将自动为test用户分配一个属于test用户的/home/test文件夹</li>
-</ul>
-</li>
-<li><p>为新用户修改密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加用户权限</p>
-<ul>
-<li>打开配置文件</li>
-<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">## Allow root to run any commands anywhere</span><br><span class="line">root   ALL=(ALL)    ALL </span><br><span class="line">test   ALL=(ALL)    ALL</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>删除用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
+            <p><em>Python pickle</em></p>
 <hr>
-<h3 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h3><h4 id="配置静态IP-1"><a href="#配置静态IP-1" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
-<li><p>查看网卡名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
-<ul>
-<li>查看网卡信息,每行的第一项为网卡名称</li>
-<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
-<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
+<h3 id="关于pickle模块"><a href="#关于pickle模块" class="headerlink" title="关于pickle模块"></a>关于pickle模块</h3><ul>
+<li>Python的一个序列化与反序列化模块,支持Python基本数据类型</li>
+<li>可以处理自定义的类对象,方法等</li>
 </ul>
-</li>
-<li><p>修改配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/network/interfaces</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改相关配置内容</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line"></span><br><span class="line">auto eth0</span><br><span class="line">iface eth0 inet static</span><br><span class="line">address 12.12.12.12</span><br><span class="line">netmask 255.255.255.0</span><br><span class="line">gateway 12.12.12.1</span><br><span class="line">dns-nameserver 114.114.114.114 8.8.8.8</span><br></pre></td></tr></table></figure>
-<ul>
-<li>dns可以有多个,以空格间隔开</li>
-</ul>
-</li>
-<li><p>重新启动网络服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo /etc/init.d/networking restart</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理用户-1"><a href="#管理用户-1" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码-1"><a href="#修改root密码-1" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>Ubuntu默认禁用root用户登录,需要配置root账户才能以root身份登录(SSH默认已经安装)</em></p>
-<ul>
-<li><p>修改root密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
-</li>
-</ul>
-<h5 id="添加用户-1"><a href="#添加用户-1" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
-<ul>
-<li><p>添加新用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
-<ul>
-<li>Ubuntu中以上命令并不会直接为当前用户分配自己的文件夹,所以需要我们为其手动添加一个并使用<code>chown test /home/test</code>命令将文件家分配给test用户,这样使用test用户登录时将会自动转到/home/test文件夹下面工作</li>
-</ul>
-</li>
-<li><p>为新用户修改密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加用户权限</p>
-<ul>
-<li>打开配置文件</li>
-<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># User privilege specification</span><br><span class="line">root    ALL=(ALL:ALL) ALL</span><br><span class="line">test    ALL=(ALL:ALL) ALL</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>删除用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure></li>
-</ul>
-
+<h4 id="内存中使用"><a href="#内存中使用" class="headerlink" title="内存中使用"></a>内存中使用</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">import pickle</span><br><span class="line"></span><br><span class="line">origin = [1, 2, 3, [4, 5, 6]]</span><br><span class="line">print &quot;origin: %s&quot; % origin</span><br><span class="line">temp = pickle.dumps(origin)</span><br><span class="line">print &quot;temp: %s&quot; % temp</span><br><span class="line">new = pickle.loads(temp)</span><br><span class="line">print &quot;new: %s&quot; % new</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">origin: [1, 2, 3, [4, 5, 6]]</span><br><span class="line">temp: (lp0</span><br><span class="line">I1</span><br><span class="line">aI2</span><br><span class="line">aI3</span><br><span class="line">a(lp1</span><br><span class="line">I4</span><br><span class="line">aI5</span><br><span class="line">aI6</span><br><span class="line">aa.</span><br><span class="line">new: [1, 2, 3, [4, 5, 6]]</span><br></pre></td></tr></table></figure>
+<h4 id="硬盘中使用"><a href="#硬盘中使用" class="headerlink" title="硬盘中使用"></a>硬盘中使用</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">import pickle</span><br><span class="line"></span><br><span class="line">origin = [1, 2, 3, [4, 5, 6]]</span><br><span class="line">print &quot;origin: %s&quot; % origin</span><br><span class="line"># open a binary and write the result</span><br><span class="line">pickle.dump(origin, open(&apos;temp&apos;, &apos;wb&apos;))</span><br><span class="line"># open a binary and read the original object</span><br><span class="line">new = pickle.load(open(&apos;temp&apos;, &apos;rb&apos;))</span><br><span class="line">print &quot;new: %s&quot; % new</span><br><span class="line"></span><br><span class="line"># output</span><br><span class="line">origin: [1, 2, 3, [4, 5, 6]]</span><br><span class="line">new: [1, 2, 3, [4, 5, 6]]</span><br></pre></td></tr></table></figure>
           
         
       
@@ -2188,7 +2305,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">244</span>
+                  <span class="site-state-item-count">245</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2254,7 +2371,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
