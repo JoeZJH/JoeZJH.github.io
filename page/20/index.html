@@ -275,6 +275,304 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-推导过程.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-推导过程.html" itemprop="url">ML——XGBoost-推导过程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-18T00:00:00+08:00">
+                2018-02-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>XGBoost,全称: Extreme Gradient Boosting</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><ul>
+<li>CART回归树是XGBoost的基分类器</li>
+</ul>
+<hr>
+<h3 id="XGBoost模型推导-假设回归树的结构确定"><a href="#XGBoost模型推导-假设回归树的结构确定" class="headerlink" title="XGBoost模型推导(假设回归树的结构确定)"></a>XGBoost模型推导(假设回归树的结构确定)</h3><h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x;w) = \sum_{k=0}^{K} f_{k}(x;w_{k})<br>\end{align}<br>$$</p>
+<ul>
+<li>其中, \(x\)为输入样本, \(f_{k}\)为分类回归树,可以是分类回归树空间中的任意一棵树, \(w_{k}\)是树\(f_{k}\)的参数</li>
+</ul>
+<h4 id="定义损失函数"><a href="#定义损失函数" class="headerlink" title="定义损失函数"></a>定义损失函数</h4><p>$$<br>\begin{align}<br>L^{t} &amp;= \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t}) \\<br>&amp;=  \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+<ul>
+<li>\(L^{t}\): 第 \(t\) 轮迭代的损失函数</li>
+<li>\(l(y_{i},\hat{y}_{i}^{t})\) 表示单个样本的损失函数定义</li>
+<li>\(\hat{y}_{i}^{t} = \hat{y}_{i}^{t-1} + f_{t}(x_{i})\) 表示第 \(t\) 轮 \(x_{i}\) 样本的预测值<ul>
+<li>加法模型: 第 \(t\) 轮预测值 = 第 \(t-1\) 轮预测值 + 第 \(t\) 棵(轮)决策树的预测值</li>
+</ul>
+</li>
+<li>\(\Omega(f_{t})\) 表示正则项<ul>
+<li>\(n\) 表示样本的个数</li>
+<li>\(T\) 表示<strong>叶子结点的个数</strong></li>
+<li>\(w_{j}\) 表示<strong>叶节点分数</strong>, 即任意样本落到第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点时的预测值(可称为第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点的预测值)</li>
+<li>\(\gamma\)和\(\lambda\)都是正则项参数</li>
+</ul>
+</li>
+</ul>
+<h4 id="第-t-轮训练的目标"><a href="#第-t-轮训练的目标" class="headerlink" title="第 \(t\) 轮训练的目标"></a>第 \(t\) 轮训练的目标</h4><ul>
+<li>找到一个最优的分类器 \(f_t^{\star}(x)\), 满足<br>$$<br>\begin{align}<br>f_t^{\star}(x) &amp;= \arg\max_{f_t(x)}L^{t} \\<br>&amp;= \arg\max_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t})\right) \\<br>&amp;= \arg\max_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \right)<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="最小化损失函数推导"><a href="#最小化损失函数推导" class="headerlink" title="最小化损失函数推导"></a>最小化损失函数推导</h4><p><em>损失函数<strong>二阶泰勒展开</strong></em></p>
+<ul>
+<li><p>回忆传统泰勒展开:<br>$$<br>\begin{aligned}<br>f(x) &amp;= f(x_0) + f’(x_0)(x-x_0) + \frac{f’’(x_0)}{2!}(x-x_0)^2 + \cdots + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n \\<br>&amp; = \sum\limits_{n=0}^{\infty}\frac{f^{(n)}x_0}{n!}(x - x_0)^n<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>二阶泰勒展开公式<br>$$<br>\begin{align}<br>f(x+\Delta x) \approx f(x) + f’(x)\Delta x + \frac{1}{2}f’’(x)\Delta x^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>在我们的场景中,令</p>
+<ul>
+<li>\(x = \hat{y}_{i}^{t-1}\)</li>
+<li>\(\Delta x = f_{t}(x_{i})\)</li>
+</ul>
+</li>
+<li><p>则有对单个样本能得到<br>$$<br>\begin{align}<br>l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) \approx l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)<br>\end{align}<br>$$</p>
+<ul>
+<li>\(l’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li><p>我们第 \(t\) 轮的目标是找到一个最优的分类器 \(f_t^{\star}(x)\)最小化损失函数 \(L^{t}\)<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>显然上面式子中的 \(l(y_i,\hat{y}_i^{t-1})\) 与 \(f_t(x_i)\) 无关,可以移除,于是有<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li><p>则有:<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>做一个重要的<strong>转换</strong>:<br>$$f_t(x_i) = w_j, \quad s.t. \ x_i \in I_j$$</p>
+<ul>
+<li>上面的式子前半部分成立的条件是 \(x_i\) 落在叶子结点 \(j\) 上</li>
+<li>我们将条件\(x_i\) 落在叶子结点 \(j\) 上表示为 \(\ x_i \in I_j\)</li>
+</ul>
+</li>
+<li><p>于是: 我们可以<strong>将前面对样本的累加变成对叶子结点的累加</strong><br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i)w_j^2\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx  \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(G_j = \sum_{i \in I_j}g_i\)</li>
+<li>\(H_j = \sum_{i \in I_j}h_i\)</li>
+</ul>
+</li>
+<li><p>则有<br>$$<br>\begin{align}<br>L^{t} \approx  \sum_{j=1}^{T}\left(G_jw_j + \frac{1}{2}(H_j + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>\(L^t\) 对 \(w_j\) 求偏导有<br>$$<br>\begin{align}<br>\frac{\partial L^{t}}{\partial w_j} = G_j + (H_j + \lambda)w_j<br>\end{align}<br>$$</p>
+</li>
+<li><p>令导数 \(\frac{\partial L^{t}}{\partial w_j} = 0\) 可得<br>$$<br>\begin{align}<br>w_j^{\star} = -\frac{G_j}{H_j+\lambda}<br>\end{align}<br>$$</p>
+</li>
+<li><p>同时<br>$$<br>\begin{align}<br>L^{\star^t} &amp;\approx min(L^t) \\<br>&amp;\approx \sum_{j=1}^{T}\left(G_j\cdot (-\frac{G_j}{H_j+\lambda}) + \frac{1}{2}(H_j + \lambda)\cdot(-\frac{G_j}{H_j+\lambda})^2\right) + \gamma T \\<br>&amp;\approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>目标函数的计算示例: 目标分数越小越好</p>
+<img src="/Notes/ML/Models/ML——XGBoost-推导过程/example_of_xgboost.png">
+
+</li>
+</ul>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><ul>
+<li>在<strong>第 \(t\) 轮回归树的结构确定后</strong>,我们得到的<strong>最优叶节点分数</strong>与结构无关 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\)</li>
+<li>最小损失与第 \(t\) 轮回归树的结构的复杂度(叶节点数量)相关</li>
+<li>我们<strong>还需要</strong>确定第 \(t\) 轮回归树的结构</li>
+</ul>
+<hr>
+<h3 id="回归树的结构确定"><a href="#回归树的结构确定" class="headerlink" title="回归树的结构确定"></a>回归树的结构确定</h3><h4 id="普通决策树树结构的确定"><a href="#普通决策树树结构的确定" class="headerlink" title="普通决策树树结构的确定"></a>普通决策树树结构的确定</h4><ul>
+<li>详细情况可参考: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
+</ul>
+<h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>最大化信息增益来选择分裂特征</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>最大化信息增益比来选择分裂特征</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><h6 id="分类树"><a href="#分类树" class="headerlink" title="分类树"></a>分类树</h6><ul>
+<li>最小化基尼指数来选择分裂特征</li>
+</ul>
+<h6 id="回归树"><a href="#回归树" class="headerlink" title="回归树"></a>回归树</h6><ul>
+<li>最小化平方误差来选择分裂特征</li>
+</ul>
+<h4 id="XGBoost结点分裂前后的信息增益"><a href="#XGBoost结点分裂前后的信息增益" class="headerlink" title="XGBoost结点分裂前后的信息增益"></a>XGBoost结点分裂前后的信息增益</h4><ul>
+<li>信息增益应该与前面的损失函数相关, 损失越小越好</li>
+<li>原始损失函数为<br>$$<br>\begin{align}<br>L^{\star^t} \approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</li>
+<li>显然,要使得损失函数最小,我们需要使得下面的式子最大:<br>$$<br>\begin{align}<br>\frac{G_j^2}{H_j+\lambda}<br>\end{align}<br>$$</li>
+<li>一个结点分裂后的信息为<br>$$<br>\begin{align}<br>\frac{G_L^2}{H_L+\lambda} + \frac{G_R^2}{H_R+\lambda}<br>\end{align}<br>$$<ul>
+<li>左子树的信息 + 右子树的信息</li>
+</ul>
+</li>
+<li>一个结点分裂前信息为<br>$$<br>\begin{align}<br>\frac{(G_L + G_R)^2}{H_L+ H_R + \lambda}<br>\end{align}<br>$$</li>
+<li>从而我们定义一个结点分列前后的信息增益为:<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>Gain 越大说明当前结点的当前分裂方式越好</li>
+<li>其中 \(\gamma\) 是一个超参数用于防止<strong>过拟合</strong>,可以理解为有两层含义:<ul>
+<li>用于对叶节点数目进行控制</li>
+<li>用于增大分裂前后Gain的阈值</li>
+<li>事实上 \(\gamma\) 不是凭空来的,开始的定义中 \(\gamma\) 就是L1正则化(叶节点数量)的系数, 这里分裂后叶节点数量多了1个, 我们希望树的叶节点越少越好(模型越简单越好),而这个的信息增益越大越好, 所以减去 \(\gamma\) 值,防止结点分裂得太多</li>
+<li>对于每个特征的每个分裂点, \(\gamma\) 值都相同,所以 \(\gamma\) 值对特征和分裂点的选择没有影响,只是影响了某个结点是否能够被分裂(信息增益太小或者为负时我们可以选择不分裂)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost树节点分裂"><a href="#XGBoost树节点分裂" class="headerlink" title="XGBoost树节点分裂"></a>XGBoost树节点分裂</h4><h5 id="精确分裂算法"><a href="#精确分裂算法" class="headerlink" title="精确分裂算法"></a>精确分裂算法</h5><ul>
+<li><strong>单个</strong>叶节点<strong>精确</strong>计算信息增益<strong>分裂流程</strong>(特征和特征分裂取值的选择, 假设一共m个特征)<ul>
+<li>注意: 每次只对叶节点分裂,已经分裂了的就不是叶节点了,不能二次分裂</li>
+<li>原图来自: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a><img src="/Notes/ML/Models/ML——XGBoost-推导过程/exact_greedy_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="近似分裂算法"><a href="#近似分裂算法" class="headerlink" title="近似分裂算法"></a>近似分裂算法</h5><ul>
+<li>将每个特征的取值划分为多个分位点</li>
+<li>每次考察特征时值考察分位点,减少计算复杂度</li>
+<li>其他的步骤与前面的精确分裂算法相同,包括分数计算和选择最大分数等<img src="/Notes/ML/Models/ML——XGBoost-推导过程/approximate_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+<h5 id="分桶策略与GBDT的不同"><a href="#分桶策略与GBDT的不同" class="headerlink" title="分桶策略与GBDT的不同"></a>分桶策略与GBDT的不同</h5><ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-推导过程/split_point_method_weighted_in_xgboost.png"></li>
+<li>详细推导解释,为什么选择损失函数在当前样本的二阶导数作为权重?<br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(2\frac{g_i}{h_i}f_t(x_i) + f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(f_t(x_i) - \frac{g_i}{h_i}\right)^2 + \sum_{i=1}^{n}\left ( \frac{g_i^2}{2h_i} - 2g_if_t(x_i) \right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>\end{align}<br>$$<ul>
+<li>上面的式子中第二项在原文中用constant来表示,可以被看成某种正则项</li>
+<li>第一项是一个平方误差表达式,样本 \(x_i\) 对应的输出值为 \(\frac{g_i}{h_i}\), 而样本权重就是 \(h_i\)</li>
+<li>权重代表概率,概率越大说明该点出现的次数或者该点附近的值出现的次数就越多.</li>
+</ul>
+</li>
+<li>XGBoost分桶流程<ul>
+<li>[待更新]</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost整棵树分裂流程"><a href="#XGBoost整棵树分裂流程" class="headerlink" title="XGBoost整棵树分裂流程"></a>XGBoost整棵树分裂流程</h4><ul>
+<li>初始化\(f^0(x)\)</li>
+<li>for t=1 to M:<ul>
+<li>计算损失函数对每个训练样本点的一阶导数 \(g_i\) ,二阶导数 \(h_i\)</li>
+<li>递归对叶子节点运用树分裂算法生成一颗决策树 \(f^t(x)\),    <ul>
+<li>(这一步包括叶子节点的分数 \(w_j\) 也都确定下来)</li>
+<li>(这一步可以使用近似分裂算法加快训练速度)</li>
+</ul>
+</li>
+<li>把新生成的决策树加入到模型中, \(\hat{y}^t = \hat{y}^{t-1} + f_m(x)\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——BN-LN-IN-GN-LRN-WN.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -660,288 +958,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Attention的原理和变种</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
-<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
-<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
-<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
-<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
-</ul>
-<hr>
-<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
-<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
-<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
-
-</li>
-</ul>
-<hr>
-<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
-<li>Attention机制的根本优势在于对不同的</li>
-<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
-<ul>
-<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
-<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
-<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
-<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>动态图理解 Attention 机制<ul>
-<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
-<li>上图中Encoder使用的是双层双向的RNN<ul>
-<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
-<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
-<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
-</ul>
-</li>
-<li>流程说明:<ul>
-<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
-<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
-<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
-<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
-<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
-<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
-<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
-<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
-<ul>
-<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
-<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
-<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
-<li>多源注意力机制：Attend到多种源语言语句</li>
-<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
-<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
-<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
-<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
-<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
-<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
-</ul>
-<hr>
-<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
-<ul>
-<li>Attention的本质: <ul>
-<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
-<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
-<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
-</ul>
-</li>
-<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
-<li>如上图所示,在计算 Attention 时主要分为三步<ul>
-<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
-<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
-<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
-</ul>
-</li>
-<li>Attention过程还可以大致分为两步理解:<ul>
-<li><ol>
-<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
-<li>变换一般包括 <ul>
-<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
-<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
-<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
-<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
-</ul>
-</li>
-<li>Query和Key在不同任务中是不同的东西<ul>
-<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
-<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><ol start="2">
-<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
-<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
-<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
-<li>简单文本分类中, Value指句子</li>
-<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
-<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
-<li>现有查询<strong>向量</strong> q </li>
-<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
-<li>要求是样本与 q 越相关，权重越大</li>
-</ul>
-</li>
-<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
-<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
-<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
-<li>按照这个比例将 Value 中的样本加权输出结果</li>
-<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
-<li>也就是 q 对应的结果</li>
-</ul>
-<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
-<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
-<li>相当于重复 m 次做单个请求为向量的运算</li>
-<li>每个 q 都能得到一个结果</li>
-<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
-</ul>
-<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
-<li>当 Key 与 Value 相同时<ul>
-<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
-<li>NLP中一般都是这样的</li>
-</ul>
-</li>
-<li>当 Key 与 Query 相同时，<ul>
-<li>其实是找自身不同样本间的相关性</li>
-<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
-<li>NLP中Self-Attention是这样的</li>
-</ul>
-</li>
-<li>Self-Attention是 Key == Value == Query 的情况</li>
-</ul>
-<hr>
-<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1260,140 +1276,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html" itemprop="url">DL——softmax遇上交叉熵损失时的梯度计算</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="softmax"><a href="#softmax" class="headerlink" title="softmax"></a>softmax</h3><h4 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax_define.png">
-<h4 id="展开定义"><a href="#展开定义" class="headerlink" title="展开定义"></a>展开定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax.png">
-
-<hr>
-<h3 id="softmax求导"><a href="#softmax求导" class="headerlink" title="softmax求导"></a>softmax求导</h3><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/partial_softmax.png">
-
-<hr>
-<h3 id="交叉熵定义"><a href="#交叉熵定义" class="headerlink" title="交叉熵定义"></a>交叉熵定义</h3><p><em>Cross Entropy Loss</em></p>
-<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/cross_entropy_loss.png">
-
-<hr>
-<h3 id="梯度计算"><a href="#梯度计算" class="headerlink" title="梯度计算"></a>梯度计算</h3><h4 id="偏置量的梯度"><a href="#偏置量的梯度" class="headerlink" title="偏置量的梯度"></a>偏置量的梯度</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_b.png">
-
-<h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
-<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1599,7 +1481,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1618,7 +1500,289 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
+</ul>
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+
+</li>
+</ul>
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制<ul>
+<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+
+
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+</ul>
+</li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
+<li>现有查询<strong>向量</strong> q </li>
+<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
+<li>要求是样本与 q 越相关，权重越大</li>
+</ul>
+</li>
+<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
+<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
+<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
+<li>按照这个比例将 Value 中的样本加权输出结果</li>
+<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
+<li>也就是 q 对应的结果</li>
+</ul>
+<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
+<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
+<li>相当于重复 m 次做单个请求为向量的运算</li>
+<li>每个 q 都能得到一个结果</li>
+<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
+</ul>
+<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
+<li>当 Key 与 Value 相同时<ul>
+<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
+<li>NLP中一般都是这样的</li>
+</ul>
+</li>
+<li>当 Key 与 Query 相同时，<ul>
+<li>其实是找自身不同样本间的相关性</li>
+<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
+<li>NLP中Self-Attention是这样的</li>
+</ul>
+</li>
+<li>Self-Attention是 Key == Value == Query 的情况</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html" itemprop="url">DL——softmax遇上交叉熵损失时的梯度计算</a></h1>
         
 
         <div class="post-meta">
@@ -1671,32 +1835,21 @@
         
           
             <hr>
-<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
-<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
-<li>并不会因为参数都为0就导致所有神经元死亡！</li>
-</ul>
-<hr>
-<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
-<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
-</li>
-<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
-</li>
-<li><p>单层隐藏层的神经网络一般这样初始化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
+<h3 id="softmax"><a href="#softmax" class="headerlink" title="softmax"></a>softmax</h3><h4 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax_define.png">
+<h4 id="展开定义"><a href="#展开定义" class="headerlink" title="展开定义"></a>展开定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax.png">
 
-<ul>
-<li>适用于单层隐藏层神经网络的参数</li>
-<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
-</ul>
-</li>
-</ul>
 <hr>
-<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
-<li>不是越深越好</li>
-<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
-<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
-</ul>
+<h3 id="softmax求导"><a href="#softmax求导" class="headerlink" title="softmax求导"></a>softmax求导</h3><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/partial_softmax.png">
 
+<hr>
+<h3 id="交叉熵定义"><a href="#交叉熵定义" class="headerlink" title="交叉熵定义"></a>交叉熵定义</h3><p><em>Cross Entropy Loss</em></p>
+<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/cross_entropy_loss.png">
+
+<hr>
+<h3 id="梯度计算"><a href="#梯度计算" class="headerlink" title="梯度计算"></a>梯度计算</h3><h4 id="偏置量的梯度"><a href="#偏置量的梯度" class="headerlink" title="偏置量的梯度"></a>偏置量的梯度</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_b.png">
+
+<h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
+<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
           
         
       
@@ -1928,7 +2081,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——特殊函数的反向传播.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1947,7 +2100,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——特殊函数的反向传播.html" itemprop="url">DL——特殊函数的反向传播</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
         
 
         <div class="post-meta">
@@ -2000,12 +2153,30 @@
         
           
             <hr>
-<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
+<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
+<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
+<li>并不会因为参数都为0就导致所有神经元死亡！</li>
 </ul>
-<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
-<li>参考文献：Cross DQN</li>
+<hr>
+<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
+<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
+</li>
+<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
+</li>
+<li><p>单层隐藏层的神经网络一般这样初始化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>适用于单层隐藏层神经网络的参数</li>
+<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
+<li>不是越深越好</li>
+<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
+<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 
           
@@ -2094,7 +2265,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">244</span>
+                  <span class="site-state-item-count">245</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2160,7 +2331,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
