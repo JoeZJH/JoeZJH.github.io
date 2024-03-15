@@ -958,7 +958,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -977,7 +977,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
         
 
         <div class="post-meta">
@@ -1029,63 +1029,169 @@
       
         
           
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
 <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 <ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
 </ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
-</ul>
-</li>
-</ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
 
 </li>
 </ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制<ul>
+<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+
 
 </li>
 </ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
 </li>
 </ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
 <ul>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
-<ul>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
 </ul>
 </li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
 </ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
+<li>现有查询<strong>向量</strong> q </li>
+<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
+<li>要求是样本与 q 越相关，权重越大</li>
+</ul>
+</li>
+<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
+<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
+<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
+<li>按照这个比例将 Value 中的样本加权输出结果</li>
+<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
+<li>也就是 q 对应的结果</li>
+</ul>
+<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
+<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
+<li>相当于重复 m 次做单个请求为向量的运算</li>
+<li>每个 q 都能得到一个结果</li>
+<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
+</ul>
+<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
+<li>当 Key 与 Value 相同时<ul>
+<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
+<li>NLP中一般都是这样的</li>
+</ul>
+</li>
+<li>当 Key 与 Query 相同时，<ul>
+<li>其实是找自身不同样本间的相关性</li>
+<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
+<li>NLP中Self-Attention是这样的</li>
+</ul>
+</li>
+<li>Self-Attention是 Key == Value == Query 的情况</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
 
           
         
@@ -1481,7 +1587,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1500,7 +1606,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
         
 
         <div class="post-meta">
@@ -1552,169 +1658,63 @@
       
         
           
-            <p><em>本文主要介绍Attention的原理和变种</em></p>
+            <p><em>文本介绍DeepFM的理论和实现</em></p>
 <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 <ul>
-<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
-<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
-<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
-<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
-<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
+<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
+<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
 </ul>
-<hr>
-<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
-<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
-<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
+<li>FM: (Factorization Machines, FM)因子分解机</li>
+<li>FMM: (Field Factorization Machines, FFM)</li>
+</ul>
+<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
+<li>只能二阶特征组合,无法做到高阶特征组合<ul>
+<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+</ul>
+</li>
+</ul>
+<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>理论上DNN建模高阶组合特征是可行的</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
 
 </li>
 </ul>
-<hr>
-<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
-<li>Attention机制的根本优势在于对不同的</li>
-<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
-<ul>
-<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
-<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
-<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
-<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>动态图理解 Attention 机制<ul>
-<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
-
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
+<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
+<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
+<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
+<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
+<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
+<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
 
 </li>
 </ul>
+<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
+<li><p>是一种并行化的解决方案</p>
+<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
+</li>
+<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
+</li>
+<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
 </li>
 </ul>
+<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
 <ul>
-<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
-<li>上图中Encoder使用的是双层双向的RNN<ul>
-<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
-<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
-<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
 </ul>
-</li>
-<li>流程说明:<ul>
-<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
-<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
-<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
-<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
-<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
-<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
-<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
-<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
 <ul>
-<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
-<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
-<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
-<li>多源注意力机制：Attend到多种源语言语句</li>
-<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
-<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
-<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
-<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
-<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
-<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
-</ul>
-<hr>
-<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
-<ul>
-<li>Attention的本质: <ul>
-<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
-<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
-<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+<li>DNN部分是一个前馈神经网络</li>
+<li>与图像语音的区别:<ul>
+<li>图像语音输入为连续且密集的</li>
+<li>CTR中使用的一般是稀疏的</li>
 </ul>
 </li>
-<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
-<li>如上图所示,在计算 Attention 时主要分为三步<ul>
-<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
-<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
-<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
 </ul>
-</li>
-<li>Attention过程还可以大致分为两步理解:<ul>
-<li><ol>
-<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
-<li>变换一般包括 <ul>
-<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
-<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
-<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
-<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
-</ul>
-</li>
-<li>Query和Key在不同任务中是不同的东西<ul>
-<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
-<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><ol start="2">
-<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
-<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
-<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
-<li>简单文本分类中, Value指句子</li>
-<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
-<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
-<li>现有查询<strong>向量</strong> q </li>
-<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
-<li>要求是样本与 q 越相关，权重越大</li>
-</ul>
-</li>
-<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
-<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
-<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
-<li>按照这个比例将 Value 中的样本加权输出结果</li>
-<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
-<li>也就是 q 对应的结果</li>
-</ul>
-<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
-<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
-<li>相当于重复 m 次做单个请求为向量的运算</li>
-<li>每个 q 都能得到一个结果</li>
-<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
-</ul>
-<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
-<li>当 Key 与 Value 相同时<ul>
-<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
-<li>NLP中一般都是这样的</li>
-</ul>
-</li>
-<li>当 Key 与 Query 相同时，<ul>
-<li>其实是找自身不同样本间的相关性</li>
-<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
-<li>NLP中Self-Attention是这样的</li>
-</ul>
-</li>
-<li>Self-Attention是 Key == Value == Query 的情况</li>
-</ul>
-<hr>
-<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
 
           
         
