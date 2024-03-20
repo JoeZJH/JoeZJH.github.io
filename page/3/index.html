@@ -447,6 +447,165 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——BCB出价推导.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——BCB出价推导.html" itemprop="url">CA——BCB出价推导</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-28T00:00:00+08:00">
+                2019-12-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<p><em>本文主要记录BCB出价的推导</em></p>
+<ul>
+<li>其他参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a></li>
+</ul>
+<h3 id="BCB介绍"><a href="#BCB介绍" class="headerlink" title="BCB介绍"></a>BCB介绍</h3><ul>
+<li>预算约束的出价，Budget Constrained Bidding（简称BCB），广告主的出价目标是设置一定预算，拿到最多的流量（点击或者订单）</li>
+</ul>
+<hr>
+<h3 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h3><ul>
+<li>一般BCB优化问题的定义:</li>
+</ul>
+<p>$$<br>\begin{align}<br>\max_{x_{ij}} \sum^N_{i=1} x_{ij}  v_{ij} \\<br>s.t. \sum^N_{i=1} x_{ij}  c_{ij} \le B \\<br>      \sum^M_{j=1} x_{ij} = 1 \\<br>      x_{ij} \in {0, 1}<br>\end{align}<br>$$</p>
+<h3 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h3><p>可以解得，最终结果为(求解过程参见RL-MPCA论文):<br>$$ j^* = \arg\max_{j} (v_{ij} - \lambda c_{ij}) $$</p>
+<h3 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h3><ul>
+<li>如果<strong>只有一个广告位置，且使用二价计费</strong>，原始问题可化简为</li>
+</ul>
+<p>$$<br>\begin{align}<br>\max_{x_{i}} \sum^N_{i=1} x_{i} v_{i} \\<br>s.t. \sum^N_{i=1} x_{i} c_{i} \le B \\<br>      x_{i} \in {0, 1}<br>\end{align}<br>$$</p>
+<ul>
+<li>最终可解得结果为(求解参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a>)：<br>$$ bid = v_i / \lambda $$</li>
+</ul>
+<h3 id="关于两种解法的结果分析"><a href="#关于两种解法的结果分析" class="headerlink" title="关于两种解法的结果分析"></a>关于两种解法的结果分析</h3><ul>
+<li>本质上，两种解法结果应该是完全相同的，第一种解法中，如果只有一个广告位置，且使用二价计费，求解到的结果本质于第二种解法结果一致。<ul>
+<li>当 \(v_{i} &gt; \lambda \cdot Price_{win} \)时(\(Price_{win} = c_{i}\),表示净胜价格), 此时选择\(bid &gt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一(取\(v_{ij} - \lambda * c_{ij}\) 最大的动作)还是解法二(\(bid=v_i/\lambda\))都会选择执行竞拍动作。</li>
+<li>反之，当当\(v_{i} &lt; \lambda \cdot Price_{win}\)时, 此时选择\(bid &lt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一还是解法二都会选择执行不竞拍动作。</li>
+</ul>
+</li>
+<li>解法一适用于任何场景，解法二则仅适用于<strong>只有一个广告位置，且使用二价计费</strong>的场景</li>
+<li>解法二的结果使用起来会更简单：<ul>
+<li>解法一需要预估不同出价下的收益，实际上，在<strong>只有一个广告位置，且使用二价计费</strong>的场景，不竞争当前广告位置的价值为0，计费为0，若竞争，则价值为\(v_i\)，计费为\(c_i\)，所以仅需要预估价值\(v_i\)，计费\(c_i\)。</li>
+<li>解法二则可直接预估一个值\(v_i\)即可，不需要预估\(c_i\)，即在线不需要预估净胜价格<ul>
+<li>但是离线流量回放求解\(\lambda\)时，理论上也需要预估一个净胜价格，或者在给出一个价格时，需要知道是否会竞争成功。\(c_i\)已经隐含在求解到的\(\lambda\)中</li>
+</ul>
+</li>
+<li>若对于任意竞拍，都给定净胜价格，那么解法一和解法二等价，都只需要预估\(v_i\)一个值即可</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2045,157 +2204,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——术语和专有名词总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——术语和专有名词总结.html" itemprop="url">CA——术语和专有名词总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-10-23T00:00:00+08:00">
-                2019-10-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要总结计算广告(computational advertising)中的术语和专有名词</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<p>*&lt;&lt;计算广告&gt;&gt;中后面附录有很多计算广告相关的专有名词相关记录*<br><em>本文将长期持续更新,记录平时遇到计算广告专有名词</em></p>
-<hr>
-<h3 id="英文简写"><a href="#英文简写" class="headerlink" title="英文简写"></a>英文简写</h3><ul>
-<li>IOE计算架构: IBM, Oracle, EMC(适用于规模不大但对于一致性和实时性要求较高的场景)</li>
-<li>BI: Business Intelligence(商业智能)</li>
-<li>DM: Direct Marketing(直接营销)</li>
-<li>ROI: Return on Investment(投入产出比 = 总产出/总投入)</li>
-<li>EDM: Email Direct Marketing(邮件营销广告)</li>
-<li>GD: Guaranteed Delivery(担保式投送)</li>
-<li>CPM: Cost per Mille(按千次展示付费)</li>
-<li>CPC: Cost per Click</li>
-<li>CPS: Cost per Sale</li>
-</ul>
-<hr>
-<h3 id="常见中英文对照"><a href="#常见中英文对照" class="headerlink" title="常见中英文对照"></a>常见中英文对照</h3><ul>
-<li>付费内容: sponsored content</li>
-<li>商业化: monetization</li>
-<li>个性化推荐: personalized recommendation</li>
-<li>直接效果广告: direct response</li>
-<li>品牌广告: brand awareness</li>
-<li>横幅广告: banner ad</li>
-<li>交互式广告: playalble ad</li>
-<li>激励广告: incentive ad</li>
-<li>展示广告: display advertising</li>
-<li>合约广告: agreement-based advertising</li>
-<li>定向广告: targeted advertising</li>
-<li>受众定向: audience targeting</li>
-<li>在线分配: online allocation</li>
-<li>带约束优化: constrained optimization</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2248,7 +2256,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">245</span>
+                  <span class="site-state-item-count">246</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

@@ -88,7 +88,7 @@
 <meta property="og:description" content="各种损失函数(Loss Function)总结,持续更新    综述 损失函数(Loss Function)又称为代价函数(Cost Function) 损失函数用于评估预测值与真实值之间的不一致程度 损失函数是模型的优化目标函数,(神经网络训练的过程就是最小化损失函数的过程) 损失函数越小,说明预测值越接近于真实值,模型表现越好   各种损失函数介绍平方损失函数最常用的回归损失函数  基本形式$">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/ML/ML——损失函数总结/focal_loss_Overview.png">
-<meta property="og:updated_time" content="2024-03-19T14:18:24.693Z">
+<meta property="og:updated_time" content="2024-03-20T02:42:56.132Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ML——损失函数总结">
 <meta name="twitter:description" content="各种损失函数(Loss Function)总结,持续更新    综述 损失函数(Loss Function)又称为代价函数(Cost Function) 损失函数用于评估预测值与真实值之间的不一致程度 损失函数是模型的优化目标函数,(神经网络训练的过程就是最小化损失函数的过程) 损失函数越小,说明预测值越接近于真实值,模型表现越好   各种损失函数介绍平方损失函数最常用的回归损失函数  基本形式$">
@@ -372,7 +372,7 @@
 </ul>
 <h4 id="交叉熵损失函数（对数似然损失函数）"><a href="#交叉熵损失函数（对数似然损失函数）" class="headerlink" title="交叉熵损失函数（对数似然损失函数）"></a>交叉熵损失函数（对数似然损失函数）</h4><p><em>最常见的损失函数<strong>交叉熵损失函数</strong>,又名<strong>对数似然损失函数</strong></em></p>
 <ul>
-<li>基本形式<br>$$loss=L(P_{\theta}(Y|X))=-logP_{\theta}(Y|X)$$ </li>
+<li>基本形式（目标：在已知X时，样本标签Y出现的概率最大化，损失函数在概率前加个负号即可）<br>$$loss=L(P_{\theta}(Y|X))=-logP_{\theta}(Y|X)$$ </li>
 <li><strong>二分类</strong>中的交叉熵损失函数:<br>$$loss = \frac{1}{N} \sum_{i}^{N}-y_ilogy_i’ - (1-y_i)log(1-y_i’)$$<ul>
 <li>二分类中对于单个样本的损失一般写为:<br>  $$loss(x_i) = -y_ilogy_i’ - (1-y_i)log(1-y_i’)$$</li>
 <li>写成最容易看清楚的形式为:<br>  $$<br>  \begin{align}<br>  loss(x_i) &amp;= -logy_i’, &amp;\quad y_i = 1 \\<br>  loss(x_i) &amp;= -log(1-y_i’), &amp;\quad y_i = 0<br>  \end{align}<br>  $$<ul>
@@ -406,16 +406,6 @@
 </ul>
 </li>
 <li>最大化后验概率等价于最小化对数似然损失函数<br>$$\theta^{\star} = \arg\max_{\theta} LL(\theta) = \arg\min_{\theta} -LL(\theta) = \arg\min_{\theta} -\log P(Y|X) = \arg\min_{\theta} -\sum_{i=1}^{N}\log p_{\theta}(y_{i}|x_{i})$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="逻辑斯蒂损失函数"><a href="#逻辑斯蒂损失函数" class="headerlink" title="逻辑斯蒂损失函数"></a>逻辑斯蒂损失函数</h4><p><em>LR模型的损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=log(1+e^{-yf(x)})$$</li>
-<li>在LR和最大熵模型中与对数似然损失函数等价(可以带入\(f(x)=wx\)并分\(Y=1 or Y=-1\)两种情况分别证明)</li>
-<li>对应模型<ul>
-<li>逻辑回归模型</li>
-<li>最大熵模型</li>
 </ul>
 </li>
 </ul>
@@ -531,10 +521,19 @@
 <li><a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></li>
 </ul>
 </li>
-<li>交叉熵损失函数来自不做任何假设的极大似然法，其本质是在最小化真实样本分布和预估分布的KL散度（这里的分布可以是已知X时，label的条件分布）</li>
-<li>MSE损失函数来自假设噪声服从高斯分布时的极大似然法（参考<a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a>）<ul>
-<li>假设回归问题中噪声服从均值为0的高斯分布，即\(\epsilon \sim N(0,\sigma)\)</li>
-<li></li>
+<li>原因：<ul>
+<li>在sigmoid函数拟合概率的情况下，使用MSE会导致预估值接近0或者为1时的梯度都接近0，不利于模型学习收敛</li>
+<li>在sigmoid函数拟合概率的情况下，MSE是非凸优化问题，容易陷入局部最优；交叉熵损失则是凸优化问题，不会陷入局部最优</li>
+</ul>
+</li>
+<li><strong>最小化交叉熵损失函数等价于不做任何假设的极大似然估计</strong>，其本质是在最小化真实样本分布和预估分布的KL散度（这里的分布可以是已知X时，label的条件分布）</li>
+<li><strong>最小化MSE损失函数等价于假设噪声服从高斯分布时的极大似然估计</strong><ul>
+<li><em>推导可参考：<a href="https://zhuanlan.zhihu.com/p/541655548" target="_blank" rel="noopener">MSE的推导</a>、<a href="https://zhuanlan.zhihu.com/p/501569029?utm_psn=1753542229158043648&utm_id=0" target="_blank" rel="noopener">MSE，MLE和高斯分布的关系</a>、<a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></em></li>
+<li>假设在回归问题中\(y = z + \epsilon\)，样本噪声\(\epsilon\)服从均值为0，方差为\(\sigma\)的高斯分布，即\(\epsilon \sim N(0,\sigma)\)</li>
+<li>则有原始样本\(y\)服从均值为\(z\)方差为\(\sigma\)的高斯分布\(y \sim N(z,\sigma)\)，我们的目标是用模型拟合非噪声部分\(y_{pred} = \theta^T x = z\)，此时有\(y = y_{pred} + \epsilon\)，即\(y\)服从高斯分布\(y \sim N(y_{pred},\sigma)\)</li>
+<li>正太分布的概率密度函数为\(p(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-u)^2}{2\sigma^2}}\)，则此时单个样本出现的概率为\(\frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y-\theta^T x)^2}{2\sigma^2}}\)。</li>
+<li>用<strong>极大似然法</strong>估计参数\(\theta\)，即最大化多个样本的联合概率为:<br>  $$<br>  \begin{align}<br>  \theta^* &amp;= \arg\max_\theta \prod_i \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} \\<br>  &amp;= \arg\max_\theta \prod_i e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} &amp;\quad —去掉与\theta无关的常数项 \\<br>  &amp;= \arg\max_\theta \sum_i -\frac{(y^i-\theta^T x^i)^2}{2\sigma^2} &amp;\quad —取对数 \\<br>  &amp;= \arg\max_\theta \sum_i -(y^i-\theta^T x^i)^2 &amp;\quad —继续去除常数项 \\<br>  &amp;= \arg\min_\theta \sum_i (y^i-\theta^T x^i)^2 \\<br>  \end{align}<br>  $$</li>
+<li>即当假设噪声服从高斯分布时，用极大似然法估计参数与MSE损失函数得到的参数相同</li>
 </ul>
 </li>
 </ul>
@@ -568,8 +567,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/ML/ML——模型评估指标总结.html" rel="next" title="ML——损失函数总结">
-                <i class="fa fa-chevron-left"></i> ML——损失函数总结
+              <a href="/Notes/ML/ML——模型评估指标总结.html" rel="next" title="ML——模型评估指标总结">
+                <i class="fa fa-chevron-left"></i> ML——模型评估指标总结
               </a>
             
           </div>
@@ -659,7 +658,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">245</span>
+                  <span class="site-state-item-count">246</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -721,7 +720,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#综述"><span class="nav-number">1.</span> <span class="nav-text">综述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#各种损失函数介绍"><span class="nav-number">2.</span> <span class="nav-text">各种损失函数介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#平方损失函数"><span class="nav-number">2.1.</span> <span class="nav-text">平方损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#绝对值损失函数"><span class="nav-number">2.2.</span> <span class="nav-text">绝对值损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#交叉熵损失函数（对数似然损失函数）"><span class="nav-number">2.3.</span> <span class="nav-text">交叉熵损失函数（对数似然损失函数）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#逻辑斯蒂损失函数"><span class="nav-number">2.4.</span> <span class="nav-text">逻辑斯蒂损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#指数损失函数"><span class="nav-number">2.5.</span> <span class="nav-text">指数损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0-1损失函数"><span class="nav-number">2.6.</span> <span class="nav-text">0-1损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#合页损失函数"><span class="nav-number">2.7.</span> <span class="nav-text">合页损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#感知机的损失函数"><span class="nav-number">2.8.</span> <span class="nav-text">感知机的损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#感知损失函数"><span class="nav-number">2.9.</span> <span class="nav-text">感知损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Focal-Loss"><span class="nav-number">2.10.</span> <span class="nav-text">Focal Loss</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#几个回归损失函数的对比"><span class="nav-number">2.11.</span> <span class="nav-text">几个回归损失函数的对比</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不同模型的损失函数"><span class="nav-number">3.</span> <span class="nav-text">不同模型的损失函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#决策树的损失函数"><span class="nav-number">3.1.</span> <span class="nav-text">决策树的损失函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Loss-Function-vs-Cost-Function"><span class="nav-number">4.</span> <span class="nav-text">Loss Function vs Cost Function</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类问题为什么不能用MSE？"><span class="nav-number">5.</span> <span class="nav-text">分类问题为什么不能用MSE？</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#综述"><span class="nav-number">1.</span> <span class="nav-text">综述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#各种损失函数介绍"><span class="nav-number">2.</span> <span class="nav-text">各种损失函数介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#平方损失函数"><span class="nav-number">2.1.</span> <span class="nav-text">平方损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#绝对值损失函数"><span class="nav-number">2.2.</span> <span class="nav-text">绝对值损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#交叉熵损失函数（对数似然损失函数）"><span class="nav-number">2.3.</span> <span class="nav-text">交叉熵损失函数（对数似然损失函数）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#指数损失函数"><span class="nav-number">2.4.</span> <span class="nav-text">指数损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0-1损失函数"><span class="nav-number">2.5.</span> <span class="nav-text">0-1损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#合页损失函数"><span class="nav-number">2.6.</span> <span class="nav-text">合页损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#感知机的损失函数"><span class="nav-number">2.7.</span> <span class="nav-text">感知机的损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#感知损失函数"><span class="nav-number">2.8.</span> <span class="nav-text">感知损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Focal-Loss"><span class="nav-number">2.9.</span> <span class="nav-text">Focal Loss</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#几个回归损失函数的对比"><span class="nav-number">2.10.</span> <span class="nav-text">几个回归损失函数的对比</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不同模型的损失函数"><span class="nav-number">3.</span> <span class="nav-text">不同模型的损失函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#决策树的损失函数"><span class="nav-number">3.1.</span> <span class="nav-text">决策树的损失函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Loss-Function-vs-Cost-Function"><span class="nav-number">4.</span> <span class="nav-text">Loss Function vs Cost Function</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类问题为什么不能用MSE？"><span class="nav-number">5.</span> <span class="nav-text">分类问题为什么不能用MSE？</span></a></li></ol></div>
             
 
           </div>
