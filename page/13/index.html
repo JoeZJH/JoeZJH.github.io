@@ -277,6 +277,215 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——xgboost包使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——xgboost包使用笔记.html" itemprop="url">ML——xgboost包使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-20T00:00:00+08:00">
+                2018-09-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>xgboost包中包含了XGBoost分类器,回归器等, 本文详细介绍<code>XGBClassifier</code>类</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="安装和导入"><a href="#安装和导入" class="headerlink" title="安装和导入"></a>安装和导入</h3><ul>
+<li><p>安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install xgboost</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clf = xgb.XGBClassifier()</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="模型参数"><a href="#模型参数" class="headerlink" title="模型参数"></a>模型参数</h3><h4 id="普通参数"><a href="#普通参数" class="headerlink" title="普通参数"></a>普通参数</h4><p><em>以下参数按照我理解的重要性排序</em></p>
+<ul>
+<li><code>booster</code>: <ul>
+<li>‘gbtree’: 使用树模型作为基分类器</li>
+<li>‘gbliner’: 使用线性模型作为基分类器</li>
+<li>默认使用模型树模型即可,因为使用线性分类器时XGBoost相当于退化成含有L1和L2正则化的逻辑回归(分类问题中)或者线性回归(回归问题中) </li>
+</ul>
+</li>
+<li><code>n_estimators</code>: 基分类器数量<ul>
+<li>每个分类器都需要一轮训练,基分类器越多,训练所需要的时间越多</li>
+<li>经测试发现,开始时越大越能提升模型性能,但是增加到一定程度后模型变化不大,甚至出现过拟合</li>
+</ul>
+</li>
+<li><code>max_depth[default=3]</code>: 每棵树的最大深度<ul>
+<li>树越深,越容易过拟合</li>
+</ul>
+</li>
+<li><code>objective[default=&quot;binary:logistic&quot;]</code>: 目标(损失函数)函数,训练的目标是最小化损失函数<ul>
+<li>‘binary:logistic’: 二分类回归, <code>XGBClassifier</code>默认是这个,因为<code>XGBClassifier</code>是分类器</li>
+<li>‘reg:linear’: 线性回归, <code>XGBRegressor</code>默认使用这个</li>
+<li>‘multi:softmax’: 多分类中的softmax</li>
+<li>‘multi:softprob’: 与softmax相同,但是每个类别返回的是当前类别的概率值而不是普通的softmax值</li>
+</ul>
+</li>
+<li><code>n_jobs</code>: 线程数量<ul>
+<li>以前使用的是<code>nthread</code>, 现在已经不使用了,直接使用<code>n_jobs</code>即可</li>
+<li>经测试发现并不是越多越快, 猜测原因可能是因为各个线程之间交互需要代价</li>
+</ul>
+</li>
+<li><code>reg_alpha</code>: L1正则化系数</li>
+<li><code>reg_lambda</code>: L2正则化系数</li>
+<li><code>subsample</code>: 样本的下采样率</li>
+<li><code>colsample</code>: 构建每棵树时的样本特征下采样率</li>
+<li><code>scale_pos_weight</code>: 用于平衡正负样本不均衡问题, 有助于样本不平衡时训练的收敛<ul>
+<li>具体调参实验还需测试[待更新]</li>
+<li>这个值可以作为计算损失时正样本的权重</li>
+</ul>
+</li>
+<li><code>learning_rate</code>: shrinkage参数<ul>
+<li>更新叶子结点权重时,乘以该系数,避免步长过大,减小学习率,增加学习次数</li>
+<li>在公式中叫做<code>eta</code>, 也就是 \(\eta\)</li>
+</ul>
+</li>
+<li><code>min_child_weight[default=1]</code>: [待更新]</li>
+<li><code>max_leaf_nodes</code>: 最大叶子结点数目<ul>
+<li>也是用于控制过拟合, 和<code>max_depth</code>的作用差不多</li>
+</ul>
+</li>
+<li><code>importance_type</code>: 指明特征重要性评估方式, 只有在<code>booster</code>为’gbtree’时有效<ul>
+<li>‘gain’: [默认], is the average gain of splits which use the feature</li>
+<li>‘cover’: is the average coverage of splits which use the feature</li>
+<li>‘weight’: is the number of times a feature appears in a tree</li>
+<li>‘total_gain’: 整体增益</li>
+<li>‘total_cover’: 整体覆盖率</li>
+</ul>
+</li>
+</ul>
+<h4 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h4><ul>
+<li><code>feature_importances_</code>: <ul>
+<li>返回特征的重要性列表</li>
+<li>特征重要性可以由不同方式评估</li>
+<li>特征重要性评估指标(<code>importance_type</code>)在创建时指定, 使用<code>plot_importance</code>函数的话,可以在使用函数时指定</li>
+</ul>
+</li>
+<li><p><code>plot_importance</code>: 按照递减顺序给出每个特征的重要性排序图</p>
+<ul>
+<li><p>使用方式</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import plot_importance</span><br><span class="line">   from matplotlib import pyplot</span><br><span class="line">   plot_importance(model) </span><br><span class="line">   pyplot.show()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>详细定义</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">def plot_importance(booster, ax=None, height=0.2,</span><br><span class="line">                    xlim=None, ylim=None, title=&apos;Feature importance&apos;,</span><br><span class="line">                    xlabel=&apos;F score&apos;, ylabel=&apos;Features&apos;,</span><br><span class="line">                    importance_type=&apos;weight&apos;, max_num_features=None,</span><br><span class="line">                    grid=True, show_values=True, **kwargs):</span><br><span class="line">    &quot;&quot;&quot;Plot importance based on fitted trees.</span><br><span class="line">    Parameters</span><br><span class="line">    ----------</span><br><span class="line">    booster : Booster, XGBModel or dict</span><br><span class="line">        Booster or XGBModel instance, or dict taken by Booster.get_fscore()</span><br><span class="line">    ax : matplotlib Axes, default None</span><br><span class="line">        Target axes instance. If None, new figure and axes will be created.</span><br><span class="line">    grid : bool, Turn the axes grids on or off.  Default is True (On).</span><br><span class="line">    importance_type : str, default &quot;weight&quot;</span><br><span class="line">        How the importance is calculated: either &quot;weight&quot;, &quot;gain&quot;, or &quot;cover&quot;</span><br><span class="line">        * &quot;weight&quot; is the number of times a feature appears in a tree</span><br><span class="line">        * &quot;gain&quot; is the average gain of splits which use the feature</span><br><span class="line">        * &quot;cover&quot; is the average coverage of splits which use the feature</span><br><span class="line">          where coverage is defined as the number of samples affected by the split</span><br><span class="line">    max_num_features : int, default None</span><br><span class="line">        Maximum number of top features displayed on plot. If None, all features will be displayed.</span><br><span class="line">    height : float, default 0.2</span><br><span class="line">        Bar height, passed to ax.barh()</span><br><span class="line">    xlim : tuple, default None</span><br><span class="line">        Tuple passed to axes.xlim()</span><br><span class="line">    ylim : tuple, default None</span><br><span class="line">        Tuple passed to axes.ylim()</span><br><span class="line">    title : str, default &quot;Feature importance&quot;</span><br><span class="line">        Axes title. To disable, pass None.</span><br><span class="line">    xlabel : str, default &quot;F score&quot;</span><br><span class="line">        X axis title label. To disable, pass None.</span><br><span class="line">    ylabel : str, default &quot;Features&quot;</span><br><span class="line">        Y axis title label. To disable, pass None.</span><br><span class="line">    show_values : bool, default True</span><br><span class="line">        Show values on plot. To disable, pass False.</span><br><span class="line">    kwargs :</span><br><span class="line">        Other keywords passed to ax.barh()</span><br><span class="line">    Returns</span><br><span class="line">    -------</span><br><span class="line">    ax : matplotlib Axes</span><br><span class="line">    &quot;&quot;&quot;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——如何优雅的导入自定义的Python包.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -417,129 +626,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——list返回最大的K个元素的索引.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——list返回最大的K个元素的索引.html" itemprop="url">Python——list返回最大的K个元素的索引</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-18T00:00:00+08:00">
-                2018-09-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>自定义的一个有用的Python方法</em></p>
-<hr>
-<h3 id="返回最大的K个值的索引"><a href="#返回最大的K个值的索引" class="headerlink" title="返回最大的K个值的索引"></a>返回最大的K个值的索引</h3><p><a href="https://stackoverflow.com/questions/13070461/get-index-of-the-top-n-values-of-a-list-in-python" target="_blank" rel="noopener">引用自Stack Overflow</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">def get_top_k_indexes_of_list(target_list, k, is_max=True, min_value=None):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    get the top k indexes of elements in list</span><br><span class="line">    Example:</span><br><span class="line">    Problem: I have a list say a = [5,3,1,4,10],</span><br><span class="line">            and I need to get a index of top two values of the list viz 5 and 10.</span><br><span class="line">            Is there a one-liner that python offers for such a case?</span><br><span class="line">    Usage: get_top_k_indexes_of_list(target_list=a, k=2, is_max=True)</span><br><span class="line">    link: https://stackoverflow.com/questions/13070461/get-index-of-the-top-n-values-of-a-list-in-python</span><br><span class="line">    :param target_list: target list</span><br><span class="line">    :param k: the number of indexes</span><br><span class="line">    :param is_max: True means max else False means min</span><br><span class="line">    :param min_value: if min_value is not None</span><br><span class="line">            filter the indexes whose value less than or equals to min_value</span><br><span class="line">    :return: a list of indexes</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    indexes = sorted(range(len(target_list)), key=lambda i: target_list[i], reverse=is_max)[:k]</span><br><span class="line">    result = list()</span><br><span class="line">    if min_value is not None:</span><br><span class="line">        for index in indexes:</span><br><span class="line">            if target_list[index] &lt;= min_value:</span><br><span class="line">                break</span><br><span class="line">            result.append(index)</span><br><span class="line">    else:</span><br><span class="line">        result = indexes</span><br><span class="line">    return result</span><br></pre></td></tr></table></figure></p>
-<hr>
-<h3 id="一次性索引出多个元素"><a href="#一次性索引出多个元素" class="headerlink" title="一次性索引出多个元素"></a>一次性索引出多个元素</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">def get_elements_from_list(target_list, indexes):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    get elements from target_list by indexes</span><br><span class="line">    :param target_list: target list</span><br><span class="line">    :param indexes: a list of indexes</span><br><span class="line">    :return: a list of elements</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    elements = [target_list[i] for i in indexes]</span><br><span class="line">    return elements</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Python-Jupyter——配置跨机器使用.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -624,6 +710,129 @@
 </li>
 </ul>
 
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——list返回最大的K个元素的索引.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——list返回最大的K个元素的索引.html" itemprop="url">Python——list返回最大的K个元素的索引</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-18T00:00:00+08:00">
+                2018-09-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>自定义的一个有用的Python方法</em></p>
+<hr>
+<h3 id="返回最大的K个值的索引"><a href="#返回最大的K个值的索引" class="headerlink" title="返回最大的K个值的索引"></a>返回最大的K个值的索引</h3><p><a href="https://stackoverflow.com/questions/13070461/get-index-of-the-top-n-values-of-a-list-in-python" target="_blank" rel="noopener">引用自Stack Overflow</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">def get_top_k_indexes_of_list(target_list, k, is_max=True, min_value=None):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    get the top k indexes of elements in list</span><br><span class="line">    Example:</span><br><span class="line">    Problem: I have a list say a = [5,3,1,4,10],</span><br><span class="line">            and I need to get a index of top two values of the list viz 5 and 10.</span><br><span class="line">            Is there a one-liner that python offers for such a case?</span><br><span class="line">    Usage: get_top_k_indexes_of_list(target_list=a, k=2, is_max=True)</span><br><span class="line">    link: https://stackoverflow.com/questions/13070461/get-index-of-the-top-n-values-of-a-list-in-python</span><br><span class="line">    :param target_list: target list</span><br><span class="line">    :param k: the number of indexes</span><br><span class="line">    :param is_max: True means max else False means min</span><br><span class="line">    :param min_value: if min_value is not None</span><br><span class="line">            filter the indexes whose value less than or equals to min_value</span><br><span class="line">    :return: a list of indexes</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    indexes = sorted(range(len(target_list)), key=lambda i: target_list[i], reverse=is_max)[:k]</span><br><span class="line">    result = list()</span><br><span class="line">    if min_value is not None:</span><br><span class="line">        for index in indexes:</span><br><span class="line">            if target_list[index] &lt;= min_value:</span><br><span class="line">                break</span><br><span class="line">            result.append(index)</span><br><span class="line">    else:</span><br><span class="line">        result = indexes</span><br><span class="line">    return result</span><br></pre></td></tr></table></figure></p>
+<hr>
+<h3 id="一次性索引出多个元素"><a href="#一次性索引出多个元素" class="headerlink" title="一次性索引出多个元素"></a>一次性索引出多个元素</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">def get_elements_from_list(target_list, indexes):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    get elements from target_list by indexes</span><br><span class="line">    :param target_list: target list</span><br><span class="line">    :param indexes: a list of indexes</span><br><span class="line">    :return: a list of elements</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    elements = [target_list[i] for i in indexes]</span><br><span class="line">    return elements</span><br></pre></td></tr></table></figure>
           
         
       
@@ -1138,7 +1347,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Math——调和级数的和.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Math——奇异值分解-SVD.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1157,7 +1366,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Others/Math——调和级数的和.html" itemprop="url">Math——调和级数的和</a></h1>
+                <a class="post-title-link" href="/Notes/Others/Math——奇异值分解-SVD.html" itemprop="url">Math——奇异值分解-SVD</a></h1>
         
 
         <div class="post-meta">
@@ -1209,31 +1418,188 @@
       
         
           
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>本文从不同角度给出奇异值分解的物理意义</em></p>
+<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
+<ul>
+<li>参考知乎回答1:<a href="https://www.zhihu.com/collection/244516557" target="_blank" rel="noopener">奇异值的物理意义是什么？</a></li>
+<li>参考知乎回答2:<a href="https://www.zhihu.com/question/263722514/answer/272977924" target="_blank" rel="noopener">人们是如何想到奇异值分解的？</a></li>
+</ul>
+<hr>
+<h3 id="公式说明"><a href="#公式说明" class="headerlink" title="公式说明"></a>公式说明</h3><p>$$A=U\Sigma V^{T}$$</p>
+<ul>
+<li>\(U,V\)都是正交矩阵,\(\Sigma\)是对角矩阵,对角上的元素是矩阵\(A\)的奇异值</li>
+<li>若保留对角元素最大的K个值<ul>
+<li>\(K=r=Rank(A)\)时为紧奇异值分解,对应的是无损压缩,此时由于奇异值保留数量与原始矩阵相同,能做到对原始矩阵A的完全还原</li>
+<li>\(K&lt; r=Rank(A)\)时为截断奇异值分解,对应的是有损压缩,此时由于奇异值保留数量比原始矩阵的小,做不到对原始矩阵A的完全还原,但是如果K足够大就能做到对矩阵A的较完美近似</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="图像处理方面"><a href="#图像处理方面" class="headerlink" title="图像处理方面"></a>图像处理方面</h3><ul>
+<li>直观上可以理解为奇异值分解是将矩阵分解为若干个秩一矩阵之和,用公式表示就是:<br>$$A=\sigma_{1}u_{1}v_{1}^{T}+\sigma_{2}u_{2}v_{2}^{T}+…+\sigma_{r}u_{r}v_{r}^{T}$$<ul>
+<li>式子中每一项的系数\(\sigma\)就是奇异值</li>
+<li>\(u,v\)都是列向量,每一个\(uv^{T}\)都是秩为1的矩阵</li>
+<li>奇异值按照从小到大排列</li>
+</ul>
+</li>
+<li>从公式中按照从大到小排序后,保留前面系数最大的项目后效果<ul>
+<li>对于一张450x333的图片,只需要保留前面的50项即可得到相当清晰的图像</li>
+<li>从保留项1到50,图片越来越清晰</li>
+</ul>
+</li>
+<li>结论: <ul>
+<li><strong>奇异值越大的项,越能体现出来图片的效果</strong>,奇异值隐含着某种对于A矩阵来说很重要的信息</li>
+<li>加权的秩一矩阵能体现整个大矩阵的值,<strong>奇异值就是对应秩一矩阵对于A矩阵的权重</strong></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="线性变换方面"><a href="#线性变换方面" class="headerlink" title="线性变换方面"></a>线性变换方面</h3><h4 id="几何含义"><a href="#几何含义" class="headerlink" title="几何含义"></a>几何含义</h4><ul>
+<li>对于任何的一个矩阵，我们要找到一组两两正交单位向量序列，使得矩阵作用在此向量序列上后得到新的向量序列保持两两正交.奇异值的几何含义为:<strong>这组变换后的新的向量序列的长度</strong></li>
+</ul>
+<h4 id="更直观的几何含义"><a href="#更直观的几何含义" class="headerlink" title="更直观的几何含义"></a>更直观的几何含义</h4><ul>
+<li>公式:<br>  $$E_{m}={y\in C^{m}: y=Ax, x\in C^{n},\left | x\right |_{2}=1}$$</li>
+<li>二维矩阵A:<ul>
+<li>矩阵A将二维平面中的单位圆变换为椭圆,而<strong>两个奇异值正好是椭圆的半轴长度</strong>.</li>
+</ul>
+</li>
+<li>m维矩阵<ul>
+<li>矩阵A将高维平面中的单位球变换为超椭球,<strong>矩阵的奇异值恰好就是超椭球的每条半轴长度</strong>.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="奇异值分解的降维理解"><a href="#奇异值分解的降维理解" class="headerlink" title="奇异值分解的降维理解"></a>奇异值分解的降维理解</h3><h4 id="代码编写"><a href="#代码编写" class="headerlink" title="代码编写"></a>代码编写</h4><ul>
+<li><p>代码</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">##encoding=utf-8</span><br><span class="line">import numpy as np</span><br><span class="line"></span><br><span class="line">A = np.array([[4, 5, 6], [4, 5, 6], [8, 10, 12], [4, 5, 6]])</span><br><span class="line"></span><br><span class="line">print(&quot;原始矩阵:&quot;)</span><br><span class="line">print(A)</span><br><span class="line"></span><br><span class="line">U, Sigma, Vt = np.linalg.svd(A)</span><br><span class="line">U = np.array(U)</span><br><span class="line">Sigma = np.array(Sigma)</span><br><span class="line">Vt = np.array(Vt)</span><br><span class="line"></span><br><span class="line">print(&quot;分解后的原始U，S，V：&quot;)</span><br><span class="line">print(U)</span><br><span class="line">Sigma_ = np.zeros((4, 3), dtype=np.float64)</span><br><span class="line">Sigma_[:3][:3] = np.diag(Sigma)</span><br><span class="line">print Sigma_</span><br><span class="line">print(Vt)</span><br><span class="line"></span><br><span class="line"># 不做任何处理，直接恢复原始矩阵</span><br><span class="line">A_ = np.dot(np.dot(U, Sigma_), Vt)</span><br><span class="line">print(A_)</span><br><span class="line"></span><br><span class="line"># 原始矩阵的秩为1，所以可以拆解到只剩下一个奇异值，压缩到一维，也能完整恢复原始矩阵，实现将4x3的矩阵变成两个向量+一个数字，当矩阵维度变大时，这里的压缩会更加明显</span><br><span class="line">U = U[:, :1]</span><br><span class="line">Sigma_ = Sigma_[:1, :1]</span><br><span class="line">Vt = Vt[:1, :]</span><br><span class="line"></span><br><span class="line">print(&quot;降维后的U，S，V：&quot;)</span><br><span class="line">print(U)</span><br><span class="line">print(Sigma_)</span><br><span class="line">print(Vt)</span><br><span class="line">A_ = np.dot(np.dot(U, Sigma_), Vt)</span><br><span class="line">print(&quot;降维后的恢复矩阵，与原矩阵相同：&quot;)</span><br><span class="line">print(A_)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>结果</p>
+<blockquote>
+<p>原始矩阵:<br>[[ 4  5  6]<br>[ 4  5  6]<br>[ 8 10 12]<br>[ 4  5  6]]<br>分解后的原始U，S，V：<br>[[-3.77964473e-01 -9.25820100e-01  1.52792960e-16  0.00000000e+00]<br>[-3.77964473e-01  1.54303350e-01  9.12870929e-01  0.00000000e+00]<br>[-7.55928946e-01  3.08606700e-01 -3.65148372e-01 -4.47213595e-01]<br>[-3.77964473e-01  1.54303350e-01 -1.82574186e-01  8.94427191e-01]]<br>[[2.32163735e+01 0.00000000e+00 0.00000000e+00]<br>[0.00000000e+00 1.22295087e-15 0.00000000e+00]<br>[0.00000000e+00 0.00000000e+00 5.18334466e-32]<br>[0.00000000e+00 0.00000000e+00 0.00000000e+00]]<br>[[-0.45584231 -0.56980288 -0.68376346]<br>[ 0.02454097  0.75988299 -0.64959647]<br>[-0.88972217  0.31289378  0.3324033 ]]<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]<br>降维后的U，S，V：<br>[[-0.37796447]<br>[-0.37796447]<br>[-0.75592895]<br>[-0.37796447]]<br>[[23.21637353]]<br>[[-0.45584231 -0.56980288 -0.68376346]]<br>降维后的恢复矩阵，与原矩阵相同：<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]</p>
+</blockquote>
+</li>
+</ul>
 
-<p><em>调和级数的和是发散的,并不收敛,但是这又是一个非常常用的级数,本文总结了调和级数的和的求法</em></p>
-<hr>
-<h3 id="一个事实"><a href="#一个事实" class="headerlink" title="一个事实"></a>一个事实</h3><ul>
-<li>调和级数的和与n的自然对数的差值收敛到欧拉-马歇罗尼常数<br>$$<br>\begin{align}<br>lim_{n \to \infty}(\sum_{i=1}^{n}\frac{1}{i} - ln(n)) = \gamma<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)为欧拉-马歇罗尼常数<ul>
-<li>(欧拉常数又称欧拉-马斯克若尼常数，近似值为γ≈0.57721 56649 01532 86060 65120 90082 40243 10421 59335)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="证明"><a href="#证明" class="headerlink" title="证明"></a>证明</h4><ul>
-<li>事实上,调和级数的和为<br>$$<br>\begin{align}<br>\sum_{i=1}^{n}\frac{1}{i} = ln(n) + \gamma + \epsilon_{n}<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)为欧拉-马歇罗尼常数</li>
-<li>\(\epsilon_{n}\)约等于\(\frac{1}{2n}\),随着n的不断增大,\(\epsilon_{n}\)趋于0</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h3><ul>
-<li>两个不同的调和数之间的差值永远不是整数</li>
-<li>除了n=1时以外,没有任何一个调和数是整数</li>
-</ul>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Math——函数空间总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Math——函数空间总结.html" itemprop="url">Math——函数空间总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-04T00:00:00+08:00">
+                2018-09-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>希尔伯特空间,欧几里得空间,巴拿赫空间或者拓扑空间都是<strong>函数空间</strong></em></p>
+<p>参考博客:<a href="https://blog.csdn.net/weixin_36811328/article/details/81207753" target="_blank" rel="noopener">欧几里得空间与希尔伯特空间</a></p>
 
           
         
@@ -1398,275 +1764,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Math——假设检验.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/Math——假设检验.html" itemprop="url">Math——假设检验</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-04T00:00:00+08:00">
-                2018-09-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
-<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
-<ul>
-<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
-<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
-</ul>
-<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率.html" itemprop="url">趣味题——绳子剪三段后能构成三角形的概率</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-04T00:00:00+08:00">
-                2018-09-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>初始题目为1米长的绳子剪成三段后能够构成三角形的概率，实际上绳子的长度可以是任意的，解法都一样</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h3><ul>
-<li>一根绳子长度为n，剪三段后能构成三角形的概率是多少？</li>
-<li>由于长度与概率无关，所以接下来我们把绳子当做长度为1米来处理</li>
-</ul>
-<hr>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
-<li>三段绳子的长度分别为x,y,1-x-y</li>
-<li><p>首先需要满足<br>$$<br>\begin{align}<br>x &amp;&gt; 0 \\<br>y &amp;&gt; 0\\<br>1-x-y &amp;&gt; 0 \\<br>\end{align}<br>$$</p>
-<ul>
-<li>以x为横坐标，y为纵坐标画图得到阴影区域面积为\(\frac{1}{2}\)<br><em>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a></em><img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/original.png">
-</li>
-</ul>
-</li>
-<li><p>进一步分析三段绳子能生成组成三角形的概率<br>$$<br>\begin{align}<br>x+y  &amp;&gt; 1-x-y \\<br>y + 1-x-y &amp;&gt; x\\<br>x + 1-x-y &amp;&gt; y \\<br>\end{align}<br>$$</p>
-<ul>
-<li>进一步分析得到阴影部分面积为\(\frac{1}{8}\)<br><em>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a></em><img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/triangle.png"></li>
-</ul>
-</li>
-<li>所以有<br>$$P = \frac{1/8}{1/2} = \frac{1}{4}$$</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1721,7 +1818,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">246</span>
+                  <span class="site-state-item-count">248</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
