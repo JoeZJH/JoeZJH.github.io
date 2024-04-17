@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="参考链接： 强化学习之图解PPO算法和TD3算法">
+<meta name="description" content="参考链接： 强化学习之图解PPO算法和TD3算法    为什么说PPO算法是on-policy的？ 在推导TRPO和PPO的过程中 在将新策略\(\pi\)上的状态访问频率\(\rho_{\pi}(\bf{s})\)替换成旧策略的状态访问频率\(\rho_{\pi_{old}}(\bf{s})\)时，要求\(\pi\)与\(pi_{old}\)相聚不能太远，这就要求采样的样本不能是太早的策略">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RL——PPO&amp;TD3">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——PPO-TD3.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="参考链接： 强化学习之图解PPO算法和TD3算法">
+<meta property="og:description" content="参考链接： 强化学习之图解PPO算法和TD3算法    为什么说PPO算法是on-policy的？ 在推导TRPO和PPO的过程中 在将新策略\(\pi\)上的状态访问频率\(\rho_{\pi}(\bf{s})\)替换成旧策略的状态访问频率\(\rho_{\pi_{old}}(\bf{s})\)时，要求\(\pi\)与\(pi_{old}\)相聚不能太远，这就要求采样的样本不能是太早的策略">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2023-11-21T03:53:03.207Z">
+<meta property="og:updated_time" content="2024-04-13T19:05:34.481Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——PPO&amp;TD3">
-<meta name="twitter:description" content="参考链接： 强化学习之图解PPO算法和TD3算法">
+<meta name="twitter:description" content="参考链接： 强化学习之图解PPO算法和TD3算法    为什么说PPO算法是on-policy的？ 在推导TRPO和PPO的过程中 在将新策略\(\pi\)上的状态访问频率\(\rho_{\pi}(\bf{s})\)替换成旧策略的状态访问频率\(\rho_{\pi_{old}}(\bf{s})\)时，要求\(\pi\)与\(pi_{old}\)相聚不能太远，这就要求采样的样本不能是太早的策略">
 
 
 
@@ -344,9 +344,31 @@
       
 
       
-        <ul>
+        <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
 <li>参考链接：<ul>
 <li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="为什么说PPO算法是on-policy的？"><a href="#为什么说PPO算法是on-policy的？" class="headerlink" title="为什么说PPO算法是on-policy的？"></a>为什么说PPO算法是on-policy的？</h3><ul>
+<li>在推导TRPO和PPO的过程中<ul>
+<li>在将新策略\(\pi\)上的状态访问频率\(\rho_{\pi}(\bf{s})\)替换成旧策略的状态访问频率\(\rho_{\pi_{old}}(\bf{s})\)时，要求\(\pi\)与\(pi_{old}\)相聚不能太远，这就要求采样的样本不能是太早的策略，详情见《强化学习精要》P247（注意：此处\(\pi\)表达与书中相反）</li>
+<li>在将新策略\(\pi\)上的动作采样替换为就策略\(\pi_{old}\)上的动作采样时，需要进行Importance Sampling，这要求了采样到的数据应该都是来源于同一个旧策略\(\pi_{old}\)<ul>
+<li><strong>来源于同一个旧策略</strong>说明：最好是更新一次参数清空一次Buffer，根据本人对一些PPO实现的观察，实际实现时做不到这样，一般一个episode更新一次Buffer，而当Batch Size小于episode的步数时，在一次episode中可能会进行多次更新，一种理解是，同一个episode中的多次更新策略不会变化太大，实际上分布也比较接近，可以看做是同一个？</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>TRPO和PPO均是从较新的策略中采样样本，然后通过Importance Sampling将数据分布误差进行修正，从而对当前策略进行更新，本质上可以看做是</li>
+<li>PPO策略原本是需要当前策略采样的样本的，但是使用了Importance Sampling来减少on-policy方法的采样要求，但是PPO实际上还是需要当前策略产生的数据才能进行有效学习，为此，我们一般会使用一个Clip方法来限制PPO当前策略和旧策略的偏差，以保证数据的有效性</li>
+<li>一些其他off-policy的方法也会使用Importance Sampling，但这些策略往往是从固定策略\(\mu\)采样的<ul>
+<li>这些方法的损失函数中会将样本权重按照\(\frac{\pi}{\mu}\)来进行修正动作的概率分布</li>
+<li>这些off-policy方法与PPO方法最大的不同在于这些方法不需要限制当前策略与行为策略的距离（KL散度）<ul>
+<li>问题：为什么这些off-policy方法不需要保证行为策略下的状态访问频率\(\rho_{\mu}(\bf{s})\)和目标策略下的状态访问频率\(\rho_{\pi}(\bf{s})\)一致？</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -390,8 +412,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——SAC.html" rel="prev" title="RL——SAC">
-                RL——SAC <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Linux/Linux——终端登录其他用户打开图形化窗口.html" rel="prev" title="Linux——多用户问题">
+                Linux——多用户问题 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -444,8 +466,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -464,7 +495,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">250</span>
+                  <span class="site-state-item-count">251</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -516,6 +547,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么说PPO算法是on-policy的？"><span class="nav-number">1.</span> <span class="nav-text">为什么说PPO算法是on-policy的？</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
