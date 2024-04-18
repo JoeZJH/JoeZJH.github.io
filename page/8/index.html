@@ -277,6 +277,168 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——困惑度-Perplexity.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/NLP/NLP——困惑度-Perplexity.html" itemprop="url">NLP——困惑度-Perplexity</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-12-13T00:00:00+08:00">
+                2018-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍困惑度在语言模型评估中的作用</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="如何评价一个语言模型的好坏"><a href="#如何评价一个语言模型的好坏" class="headerlink" title="如何评价一个语言模型的好坏"></a>如何评价一个语言模型的好坏</h3><h4 id="直接评估法"><a href="#直接评估法" class="headerlink" title="直接评估法"></a>直接评估法</h4><ul>
+<li>将语言模型应用到实际的具体问题中去,比如机器翻译,词性标注,拼写矫正等</li>
+<li>评估语言模型在这些实际问题中的具体表现</li>
+</ul>
+<h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>准确</li>
+<li>能精确评估在具体应用场景中的效果</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>费时</li>
+<li>难以操作</li>
+</ul>
+<h4 id="困惑度-Perplexity"><a href="#困惑度-Perplexity" class="headerlink" title="困惑度(Perplexity)"></a>困惑度(Perplexity)</h4><h5 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h5><ul>
+<li>给<strong>测试集</strong>的句子赋予较高概率值的语言模型较好</li>
+<li>当一个语言模型训练完成后,测试集中的句子(正常的自然语言句子)出现概率越高越好</li>
+</ul>
+<h5 id="困惑度的定义"><a href="#困惑度的定义" class="headerlink" title="困惑度的定义"></a>困惑度的定义</h5><ul>
+<li>如果存在测试文本\(d = (w_{1}, w_{2},,,w_{N})\),那么该文本在模型Model中的困惑度为:<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= P(d|Model)^{-\frac{1}{N}} \\<br>&amp;= P(w_{1}, w_{2},,,w_{N}|Model)^{-\frac{1}{N}} \\<br>&amp;= \sqrt[N]{\frac{1}{P(w_{1}, w_{2},,,w_{N}|Model)}}<br>\end{align}<br>$$</li>
+<li>两边取log有<br>$$<br>\begin{align}<br>Log(Perplexity(d|Model)) &amp;= -\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model) \\<br>\end{align}<br>$$</li>
+<li>一般来说计算时使用公式<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= e^{-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)} \\<br>&amp;= exp\left (-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>\end{align}<br>$$</li>
+<li>如果在已知模型Model参数时,文档\(d\)中的词独立,即\(w_{1},w_{2},,,w_{N}\)互相独立,则有:<br>$$<br>\begin{align}<br>P(w_{1}, w_{2},,,w_{N}|Model) = \prod_{n=1}^{N}P(w_{n}|Model) \\<br>\end{align}<br>$$</li>
+<li>进一步有<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= exp\left (-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}log\prod_{n=1}^{N}P(w_{n}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}\sum_{n=1}^{N}logP(w_{n}|Model)\right ) \\<br>\end{align}<br>$$</li>
+<li>以上是一个文档的表述,对于多个文档\(D = (d_{1}, d_{2},,,d_{M})\)<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= P(D|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \prod_{m=1}^{M} P(d_{m}|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \sqrt[(\sum_{m=1}^{M}N_{m})]{\frac{1}{\prod_{m=1}^{M}P(d_{m}|Model)}}<br>\end{align}<br>$$</li>
+<li>两边取log<br>$$<br>\begin{align}<br>Log(Perplexity(D|Model)) &amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}log(\prod_{m=1}^{M}P(d_{m}|Model)) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(d_{m}|Model) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \\<br>\end{align}<br>$$</li>
+<li>一般来说计算公式<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right )<br>\end{align}<br>$$</li>
+<li>如果在已知Model参数的情况下,每个文档中的词都相互独立,即任取文档\(d_{m}\)有\(w_{1}^{m},w_{2}^{m},,,w_{N_{m}}^{m}\)互相独立,则有<br>$$<br>\begin{align}<br>P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) = \prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \\<br>\end{align}<br>$$</li>
+<li>进一步可得<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}logP(w_{n}^{m}|Model) \right ) \\<br>\end{align}<br>$$</li>
+<li>注意,多个文档的困惑度<strong>不等于</strong>所有文档困惑度的<strong>积</strong>,而是等于<strong>把所有文档合并成一个大文档,大文档的困惑度则是最终所有文档的困惑度</strong></li>
+</ul>
+<ul>
+<li>在给定模型中,<strong>测试句子</strong>出现的概率越大,对应的困惑度越小,模型越好</li>
+</ul>
+<h5 id="LDA的困惑度"><a href="#LDA的困惑度" class="headerlink" title="LDA的困惑度"></a>LDA的困惑度</h5><ul>
+<li>LDA中\(w_{1},w_{2},,,w_{n}\)在参数已知的情况下是互相独立的,则有<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}P(w_{n}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}P(w_{n}=t|z_{n}=k;Model)P(z_{n}=k|d=d_{m};Model)\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\theta_{m,:}\phi_{:,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}log\theta_{m,:}\phi_{:,t}\right ) \\<br>\end{align}<br>$$</li>
+<li>其中\(\phi_{k,t}\)表示单词t在主题k中出现的概率,\(\theta_{m,k}\)表示主题k在文档m中出现的概率</li>
+<li>\(\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t} = (\theta_{m,:}\phi_{:,t})\)就是单词t出现在文档m中的概率(对隐变量主题k积分)</li>
+<li>上面式子中\((\theta_{m,:}\phi_{:,t})\)就是两个向量的内积,在这里:\(\theta_{m,:}\)代表行向量,表示当前文档\(d_{m}\)的主题分布,\(\phi_{:,t}\)代表列向量,表示当前每个主题生成词\(w_{t}\)的概率</li>
+<li>计算公式的代码可参考L-LDA模型的实现<a href="https://github.com/JoeZJH/Labeled-LDA-Python/blob/master/model/labeled_lda.py" target="_blank" rel="noopener">GitHub仓库: Labeled-LDA-Python</a> 中的<code>perplexity</code>函数和<code>log_perplexity</code>函数</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——进程相关操作.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -754,6 +916,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Dockerfile命令总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Docker/Docker——Dockerfile命令总结.html" itemprop="url">Docker——Dockerfile命令总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-09T00:00:00+08:00">
+                2018-11-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="Dockerfile简介"><a href="#Dockerfile简介" class="headerlink" title="Dockerfile简介"></a>Dockerfile简介</h3><hr>
+<h3 id="Dockerfile命令总结"><a href="#Dockerfile命令总结" class="headerlink" title="Dockerfile命令总结"></a>Dockerfile命令总结</h3><h4 id="ARG"><a href="#ARG" class="headerlink" title="ARG"></a>ARG</h4><ul>
+<li><p>实现在<code>docker build</code>过程中传入值,用法</p>
+<ul>
+<li><p>Dockerfile:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ARG &lt;name&gt;[=&lt;default value&gt;]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编译时</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build --build-arg &lt;varname&gt;=&lt;value&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>可以使用默认值，默认值在<code>docker build</code>不传入参数时生效</p>
+</li>
+<li>该命令在<code>docker build</code>过程和<code>CMD</code>,<code>ENTRY</code>中有效, 在docker镜像创建并启动container后无效</li>
+<li></li>
+</ul>
+<h4 id="LABEL"><a href="#LABEL" class="headerlink" title="LABEL"></a>LABEL</h4><ul>
+<li><h4 id="ENV"><a href="#ENV" class="headerlink" title="ENV"></a>ENV</h4></li>
+</ul>
+<h4 id="CMD"><a href="#CMD" class="headerlink" title="CMD"></a>CMD</h4><img src="/Notes/Docker/Docker——Dockerfile命令总结/CMD_Overview.png">
+<h4 id="ENTRY"><a href="#ENTRY" class="headerlink" title="ENTRY"></a>ENTRY</h4><hr>
+<h3 id="Dockerfile命令相关说明"><a href="#Dockerfile命令相关说明" class="headerlink" title="Dockerfile命令相关说明"></a>Dockerfile命令相关说明</h3><h4 id="比较CMD和ENTRY的区别"><a href="#比较CMD和ENTRY的区别" class="headerlink" title="比较CMD和ENTRY的区别"></a>比较CMD和ENTRY的区别</h4><h4 id="比较ENV和ARG的区别"><a href="#比较ENV和ARG的区别" class="headerlink" title="比较ENV和ARG的区别"></a>比较ENV和ARG的区别</h4><ul>
+<li>ARG可以在<code>docker build</code>过程中传值，同时也可以设置默认值</li>
+<li>ENV只能定义到Dockerfile中，不能在<code>docker build</code>过程中传入</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/浏览器——设置网页为可编辑模式.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1019,6 +1327,129 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Docker使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Docker/Docker——Docker使用笔记.html" itemprop="url">Docker——Docker使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-09T00:00:00+08:00">
+                2018-11-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文用于记录一些Docker使用过程中的经验</em></p>
+<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
+<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/服务器——内存扩展.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1200,275 +1631,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Docker使用笔记.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Docker/Docker——Docker使用笔记.html" itemprop="url">Docker——Docker使用笔记</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-09T00:00:00+08:00">
-                2018-11-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文用于记录一些Docker使用过程中的经验</em></p>
-<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
-<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Dockerfile命令总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Docker/Docker——Dockerfile命令总结.html" itemprop="url">Docker——Dockerfile命令总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-09T00:00:00+08:00">
-                2018-11-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="Dockerfile简介"><a href="#Dockerfile简介" class="headerlink" title="Dockerfile简介"></a>Dockerfile简介</h3><hr>
-<h3 id="Dockerfile命令总结"><a href="#Dockerfile命令总结" class="headerlink" title="Dockerfile命令总结"></a>Dockerfile命令总结</h3><h4 id="ARG"><a href="#ARG" class="headerlink" title="ARG"></a>ARG</h4><ul>
-<li><p>实现在<code>docker build</code>过程中传入值,用法</p>
-<ul>
-<li><p>Dockerfile:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ARG &lt;name&gt;[=&lt;default value&gt;]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编译时</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build --build-arg &lt;varname&gt;=&lt;value&gt;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>可以使用默认值，默认值在<code>docker build</code>不传入参数时生效</p>
-</li>
-<li>该命令在<code>docker build</code>过程和<code>CMD</code>,<code>ENTRY</code>中有效, 在docker镜像创建并启动container后无效</li>
-<li></li>
-</ul>
-<h4 id="LABEL"><a href="#LABEL" class="headerlink" title="LABEL"></a>LABEL</h4><ul>
-<li><h4 id="ENV"><a href="#ENV" class="headerlink" title="ENV"></a>ENV</h4></li>
-</ul>
-<h4 id="CMD"><a href="#CMD" class="headerlink" title="CMD"></a>CMD</h4><img src="/Notes/Docker/Docker——Dockerfile命令总结/CMD_Overview.png">
-<h4 id="ENTRY"><a href="#ENTRY" class="headerlink" title="ENTRY"></a>ENTRY</h4><hr>
-<h3 id="Dockerfile命令相关说明"><a href="#Dockerfile命令相关说明" class="headerlink" title="Dockerfile命令相关说明"></a>Dockerfile命令相关说明</h3><h4 id="比较CMD和ENTRY的区别"><a href="#比较CMD和ENTRY的区别" class="headerlink" title="比较CMD和ENTRY的区别"></a>比较CMD和ENTRY的区别</h4><h4 id="比较ENV和ARG的区别"><a href="#比较ENV和ARG的区别" class="headerlink" title="比较ENV和ARG的区别"></a>比较ENV和ARG的区别</h4><ul>
-<li>ARG可以在<code>docker build</code>过程中传值，同时也可以设置默认值</li>
-<li>ENV只能定义到Dockerfile中，不能在<code>docker build</code>过程中传入</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——修改图片背景颜色.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1589,195 +1751,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——缺失值处理.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——缺失值处理.html" itemprop="url">ML——缺失值处理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-13T00:00:00+08:00">
-                2018-10-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>missing值处理</em></p>
-<hr>
-<h3 id="对于数值类型的特征"><a href="#对于数值类型的特征" class="headerlink" title="对于数值类型的特征"></a>对于数值类型的特征</h3><h4 id="中位数填充"><a href="#中位数填充" class="headerlink" title="中位数填充"></a>中位数填充</h4><ul>
-<li>用当前特征所有未缺失的值的中位数(median)填充当前特征的缺失值</li>
-</ul>
-<h4 id="均值填充"><a href="#均值填充" class="headerlink" title="均值填充"></a>均值填充</h4><ul>
-<li>用当前特征所有未缺失的值的均值填充当前特征的缺失值</li>
-</ul>
-<h4 id="加权填充"><a href="#加权填充" class="headerlink" title="加权填充"></a>加权填充</h4><ul>
-<li>引入相似性矩阵,评估缺失样本与其他未缺失样本的相似性,按照相似性分配权重</li>
-<li>效果更好,但是需要更多时间</li>
-</ul>
-<hr>
-<h3 id="对于Category类型"><a href="#对于Category类型" class="headerlink" title="对于Category类型"></a>对于Category类型</h3><h4 id="特殊字符填充"><a href="#特殊字符填充" class="headerlink" title="特殊字符填充"></a>特殊字符填充</h4><ul>
-<li>使用某种未出现过的特殊字符填充</li>
-<li>等价于将缺失值看成是个特殊类别</li>
-</ul>
-<h4 id="填充众数"><a href="#填充众数" class="headerlink" title="填充众数"></a>填充众数</h4><ul>
-<li>寻找所有未缺失数据中样本最多的类别,然后将缺失值填充为该众数类别</li>
-</ul>
-<hr>
-<h3 id="什么情况下不用填充"><a href="#什么情况下不用填充" class="headerlink" title="什么情况下不用填充"></a>什么情况下不用填充</h3><h4 id="树模型"><a href="#树模型" class="headerlink" title="树模型"></a>树模型</h4><h5 id="普通树模型"><a href="#普通树模型" class="headerlink" title="普通树模型"></a>普通树模型</h5><ul>
-<li>ID3不支持缺失值处理(也可能可以,但是我没看到具体介绍)</li>
-<li>C4.5和CART都使用下面的方法进行缺失值处理</li>
-<li>结点分裂时:<ul>
-<li><em>参考自周志华机器学习书籍中</em></li>
-<li>先按照无缺失的数据正常划分(缺失数据不参与计算)</li>
-<li>对于无缺失值的样本,正常分配到对应叶子节点</li>
-<li>对于缺失值的样本,每个样本以不同的概率分配到各个叶子节点, 概率值为: <strong>子节点中无缺失样本的数量 / 无缺失样本的总数</strong></li>
-</ul>
-</li>
-<li>问题: 如果是训练时没有缺失,预测时有缺失怎么办?<ul>
-<li>一种可能的方式是直接放到某个结点中</li>
-<li>[待更新]</li>
-</ul>
-</li>
-</ul>
-<h5 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h5><ul>
-<li>如果使用的是树模型(CART)作为基分类器是否可以直接借用树模型对缺失值的处理方法?</li>
-<li>如果使用的是逻辑回归模型作为基分类器,需要自己对缺失值进行处理</li>
-</ul>
-<h5 id="XGBoost"><a href="#XGBoost" class="headerlink" title="XGBoost"></a>XGBoost</h5><ul>
-<li>寻找分裂点时(split point):<ul>
-<li>不遍历缺失值对应的样本,只使用无缺失的样本确定分裂点(节省开销)</li>
-<li>尝试将缺失值分配到左叶子结点或者右叶子结点,分别计算增益(保证完备性)</li>
-<li>选择增益大的点即可</li>
-</ul>
-</li>
-<li>如果训练时没有缺失值,预测时有缺失值:<ul>
-<li>将缺失值自动放到右子树中即可</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="不同模型对缺失值的敏感度总结"><a href="#不同模型对缺失值的敏感度总结" class="headerlink" title="不同模型对缺失值的敏感度总结"></a>不同模型对缺失值的敏感度总结</h3><h4 id="不敏感模型"><a href="#不敏感模型" class="headerlink" title="不敏感模型"></a>不敏感模型</h4><ul>
-<li>树模型</li>
-<li>神经网络的鲁棒性强, 数据量够的话不敏感? <ul>
-<li>神经网络的输入必须是没有缺失值的,需要我们使用特征工程的方法填充缺失值</li>
-<li>其实我觉得自己需要填充数据的其实都有点敏感吧, 所以神经网络在使用时有时候感觉并不敏感,因为缺失值被我们填充后总能得到不错的效果</li>
-</ul>
-</li>
-</ul>
-<h4 id="敏感模型"><a href="#敏感模型" class="headerlink" title="敏感模型"></a>敏感模型</h4><ul>
-<li>距离度量模型: KNN, SVM等<ul>
-<li>在尽量保证缺失值是随机的前提下使用基于统计分布的填充方法可能降低缺失值造成的负面影响</li>
-<li>但是SVM这样的模型对缺失值的抗性非常差,不恰当的非随机缺失值可能导致模型出现意外</li>
-</ul>
-</li>
-<li>线性模型的损失函数往往也涉及到距离的计算?</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1832,7 +1805,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">251</span>
+                  <span class="site-state-item-count">252</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
