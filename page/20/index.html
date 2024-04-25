@@ -277,162 +277,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
-<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
-</ul>
-<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
-<li>FFM把相同性质的特征归于同一个Field,<ul>
-<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
-</ul>
-</li>
-<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
-</ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
-<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
-<li>假设样本的特征有 \(n\) 个</li>
-<li>假设filed有 \(f\) 个</li>
-</ul>
-</li>
-<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
-<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
-<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
-<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
-</ul>
-</li>
-<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
-</ul>
-<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
-<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
-<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
-</ul>
-</li>
-<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
-<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -667,7 +511,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——分布的距离评估.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -686,7 +530,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——分布的距离评估.html" itemprop="url">ML——分布的距离评估</a></h1>
         
 
         <div class="post-meta">
@@ -738,49 +582,786 @@
       
         
           
-            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
+            <h3 id="KL散度"><a href="#KL散度" class="headerlink" title="KL散度"></a>KL散度</h3><h3 id="TV距离"><a href="#TV距离" class="headerlink" title="TV距离"></a>TV距离</h3><ul>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/352946799" target="_blank" rel="noopener">Total Variation Distance 总变差</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
 <hr>
-<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
-<ul>
-<li>m个基础模型</li>
-<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
+<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
+<li>训练集: 用于模型训练</li>
+<li>验证集: 用于模型选择</li>
+<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
+</ul>
+<hr>
+<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
+<li>训练集: 用于模型拟合的数据样本</li>
+<li>验证集: 用于模型的选择<ul>
+<li>不参与训练过程</li>
+<li>可用于超参数的调整</li>
+<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
+<li>可多次使用</li>
+</ul>
 </li>
+<li>测试集: 用于模型的评估 <ul>
+<li>不参与训练过程</li>
+<li>不可用于超参数的调整</li>
+<li>只可以使用一次</li>
 </ul>
-<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
-<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
-<li>随机森林详情可参考<a href="/Notes/ML/Models/ML——RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
-</ul>
-<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
-<ul>
-<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
-<li>训练过程为阶梯状</li>
-<li>基础模型按照次序依次训练(实现时可做到并行)</li>
-<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
-</li>
-</ul>
-<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
-<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
-</ul>
-<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
-<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
-<li>GBDT详情可参考<a href="/Notes/ML/Models/ML——GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
-</ul>
-<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
-<ul>
-<li>训练所有基础模型</li>
-<li>获取所有基础模型的预测结果</li>
-<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
-<li>基于新的训练集进行训练,得到预测模型M()</li>
-<li>测试时也要将特征转换后再用M进行预测</li>
-<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
-<li>理论上可以堆叠各种各样的分类器
 </li>
 </ul>
 <hr>
-<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
-<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML——模型的方差与偏差.html">模型的偏差与方差</a></li>
+<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
+<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
+<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
+<li>此时从验证集中划分一部分验证集</li>
+</ul>
+<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
+<li>需要训练集用于训练,验证集用于模型选择</li>
+<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
+</ul>
+<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
+<hr>
+<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
+<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
+<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
+</ul>
+<hr>
+<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
+<li>用来调超参数的一部分正好称为验证集</li>
+<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
+</ul>
+<hr>
+<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
+<li>训练集：测试集 = 7：3</li>
+<li>训练集：验证集：测试集 = 6：2：2</li>
+<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最小二乘与梯度下降.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——最小二乘与梯度下降.html" itemprop="url">ML——最小二乘与梯度下降</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文持续更新，主要总结各种与最小二乘和梯度下降相关的优化方法</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="最小二乘与最小均方误差的区别"><a href="#最小二乘与最小均方误差的区别" class="headerlink" title="最小二乘与最小均方误差的区别"></a>最小二乘与最小均方误差的区别</h3><h4 id="最小二乘法"><a href="#最小二乘法" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
+<li>二乘也就是平方的意思，故又称最小平方法(英文全称Least Square Method, LSM或者LS)</li>
+<li>是一种数学优化技术</li>
+<li>通过最小化误差的平方和寻找数据的最佳函数匹配<ul>
+<li>为什么最小化误差平方和可以得到最佳函数匹配呢？<ul>
+<li>可以证明，只要误差是服从正太分布的，最小化误差平法和就能匹配到最佳函数(这个高斯证明过)</li>
+<li>可以证明，误差的确是服从正太分布的，细节可以参考<a href="https://www.matongxue.com/madocs/589.html" title="https://www.matongxue.com/madocs/589.html" target="_blank" rel="noopener">为什么正太分布如此常见</a></li>
+<li>中心极限定理说了，在适当的条件下，大量相互独立随机变量的均值经适当标准化后依分布收敛于正态分布 <ul>
+<li>适当的条件包括三个要素:<ul>
+<li>独立</li>
+<li>随机</li>
+<li>相加</li>
+</ul>
+</li>
+<li>误差满足上面三个要素</li>
+</ul>
+</li>
+<li>综上所述，最小二乘法(最小化误差平法和)可以的到最佳函数匹配</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>最小二乘法通过求导，并令导数为0，直接求得误差平方和(损失函数的一种)取最小值时的参数</li>
+<li>公式:<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="加权最小二乘法"><a href="#加权最小二乘法" class="headerlink" title="加权最小二乘法"></a>加权最小二乘法</h4><ul>
+<li>加权最小二乘中每个样本的误差前面会乘上相应的权重,然后再求和<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}w_i(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="最小化均方误差"><a href="#最小化均方误差" class="headerlink" title="最小化均方误差"></a>最小化均方误差</h4><ul>
+<li>最小二乘（Least Square, LS）问题是这样一类优化问题，目标函数是若干项的平方和</li>
+<li>LS的一种更复杂也更灵活的变形: 加权最小二乘根据实际问题考虑每个求和项的重要程度，即为每一项加权值w</li>
+<li>均方误(Mean Square Error, MSE)是一种加权最小二乘，它的权值是对应项的概率<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}\frac{1}{m}(y_i-f(x_i;\theta))^2 = \frac{1}{m}\sum_i^{m}(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="周志华的解释"><a href="#周志华的解释" class="headerlink" title="周志华的解释"></a>周志华的解释</h4><ul>
+<li>基于均方误差最小化来进行模型求解的方法称为最小二乘法 ——《机器学习》(周志华著)<ul>
+<li>理解：周志华的意思应该是把均方误差与误差平方和视为一个东西，也就是说各项的权重相同，所以感觉这里定义其实是比较模糊的，不用太在意最小二乘法与最小化均方误差法的定义</li>
+</ul>
+</li>
+</ul>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>三者可以理解为相同的表达式,其中<ul>
+<li><strong>最小二乘法</strong>(LSM), 权重为1, 每个样本相同</li>
+<li><strong>最小均方误差</strong>(MSE), 权重为\(\frac{1}{m}\), 每个样本相同</li>
+<li><strong>加权最小二乘</strong>, 权重为自定义的值, 每个样本可以不同</li>
+</ul>
+</li>
+<li><strong>最小均方误差</strong>(MSE) 是一种 <strong>加权最小二乘</strong>, 他的权重为样本的概率, 每个样本出现的概率相等, 就都乘以 \(\frac{1}{m}\) 即可</li>
+</ul>
+<hr>
+<h3 id="梯度下降与梯度上升"><a href="#梯度下降与梯度上升" class="headerlink" title="梯度下降与梯度上升"></a>梯度下降与梯度上升</h3><h4 id="意义"><a href="#意义" class="headerlink" title="意义"></a>意义</h4><p><strong>为什么需要梯度下降或者梯度上升,而不是用直接对目标函数求导得到最优解?</strong> </p>
+<h5 id="几点说明"><a href="#几点说明" class="headerlink" title="几点说明"></a>几点说明</h5><ul>
+<li>对于凸函数而言:<ul>
+<li>通过函数(损失函数等)对参数求导,令其导数为0,的确可以解得损失函数的最小(最大)值点对应的参数</li>
+</ul>
+</li>
+<li>对于非凸函数而言:<ul>
+<li>相同的方法可能只能得到极值点,而不是最小(最大)值点</li>
+<li>但此时梯度下降法也不能找到最优点</li>
+</ul>
+</li>
+<li>无论是梯度下降函数直接推到求解目标函数最优解,我们都需要求目标函数的导数,并且需要确保目标函数可导,不然是不能用这些方法的</li>
+</ul>
+<h5 id="几点原因"><a href="#几点原因" class="headerlink" title="几点原因"></a>几点原因</h5><ul>
+<li>有时候目标方程(令导数为0后得到的方程)很复杂,求导数为0的参数的解(根)很难<ul>
+<li>包括时间和空间两方面可能面临困难</li>
+<li>比如大矩阵的乘法,大矩阵的逆等</li>
+<li>求某一点的梯度一般是比较容易的(只要求出导数后将对应点的数值带入即可)<ul>
+<li><em>这里与求导数为0的解难度不一样,在求出函数导数后,求某一点的梯度仅仅需要带入该点的值,而求导数为0的解需要的是很难的解题过程,甚至可能找不到解</em></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>有时候目标方程很奇怪,之前我们没见过,需要我们写新的代码教会计算机如何直接求解函数的根<ul>
+<li>直接使用梯度下降的话是计算机可以理解的</li>
+<li>梯度下降法不用重新写代码来教给计算机</li>
+</ul>
+</li>
+</ul>
+<h4 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h4><ul>
+<li>梯度下降是最小化目标函数<ul>
+<li>\(\theta=\theta-\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+<li>每轮迭代沿着负梯度方向移动</li>
+</ul>
+</li>
+</ul>
+<h4 id="梯度上升"><a href="#梯度上升" class="headerlink" title="梯度上升"></a>梯度上升</h4><ul>
+<li>梯度上升是最大化目标函数<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+<li>每轮迭代验证正梯度方向移动</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="梯度下降-上升-法与最小二乘法"><a href="#梯度下降-上升-法与最小二乘法" class="headerlink" title="梯度下降(上升)法与最小二乘法"></a>梯度下降(上升)法与最小二乘法</h3><h4 id="最小二乘法-1"><a href="#最小二乘法-1" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
+<li>最小二乘法是一种通过<strong>最小化误差的平方和</strong>寻找数据的<strong>最佳函数匹配</strong>的<strong>数学优化技术</strong></li>
+<li>与最小二乘法并列的是最小话误差的三次方或者四次方等方法<ul>
+<li>这里的<strong>三次方和</strong>和<strong>四次方和</strong>只是为了和<strong>二次方和</strong>作对比，实践中很少遇到这样的优化技术</li>
+</ul>
+</li>
+</ul>
+<h4 id="梯度下降-上升-法"><a href="#梯度下降-上升-法" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h4><ul>
+<li>梯度下降(上升)法的目标是通过迭代(每次朝着最优方向，即梯度下降最快方向前进)不断逼近能使得目标函数最小(最大)时的最优参数值的方法</li>
+<li>梯度下降(上升)是一种迭代法，也就是通过更新参数不停的逼近最优点，可以用来解决各种各样的问题(包括最小二乘问题，最小化误差三次方和等)<ul>
+<li>这里最小二乘问题可以理解为用最小二乘法(最小化误差平法和)来寻找最佳函数的问题</li>
+</ul>
+</li>
+</ul>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>最小二乘法与梯度下降(上升)法不在一个维度，不能对比</li>
+</ul>
+<h5 id="最小二乘法-2"><a href="#最小二乘法-2" class="headerlink" title="最小二乘法"></a>最小二乘法</h5><ul>
+<li>目标：找到(或者逼近)最优函数，使得该函数能最拟合已知数据</li>
+<li>方法：最小化误差平方和</li>
+</ul>
+<h5 id="梯度下降-上升-法-1"><a href="#梯度下降-上升-法-1" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h5><ul>
+<li>目标：找到(或者逼近)最优参数，使得该参数能最小化(最大化)目标函数</li>
+<li>方法：是通过沿梯度方向迭代更新参数</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——HMM-MEMM-CRF.html" itemprop="url">ML——HMM-MEMM-CRF</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要区分隐马尔可夫模型(HMM),最大熵马尔可夫模型(MEMM),和条件随机场(CRF)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="HMM"><a href="#HMM" class="headerlink" title="HMM"></a>HMM</h3><ul>
+<li>生成式模型</li>
+<li>有向图模型,贝叶斯网络</li>
+</ul>
+<h4 id="模型描述"><a href="#模型描述" class="headerlink" title="模型描述"></a>模型描述</h4><ul>
+<li>模型参数: \(\lambda = (A, B, \pi)\)<ul>
+<li>A为状态转移矩阵</li>
+<li>B为观测概率矩阵</li>
+<li>\(\pi\)为初始状态概率向量</li>
+</ul>
+</li>
+<li>HMM对</li>
+</ul>
+<h4 id="假设"><a href="#假设" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>观测序列之间独立</li>
+<li>当前状态仅仅依赖于上一个状态</li>
+</ul>
+<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>概率计算问题: 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),计算在给定模型下观测序列出现的概率\(P(O|\lambda)\)</li>
+<li>学习问题: 已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),估计模型参数\(\lambda = (A, B, \pi)\),使得在该模型下观测序列出现的概率\(P(O|\lambda)\)最大.(极大似然法,EM算法)</li>
+<li>预测问题(解码问题): 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O;\lambda)\)最大,(维特比算法)</li>
+</ul>
+<h4 id="序列标注问题"><a href="#序列标注问题" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
+<li>序列标注问题是已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O)\)最大</li>
+<li>实际上序列标注问题包括学习问题和预测问题两个问题:<ul>
+<li>学习问题: 根据观测序列确定模型参数\(\lambda = (A, B, \pi)\), 极大似然法或EM算法(EM算法会同时估计得到最优状态序列(隐变量))</li>
+<li>预测问题: 根据模型参数和观测序列确定最优状态序列\(I=(i_{1}, i_{2},,,i_{n})\),维特比算法</li>
+</ul>
+</li>
+</ul>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>算法成熟</li>
+<li>效率高, 模型简单, 容易训练</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>序列标注问题中,当前状态(标注)往往不仅仅和前一个状态相关,还可能和观察序列相关(这里指的是整个序列)</li>
+<li>也就是说每个状态可能还与整个观察序列的(除了当前观察值以外的)其他观察值(观察序列上下文)相关</li>
+</ul>
+<hr>
+<h3 id="MEMM"><a href="#MEMM" class="headerlink" title="MEMM"></a>MEMM</h3><ul>
+<li>判别式模型</li>
+<li>有向图模型,贝叶斯网络</li>
+</ul>
+<h4 id="假设-1"><a href="#假设-1" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
+<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是MEMM,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
+</ul>
+<h4 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>MEMM似乎只用于序列标注,也就是在已知观测序列的情况下,寻找最优的状态序列</li>
+<li><em>有其他应用的话再添加</em></li>
+</ul>
+<h4 id="序列标注问题-1"><a href="#序列标注问题-1" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
+<li>用于序列标注时,一般也包括两个问题: 学习问题和预测问题<ul>
+<li>学习问题: 根据观测序列确定模型参数(每条边的(概率)值和初始状态?)</li>
+<li>预测问题: 根据模型和观测序列确定维特比算法</li>
+</ul>
+</li>
+</ul>
+<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>解决了观测独立性问题(观测独立性是只当前观测序列只与当前状态相关)[问题: 在MEMM中并不关心观测序列由谁影响,而是关心观测序列如何影响了状态序列]</li>
+</ul>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>标签偏置(labeling bias)问题<ul>
+<li>MEMM中概率最大路径往往容易出现在转移少的状态中</li>
+<li>MEMM归一化在加和函数\(\sum\)计算内部,而CRF的归一化在加和函数\(\sum\)的外部,这使得MEMM只会关注加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]的局部特征,而不是的整体特征,所以MEMM存在偏置问题</li>
+</ul>
+</li>
+<li>比HMM复杂</li>
+</ul>
+<hr>
+<h3 id="CRF"><a href="#CRF" class="headerlink" title="CRF"></a>CRF</h3><ul>
+<li>判别式模型</li>
+<li>无向图模型,马尔科夫网络</li>
+</ul>
+<h4 id="假设-2"><a href="#假设-2" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
+<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是线性CRFs,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
+<li>与MEMM的区别就是无向图模型与有向图模型的区别</li>
+</ul>
+<h4 id="问题-2"><a href="#问题-2" class="headerlink" title="问题"></a>问题</h4><h4 id="序列标注问题-2"><a href="#序列标注问题-2" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>模型复杂,能建模更多可能的特征</li>
+<li>全局归一化(这里与MEMM的区别是,MEMM归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)计算内部,而CRF的归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)的外部)</li>
+</ul>
+<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>模型复杂,速度慢</li>
 </ul>
 
           
@@ -1678,523 +2259,6 @@ $$
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html" itemprop="url">PyTorch——关于Variable类和Tensor类的类型判断</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-07T00:00:00+08:00">
-                2018-02-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><h4 id="requires-grad-True"><a href="#requires-grad-True" class="headerlink" title="requires_grad=True"></a><code>requires_grad=True</code></h4><p><em>等价于<code>requires_grad=a</code>, <code>a</code>为任意非0整数,不能为浮点数</em><br><em>浮点数会报错: TypeError: integer argument expected, got float</em></p>
-<ul>
-<li><p>测试代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.], requires_grad=True)</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/home/jiahong/JupyterWorkspace/test.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    print(variable.numpy())</span><br><span class="line">RuntimeError: Can&apos;t call numpy() on Variable that requires grad. Use var.detach().numpy() instead.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li><code>Variable</code>和<code>Tensor</code>在判断类型时都是<code>torch.Tensor</code><ul>
-<li><code>type(tensor) == type(variable) == torch.Tensor</code> </li>
-</ul>
-</li>
-<li>几乎所有操作都相同<ul>
-<li><code>tensor.data == variable.data</code></li>
-<li><code>tensor.data.numpy() == varible.data.numpy()</code></li>
-</ul>
-</li>
-<li>直接输出变量结果不相同<ul>
-<li><code>tensor</code>输出时没有<code>requires_grad=True</code></li>
-<li><code>variable</code>输出时有<code>requires_grad=True</code></li>
-</ul>
-</li>
-<li><code>variable</code>不能直接调用函数<code>variable.numpy()</code>,会报异常<ul>
-<li>异常描述为: 当前<code>Variable</code>变量要求<code>requires grad</code>,也就是<code>requires_grad</code>属性为真时,变量不能直接使用</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="requires-grad-False"><a href="#requires-grad-False" class="headerlink" title="requires_grad=False"></a><code>requires_grad=False</code></h4><p><em>等价于<code>requires_grad=0</code></em><br><em>不等价于<code>requires_grad=None</code>, <code>None</code>会报错: TypeError: an integer is required</em></p>
-<ul>
-<li><p>测试代码:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=False)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type4: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li>当<code>variable</code>变量的<code>requires_grad=False</code>时,<code>variable</code>完全退化为<code>tensor</code><ul>
-<li>直接输出变量时没有<code>requires_grad=False</code>属性</li>
-<li>可以直接使用<code>variable.numpy()</code>函数</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Variable的三种等价定义"><a href="#Variable的三种等价定义" class="headerlink" title="Variable的三种等价定义"></a><code>Variable</code>的三种等价定义</h4><p><em>下面三种定义的<code>Variable</code>类型变量<code>varible</code>等价</em></p>
-<ul>
-<li><p><code>requires_grad=False</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=False)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>没有<code>requires_grad</code>参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>requires_grad=True</code>,然后<code>variable = variable.detach()</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">variable = variable.detach()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面三种定义都等价于原始的<code>tensor</code></p>
-<ul>
-<li>这里的等价并未经过详细测试,但是至少以下方面等价:<ul>
-<li>自身类型相同<code>type</code>, 类型为<code>torch.Tensor</code></li>
-<li>可以调用属性<code>.data</code>,类型为<code>torch.Tensor</code></li>
-<li>可以调用<code>.grad</code>,只不过都为<code>None</code></li>
-<li>直接输出对象完全相同,都不包含<code>requires_grad=True</code>属性</li>
-<li>可以调用相同的函数<code>.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-<li>可以调用相同的函数<code>.data.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
-<hr>
-<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
-<li><p>ImageFolder</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>COCO</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>MNIST</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>LSUN</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>CIFAR10</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
-<li><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</li>
-<li><p>构造函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
-<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
-<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
-</ul>
-</li>
-<li>target_transform：对label的转换, 默认会自动编码<ul>
-<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
-<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
-<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
-<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
-</ul>
-</li>
-<li>loader：从硬盘读取图片的函数<ul>
-<li>不同的图像读取应该用不同的loader</li>
-<li>默认读取为RGB格式的PIL Image对象</li>
-<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
-<li><p>包导入</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
-<ul>
-<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
-<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
-<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
-</ul>
-</li>
-<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
-<ul>
-<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
-<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
-<li>并不会因为参数都为0就导致所有神经元死亡！</li>
-</ul>
-<hr>
-<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
-<li>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</li>
-<li>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</li>
-<li><p>单层隐藏层的神经网络一般这样初始化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
-<ul>
-<li>适用于单层隐藏层神经网络的参数</li>
-<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
-<li>不是越深越好</li>
-<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
-<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2249,7 +2313,7 @@ $$
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">252</span>
+                  <span class="site-state-item-count">255</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
