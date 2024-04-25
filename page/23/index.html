@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Scala/Scala——Scala对象转Java对象.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Scala/Scala——Scala对象转Java对象.html" itemprop="url">Scala——Scala对象转Java对象</a></h1>
+                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
         
 
         <div class="post-meta">
@@ -348,20 +348,18 @@
       
         
           
-            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
-<li>使用Scala语言调用Java的接口时，经常出现参数传递需要将Scala对象转换成Java对象的情况</li>
+            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>训练时梯度出现nan或-nan</li>
+<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
 </ul>
-<h3 id="转换方式"><a href="#转换方式" class="headerlink" title="转换方式"></a>转换方式</h3><ul>
-<li><p>增加一行接口引用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import scala.collection.JavaConverters._</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>将对象转成Java对象</p>
-<ul>
-<li><p>原生的一些对象转换</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val a: Double = 1.0</span><br><span class="line">calDouble(java.lang.Double.valueOf(a)) // calDouble的参数要求是Java的对象</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>List对象转换</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val a: List[Double] = List(1.0D,2.0D,3.0D,4.0D)</span><br><span class="line">calList(list.map(java.lang.Double.valueOf).asJava) // calDouble的参数要求是Java的对象</span><br></pre></td></tr></table></figure></li>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
+<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
+<li>在问题确认过程中，需要一步步排除：<ul>
+<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
+<li>排除log参数为负数或0的情况</li>
+<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
+<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
+<li>有时候会是TensorFlow版本导致，需要注意</li>
 </ul>
 </li>
 </ul>
@@ -569,7 +567,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Scala/Scala——Scala对象转Java对象.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -588,7 +586,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
+                <a class="post-title-link" href="/Notes/Scala/Scala——Scala对象转Java对象.html" itemprop="url">Scala——Scala对象转Java对象</a></h1>
         
 
         <div class="post-meta">
@@ -640,18 +638,20 @@
       
         
           
-            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>训练时梯度出现nan或-nan</li>
-<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>使用Scala语言调用Java的接口时，经常出现参数传递需要将Scala对象转换成Java对象的情况</li>
 </ul>
-<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
-<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
-<li>在问题确认过程中，需要一步步排除：<ul>
-<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
-<li>排除log参数为负数或0的情况</li>
-<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
-<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
-<li>有时候会是TensorFlow版本导致，需要注意</li>
+<h3 id="转换方式"><a href="#转换方式" class="headerlink" title="转换方式"></a>转换方式</h3><ul>
+<li><p>增加一行接口引用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import scala.collection.JavaConverters._</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将对象转成Java对象</p>
+<ul>
+<li><p>原生的一些对象转换</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val a: Double = 1.0</span><br><span class="line">calDouble(java.lang.Double.valueOf(a)) // calDouble的参数要求是Java的对象</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>List对象转换</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val a: List[Double] = List(1.0D,2.0D,3.0D,4.0D)</span><br><span class="line">calList(list.map(java.lang.Double.valueOf).asJava) // calDouble的参数要求是Java的对象</span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
 </ul>
