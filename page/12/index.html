@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——编程规范.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Pandas/Pandas——apply, applymap和map函数.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Python/Python——编程规范.html" itemprop="url">Python——编程规范</a></h1>
+                <a class="post-title-link" href="/Notes/Python/Pandas/Pandas——apply, applymap和map函数.html" itemprop="url">Pandas——apply, applymap和map函数</a></h1>
         
 
         <div class="post-meta">
@@ -348,185 +348,177 @@
       
         
           
-            <p><em>Python 编程中经验型的一些规范</em><br><strong><em>持续更新</em></strong></p>
+            <p><em>Pandas库中apply, applymap和map函数的使用</em></p>
 <hr>
-<h3 id="使用li-代替copy-copy-li"><a href="#使用li-代替copy-copy-li" class="headerlink" title="使用li[:]代替copy.copy(li)"></a>使用li[:]代替copy.copy(li)</h3><ul>
-<li><code>li[:]</code>等价于<code>copy.copy(li)</code></li>
-<li><code>li[:]</code>不等价于<code>copy.deepcopy(li)</code></li>
-<li><code>li[:]</code>可以简化代码</li>
+<h3 id="所属类"><a href="#所属类" class="headerlink" title="所属类"></a>所属类</h3><ul>
+<li><strong><em>apply</em></strong>: 属于<code>DataFrame</code>类和<code>Series</code>类</li>
+<li><strong><em>applymap</em></strong>: 属于<code>DataFrame</code>类</li>
+<li><strong><em>map</em></strong>: 属于<code>Series</code>类</li>
 </ul>
 <hr>
-<h3 id="从后开始访问列表"><a href="#从后开始访问列表" class="headerlink" title="从后开始访问列表"></a>从后开始访问列表</h3><ul>
-<li>list作为stack用时访问栈顶元素list[-1]<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">list1 = [1, 5, 2, 3]</span><br><span class="line">print list1[-1]</span><br><span class="line">print list1[-2]</span><br><span class="line">print list1[1:-1]</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">[5, 2]</span><br></pre></td></tr></table></figure>
+<h3 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h3><ul>
+<li><strong><em>map</em></strong> 和 <strong><em>applymap</em></strong>都是对每个元素分别操作的：</li>
+<li><strong><em>apply</em></strong><ul>
+<li>在<code>DataFrame</code>中是对列或者行操作，每一列或者行都是一个<code>Series</code>(列： <code>axis=0</code>[默认值]，行： <code>axis=1</code>)</li>
+<li>在<code>Series</code>中是对每个元素进行操作(其实换个角度理解为对<code>Series</code>的每一列操作也行，此时的每一列就是一个元素，值得注意的是此时的每个元素是数值类型而不是<code>Series</code>类型，所以不能对其调用<code>sum</code>等函数)</li>
+</ul>
 </li>
 </ul>
 <hr>
-<h3 id="函数内函数"><a href="#函数内函数" class="headerlink" title="函数内函数"></a>函数内函数</h3><ul>
-<li>Python可以在函数内部定义函数,但是要注意不能与外部变量混淆<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def sum_all(alist):</span><br><span class="line"></span><br><span class="line">    def sum_two(a, b):</span><br><span class="line">        return a+b</span><br><span class="line"></span><br><span class="line">    result = 0</span><br><span class="line">    for i in alist:</span><br><span class="line">        result = sum_two(result, i)</span><br><span class="line">    return result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print sum_all([1, 2, 3, 4, 5])</span><br><span class="line"># output:</span><br><span class="line">15</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="不要随意调用特殊方法"><a href="#不要随意调用特殊方法" class="headerlink" title="不要随意调用特殊方法"></a>不要随意调用特殊方法</h3><p><em>(比如：__len__)</em></p>
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><pre><code># a simple example for apply(), applymap() and map()
+func_series = lambda x: x.sum()
+func_element = lambda x: &quot;%.2f&quot; % x
+
+df.apply(func_series)
+df.applymap(func_element)
+
+ser.apply(func_element)
+ser.map(func_element)
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/预估——CTR预估中的样本采样.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/预估——CTR预估中的样本采样.html" itemprop="url">预估——CTR预估中的样本采样</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-25T00:00:00+08:00">
+                2018-09-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p><em>待更新</em></p>
 <ul>
-<li>特殊方法不应该被开发者调用，而应该被开发者定义新类时实现</li>
-<li>一般使用<code>len(object)</code>即可</li>
-<li>原因： 内置的方法(比如：len())可能会直接返回对象中的<code>ob_size</code>属性，而不用调用<code>__len__()</code>(这个函数往往会用迭代或者其他比较复杂的方法实现)</li>
+<li>参考文献：<a href="https://zhuanlan.zhihu.com/p/83982030" target="_blank" rel="noopener">ctr 校准的方式</a></li>
+<li>论文：<a href="http://quinonero.net/Publications/predicting-clicks-facebook.pdf" target="_blank" rel="noopener">《Practical Lessons from Predicting Clicks on Ads at Facebook》</a></li>
 </ul>
 <hr>
-<h3 id="多使用列表推导"><a href="#多使用列表推导" class="headerlink" title="多使用列表推导"></a>多使用列表推导</h3><p><em>(list comprehension, 简写listcomps)和生成器表达式(generator expression, 简写genexps)</em></p>
-<ul>
-<li><p>listcomps</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[str(i) for i in range(1,10)]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>genexps</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(str(i) for i in range(1,10))</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="考虑使用reduce而不是循环语句"><a href="#考虑使用reduce而不是循环语句" class="headerlink" title="考虑使用reduce而不是循环语句"></a>考虑使用reduce而不是循环语句</h3><ul>
-<li>reduce<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">def add(x, y):</span><br><span class="line">	return x + y</span><br><span class="line">reduce(add, [1,2,3,4,5])</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">from operator import mul</span><br><span class="line">reduce(mul, range(1, 10))</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="多使用pprint"><a href="#多使用pprint" class="headerlink" title="多使用pprint"></a>多使用pprint</h3><ul>
-<li>(Pretty Print)而不是print<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import pprint</span><br><span class="line">l1 = (1, &#123;2: 3&#125;, &quot;first&quot;, (&quot;second&quot;, 5, 6, [7, 8, 9]), [1, 3, 5], &quot;this is a pprint&quot;)</span><br><span class="line">pprint.pprint(l1)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">(1,</span><br><span class="line"> &#123;2: 3&#125;,</span><br><span class="line"> &apos;first&apos;,</span><br><span class="line"> (&apos;second&apos;, 5, 6, [7, 8, 9]),</span><br><span class="line"> [1, 3, 5],</span><br><span class="line"> &apos;this is a pprint&apos;)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="多使用三目运算符"><a href="#多使用三目运算符" class="headerlink" title="多使用三目运算符"></a>多使用三目运算符</h3><ul>
-<li><p>Python不像Java和C++一样,有x?y:z这样的三目运算符号,但是可以有自己的特殊使用方法,等价于三目运算符且更容易理解</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># same as x?y:z</span><br><span class="line">result = y if x is True else z</span><br><span class="line">return y if x is True else z</span><br></pre></td></tr></table></figure>
-<ul>
-<li>注意: 在使用return语句中的三目运算时必须有else语句,否则编译不通过,因为返回值可能会缺失</li>
+<h3 id="CTR预估的样本采样"><a href="#CTR预估的样本采样" class="headerlink" title="CTR预估的样本采样"></a>CTR预估的样本采样</h3><ul>
+<li>CTR预估任务中，正负样本可能偏差很多，此时需要做样本采样，以提升训练速度和效果<ul>
+<li>“负采样可以提升训练速度和模型效果”来自论文《Practical Lessons from Predicting Clicks on Ads at<br>Facebook》</li>
 </ul>
 </li>
 </ul>
-<hr>
-<h3 id="匿名变量的使用"><a href="#匿名变量的使用" class="headerlink" title="匿名变量的使用"></a>匿名变量的使用</h3><ul>
-<li>初始化一个列表时<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list1 = [_ for _ in list2 if _.val &gt; 10]</span><br></pre></td></tr></table></figure>
-</li>
+<h3 id="CTR预估样本采样后的校准"><a href="#CTR预估样本采样后的校准" class="headerlink" title="CTR预估样本采样后的校准"></a>CTR预估样本采样后的校准</h3><ul>
+<li>方法一<ul>
+<li>参见<a href="https://zhuanlan.zhihu.com/p/83982030" target="_blank" rel="noopener">ctr 校准的方式</a>中的推导</li>
 </ul>
-<hr>
-<h3 id="Python异常处理"><a href="#Python异常处理" class="headerlink" title="Python异常处理"></a>Python异常处理</h3><ul>
-<li><p>异常处理的正确姿势, 注意如果不是必要的话不要使用Exception, 可以考虑列出来需要捕获的所有异常, 然后在函数内部判断异常类型</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except IOError, ValueError, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>当然, 我们一般为了方便也会直接使用下面的方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except Exception, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="位运算"><a href="#位运算" class="headerlink" title="位运算"></a>位运算</h3><ul>
-<li>在Python中, 位运算与C++中有所不同</li>
-<li>参见<a href="/Notes/Python/Python——位运算与逻辑运算和C++有什么不同.html" title="/Notes/Python/Python——位运算与逻辑运算和C++有什么不同.html">Python——位运算与逻辑运算和C++有什么不同</a></li>
-</ul>
-<hr>
-<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><ul>
-<li>内部函数访问全局变量时使用<code>global</code>关键字声明(与外部函数一样)</li>
-<li>内部函数访问外部函数的变量使用<code>nonlocal</code>(仅限Python 3)关键字声明</li>
-<li>如果没有声明<ul>
-<li>变量变为只读的<ul>
-<li>可以写出<code>a.append()</code>这样的语句</li>
-<li>但不可以写出<code>a = b</code>这样的语句</li>
+<li>方法二【常用方式】<ul>
+<li>假设负采样比例为\(w\)，原始预估值为\(p\)，则校准后的预估值\(q\)为：<br>$$<br>\begin{align}<br>q = \frac{p}{p+(1-p)/w}<br>\end{align}<br>$$</li>
+<li>具体实现如下：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">logits = ctr_mlp_layer(input)</span><br><span class="line">pctr = tf.nn.sigmoid(logits)</span><br><span class="line">final_pctr = pctr / (pctr + (1 - pctr) / negative_downsampling_rate)</span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
 </ul>
-</li>
-<li>函数内部变量与函数外同名时:<ul>
-<li>若写出赋值操作,则认为当前变量为局部变量</li>
-<li>否则认为是函数外的全局变量</li>
-<li>若先访问变量(一般访问,不是对变量赋值,此时视为全局变量),然后对变量赋值(此时视为局部变量),则产生矛盾,Python解释器报错</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="三元表达式的使用"><a href="#三元表达式的使用" class="headerlink" title="三元表达式的使用"></a>三元表达式的使用</h3><ul>
-<li>如果在三元表达式使用在加法中,需要加上括号,不然整体意思会变成错误的</li>
-<li><p>比如两个结点的加法操作,带有进位<code>carry</code>,我们可以简单的写一行:</p>
-<ul>
-<li><p>下面是错误示例:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">val = l1.val if l1 else 0 + l2.val if l2 else 0 + carry</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面的表达式可以理解为如果<code>l1</code>不为空,返回<code>l1.val</code>,否则返回<code>0 + l2.val if l2 else 0 + carry</code></p>
-</li>
-<li>当<code>l1</code>为空时又可以理解为如果<code>l2</code>不为空,返回<code>0+l2.val</code>否则返回<code>0+carry</code></li>
-</ul>
-</li>
-<li>正确的写法<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">val = (l1.val if l1 else 0) + (l2.val if l2 else 0) + carry</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="迭代dict的键时用dict-iterkeys"><a href="#迭代dict的键时用dict-iterkeys" class="headerlink" title="迭代dict的键时用dict.iterkeys()"></a>迭代dict的键时用dict.iterkeys()</h3><ul>
-<li>迭代键值时使用<code>iterkeys()</code>而不是<code>keys()</code></li>
-<li><code>iterkeys()</code>返回一个迭代器而不是所有键值列表</li>
-<li><p><code>keys()</code>返回所有键值列表</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.iterkeys()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.keys()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>迭代值时也同理</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.itervalues()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.values()</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="zip实现二维列表的行列变换"><a href="#zip实现二维列表的行列变换" class="headerlink" title="zip实现二维列表的行列变换"></a>zip实现二维列表的行列变换</h3><p><em>只适用于Python3，因为涉及到`</em>`操作*<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">a = [[1,2,3],</span><br><span class="line">	 [4,5,6]]</span><br><span class="line"></span><br><span class="line">print [e for e in zip(*a)]</span><br><span class="line"># Output</span><br><span class="line">[(1,4), (2,5), (3,6)]</span><br></pre></td></tr></table></figure></p>
-<ul>
-<li>Python3中才能使用<code>*</code>作为操作列表解压符</li>
-<li>Python3中<code>zip</code>函数返回的是一个生成器而不是列表，所以需要迭代成列表</li>
-</ul>
-<hr>
-<h3 id="Python中逻辑运算符的巧用"><a href="#Python中逻辑运算符的巧用" class="headerlink" title="Python中逻辑运算符的巧用"></a>Python中逻辑运算符的巧用</h3><p><em>不建议使用</em><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">print 0 or 1</span><br><span class="line">print 10 or 1</span><br><span class="line">print None or 1</span><br><span class="line">print 0 and 1</span><br><span class="line">print 1 and 10</span><br><span class="line">print None and 10</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">1</span><br><span class="line">10</span><br><span class="line">1</span><br><span class="line">0</span><br><span class="line">10</span><br><span class="line">None</span><br></pre></td></tr></table></figure></p>
-<ul>
-<li><p>理解</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">print a or b </span><br><span class="line">&lt;==&gt;</span><br><span class="line">print a if a else b</span><br><span class="line"></span><br><span class="line">print a and b</span><br><span class="line">&lt;==&gt;</span><br><span class="line">print b if a else a</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>记忆: </p>
-<ul>
-<li>把<code>a</code>, <code>b</code>当做逻辑表达式,如果访问到<code>b</code>则返回<code>b</code>,否则返回<code>a</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="reversed函数的使用"><a href="#reversed函数的使用" class="headerlink" title="reversed函数的使用"></a>reversed函数的使用</h3><ul>
-<li><p>接受参数为可迭代对象,返回一个反向访问迭代对象的迭代器</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">for i in reversed(range(n)):</span><br><span class="line"></span><br><span class="line">&lt;==&gt;</span><br><span class="line"></span><br><span class="line">for i in range(n-1, -1, -1):</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>reversed</code>的使用似乎更优雅,也更容易理解</p>
-</li>
-<li>容易遗忘的点,需要注意: <strong>reversed的参数必须是可迭代的对象,而不是两个数字</strong></li>
-</ul>
-<hr>
-<h3 id="将简单的句子优雅的写到一行"><a href="#将简单的句子优雅的写到一行" class="headerlink" title="将简单的句子优雅的写到一行"></a>将简单的句子优雅的写到一行</h3><ul>
-<li><p>返回值</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">if i &lt; 0: return Flase</span><br><span class="line">&lt;==&gt;</span><br><span class="line">if i &lt; 0:</span><br><span class="line">	return False</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>其他简单的执行语句直接合并</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i = 10; j = 10</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>判断语句之后使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if bool: i = 10;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>判断语句后使用多条</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if bool: i = 10; j = 20</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>while语句后使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">while(bool): print 10; print 20</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>当句子较长时不建议使用</strong></p>
-</li>
-<li><strong>一般为了美观,平时的项目也不建议使用</strong></li>
-<li><strong>刷题时为了让代码看起来简便,是可以使用的,但是这样会使得代码不易调试</strong></li>
-<li><strong>总之:慎用</strong></li>
-</ul>
-<hr>
-<h3 id="用同一个值初始化两个变量"><a href="#用同一个值初始化两个变量" class="headerlink" title="用同一个值初始化两个变量"></a>用同一个值初始化两个变量</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x = y = value</span><br></pre></td></tr></table></figure>
-<ul>
-<li>在初始化链表头部时最常用<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">head, curr = ListNode(None)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="使用collections-Counter"><a href="#使用collections-Counter" class="headerlink" title="使用collections.Counter"></a>使用<code>collections.Counter</code></h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">import collections</span><br><span class="line"></span><br><span class="line">counter = collections.Counter([1, 2, 1, 3, 4, &quot;a&quot;, &quot;a&quot;, &quot;c&quot;])</span><br><span class="line"></span><br><span class="line">print counter</span><br><span class="line">print counter[&quot;a&quot;]</span><br><span class="line">print counter[1]</span><br><span class="line">print counter[-1]</span><br><span class="line">print counter.get(&quot;a&quot;)</span><br><span class="line">print counter.get(-1, 0)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">Counter(&#123;&apos;a&apos;: 2, 1: 2, 2: 1, 3: 1, 4: 1, &apos;c&apos;: 1&#125;)</span><br><span class="line">2</span><br><span class="line">2</span><br><span class="line">0</span><br><span class="line">2</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="递归函数中定义函数会影响递归函数的运行效率吗-待更新"><a href="#递归函数中定义函数会影响递归函数的运行效率吗-待更新" class="headerlink" title="递归函数中定义函数会影响递归函数的运行效率吗?(待更新)"></a>递归函数中定义函数会影响递归函数的运行效率吗?(待更新)</h3>
+
           
         
       
@@ -1002,569 +994,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/预估——CTR预估中的样本采样.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/预估——CTR预估中的样本采样.html" itemprop="url">预估——CTR预估中的样本采样</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-25T00:00:00+08:00">
-                2018-09-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p><em>待更新</em></p>
-<ul>
-<li>参考文献：<a href="https://zhuanlan.zhihu.com/p/83982030" target="_blank" rel="noopener">ctr 校准的方式</a></li>
-<li>论文：<a href="http://quinonero.net/Publications/predicting-clicks-facebook.pdf" target="_blank" rel="noopener">《Practical Lessons from Predicting Clicks on Ads at Facebook》</a></li>
-</ul>
-<hr>
-<h3 id="CTR预估的样本采样"><a href="#CTR预估的样本采样" class="headerlink" title="CTR预估的样本采样"></a>CTR预估的样本采样</h3><ul>
-<li>CTR预估任务中，正负样本可能偏差很多，此时需要做样本采样，以提升训练速度和效果<ul>
-<li>“负采样可以提升训练速度和模型效果”来自论文《Practical Lessons from Predicting Clicks on Ads at<br>Facebook》</li>
-</ul>
-</li>
-</ul>
-<h3 id="CTR预估样本采样后的校准"><a href="#CTR预估样本采样后的校准" class="headerlink" title="CTR预估样本采样后的校准"></a>CTR预估样本采样后的校准</h3><ul>
-<li>方法一<ul>
-<li>参见<a href="https://zhuanlan.zhihu.com/p/83982030" target="_blank" rel="noopener">ctr 校准的方式</a>中的推导</li>
-</ul>
-</li>
-<li>方法二【常用方式】<ul>
-<li>假设负采样比例为\(w\)，原始预估值为\(p\)，则校准后的预估值\(q\)为：<br>$$<br>\begin{align}<br>q = \frac{p}{p+(1-p)/w}<br>\end{align}<br>$$</li>
-<li>具体实现如下：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">logits = ctr_mlp_layer(input)</span><br><span class="line">pctr = tf.nn.sigmoid(logits)</span><br><span class="line">final_pctr = pctr / (pctr + (1 - pctr) / negative_downsampling_rate)</span><br></pre></td></tr></table></figure></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——箱式图基本概念介绍.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——箱式图基本概念介绍.html" itemprop="url">ML——箱式图基本概念介绍</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
-                2018-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>箱式图，是指—种描述数据分布的统计图</em></p>
-<ul>
-<li>是表述最小值、第一四分位数、中位数、第三四分位数与最大值的一种图形方法。</li>
-<li>可以粗略地看出数据是否具有对称性，分布的分散程度等信息</li>
-</ul>
-<hr>
-<h3 id="异常值"><a href="#异常值" class="headerlink" title="异常值"></a>异常值</h3><p><strong>又称离群值(Outlier), 指不在区间[Q1-1.5<em>IQR, Q3+1.5</em>IQR]中的值</strong></p>
-<ul>
-<li>Q1为25%中位数，也称为下四分位数</li>
-<li>Q3为75%中位数，也称为上四分位数</li>
-<li>IQR为Q3-Q1，四分数间距</li>
-</ul>
-<hr>
-<h3 id="绘图方法"><a href="#绘图方法" class="headerlink" title="绘图方法"></a>绘图方法</h3><p><strong>去除离群值之后的部分计入图中，分别标记五个特征值</strong></p>
-<ul>
-<li><strong>特征值</strong> 最小值，Q1，中位数，Q3，最大值</li>
-<li>将五个数值描绘在一个图上，五个特征值在一个直线上</li>
-<li>最小值和Q1连接起来，Q1、中位数、Q3分别作平行等长线段</li>
-<li>连接两个四分位数构成箱子</li>
-<li>连接两个极值点与箱子，形成箱式图</li>
-<li>最后点上离群值</li>
-</ul>
-<hr>
-<h3 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h3>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——误差棒简单介绍.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——误差棒简单介绍.html" itemprop="url">ML——误差棒简单介绍</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
-                2018-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Reference[1]: <a href="https://en.wikipedia.org/wiki/Error_bar" title="https://en.wikipedia.org/wiki/Error_bar" target="_blank" rel="noopener">维基百科</a><br>Reference[2]: <a href="https://www.techwalla.com/13713431/how-to-make-an-app" title="https://www.techwalla.com/13713431/how-to-make-an-app" target="_blank" rel="noopener">How to Calculate Error Bars?</a></p>
-<hr>
-<h3 id="误差棒"><a href="#误差棒" class="headerlink" title="误差棒"></a>误差棒</h3><p><em>(Error bar, 也称为误差线)</em></p>
-<p><strong>显示潜在的误差或相对于系列中每个数据标志的不确定程度</strong></p>
-<ul>
-<li>误差线可以用标准差(standard deviation)或者标准误差(standard error)，一般用标准差</li>
-</ul>
-<hr>
-<h3 id="标准差与标准误差"><a href="#标准差与标准误差" class="headerlink" title="标准差与标准误差"></a>标准差与标准误差</h3><ul>
-<li>标准差是离均差平方和平均后的方根</li>
-<li>标准误是标准误差，定义为各测量值误差的平方和的平均值的平方根</li>
-<li>标准差与均数结合估计参考值范围，计算变异系数，计算标准误等。标准误用于估计参数的可信区间，进行假设检验等</li>
-<li>当样本含量 n 足够大时，标准差趋向稳定；而标准误随n的增大而减小，甚至趋于0</li>
-</ul>
-<hr>
-<h3 id="计算误差棒"><a href="#计算误差棒" class="headerlink" title="计算误差棒"></a>计算误差棒</h3><ul>
-<li>Step1: 计算均值 E</li>
-<li>Step2: 计算标准差 D</li>
-<li>Step3: 计算误差棒的两端值<ul>
-<li>barBegin = E-D</li>
-<li>barEnd = E+D</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——各种数据分析图介绍.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——各种数据分析图介绍.html" itemprop="url">ML——各种数据分析图介绍.md</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
-                2018-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>[日常编辑]</em><br><em>Python数据分析时可能用到各种各样的图，本文将简单介绍数据分析中常用的几种基本图</em></p>
-<hr>
-<h3 id="直方图-Hist-plot"><a href="#直方图-Hist-plot" class="headerlink" title="直方图(Hist-plot)"></a>直方图(Hist-plot)</h3><hr>
-<h3 id="柱形图-Dist-plot"><a href="#柱形图-Dist-plot" class="headerlink" title="柱形图(Dist-plot)"></a>柱形图(Dist-plot)</h3><p><strong>seaborn.distplot</strong></p>
-<ul>
-<li>集合了matplotlib的hist()与核函数估计kdeplot的功能</li>
-</ul>
-<hr>
-<h3 id="核密度估计图-KDE-plot"><a href="#核密度估计图-KDE-plot" class="headerlink" title="核密度估计图(KDE-plot)"></a>核密度估计图(KDE-plot)</h3><p><strong>seaborn.kdeplot</strong></p>
-<hr>
-<h3 id="箱式图-Box-plot"><a href="#箱式图-Box-plot" class="headerlink" title="箱式图(Box-plot)"></a>箱式图(Box-plot)</h3><hr>
-<h3 id="小提琴图-Violin-plot"><a href="#小提琴图-Violin-plot" class="headerlink" title="小提琴图(Violin-plot)"></a>小提琴图(Violin-plot)</h3><ul>
-<li>用于显示数据分布及其概率密度</li>
-<li>竖向显示类似于箱式图，横向表征密度分布，越宽的地方密度分布越高</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——在root用户下也无法删除文件.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1897,6 +1326,425 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——误差棒简单介绍.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——误差棒简单介绍.html" itemprop="url">ML——误差棒简单介绍</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
+                2018-09-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Reference[1]: <a href="https://en.wikipedia.org/wiki/Error_bar" title="https://en.wikipedia.org/wiki/Error_bar" target="_blank" rel="noopener">维基百科</a><br>Reference[2]: <a href="https://www.techwalla.com/13713431/how-to-make-an-app" title="https://www.techwalla.com/13713431/how-to-make-an-app" target="_blank" rel="noopener">How to Calculate Error Bars?</a></p>
+<hr>
+<h3 id="误差棒"><a href="#误差棒" class="headerlink" title="误差棒"></a>误差棒</h3><p><em>(Error bar, 也称为误差线)</em></p>
+<p><strong>显示潜在的误差或相对于系列中每个数据标志的不确定程度</strong></p>
+<ul>
+<li>误差线可以用标准差(standard deviation)或者标准误差(standard error)，一般用标准差</li>
+</ul>
+<hr>
+<h3 id="标准差与标准误差"><a href="#标准差与标准误差" class="headerlink" title="标准差与标准误差"></a>标准差与标准误差</h3><ul>
+<li>标准差是离均差平方和平均后的方根</li>
+<li>标准误是标准误差，定义为各测量值误差的平方和的平均值的平方根</li>
+<li>标准差与均数结合估计参考值范围，计算变异系数，计算标准误等。标准误用于估计参数的可信区间，进行假设检验等</li>
+<li>当样本含量 n 足够大时，标准差趋向稳定；而标准误随n的增大而减小，甚至趋于0</li>
+</ul>
+<hr>
+<h3 id="计算误差棒"><a href="#计算误差棒" class="headerlink" title="计算误差棒"></a>计算误差棒</h3><ul>
+<li>Step1: 计算均值 E</li>
+<li>Step2: 计算标准差 D</li>
+<li>Step3: 计算误差棒的两端值<ul>
+<li>barBegin = E-D</li>
+<li>barEnd = E+D</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——各种数据分析图介绍.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——各种数据分析图介绍.html" itemprop="url">ML——各种数据分析图介绍.md</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
+                2018-09-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>[日常编辑]</em><br><em>Python数据分析时可能用到各种各样的图，本文将简单介绍数据分析中常用的几种基本图</em></p>
+<hr>
+<h3 id="直方图-Hist-plot"><a href="#直方图-Hist-plot" class="headerlink" title="直方图(Hist-plot)"></a>直方图(Hist-plot)</h3><hr>
+<h3 id="柱形图-Dist-plot"><a href="#柱形图-Dist-plot" class="headerlink" title="柱形图(Dist-plot)"></a>柱形图(Dist-plot)</h3><p><strong>seaborn.distplot</strong></p>
+<ul>
+<li>集合了matplotlib的hist()与核函数估计kdeplot的功能</li>
+</ul>
+<hr>
+<h3 id="核密度估计图-KDE-plot"><a href="#核密度估计图-KDE-plot" class="headerlink" title="核密度估计图(KDE-plot)"></a>核密度估计图(KDE-plot)</h3><p><strong>seaborn.kdeplot</strong></p>
+<hr>
+<h3 id="箱式图-Box-plot"><a href="#箱式图-Box-plot" class="headerlink" title="箱式图(Box-plot)"></a>箱式图(Box-plot)</h3><hr>
+<h3 id="小提琴图-Violin-plot"><a href="#小提琴图-Violin-plot" class="headerlink" title="小提琴图(Violin-plot)"></a>小提琴图(Violin-plot)</h3><ul>
+<li>用于显示数据分布及其概率密度</li>
+<li>竖向显示类似于箱式图，横向表征密度分布，越宽的地方密度分布越高</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——箱式图基本概念介绍.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——箱式图基本概念介绍.html" itemprop="url">ML——箱式图基本概念介绍</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-24T00:00:00+08:00">
+                2018-09-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>箱式图，是指—种描述数据分布的统计图</em></p>
+<ul>
+<li>是表述最小值、第一四分位数、中位数、第三四分位数与最大值的一种图形方法。</li>
+<li>可以粗略地看出数据是否具有对称性，分布的分散程度等信息</li>
+</ul>
+<hr>
+<h3 id="异常值"><a href="#异常值" class="headerlink" title="异常值"></a>异常值</h3><p><strong>又称离群值(Outlier), 指不在区间[Q1-1.5<em>IQR, Q3+1.5</em>IQR]中的值</strong></p>
+<ul>
+<li>Q1为25%中位数，也称为下四分位数</li>
+<li>Q3为75%中位数，也称为上四分位数</li>
+<li>IQR为Q3-Q1，四分数间距</li>
+</ul>
+<hr>
+<h3 id="绘图方法"><a href="#绘图方法" class="headerlink" title="绘图方法"></a>绘图方法</h3><p><strong>去除离群值之后的部分计入图中，分别标记五个特征值</strong></p>
+<ul>
+<li><strong>特征值</strong> 最小值，Q1，中位数，Q3，最大值</li>
+<li>将五个数值描绘在一个图上，五个特征值在一个直线上</li>
+<li>最小值和Q1连接起来，Q1、中位数、Q3分别作平行等长线段</li>
+<li>连接两个四分位数构成箱子</li>
+<li>连接两个极值点与箱子，形成箱式图</li>
+<li>最后点上离群值</li>
+</ul>
+<hr>
+<h3 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h3>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -1951,7 +1799,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">255</span>
+                  <span class="site-state-item-count">256</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

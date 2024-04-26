@@ -573,7 +573,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——BCB出价推导.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -592,7 +592,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" itemprop="url">CA——WideAndDeep</a></h1>
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——BCB出价推导.html" itemprop="url">CA——BCB出价推导</a></h1>
         
 
         <div class="post-meta">
@@ -644,27 +644,43 @@
       
         
           
-            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
-<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
-<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
-<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<p><em>本文主要记录BCB出价的推导</em></p>
+<ul>
+<li>其他参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a></li>
+</ul>
+<h3 id="BCB介绍"><a href="#BCB介绍" class="headerlink" title="BCB介绍"></a>BCB介绍</h3><ul>
+<li>预算约束的出价，Budget Constrained Bidding（简称BCB），广告主的出价目标是设置一定预算，拿到最多的流量（点击或者订单）</li>
+</ul>
+<hr>
+<h3 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h3><ul>
+<li>一般BCB优化问题的定义:</li>
+</ul>
+<p>$$<br>\begin{align}<br>\max_{x_{ij}} \sum^N_{i=1} x_{ij}  v_{ij} \\<br>s.t. \sum^N_{i=1} x_{ij}  c_{ij} \le B \\<br>      \sum^M_{j=1} x_{ij} = 1 \\<br>      x_{ij} \in {0, 1}<br>\end{align}<br>$$</p>
+<h3 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h3><p>可以解得，最终结果为(求解过程参见RL-MPCA论文):<br>$$ j^* = \arg\max_{j} (v_{ij} - \lambda c_{ij}) $$</p>
+<h3 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h3><ul>
+<li>如果<strong>只有一个广告位置，且使用二价计费</strong>，原始问题可化简为</li>
+</ul>
+<p>$$<br>\begin{align}<br>\max_{x_{i}} \sum^N_{i=1} x_{i} v_{i} \\<br>s.t. \sum^N_{i=1} x_{i} c_{i} \le B \\<br>      x_{i} \in {0, 1}<br>\end{align}<br>$$</p>
+<ul>
+<li>最终可解得结果为(求解参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a>)：<br>$$ bid = v_i / \lambda $$</li>
+</ul>
+<h3 id="关于两种解法的结果分析"><a href="#关于两种解法的结果分析" class="headerlink" title="关于两种解法的结果分析"></a>关于两种解法的结果分析</h3><ul>
+<li>本质上，两种解法结果应该是完全相同的，第一种解法中，如果只有一个广告位置，且使用二价计费，求解到的结果本质于第二种解法结果一致。<ul>
+<li>当 \(v_{i} &gt; \lambda \cdot Price_{win} \)时(\(Price_{win} = c_{i}\),表示净胜价格), 此时选择\(bid &gt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一(取\(v_{ij} - \lambda * c_{ij}\) 最大的动作)还是解法二(\(bid=v_i/\lambda\))都会选择执行竞拍动作。</li>
+<li>反之，当当\(v_{i} &lt; \lambda \cdot Price_{win}\)时, 此时选择\(bid &lt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一还是解法二都会选择执行不竞拍动作。</li>
 </ul>
 </li>
+<li>解法一适用于任何场景，解法二则仅适用于<strong>只有一个广告位置，且使用二价计费</strong>的场景</li>
+<li>解法二的结果使用起来会更简单：<ul>
+<li>解法一需要预估不同出价下的收益，实际上，在<strong>只有一个广告位置，且使用二价计费</strong>的场景，不竞争当前广告位置的价值为0，计费为0，若竞争，则价值为\(v_i\)，计费为\(c_i\)，所以仅需要预估价值\(v_i\)，计费\(c_i\)。</li>
+<li>解法二则可直接预估一个值\(v_i\)即可，不需要预估\(c_i\)，即在线不需要预估净胜价格<ul>
+<li>但是离线流量回放求解\(\lambda\)时，理论上也需要预估一个净胜价格，或者在给出一个价格时，需要知道是否会竞争成功。\(c_i\)已经隐含在求解到的\(\lambda\)中</li>
 </ul>
-<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
-<li>注重记忆能力</li>
-<li>手动特征交叉组合(实现低阶的特征组合)</li>
-</ul>
-<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
-<li>泛化能力</li>
-<li>高阶特征</li>
-<li>低维稠密embedding</li>
-</ul>
-<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
-<li>结合了Wide和Deep两个模型</li>
-<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
-<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
-<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
+</li>
+<li>若对于任意竞拍，都给定净胜价格，那么解法一和解法二等价，都只需要预估\(v_i\)一个值即可</li>
 </ul>
 </li>
 </ul>
@@ -889,7 +905,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——BCB出价推导.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -908,7 +924,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——BCB出价推导.html" itemprop="url">CA——BCB出价推导</a></h1>
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" itemprop="url">CA——WideAndDeep</a></h1>
         
 
         <div class="post-meta">
@@ -960,43 +976,27 @@
       
         
           
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<p><em>本文主要记录BCB出价的推导</em></p>
-<ul>
-<li>其他参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a></li>
-</ul>
-<h3 id="BCB介绍"><a href="#BCB介绍" class="headerlink" title="BCB介绍"></a>BCB介绍</h3><ul>
-<li>预算约束的出价，Budget Constrained Bidding（简称BCB），广告主的出价目标是设置一定预算，拿到最多的流量（点击或者订单）</li>
-</ul>
-<hr>
-<h3 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h3><ul>
-<li>一般BCB优化问题的定义:</li>
-</ul>
-<p>$$<br>\begin{align}<br>\max_{x_{ij}} \sum^N_{i=1} x_{ij}  v_{ij} \\<br>s.t. \sum^N_{i=1} x_{ij}  c_{ij} \le B \\<br>      \sum^M_{j=1} x_{ij} = 1 \\<br>      x_{ij} \in {0, 1}<br>\end{align}<br>$$</p>
-<h3 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h3><p>可以解得，最终结果为(求解过程参见RL-MPCA论文):<br>$$ j^* = \arg\max_{j} (v_{ij} - \lambda c_{ij}) $$</p>
-<h3 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h3><ul>
-<li>如果<strong>只有一个广告位置，且使用二价计费</strong>，原始问题可化简为</li>
-</ul>
-<p>$$<br>\begin{align}<br>\max_{x_{i}} \sum^N_{i=1} x_{i} v_{i} \\<br>s.t. \sum^N_{i=1} x_{i} c_{i} \le B \\<br>      x_{i} \in {0, 1}<br>\end{align}<br>$$</p>
-<ul>
-<li>最终可解得结果为(求解参考链接：<a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a>)：<br>$$ bid = v_i / \lambda $$</li>
-</ul>
-<h3 id="关于两种解法的结果分析"><a href="#关于两种解法的结果分析" class="headerlink" title="关于两种解法的结果分析"></a>关于两种解法的结果分析</h3><ul>
-<li>本质上，两种解法结果应该是完全相同的，第一种解法中，如果只有一个广告位置，且使用二价计费，求解到的结果本质于第二种解法结果一致。<ul>
-<li>当 \(v_{i} &gt; \lambda \cdot Price_{win} \)时(\(Price_{win} = c_{i}\),表示净胜价格), 此时选择\(bid &gt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一(取\(v_{ij} - \lambda * c_{ij}\) 最大的动作)还是解法二(\(bid=v_i/\lambda\))都会选择执行竞拍动作。</li>
-<li>反之，当当\(v_{i} &lt; \lambda \cdot Price_{win}\)时, 此时选择\(bid &lt; Price_{win}\)的出价即可获得本次竞拍，此时不管是解法一还是解法二都会选择执行不竞拍动作。</li>
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
+<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
+<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
 </ul>
 </li>
-<li>解法一适用于任何场景，解法二则仅适用于<strong>只有一个广告位置，且使用二价计费</strong>的场景</li>
-<li>解法二的结果使用起来会更简单：<ul>
-<li>解法一需要预估不同出价下的收益，实际上，在<strong>只有一个广告位置，且使用二价计费</strong>的场景，不竞争当前广告位置的价值为0，计费为0，若竞争，则价值为\(v_i\)，计费为\(c_i\)，所以仅需要预估价值\(v_i\)，计费\(c_i\)。</li>
-<li>解法二则可直接预估一个值\(v_i\)即可，不需要预估\(c_i\)，即在线不需要预估净胜价格<ul>
-<li>但是离线流量回放求解\(\lambda\)时，理论上也需要预估一个净胜价格，或者在给出一个价格时，需要知道是否会竞争成功。\(c_i\)已经隐含在求解到的\(\lambda\)中</li>
 </ul>
-</li>
-<li>若对于任意竞拍，都给定净胜价格，那么解法一和解法二等价，都只需要预估\(v_i\)一个值即可</li>
+<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
+<li>注重记忆能力</li>
+<li>手动特征交叉组合(实现低阶的特征组合)</li>
+</ul>
+<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
+<li>泛化能力</li>
+<li>高阶特征</li>
+<li>低维稠密embedding</li>
+</ul>
+<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
+<li>结合了Wide和Deep两个模型</li>
+<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
+<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
+<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
 </ul>
 </li>
 </ul>
@@ -1710,126 +1710,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种压缩方式总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/General——各种压缩方式总结.html" itemprop="url">General——各种压缩方式总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-09T00:00:00+08:00">
-                2019-11-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="tar-gz"><a href="#tar-gz" class="headerlink" title=".tar.gz"></a>.tar.gz</h3><h3 id="tar-bz2"><a href="#tar-bz2" class="headerlink" title=".tar.bz2"></a>.tar.bz2</h3><h3 id="tar-xz"><a href="#tar-xz" class="headerlink" title=".tar.xz"></a>.tar.xz</h3><h3 id="tgz"><a href="#tgz" class="headerlink" title=".tgz"></a>.tgz</h3>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种包的管理总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2153,6 +2033,126 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种压缩方式总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/General——各种压缩方式总结.html" itemprop="url">General——各种压缩方式总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-09T00:00:00+08:00">
+                2019-11-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="tar-gz"><a href="#tar-gz" class="headerlink" title=".tar.gz"></a>.tar.gz</h3><h3 id="tar-bz2"><a href="#tar-bz2" class="headerlink" title=".tar.bz2"></a>.tar.bz2</h3><h3 id="tar-xz"><a href="#tar-xz" class="headerlink" title=".tar.xz"></a>.tar.xz</h3><h3 id="tgz"><a href="#tgz" class="headerlink" title=".tgz"></a>.tgz</h3>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2207,7 +2207,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">255</span>
+                  <span class="site-state-item-count">256</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
