@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
         
 
         <div class="post-meta">
@@ -348,344 +348,60 @@
       
         
           
-            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
-<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
-<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
-</ul>
-<hr>
-<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
-<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
-<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
-<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
-<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
-<li>结构图如下所示<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
-<li><p>上面图的代码构建如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-<ul>
-<li>从图中的推导可知,梯度符合预期</li>
-<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
-<li>修改上面的构建为<ul>
-<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
-</ul>
-</li>
-<li>结构图如下:<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
-<li><p>代码如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-<ul>
-<li>显然推导结果符合代码输出预期</li>
-<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
-</ul>
-</li>
-</ul>
-<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
-<li>还以上面的结构图为例</li>
-<li>直接求中间节点 \(z\) 关于自变量的梯度</li>
-<li><p>代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
-</ul>
-</li>
-</ul>
-<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
-<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
-</ul>
-<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
-                2018-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Attention的原理和变种</em></p>
+            <p><em>文本介绍DeepFM的理论和实现</em></p>
 <p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
 <ul>
-<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
-<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
-<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
-<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
-<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
+<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
+<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
 </ul>
-<hr>
-<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
-<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
-<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
+<li>FM: (Factorization Machines, FM)因子分解机</li>
+<li>FMM: (Field Factorization Machines, FFM)</li>
+</ul>
+<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
+<li>只能二阶特征组合,无法做到高阶特征组合<ul>
+<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+</ul>
 </li>
 </ul>
-<hr>
-<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
-<li>Attention机制的根本优势在于对不同的</li>
-<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>理论上DNN建模高阶组合特征是可行的</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+</li>
+</ul>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
+<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
+<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
+<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
+<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
+<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
+<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+</li>
+</ul>
+<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
+<li><p>是一种并行化的解决方案</p>
+<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
+</li>
+<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
+</li>
+<li>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</li>
+</ul>
+<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
 <ul>
-<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
-<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
-<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
-<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
 </ul>
-</li>
-</ul>
-</li>
-<li>动态图理解 Attention 机制<ul>
-<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
-</li>
-</ul>
-</li>
-</ul>
+<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
 <ul>
-<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
-<li>上图中Encoder使用的是双层双向的RNN<ul>
-<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
-<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
-<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+<li>DNN部分是一个前馈神经网络</li>
+<li>与图像语音的区别:<ul>
+<li>图像语音输入为连续且密集的</li>
+<li>CTR中使用的一般是稀疏的</li>
 </ul>
 </li>
-<li>流程说明:<ul>
-<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
-<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
-<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
-<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
-<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
-<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
 </ul>
-</li>
-</ul>
-</li>
-<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
-<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
-<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
-<ul>
-<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
-<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
-<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
-<li>多源注意力机制：Attend到多种源语言语句</li>
-<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
-<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
-<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
-<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
-<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
-<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
-</ul>
-<hr>
-<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
-<ul>
-<li>Attention的本质: <ul>
-<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
-<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
-<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
-</ul>
-</li>
-<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
-<li>如上图所示,在计算 Attention 时主要分为三步<ul>
-<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
-<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
-<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
-</ul>
-</li>
-<li>Attention过程还可以大致分为两步理解:<ul>
-<li><ol>
-<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
-<li>变换一般包括 <ul>
-<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
-<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
-<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
-<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
-</ul>
-</li>
-<li>Query和Key在不同任务中是不同的东西<ul>
-<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
-<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><ol start="2">
-<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
-<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
-<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
-<li>简单文本分类中, Value指句子</li>
-<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
-<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
-<li>现有查询<strong>向量</strong> q </li>
-<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
-<li>要求是样本与 q 越相关，权重越大</li>
-</ul>
-</li>
-<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
-<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
-<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
-<li>按照这个比例将 Value 中的样本加权输出结果</li>
-<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
-<li>也就是 q 对应的结果</li>
-</ul>
-<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
-<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
-<li>相当于重复 m 次做单个请求为向量的运算</li>
-<li>每个 q 都能得到一个结果</li>
-<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
-</ul>
-<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
-<li>当 Key 与 Value 相同时<ul>
-<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
-<li>NLP中一般都是这样的</li>
-</ul>
-</li>
-<li>当 Key 与 Query 相同时，<ul>
-<li>其实是找自身不同样本间的相关性</li>
-<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
-<li>NLP中Self-Attention是这样的</li>
-</ul>
-</li>
-<li>Self-Attention是 Key == Value == Query 的情况</li>
-</ul>
-<hr>
-<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
 
           
         
@@ -734,7 +450,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -753,7 +469,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
         
 
         <div class="post-meta">
@@ -765,8 +481,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-03T00:00:00+08:00">
-                2018-02-03
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
               </time>
             
 
@@ -805,20 +521,266 @@
       
         
           
-            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>训练时梯度出现nan或-nan</li>
-<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
+            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
+<hr>
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
 </ul>
-<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
-<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
-<li>在问题确认过程中，需要一步步排除：<ul>
-<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
-<li>排除log参数为负数或0的情况</li>
-<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
-<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
-<li>有时候会是TensorFlow版本导致，需要注意</li>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
+<hr>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
+<hr>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
+<ul>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html" itemprop="url">PyTorch——CrossEntopyLoss和NLLLoss的区别</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="NLLLoss"><a href="#NLLLoss" class="headerlink" title="NLLLoss"></a>NLLLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.NLLLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>返回负对数似然损失(The negative log likelihood loss)</li>
+<li>虽然命名是负对数自然损失, 但是实际上本函数不含有<code>log</code>操作,本函数假设<code>log</code>操作在输入前已经完成了</li>
 </ul>
 </li>
+<li>常用于分类问题的损失函数</li>
+<li>一般适用于网络最后一层为<code>log_softmax</code>的时候</li>
+</ul>
+<h4 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$loss(x, class) = -x[class]$$</li>
+<li>带有权重的单个样本计算公式:<br>$$loss(x, class) = -weights[class] * x[class]$$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(x_i, class_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(x_i, class_i)$$</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="CrossEntropyLoss"><a href="#CrossEntropyLoss" class="headerlink" title="CrossEntropyLoss"></a>CrossEntropyLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.CrossEntropyLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>等价于 <code>log_softmax</code> + <code>torch.nn.NLLLoss()</code></li>
+<li>先对网络输出做对数似然, 然后再</li>
+</ul>
+</li>
+<li><p>softmax的定义<br>$$softmax(x_{i}) = \frac{e^{x_{i}}}{\sum_{j=1}x_{j}}$$</p>
+</li>
+<li><p>log_softmax的定义<br>$$log(softmax(x_{i}))$$</p>
+<ul>
+<li>注意: 这里的<code>log</code>是以<code>e</code>为底的对数</li>
+</ul>
+</li>
+</ul>
+<h4 id="为什么是这种实现方式"><a href="#为什么是这种实现方式" class="headerlink" title="为什么是这种实现方式?"></a>为什么是这种实现方式?</h4><ul>
+<li>为什么是<code>log_softmax</code> + <code>torch.nn.NLLLoss()</code>的方式而不是普通的计算方式<ul>
+<li>普通的计算方式是直接对每个概率求出log值, 然后相加, 本质上是一样的</li>
+<li><code>CrossEntropyLoss</code>中多了个softmax是为了保证输入都是概率值</li>
+</ul>
+</li>
+<li><code>log(softmax(x))</code>的优化<ul>
+<li>实际上使用的是<code>log_softmax(x)</code></li>
+<li><code>log_softmax(x)</code>的运算速度比单独计算<code>softmax</code> + <code>log</code>的速度快</li>
+<li>同时二者的运算结果相同</li>
+<li>文档中没有提到, 但是一种可能的优化方法是<br>$$<br>\begin{align}<br>log_sofmax(x) &amp;= log \frac{e^{x_{i}}}{\sum_{j=1}x_{j}} \\<br>&amp;= log e^{x_i} - log \sum_{j=1}x_{j} \\<br>&amp;= x_i - log \sum_{j=1}x_{j}<br>\end{align}<br>$$</li>
+<li>上面的式子中,只需要计算一次 \(log \sum_{j=1}x_{j}\)即可(且不同维度可重用该值), 其他的都是加减法运算</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-BCELoss"><a href="#相关损失函数-BCELoss" class="headerlink" title="相关损失函数 BCELoss"></a>相关损失函数 BCELoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.BCELoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>就是实现了书上定义的二分类交叉熵定义</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算公式-1"><a href="#计算公式-1" class="headerlink" title="计算公式:"></a>计算公式:</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_i(t[i] log(o[i])+(1-t[i]) log(1-o[i])) $$</li>
+<li>带有权重的单个样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_iweights[i]\ (t[i]log(o[i])+(1-t[i])* log(1-o[i])) $$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(o_i, t_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(o_i, t_i)$$</li>
+</ul>
+</li>
+</ul>
+<h4 id="BCELoss-vs-CrossEntropyLoss"><a href="#BCELoss-vs-CrossEntropyLoss" class="headerlink" title="BCELoss vs CrossEntropyLoss"></a>BCELoss vs CrossEntropyLoss</h4><ul>
+<li><code>BCELoss</code>对应的网络只有一个输出值</li>
+<li><code>CrossEntropyLoss</code>对应的网络有两个输出值</li>
+<li>可以证明, 二分类时<code>BCELoss</code> 与 <code>CrossEntropyLoss</code>等价<ul>
+<li>证明时, 将每个<code>CrossEntropyLoss</code>的计算公式中的 <code>softmax</code> 函数分子分母同时除以<code>shift</code>, 即可得到为下面的定义, 进一步可得到<code>BCELoss</code>的计算公式<br>$$f_i(x) = \frac{e^{(x_i - shift)}} { \sum^j e^{(x_j - shift)}},shift = max (x_i)$$</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-MultiLabelMarginLoss"><a href="#相关损失函数-MultiLabelMarginLoss" class="headerlink" title="相关损失函数 MultiLabelMarginLoss"></a>相关损失函数 MultiLabelMarginLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.MultiLabelMarginLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用于多标签分类的损失函数</p>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>一般来说直接使用<code>CrossEntropyLoss</code>即可<ul>
+<li>二分类时还可以使用<code>nn.BCELoss</code></li>
+<li>二分类时使用<code>nn.BCELoss</code>的话,输入的<code>input</code>和<code>target</code>维度都为<code>n * 1</code>的维度</li>
+<li>二分类时使用<code>CrossEntropyLoss</code>则输入的<code>input</code>为<code>n * 2</code>的维度</li>
+</ul>
+</li>
+<li>如果使用<code>NLLLoss</code>则一定记得在输出层最后加一层<code>log_softmax</code>层</li>
+<li>注意,<code>log</code>指的是以<code>e</code>为底的对数函数,而不是以<code>10</code>为底的<ul>
+<li>Mac自带的计算器中<code>log</code>是以<code>10</code>为底的,<code>ln</code>才是以<code>e</code>为底的</li>
+</ul>
+</li>
+<li></li>
 </ul>
 
           
@@ -1109,6 +1071,140 @@
 <li>注意， <code>tf.Variable</code>不等价于<code>tf.get_variable</code>中<code>reuse=False</code>的情况，后者在有同名变量时会报错</li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-03T00:00:00+08:00">
+                2018-02-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>训练时梯度出现nan或-nan</li>
+<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
+</ul>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
+<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
+<li>在问题确认过程中，需要一步步排除：<ul>
+<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
+<li>排除log参数为负数或0的情况</li>
+<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
+<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
+<li>有时候会是TensorFlow版本导致，需要注意</li>
 </ul>
 </li>
 </ul>
@@ -1808,408 +1904,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——参数估计MLE-MAP-BEP.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——参数估计MLE-MAP-BEP.html" itemprop="url">ML——参数估计MLE-MAP-BEP</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-10-18T00:00:00+08:00">
-                2017-10-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>极大似然估计(Maximum Likelihood Estimation,MLE)</em><br><em>最大后验概率估计(Maximum a posteriori Estimation,MAP)</em><br><em>贝叶斯估计(Bayesian Parameter Estimation,BPE)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="一般理解"><a href="#一般理解" class="headerlink" title="一般理解"></a>一般理解</h3><ul>
-<li>极大似然估计(MLE): <strong>频率学派</strong>(参数为固定的某个值)</li>
-<li>贝叶斯估计(BPE): <strong>贝叶斯学派</strong>(参数服从某个分布)</li>
-<li>最大后验概率估计(MAP): 一般的书籍认为属于<strong>频率学派</strong><ul>
-<li>个人理解:MAP<strong>前半部分是贝叶斯学派,后半部分是频率学派</strong><ul>
-<li>前半部分认为参数\(\theta\))有先验分布,此时参数服从一个分布,而不是确定的值,是贝叶斯学派的</li>
-<li>后半部分认为参数不是服从后验分布,而是一个具体的使得后验概率最大的值,这里是频率学派的做法</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>三者的终极目标都是估计模型参数\(\theta\),<strong>MAP和MLE估计参数\(\theta\)为具体某个值,BPE估计参数\(\theta\)为一个分布</strong></li>
-<li>其他贝叶斯网络模型(有向图概率图模型)参数估计的方法还有吉布斯采样,变分推断,EM算法等</li>
-</ul>
-<h4 id="极大似然估计与最大后验概率估计"><a href="#极大似然估计与最大后验概率估计" class="headerlink" title="极大似然估计与最大后验概率估计"></a>极大似然估计与最大后验概率估计</h4><ul>
-<li>比较MLE与MAP直观理解见我的另一篇博客：<a href="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html" title="/Notes/ML/Models/ML——MLE和MAP的区别举例说明.html">MLE-vs-MAP——一个简单的例子说明二者的区别</a></li>
-<li>都只关注参数的具体某个最优值</li>
-<li>极大似然估计相当于是参数\(\theta\)的先验分布\(P(\theta)\)为均匀分布的最大后验概率估计</li>
-</ul>
-<h4 id="最大后验概率估计与贝叶斯估计"><a href="#最大后验概率估计与贝叶斯估计" class="headerlink" title="最大后验概率估计与贝叶斯估计"></a>最大后验概率估计与贝叶斯估计</h4><ul>
-<li>相似点：<ul>
-<li>都考虑了参数的先验分布(贝叶斯学派)</li>
-<li>最大后验概率估计是贝叶斯估计的一种简化实现(认为\(\theta\)都是出现在最可能出现的地方，牺牲一点精度，不用求复杂的分母积分)</li>
-<li>二者都围绕下面的公式进行估计<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$</li>
-</ul>
-</li>
-<li>区别：<ul>
-<li><strong>贝叶斯估计</strong>:求得的结果估计参数\(\theta\)服从一个分布，不能忽略归一化因子\(P(X)\),此时\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\),贝叶斯估计要计算后验分布,所以需要计算归一化因子，虽然对不同参数值,分母积分结果是相同的，但是计算分布时需要这个归一化因子，否则后续得到的不是分布，也无法求取参数的期望等</li>
-<li><strong>最大后验概率估计</strong>:求得的结果估计参数\(\theta\)是一个具体的值，把分母\(P(X)\)给忽略了,直接对分子极大化求得最优的参数\(\theta^{\star}\),由于跟贝叶斯估计一样，对不同参数值,分母积分结果是相同的,所以\(P(X)\)的值不影响最优参数值的选取【不求参数\(\theta\)的分布，所以不用求分母，分母是不影响求参数最优值的】,不用计算归一化因子(很复杂,需要积分),速度会快很多</li>
-</ul>
-</li>
-<li>最大后验概率估计相当于是参数后验分布\(P(\theta|X)\)被最可能的参数值\(\theta^{\star}=\arg\max_{\theta}P(\theta|X)\)替代的贝叶斯估计</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">估计模型</th>
-<th style="text-align:center">目标值</th>
-<th style="text-align:left">关心对象</th>
-<th style="text-align:left">求值方式</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">MLE</td>
-<td style="text-align:center">$$\theta^{\star}=\arg\max_{\theta}(P(X\mid \theta)$$</td>
-<td style="text-align:left">\(P(X\mid \theta)\)</td>
-<td style="text-align:left">最大化似然函数\(P(X\mid \theta)\)</td>
-</tr>
-<tr>
-<td style="text-align:center">MAP</td>
-<td style="text-align:center">$$\theta^{\star}=\arg\max_{\theta}(P(\theta\mid X)$$</td>
-<td style="text-align:left">\(P(X\mid \theta)P(\theta)\)</td>
-<td style="text-align:left">最大化后验概率\(P(\theta\mid X)=\frac{P(X\mid \theta)P(\theta)}{P(X)}\)<br>只需最大化分子\(P(X,\theta)=P(X\mid \theta)P(\theta)\)</td>
-</tr>
-<tr>
-<td style="text-align:center">BPE</td>
-<td style="text-align:center">\(P(\theta\mid X)\)<br>(\(\theta\)的后验概率分布)</td>
-<td style="text-align:left">\(\frac{P(X\mid \theta)P(\theta)}{P(X)}\)</td>
-<td style="text-align:left">求参数\(\theta\)的后验概率分布\(P(\theta\mid X)\)<br>\(P(\theta\mid X)=\frac{P(X\mid \theta)P(\theta)}{\int_{\theta}P(X\mid\theta)P(\theta)d_{\theta}}\)</td>
-</tr>
-</tbody>
-</table>
-<hr>
-<h3 id="一个容易理解的角度"><a href="#一个容易理解的角度" class="headerlink" title="一个容易理解的角度"></a>一个容易理解的角度</h3><ul>
-<li>参考博客: <a href="https://blog.csdn.net/liu1194397014/article/details/52766760" target="_blank" rel="noopener">https://blog.csdn.net/liu1194397014/article/details/52766760</a></li>
-</ul>
-<h4 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h4><ul>
-<li><p>已知数据集为\(X=(x_{1}, x_{2},,,x_{n})\)</p>
-</li>
-<li><p>极大似然估计</p>
-<ul>
-<li>已知数据集\(X\)的情况下,求参数最优值\(\theta^{\star}\),使得似然函数\(P(X|\theta)\)最大</li>
-</ul>
-</li>
-<li>最大后验概率估计<ul>
-<li>已知数据集\(X\)的情况下,求参数最优值\(\theta^{\star}\),使得后验概率\(P(\theta|X)\)最大,实际只需使得\(P(X,\theta)=P(X|\theta)P(\theta)\)最大</li>
-</ul>
-</li>
-<li>贝叶斯估计<ul>
-<li>已知数据集\(X\)的情况下,求参数\(\theta\)的后验分布\(P(\theta|X)\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="极大似然估计-MLE"><a href="#极大似然估计-MLE" class="headerlink" title="极大似然估计(MLE)"></a>极大似然估计(MLE)</h4><ul>
-<li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
-<li>\(P(\theta)\)的取值与参数\(\theta\)无关【认为每个参数\(\theta\)出现的概率相等】<ul>
-<li>\(P(\theta)\)与参数\(\theta\)无关可以理解为参数\(\theta\)服从<strong>均匀分布</strong>: 假设参数\(\theta\)有k个离散取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(P(\theta_{1})=P(\theta_{2})=…=P(\theta_{k})=\frac{1}{k}\)</li>
-</ul>
-</li>
-<li>\(P(X)\)的取值与\(\theta\)无关,设置为\(P(X)=1\)即可</li>
-<li>所以得到下面的表达式<br>$$\arg\max_{\theta}P(\theta|X)=\arg\max_{\theta}P(X|\theta)$$<ul>
-<li>式子中\(P(X|\theta)\)被称为<strong>似然函数</strong></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>结论<ul>
-<li>极大似然估计: \(\theta^{\star}=\arg\max_{\theta}P(X|\theta)\)</li>
-<li>文字解释: 极大似然估计的目标是找一个参数\(\theta\),使得在参数\(\theta\)对应的概率分布模型下,数据集\(X\)出现的概率最大(似然函数最大)</li>
-</ul>
-</li>
-</ul>
-<h4 id="最大后验概率估计-MAP"><a href="#最大后验概率估计-MAP" class="headerlink" title="最大后验概率估计(MAP)"></a>最大后验概率估计(MAP)</h4><ul>
-<li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
-<li>\(P(\theta)\)为的取值与参数\(\theta\)相关,是关于\(\theta\)的一个先验概率【不同的参数\(\theta\)出现的概率可能不同】<ul>
-<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(\sum_{i=1}^{k}P(\theta_{i})=1\)，但\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不能确定，也不一定相等</li>
-</ul>
-</li>
-<li>\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)积分结果与\(\theta\)不相关,分母的值不影响后验概率最大值的参数值,直接忽略(设置为\(P(X)=1\))即可</li>
-<li>所以得到<br>$$\arg\max_{\theta}P(\theta|X)=\arg\max_{\theta}P(X|\theta)P(\theta)=\arg\max_{\theta}P(X,\theta)$$</li>
-</ul>
-</li>
-<li>结论<ul>
-<li>最大后验概率估计: \(\theta^{\star}=\arg\max_{\theta}P(X|\theta)P(\theta)\)</li>
-<li>文字解释: 最大后验概率估计的目标是找一个参数\(\theta\),使得在参数\(\theta\)服从已知先验分布\(P(\theta)\)和数据集\(X\)的情况下,对应的后验概率\(P(\theta|X)\)最大(等价于\(P(X,\theta)=P(X|\theta)P(\theta)\)最大)</li>
-</ul>
-</li>
-</ul>
-<h4 id="贝叶斯估计-BPE"><a href="#贝叶斯估计-BPE" class="headerlink" title="贝叶斯估计(BPE)"></a>贝叶斯估计(BPE)</h4><ul>
-<li>推导<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{P(X)}$$<ul>
-<li>\(P(\theta)\)为的取值与参数\(\theta\)相关,是关于\(\theta\)的一个先验概率<ul>
-<li>\(P(\theta)\)与参数\(\theta\)相关可以理解为: 假设参数\(\theta\)有k个取值\(\theta_{1}, \theta_{2},,,\theta_{k}\),那么\(\sum_{i=1}^{k}P(\theta_{i})=1\)，但\(P(\theta_{1}),P(\theta_{2}),,,P(\theta_{k})\)的取值不确定，也不一定相等</li>
-</ul>
-</li>
-<li>\(P(X)\)的取值与\(\theta\)本身不相关,但是为了求出后验分布\(P(\theta|X)\),\(P(X)\)作为归一化因子需要计算<ul>
-<li>\(P(X)\)的值与参数的先验分布,模型的定义(高斯分布还是贝塔分布等)和数据集\(X\)有关系</li>
-<li>没有分母作为归一化因子的话单独的分子是联合分布\(P(X,\theta)\),这个分布对\(\theta\)积分结果不为1(而是\(P(X)\)),联合分布不能确定\(\theta\)的后验分布</li>
-<li>\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)</li>
-</ul>
-</li>
-<li>所以得到<br>$$P(\theta|X)=\frac{P(X|\theta)P(\theta)}{\int_{\theta}P(X|\theta)P(\theta)d_{\theta}}$$</li>
-</ul>
-</li>
-<li>结论<ul>
-<li>贝叶斯估计: \(P(\theta|X)=\frac{P(X|\theta)P(\theta)}{\int_{\theta}P(X|\theta)P(\theta)d_{\theta}}\)</li>
-<li>文字解释: 贝叶斯估计的目标是求参数的后验分布\(P(\theta|X)\),参数\(\theta\)服从先验分布\(P(\theta)\),在已知数据集\(X\)修正后,参数\(\theta\)的后验概率分布为\(P(\theta|X)\)</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>计算\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)比较耗时</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="一个更深入的理解"><a href="#一个更深入的理解" class="headerlink" title="一个更深入的理解"></a>一个更深入的理解</h3><h4 id="问题描述-1"><a href="#问题描述-1" class="headerlink" title="问题描述"></a>问题描述</h4><ul>
-<li>已知数据集为\(X=(x_{1}, x_{2},,,x_{n})\),新数据集为\(D=(d_{1}, d_{2},,,d_{m})\)</li>
-<li>求已知数据集\(X\)的情况下,假设数据集\(X\)由某个模型M(参数为\(\theta\))生成,那么数据集\(D\)也由模型M生成的概率\(P(D|X)\)<ul>
-<li>模型M的确定因素:<ul>
-<li>由三个因素唯一确定<ul>
-<li>参数\(\theta\)的先验分布\(P(\theta)\)</li>
-<li>模型的类型定义\(f(\theta)\)(高斯分布,贝塔分布,二项分布还是其他什么分布)</li>
-<li>模型的已知观察数据集\(X\)</li>
-</ul>
-</li>
-<li>由两个因素唯一确定<ul>
-<li>模型的类型定义\(f(\theta)\)(高斯分布,贝塔分布,二项分布还是其他什么分布)</li>
-<li>参数\(\theta\)的后验分布\(P(\theta|X)\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>另一种表述: 用模型M(参数为\(\theta\))生成数据,在已观察到模型M生成了数据集\(X\)后,预测模型M接下来生成数据集\(D\)的概率</li>
-</ul>
-<h4 id="极大似然估计-MLE-1"><a href="#极大似然估计-MLE-1" class="headerlink" title="极大似然估计(MLE)"></a>极大似然估计(MLE)</h4><ul>
-<li>特点:假设模型M(参数\(\theta\))没有先验分布</li>
-<li><p>模型参数估计</p>
-<ul>
-<li>模型参数为一个确定的最优值</li>
-<li>\(\theta^{\star}=\arg\max_{\theta}P(X|\theta)\)    </li>
-</ul>
-</li>
-<li><p>概率计算</p>
-<ul>
-<li>\(P(D|X)=P(D|\theta^{\star})\)</li>
-</ul>
-</li>
-<li>优点<ul>
-<li>计算速度快</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>不够精确,特别是当观察到的数据集\(X\)太小时,这种情况不考虑参数的先验分布可能会造成过拟合<ul>
-<li>举例: 判断一个学校男女比例,在观察到两个男生,一个女生走出校门后就判断男女比例为2:1显然不合适<ul>
-<li>注意:单个同学是男生或者女生的概率服从伯努利分布,多个同学中男生的数量服从二项分布,整个学校的某个学生是男生的概率服从贝塔分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="贝叶斯估计-BPE-1"><a href="#贝叶斯估计-BPE-1" class="headerlink" title="贝叶斯估计(BPE)"></a>贝叶斯估计(BPE)</h4><ul>
-<li>特点:假设模型M(参数\(\theta\))有先验分布\(P(\theta)\),计算观察到数据集\(X\)后\(\theta\)的后验分布\(P(\theta|X)\),然后求\(P(D|\theta)\)关于后验分布\(P(\theta|X)\)的期望(这个期望也就是模型M生成数据集\(D\)的概率)<ul>
-<li>这里可以理解为观察到的数据集是对先验分布的修正,修正后的后验分布会更符合模型实际情况(因为先验分布很可能是瞎猜的)</li>
-</ul>
-</li>
-<li>模型参数估计<ul>
-<li>模型参数为一个分布 </li>
-<li>\(P(\theta|X)=\frac{P(X|\theta)P(\theta)}{\int_{\theta}P(X|\theta)P(\theta)d_{\theta}}\)</li>
-<li>分子为归一化因子\(P(X)\)<ul>
-<li>必须计算,该值与参数的先验分布\(P(\theta)\),模型的类型定义(\(f(\theta)\))以及数据集\(X\)有关系,不计算\(P(X)\)的话后面计算得到的\(P(D|X)\)也将是一个不确定的值(不是概率值,是\(P(X)\)的函数)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>概率计算<ul>
-<li>\(P(D|X)=\int_{\theta}P(D,\theta|X)d_{\theta}=\int_{\theta}P(D|\theta,X)P(\theta|X)d_{\theta}=\int_{\theta}P(D|\theta)P(\theta|X)d_{\theta}\)<ul>
-<li>式子中\(P(D|\theta,X)=P(D|\theta)\),在通过\(X\)确定\(\theta\)后模型也就确定了,\(X\)不会继续影响\(D\)的生成</li>
-</ul>
-</li>
-<li>这里\(P(D|X)\)相当于\(P(D|\theta)\)关于后验分布\(P(\theta|X)\)的期望</li>
-</ul>
-</li>
-<li>优点<ul>
-<li>计算结果最精确,能根据参数的先验分布和数据集\(X\)的知识,准确计算模型生成数据集\(D\)的概率</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>计算\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)比较耗时,不常用</li>
-</ul>
-</li>
-</ul>
-<h5 id="关于-P-X-是否需要计算"><a href="#关于-P-X-是否需要计算" class="headerlink" title="关于\(P(X)\)是否需要计算?"></a>关于\(P(X)\)是否需要计算?</h5><ul>
-<li>无需计算的情况<ul>
-<li>判断两个数据集\(D_{1},D_{2}\)由同一个模型M生成的概率谁大,可以不用计算\(P(X)\)<ul>
-<li>因为对于同一模型M,\(P(X)\)相同大小,此时只需要比较\(P(D_{1},X)\)和\(P(D_{2},X)\)谁大即可知道\(P(D_{1}|X)\)和\(P(D_{2}|X)\)谁大</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>必须计算的情况<ul>
-<li>判断数据集\(D\)由两个模型\(M_{1},M_{2}\)生成的概率谁大,必须计算\(P(X)\)<ul>
-<li>因为对于不同模型\(M_{1},M_{2}\),\(P(X)\)不相同【每个模型生成\(X\)的概率不同】,此时仅仅比较\(P(D_{1},X)\)和\(P(D_{2},X)\)谁大不能确定\(P(D_{1}|X)\)和\(P(D_{2}|X)\)谁大</li>
-</ul>
-</li>
-<li>利用模型M采样生成新数据(预测问题),必须计算\(P(X)\)<ul>
-<li>这时候每次采样时需要根据参数\(\theta\)的后验分布采样生成\(\theta_{i}\),然后再根据\(\theta_{i}\)确定的模型\(M_{i}\)采样生成观测数据,两次采样的过程都必须知道准确的分布(积分为1,也就是归一化后的),所以此时必须计算\(P(X)\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="最大后验概率估计-MAP-1"><a href="#最大后验概率估计-MAP-1" class="headerlink" title="最大后验概率估计(MAP)"></a>最大后验概率估计(MAP)</h4><ul>
-<li>特点:假设模型M(参数\(\theta\))有先验分布\(P(\theta)\),但不计算模型的后验分布\(P(\theta|X)\),只用最可能的\(\theta\)代替后验分布来确定模型M</li>
-<li><p>模型参数估计</p>
-<ul>
-<li>模型参数为一个确定的最优值</li>
-<li>\(\theta^{\star}=\arg\max_{\theta}P(\theta|X)=\arg\max_{\theta}P(X|\theta)P(\theta)\)<ul>
-<li>这里与贝叶斯估计作对比可以发现,MAP相当于把参数后验分布简化为最可能的那个参数值,<strong>用最可能的参数值代替参数后验分布</strong>,这样做对最终预测结果\(P(D|X)\)可能有点误差,但是不用计算复杂的积分\(P(X)=\int_{\theta}P(X|\theta)P(\theta)d_{\theta}\)</li>
-<li>这里能够用最优值替代分布的前提是分布是很集中的(也就是要\(P(\theta|X)\)方差小,比如贝塔分布,狄利克雷分布和高斯分布等钟型分布的塔尖要尖),不然误差可能会比较大</li>
-<li>注意后验分布\(P(\theta|X)\)最可能值的参数值是概率最大的地方 \(\theta^{\star}=\arg\max_{\theta}P(\theta|X)\),而不是参数\(\theta\)关于后验分布的期望\(E_{P(\theta|X)}[\theta]=\int_{\theta}\theta P(\theta|X)d_{\theta}\) (<strong>期望对应平均值,而不是最可能的值</strong>,特例:对称钟型分布的期望同时也是它最可能的值)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>概率计算</p>
-<ul>
-<li>\(P(D|X)=P(D|\theta^{\star})\)</li>
-</ul>
-</li>
-<li><p>计算速度和精确度都介于MLE和BPE之间</p>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>贝叶斯估计可以退化成最大后验概率估计<ul>
-<li>最大后验概率估计相当于是参数后验分布\(P(\theta|X)\)被最可能的参数值\(\theta^{\star}=\arg\max_{\theta}P(\theta|X)\)替代的贝叶斯估计</li>
-</ul>
-</li>
-<li>最大后验概率估计可以退化成极大似然估计<ul>
-<li>极大似然估计相当于是参数\(\theta\)的先验分布\(P(\theta)\)为均为分布的最大后验概率估计</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2264,7 +1958,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">257</span>
+                  <span class="site-state-item-count">258</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
