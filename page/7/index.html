@@ -277,6 +277,342 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——模型压缩技术.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——模型压缩技术.html" itemprop="url">DL——模型压缩技术</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="模型压缩"><a href="#模型压缩" class="headerlink" title="模型压缩"></a>模型压缩</h3><ul>
+<li>模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等</li>
+<li>有时候模型量化和蒸馏会同时使用</li>
+<li>剪枝不常见</li>
+</ul>
+<h3 id="模型量化"><a href="#模型量化" class="headerlink" title="模型量化"></a>模型量化</h3><ul>
+<li>模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8）</li>
+<li>数值上来看，量化是将连续值离散化的过程</li>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/693034534" target="_blank" rel="noopener">TinyML —— 模型量化（quantization）</a></li>
+<li>B站北大学生汇报：<a href="https://www.bilibili.com/video/BV1xf4y1f7wn/" target="_blank" rel="noopener">模型量化加速</a></li>
+<li><a href="https://juejin.cn/post/7259275893795782717" target="_blank" rel="noopener">QLoRA: 训练更大的GPT</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="线性量化与非线性量化"><a href="#线性量化与非线性量化" class="headerlink" title="线性量化与非线性量化"></a>线性量化与非线性量化</h4><ul>
+<li>线性量化(linear quantization)，也叫仿射量化(affine quantization)或者均匀量化<ul>
+<li>我们很容易给出量化公式：<br>其中，r(real value)值得是量化前的值，q(quantized value)是量化后的值，s(scale)是放缩比例，z(zero point)相当于是一个偏移量。</li>
+</ul>
+</li>
+<li>非线性量化（nonlinear quantization），也叫作非均匀量化</li>
+</ul>
+<h4 id="对称量化与非对称量化"><a href="#对称量化与非对称量化" class="headerlink" title="对称量化与非对称量化"></a>对称量化与非对称量化</h4><ul>
+<li>对称量化(symmetric quantization)：映射前后0点相同</li>
+<li>非对称量化(asymmetric quantization)：映射前后0点不相同</li>
+</ul>
+<h4 id="量化粒度"><a href="#量化粒度" class="headerlink" title="量化粒度"></a>量化粒度</h4><ul>
+<li>Per-Tensor Quantization（逐张量量化）：<ul>
+<li>这是最简单的量化方式，对整个张量（即模型中的一个参数矩阵或输入数据）使用相同的量化参数（比如最小值和最大值，或者量化因子）。</li>
+<li>由于所有值共享相同的量化参数，因此这种方法的精度较低，但计算简单，存储和传输效率高。</li>
+</ul>
+</li>
+<li>Per-Channel Quantization（逐通道量化）：<ul>
+<li>在这种量化方式中，每个通道（对于卷积神经网络中的滤波器来说，通道通常指的是滤波器输出的不同颜色或特征）使用不同的量化参数。</li>
+<li>这种方法比逐张量量化更精细，因为不同的通道可能具有不同的值范围，因此可以独立地进行量化，以保持每个通道的精度。</li>
+<li>因为有研究发现不同Channel的参数量级差距较大</li>
+</ul>
+</li>
+<li>Per-Layer Quantization（逐层量化）：<ul>
+<li>逐层量化意味着网络中的每一层都有自己的量化参数集。</li>
+<li>这种方法允许每一层根据其激活值的范围独立地进行量化，这可能比逐张量量化提供更好的精度，但比逐通道量化的计算成本要低。</li>
+</ul>
+</li>
+<li>Per-Axis Quantization（逐轴量化）：<ul>
+<li>这种量化方式通常用于多维张量，比如二维的权重矩阵。在这种情况下，”axis”可以指特定的维度，比如行或列。</li>
+<li>逐轴量化意味着沿着张量的一个或多个维度，量化参数是不同的。例如，在二维张量中，可以对每一行或每一列使用不同的量化参数。</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化方式（PTQ-vs-QAT"><a href="#量化方式（PTQ-vs-QAT" class="headerlink" title="量化方式（PTQ vs QAT)"></a>量化方式（PTQ vs QAT)</h4><ul>
+<li>PTQ(Post training quantization)，后训练量化，训完的模型直接量化，然后进行推理</li>
+<li>QAT(Quantization aware training)，量化感知训练，训练完的模型加载到内存，进行微调后再用于推理<ul>
+<li>LLM常用的思路就是float16训练base模型并存储，SFT时使用INT8量化并使用LoRA微调模型，然后存储LoRA参数，推理时加载base模型(INT8量化加载)和LoRA参数一起推理</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化位宽"><a href="#量化位宽" class="headerlink" title="量化位宽"></a>量化位宽</h4><ul>
+<li>统一位宽</li>
+<li>混合精度</li>
+</ul>
+<h4 id="量化模型训练梯度"><a href="#量化模型训练梯度" class="headerlink" title="量化模型训练梯度"></a>量化模型训练梯度</h4><ul>
+<li>梯度回传时量化是离散的，梯度为0，实际上可以设置为1，因为量化一般是阶梯函数，类似于线性的</li>
+</ul>
+<h4 id="最新的量化模型"><a href="#最新的量化模型" class="headerlink" title="最新的量化模型"></a>最新的量化模型</h4><h5 id="QLoRA"><a href="#QLoRA" class="headerlink" title="QLoRA"></a>QLoRA</h5><ul>
+<li>QLoRA是一种高效的微调方法，它允许在保持完整的16位微调任务性能的同时，将内存使用量降低到足以在单个48GB GPU上微调650亿参数模型。QLoRA通过冻结的4位量化预训练语言模型向低秩适配器（Low Rank Adapters，简称LoRA）反向传播梯度。这种方法的主要贡献包括：<ul>
+<li>4-bit NormalFloat (NF4)：一种新的数据类型，理论上对正态分布的权重是最优的。</li>
+<li>Double Quantization：通过量化量化常数来减少平均内存占用。</li>
+<li>Paged Optimizers：使用NVIDIA统一内存特性，自动在CPU和GPU之间进行页面转换，以避免梯度检查点操作时内存不足。</li>
+</ul>
+</li>
+<li>QLoRA主要用于微调训练阶段，使得在单个GPU上进行大型模型的微调成为可能，这对于资源有限的研究者和开发者来说是一个重大突破。</li>
+</ul>
+<h5 id="GPTQ"><a href="#GPTQ" class="headerlink" title="GPTQ"></a>GPTQ</h5><ul>
+<li>GPTQ（Generative Pre-trained Transformer Quantization）是一种针对生成预训练Transformer模型的量化技术。GPTQ旨在解决大型GPT模型的高计算和存储成本问题。这些模型由于其庞大的规模，即使在高性能GPU上进行推理也需要大量的计算资源。GPTQ通过以下方式来提高效率：<ul>
+<li>一次性权重量化：基于近似二阶信息的方法，可以在不需要重新训练的情况下压缩模型。</li>
+<li>高压缩率：能够将模型量化到每个权重3或4位，同时几乎不降低准确度。</li>
+<li>高效执行：允许在单个GPU上执行大型参数模型的生成推理，显著减少了所需的硬件资源。</li>
+</ul>
+</li>
+<li>GPTQ通过用于部署推理阶段，用于减少模型的大小和内存占用，使得这些大型模型更易于部署和使用。</li>
+</ul>
+<hr>
+<h3 id="模型蒸馏"><a href="#模型蒸馏" class="headerlink" title="模型蒸馏"></a>模型蒸馏</h3><ul>
+<li>模型蒸馏（Model Distillation），主要包含Logits蒸馏和特征蒸馏两大类</li>
+<li>以模型压缩为目标的模型蒸馏通常也叫作知识蒸馏，知识蒸馏主要目的是将一个大型、复杂、训练良好的模型（教师模型）的知识转移到一个小型、简单、更易于部署的模型（学生模型）中。<img src="/Notes/DL/DL——模型压缩技术/Model-Distillation-Logits-vs-Features.png"></li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/583273832" target="_blank" rel="noopener">知识蒸馏算法汇总</a><blockquote>
+<p>知识蒸馏有两大类：一类是logits蒸馏，另一类是特征蒸馏。logits蒸馏指的是在softmax时使用较高的温度系数，提升负标签的信息，然后使用Student和Teacher在高温softmax下logits的KL散度作为loss。中间特征蒸馏就是强迫Student去学习Teacher某些中间层的特征，直接匹配中间的特征或学习特征之间的转换关系。例如，在特征No.1和No.2中间，知识可以表示为如何模做两者中间的转化，可以用一个矩阵让学习者产生这个矩阵，学习者和转化之间的学习关系。 这篇文章汇总了常用的知识蒸馏的论文和代码，方便后续的学习和研究。</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="Logits蒸馏"><a href="#Logits蒸馏" class="headerlink" title="Logits蒸馏"></a>Logits蒸馏</h4><ul>
+<li>关注输出层</li>
+<li>也叫作基于反馈的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型的输出概率分布。通过最小化两个模型输出概率分布之间的KL散度（或其他相似性度量），学生模型学习教师模型的“软目标”，即对每个类别的概率预测，而不是单一的预测标签。</li>
+</ul>
+<h4 id="特征蒸馏"><a href="#特征蒸馏" class="headerlink" title="特征蒸馏"></a>特征蒸馏</h4><ul>
+<li>关注中间层</li>
+<li>也叫作基于特征的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型在中间层的激活或特征图。这通常通过最小化两个模型对应层的特征表示之间的距离（如L2距离或cosine相似度）来实现。</li>
+</ul>
+<hr>
+<h3 id="模型剪枝"><a href="#模型剪枝" class="headerlink" title="模型剪枝"></a>模型剪枝</h3><ul>
+<li>Model Pruning</li>
+<li>通过删减网络结构然后调整分布实现模型压缩，剪枝方法不常用</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——管理HuggingFace项目.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Git/Git——管理HuggingFace项目.html" itemprop="url">Git——管理HuggingFace项目</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="LFS环境安装"><a href="#LFS环境安装" class="headerlink" title="LFS环境安装"></a>LFS环境安装</h3><ul>
+<li>配置HuggingFace环境需要安装<code>git lfs</code></li>
+<li>LFS全称Large File Storge，即大文件存储，可以帮助我们管理比较大的文件</li>
+<li>Ubuntu安装<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash</span><br><span class="line">sudo apt-get install git-lfs</span><br><span class="line">git lfs install</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="拉取HuggingFace文件"><a href="#拉取HuggingFace文件" class="headerlink" title="拉取HuggingFace文件"></a>拉取HuggingFace文件</h3><ul>
+<li><p>执行拉取操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://huggingface.co/xxx/xxx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>该命令可在HuggingFace网站项目首页查找</p>
+</li>
+<li><code>git clone</code>命令可以将整个项目下载下来，但是下载大的文件时可能会特别慢，最佳实践是：<ul>
+<li>使用<code>git clone xxx</code>下载项目文件，待除大文件外的其他文件下载结束时结束命令<ul>
+<li>一些未完成的项目会出现在<code>.git/lfs/incomplete</code>文件夹下，结束命令后可以删除该文件夹，该文件夹可能会存储较大的未完成文件，浪费存储</li>
+</ul>
+</li>
+<li>使用网页或其他方式下载模型到指定目录下</li>
+</ul>
+</li>
+</ul>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul>
+<li>如果直接使用transformers包下载<code>Bert</code>等预训练模型时，默认安装在<code>~/.cache/huggingface/hub</code>文件夹下</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——rebase.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -300,23 +636,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">
-                2019-02-02
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -465,23 +785,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-18T00:00:00+08:00">
-                2019-01-18
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -595,23 +899,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-09T00:00:00+08:00">
-                2019-01-09
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -721,23 +1009,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-09T00:00:00+08:00">
-                2019-01-09
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -881,23 +1153,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-09T00:00:00+08:00">
-                2019-01-09
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1022,7 +1278,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——VAE.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1041,27 +1297,11 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html" itemprop="url">Linux——Ubuntu和Centos服务器管理</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——VAE.html" itemprop="url">DL——VAE</a></h1>
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-04T00:00:00+08:00">
-                2019-01-04
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1093,120 +1333,38 @@
       
         
           
-            <hr>
-<h3 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h3><h4 id="配置静态IP"><a href="#配置静态IP" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
-<li><p>查看网卡名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
-<ul>
-<li>查看网卡信息,每行的第一项为网卡名称</li>
-<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
-<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
-</ul>
-</li>
-<li><p>根据网卡名字打开相应网卡的配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line">vi /etc/sysconfig/network-scripts/ifcfg-eth0</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改相关配置内容</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">IPADDR=12.12.12.12</span><br><span class="line">NETMASK=255.255.255.0</span><br><span class="line">GATEWAY=12.12.12.1</span><br><span class="line">ONBOOT=yes</span><br><span class="line">BOOTPROTO=static</span><br><span class="line">DNS1=114.114.114.114</span><br><span class="line">DNS2=8.8.8.8</span><br></pre></td></tr></table></figure>
-<ul>
-<li>等号后面是具体的ip地址名称</li>
-<li>DNS可以有多个,用数字标识即可</li>
-</ul>
-</li>
-<li><p>重新启动网络服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service network restart</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理用户"><a href="#管理用户" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码"><a href="#修改root密码" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>默认可远程登录root用户,只需知道密码即可(SSH默认已经安装)</em></p>
-<ul>
-<li><p>修改root密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
-</li>
-</ul>
-<h5 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
-<ul>
-<li><p>添加新用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
-<ul>
-<li>centos中,以上命令将自动为test用户分配一个属于test用户的/home/test文件夹</li>
-</ul>
-</li>
-<li><p>为新用户修改密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加用户权限</p>
-<ul>
-<li>打开配置文件</li>
-<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">## Allow root to run any commands anywhere</span><br><span class="line">root   ALL=(ALL)    ALL </span><br><span class="line">test   ALL=(ALL)    ALL</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>删除用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure>
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><ul>
+<li>网络输出对数方差，事实使用\(e^\sigma\)，能保证方差非负<img src="/Notes/DL/DL——VAE/A-VAE.png">
 </li>
 </ul>
 <hr>
-<h3 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h3><h4 id="配置静态IP-1"><a href="#配置静态IP-1" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
-<li><p>查看网卡名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
+<h3 id="李宏毅公式推导"><a href="#李宏毅公式推导" class="headerlink" title="李宏毅公式推导"></a>李宏毅公式推导</h3><ul>
+<li>目标是让似然函数最大化，也就是最大化\(\sum_x \log P(x)\)，推导可得相当于最大化变分下界(Evidence Lower Bound，\(ELBO(q)\))<img src="/Notes/DL/DL——VAE/B-VAE-formula-lihongyi.png"></li>
+<li>为什么要通过求解\(q\)来实现似然函数最大化/ELBO最大化呢？因为优化\(q\)时，与\(P(x)\)无关，相当于最小化KL散度<img src="/Notes/DL/DL——VAE/C-VAE-formula-lihongyi-why-q.png"></li>
+<li>进一步拆解变分下界<img src="/Notes/DL/DL——VAE/D-VAE-formula-lihongyi.png"></li>
+<li>变分下界的两个部分分别可用在网络中建模，两个损失函数同时优化就是VAE<img src="/Notes/DL/DL——VAE/E-VAE-formula-lihongyi.png">
 <ul>
-<li>查看网卡信息,每行的第一项为网卡名称</li>
-<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
-<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
-</ul>
-</li>
-<li><p>修改配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/network/interfaces</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改相关配置内容</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line"></span><br><span class="line">auto eth0</span><br><span class="line">iface eth0 inet static</span><br><span class="line">address 12.12.12.12</span><br><span class="line">netmask 255.255.255.0</span><br><span class="line">gateway 12.12.12.1</span><br><span class="line">dns-nameserver 114.114.114.114 8.8.8.8</span><br></pre></td></tr></table></figure>
+<li>期望部分：通过带采样的Auto-Encoder实现，损失函数为Auto-Encoder的损失函数</li>
+<li>KL散度部分【TODO：有时间手动推导一下】：使用一个关于均值和方差的损失函数可以实现，详情看原始论文可推导<a href="https://arxiv.org/pdf/1312.6114.pdf?source=post_page---------------------------" target="_blank" rel="noopener">Auto-Encoding Variational Bayes</a><img src="/Notes/DL/DL——VAE/original-paper-VAE-loss1-proof.png">
 <ul>
-<li>dns可以有多个,以空格间隔开</li>
+<li>假设了\(p_\theta(z)\)是均值为0方差为1的标准正太分布\(N(0,I)\)，所以这里本质是尽量保证分布\(q(z|x)\)尽可能接近标准正太分布</li>
 </ul>
 </li>
-<li><p>重新启动网络服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo /etc/init.d/networking restart</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="管理用户-1"><a href="#管理用户-1" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码-1"><a href="#修改root密码-1" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>Ubuntu默认禁用root用户登录,需要配置root账户才能以root身份登录(SSH默认已经安装)</em></p>
-<ul>
-<li><p>修改root密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
-</li>
-</ul>
-<h5 id="添加用户-1"><a href="#添加用户-1" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
-<ul>
-<li><p>添加新用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
-<ul>
-<li>Ubuntu中以上命令并不会直接为当前用户分配自己的文件夹,所以需要我们为其手动添加一个并使用<code>chown test /home/test</code>命令将文件家分配给test用户,这样使用test用户登录时将会自动转到/home/test文件夹下面工作</li>
-</ul>
-</li>
-<li><p>为新用户修改密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加用户权限</p>
-<ul>
-<li>打开配置文件</li>
-<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># User privilege specification</span><br><span class="line">root    ALL=(ALL:ALL) ALL</span><br><span class="line">test    ALL=(ALL:ALL) ALL</span><br></pre></td></tr></table></figure>
+<li>KL散度部分的<a href="https://spaces.ac.cn/archives/5253" target="_blank" rel="noopener">其他证明</a>：<img src="/Notes/DL/DL——VAE/spaces-VAE-formula.png">
 </li>
 </ul>
 </li>
-<li><p>删除用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure></li>
 </ul>
+<hr>
+<h3 id="其他公式推导"><a href="#其他公式推导" class="headerlink" title="其他公式推导"></a>其他公式推导</h3><img src="/Notes/DL/DL——VAE/other-VAE-formula.png">
+<hr>
+<h3 id="AE-VAE-CVAE"><a href="#AE-VAE-CVAE" class="headerlink" title="AE-VAE-CVAE"></a>AE-VAE-CVAE</h3><img src="/Notes/DL/DL——VAE/other-AE-VAE-CVAE.png">
 
           
         
@@ -1278,23 +1436,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-04T00:00:00+08:00">
-                2019-01-04
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1662,7 +1804,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——VAE.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1681,178 +1823,11 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——VAE.html" itemprop="url">DL——VAE</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Linux——Ubuntu和Centos服务器管理.html" itemprop="url">Linux——Ubuntu和Centos服务器管理</a></h1>
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-04T00:00:00+08:00">
-                2019-01-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
           
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-
-<hr>
-<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><ul>
-<li>网络输出对数方差，事实使用\(e^\sigma\)，能保证方差非负<img src="/Notes/DL/DL——VAE/A-VAE.png">
-</li>
-</ul>
-<hr>
-<h3 id="李宏毅公式推导"><a href="#李宏毅公式推导" class="headerlink" title="李宏毅公式推导"></a>李宏毅公式推导</h3><ul>
-<li>目标是让似然函数最大化，也就是最大化\(\sum_x \log P(x)\)，推导可得相当于最大化变分下界(Evidence Lower Bound，\(ELBO(q)\))<img src="/Notes/DL/DL——VAE/B-VAE-formula-lihongyi.png"></li>
-<li>为什么要通过求解\(q\)来实现似然函数最大化/ELBO最大化呢？因为优化\(q\)时，与\(P(x)\)无关，相当于最小化KL散度<img src="/Notes/DL/DL——VAE/C-VAE-formula-lihongyi-why-q.png"></li>
-<li>进一步拆解变分下界<img src="/Notes/DL/DL——VAE/D-VAE-formula-lihongyi.png"></li>
-<li>变分下界的两个部分分别可用在网络中建模，两个损失函数同时优化就是VAE<img src="/Notes/DL/DL——VAE/E-VAE-formula-lihongyi.png">
-<ul>
-<li>期望部分：通过带采样的Auto-Encoder实现，损失函数为Auto-Encoder的损失函数</li>
-<li>KL散度部分【TODO：有时间手动推导一下】：使用一个关于均值和方差的损失函数可以实现，详情看原始论文可推导<a href="https://arxiv.org/pdf/1312.6114.pdf?source=post_page---------------------------" target="_blank" rel="noopener">Auto-Encoding Variational Bayes</a><img src="/Notes/DL/DL——VAE/original-paper-VAE-loss1-proof.png">
-<ul>
-<li>假设了\(p_\theta(z)\)是均值为0方差为1的标准正太分布\(N(0,I)\)，所以这里本质是尽量保证分布\(q(z|x)\)尽可能接近标准正太分布</li>
-</ul>
-</li>
-<li>KL散度部分的<a href="https://spaces.ac.cn/archives/5253" target="_blank" rel="noopener">其他证明</a>：<img src="/Notes/DL/DL——VAE/spaces-VAE-formula.png">
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="其他公式推导"><a href="#其他公式推导" class="headerlink" title="其他公式推导"></a>其他公式推导</h3><img src="/Notes/DL/DL——VAE/other-VAE-formula.png">
-<hr>
-<h3 id="AE-VAE-CVAE"><a href="#AE-VAE-CVAE" class="headerlink" title="AE-VAE-CVAE"></a>AE-VAE-CVAE</h3><img src="/Notes/DL/DL——VAE/other-AE-VAE-CVAE.png">
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——问题记录.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Git/Git——问题记录.html" itemprop="url">Git——问题记录</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-02T00:00:00+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
 
           
 
@@ -1885,157 +1860,118 @@
         
           
             <hr>
-<h3 id="Ubuntu中文乱码问题"><a href="#Ubuntu中文乱码问题" class="headerlink" title="Ubuntu中文乱码问题"></a>Ubuntu中文乱码问题</h3><ul>
-<li>解决方案<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global core.quotepath false</span><br></pre></td></tr></table></figure>
+<h3 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h3><h4 id="配置静态IP"><a href="#配置静态IP" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
+<li><p>查看网卡名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
+<ul>
+<li>查看网卡信息,每行的第一项为网卡名称</li>
+<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
+<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
+</ul>
+</li>
+<li><p>根据网卡名字打开相应网卡的配置文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line">vi /etc/sysconfig/network-scripts/ifcfg-eth0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改相关配置内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">IPADDR=12.12.12.12</span><br><span class="line">NETMASK=255.255.255.0</span><br><span class="line">GATEWAY=12.12.12.1</span><br><span class="line">ONBOOT=yes</span><br><span class="line">BOOTPROTO=static</span><br><span class="line">DNS1=114.114.114.114</span><br><span class="line">DNS2=8.8.8.8</span><br></pre></td></tr></table></figure>
+<ul>
+<li>等号后面是具体的ip地址名称</li>
+<li>DNS可以有多个,用数字标识即可</li>
+</ul>
+</li>
+<li><p>重新启动网络服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service network restart</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
-<h3 id="Windows拉取项目后无法check"><a href="#Windows拉取项目后无法check" class="headerlink" title="Windows拉取项目后无法check"></a>Windows拉取项目后无法check</h3><ul>
-<li><p>表现：拉取远程分支后无法进行check操作，具体错误表现为</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatal：unable to checkout working tree</span><br></pre></td></tr></table></figure>
+<h4 id="管理用户"><a href="#管理用户" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码"><a href="#修改root密码" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>默认可远程登录root用户,只需知道密码即可(SSH默认已经安装)</em></p>
+<ul>
+<li><p>修改root密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>原因：一般是因为文件名命名包含非法字符导致，比如亲测文件名包含<code>|</code>就会出错（通常是有些不适用Windows且命名不规范的作者容易出现该错误）</p>
+<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
 </li>
-<li>解决方案：修改文件名称，将非法字符去掉</li>
 </ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——Python3新特性f-string.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——Python3新特性f-string.html" itemprop="url">Python——Python3新特性f-string</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-02T00:00:00+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Formatted string literals</em></p>
+<h5 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
+<ul>
+<li><p>添加新用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
+<ul>
+<li>centos中,以上命令将自动为test用户分配一个属于test用户的/home/test文件夹</li>
+</ul>
+</li>
+<li><p>为新用户修改密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加用户权限</p>
+<ul>
+<li>打开配置文件</li>
+<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">## Allow root to run any commands anywhere</span><br><span class="line">root   ALL=(ALL)    ALL </span><br><span class="line">test   ALL=(ALL)    ALL</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>删除用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
 <hr>
-<h3 id="f-string"><a href="#f-string" class="headerlink" title="f-string"></a>f-string</h3><h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><ul>
-<li>格式化的字符串文字以“f”为前缀</li>
-<li>类似于str.format()接受的格式字符串</li>
-<li>它们包含由花括号包围的替换字段</li>
-<li>替换字段是表达式，在运行时进行评估，然后使用format()协议进行格式化</li>
+<h3 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h3><h4 id="配置静态IP-1"><a href="#配置静态IP-1" class="headerlink" title="配置静态IP"></a>配置静态IP</h4><ul>
+<li><p>查看网卡名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
+<ul>
+<li>查看网卡信息,每行的第一项为网卡名称</li>
+<li>一般服务器可能有多个网卡,按照需求选择一个即可</li>
+<li>网卡信息包含当前网卡的ipv4和ipv6地址,MAC地址等信息</li>
 </ul>
-<h4 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h4><ul>
-<li>从字符串中提取的表达式在f字符串出现的上下文中计算</li>
-<li>这意味着表达式可以完全访问本地和全局变量</li>
-<li>可以使用任何有效的Python表达式，包括函数和方法调用</li>
+</li>
+<li><p>修改配置文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/network/interfaces</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改相关配置内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 假设网卡名称为eth0</span><br><span class="line"></span><br><span class="line">auto eth0</span><br><span class="line">iface eth0 inet static</span><br><span class="line">address 12.12.12.12</span><br><span class="line">netmask 255.255.255.0</span><br><span class="line">gateway 12.12.12.1</span><br><span class="line">dns-nameserver 114.114.114.114 8.8.8.8</span><br></pre></td></tr></table></figure>
+<ul>
+<li>dns可以有多个,以空格间隔开</li>
 </ul>
-<h4 id="与之前的表达式对比"><a href="#与之前的表达式对比" class="headerlink" title="与之前的表达式对比"></a>与之前的表达式对比</h4><ul>
-<li><p>之前</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">print(&quot;%s%s%s&quot; % (a, b, c+d))</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>f-string</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">print(f&apos;&#123;a&#125;&#123;b&#125;&#123;c+d&#125;&apos;)</span><br></pre></td></tr></table></figure>
+<li><p>重新启动网络服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo /etc/init.d/networking restart</span><br></pre></td></tr></table></figure>
 </li>
+</ul>
+<h4 id="管理用户-1"><a href="#管理用户-1" class="headerlink" title="管理用户"></a>管理用户</h4><h5 id="修改root密码-1"><a href="#修改root密码-1" class="headerlink" title="修改root密码"></a>修改root密码</h5><p><em>Ubuntu默认禁用root用户登录,需要配置root账户才能以root身份登录(SSH默认已经安装)</em></p>
+<ul>
+<li><p>修改root密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>若需要找回root密码,参考博客 <a href="https://blog.csdn.net/shanvlang/article/details/80385913" target="_blank" rel="noopener">https://blog.csdn.net/shanvlang/article/details/80385913</a></p>
+</li>
+</ul>
+<h5 id="添加用户-1"><a href="#添加用户-1" class="headerlink" title="添加用户"></a>添加用户</h5><p><em>假设添加用户名为test的用户</em></p>
+<ul>
+<li><p>添加新用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd test</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Ubuntu中以上命令并不会直接为当前用户分配自己的文件夹,所以需要我们为其手动添加一个并使用<code>chown test /home/test</code>命令将文件家分配给test用户,这样使用test用户登录时将会自动转到/home/test文件夹下面工作</li>
+</ul>
+</li>
+<li><p>为新用户修改密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd test</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加用户权限</p>
+<ul>
+<li>打开配置文件</li>
+<li><p>如果root用户没有该文件的写权限的话需要用<code>chmod u+w /etc/sudoers</code>, 修改完成再改回到<code>chmod u-w /etc/sudoers</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/sudoers</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编辑以下内容,注意空格类型,最好复制一行修改</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># User privilege specification</span><br><span class="line">root    ALL=(ALL:ALL) ALL</span><br><span class="line">test    ALL=(ALL:ALL) ALL</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>删除用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userdel test</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -2076,7 +2012,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/26/">26</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2126,7 +2062,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">259</span>
+                  <span class="site-state-item-count">262</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

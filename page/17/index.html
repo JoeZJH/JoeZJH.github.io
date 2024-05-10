@@ -277,6 +277,459 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/GitHub——主题推荐算法.html" itemprop="url">GitHub——主题推荐算法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Topic Suggestions for Millions of Repositories</em></p>
+<p><a href="https://githubengineering.com/topics/" title="https://githubengineering.com/topics/" target="_blank" rel="noopener">Github官网原文</a></p>
+<hr>
+<h3 id="总体流程图"><a href="#总体流程图" class="headerlink" title="总体流程图"></a>总体流程图</h3><!-- ![process-flow](Github-topics-method/Github-topics-process-flow.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png" title="process-flow">
+<h3 id="分为七个步骤："><a href="#分为七个步骤：" class="headerlink" title="分为七个步骤："></a>分为七个步骤：</h3><hr>
+<h4 id="Readme-预处理与清除"><a href="#Readme-预处理与清除" class="headerlink" title="Readme 预处理与清除"></a>Readme 预处理与清除</h4><p><em>(Readme preprocessing and cleanup)</em></p>
+<ul>
+<li>移除不要的文本块(Remove unwanted blocks)<ul>
+<li>去除没用文本：一些块是没用的，比如code, table 和image链接等</li>
+</ul>
+</li>
+<li>文本划分(Text segmentation)<ul>
+<li>提取有用的文本：一个启发式的README tagger，借助格式分析：分析缩进(indentation)，空格(spacing)，和反撇号( `, backtick)等决定是否是有用信息【说明：这里语法分析是没必要的，我们只关心有用的文本，其他的都是为噪音(noise)】</li>
+<li>提取到有用文本后，删除拓展部分：HTML标签，路径和其他处理出来的部分等</li>
+<li>最后将剩下的文本进行粗粒度分割【用标点符号(punctuation marks)和README中的一些符号，比如临近哈希符号(contiguous hash symbols)】</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="生成候选主题"><a href="#生成候选主题" class="headerlink" title="生成候选主题"></a>生成候选主题</h4><p><em>(Generate candidate topics)</em></p>
+<ul>
+<li>用自定义的停用词去将词单元划分出来(Use custom stop words to break text into word units)<ul>
+<li>停用词去除</li>
+<li>n-gram分段小于等于4(测试发现小于4的比较好，太长的主题过于具体了，不合适)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除噪音主题"><a href="#移除噪音主题" class="headerlink" title="移除噪音主题"></a>移除噪音主题</h4><p><em>(Eliminate noisy topics)</em></p>
+<ul>
+<li>用逻辑回归模型删减“bad”主题(Use a logistic regression model to prune “bad” topics)<ul>
+<li>监督逻辑回归模型(supervised logistic regression model)主要针对除了频数比较小的外，一些不好的，比如”great”, “cool”等，<strong>这里的模型是一个分类模型，分为两类(good[positive] and bad(negative))</strong>, 我们称之为关键词过滤模型<ul>
+<li>手动收集大约300个数据集作为训练集</li>
+<li>单个动词一般都是Bad类<code>请教师兄</code></li>
+<li>其他的(<code>Other features we used were occurrence of user names, n-gram size of a phrase, length of a phrase, and numeric content within a phrase.</code>)</li>
+<li>以后打算加入回馈机制(来自用户的)去更新这个关键词过滤模型：接受度高的词作为positive的，接受度低的作为停用词或者negative的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>移除不满足最小频数的主题(Eliminate topics not satisfying minimum frequency count)</li>
+</ul>
+<hr>
+<h4 id="给主题评分"><a href="#给主题评分" class="headerlink" title="给主题评分"></a>给主题评分</h4><p><em>(Score Topics)</em></p>
+<ul>
+<li>用混合tf-idf分数，以主题频率和n元词作为打分标准(Use combination of tf-idf scores, topic frequency and n-gram size for scoring)<ul>
+<li>评估多种指标后，选择了点互信息指标(PMI)： <a href="https://blog.csdn.net/luo123n/article/details/48574123" title="https://blog.csdn.net/luo123n/article/details/48574123" target="_blank" rel="noopener">Pointwise Mutual Information</a></li>
+<li>考虑另一种指标tf-idf：参考论文<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" title="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" target="_blank" rel="noopener">Using TF-IDF to Determine Word Relevance in Document Queries.pdf</a>或者<a href="https://blog.csdn.net/baimafujinji/article/details/51476117" title="https://blog.csdn.net/baimafujinji/article/details/51476117" target="_blank" rel="noopener">Python的实现</a></li>
+<li><code>The second approach we tried uses the average tf-idf scores of individual words in a phrase weighted by the phrase frequency (if it’s more than one word long) and n-gram size.</code></li>
+<li>两种方法比较：<ul>
+<li>PMI： 强调独特性，越特殊的短语评分越高，但有些可能只是拼写错误(Typo)或者是没有被删除的代码片段</li>
+<li>tf-idf： 不强调独特性，最终选择是tf-idf,原因是这个指标较好的平衡了独特性和主题与仓库(repository)的相关程度</li>
+</ul>
+</li>
+<li>在tf-idf的基础上还添加了一下其他的比如boosting scores等方法<br><strong>下面是TF-IDF的说明</strong><!-- ![tf-idf](Github-topics-method/tf-idf.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/tf-idf.png" title="tf-idf">
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="规范化主题"><a href="#规范化主题" class="headerlink" title="规范化主题"></a>规范化主题</h4><p><em>(Canonicalize topics)</em></p>
+<ul>
+<li><p>使用内部词典规范主题形式(Use an in-house dictionary to suggest canonical form of topics)</p>
+<ul>
+<li><p>解决文字层面的差别和变化等,比如下面四个主题</p>
+<blockquote>
+<p>neural-network<br>neural-networks<br>neuralnetwork<br>neuralnetworks</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除相似的主题"><a href="#移除相似的主题" class="headerlink" title="移除相似的主题"></a>移除相似的主题</h4><p><em>(Eliminate near similar topics)</em></p>
+<ul>
+<li><p>用基于Jaccard相似性评分的贪心算法(Greedy approach using Jaccard similarity scoring)</p>
+<ul>
+<li><p>motivation：在得到Top-N的主题后，有些主题其实很相似，虽然都有用，但是他们只是在不同粒度描述了同一个主题而已，因此我们需要删除一些重复的，比如下面的例子</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>general-purpose machine learning<br>machine learning library<br>machine learning algorithms<br>distributed machine learning<br>machine learning framework<br>deep learning library<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+<li><p>method： 两个短语的相似性计算使用的是基于词的Jaccard相似性(两个短语的差集与并集的比值，因为它对较短的短语很有效，而且分数是[0-1]的，很方便设置阈值(thresholds))，用贪心算法，如果两个主题相似，去除分数较低的那一个，上面的例子去除相似主题后的结果是：</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="返回Top-K主题作为最终结果"><a href="#返回Top-K主题作为最终结果" class="headerlink" title="返回Top-K主题作为最终结果"></a>返回Top-K主题作为最终结果</h4>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Go/Go语言——String与Slice深度解析.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Go/Go语言——String与Slice深度解析.html" itemprop="url">Go语言——String与Slice深度解析</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Note: 他们都是struct类型的</em></p>
+<hr>
+<h3 id="String"><a href="#String" class="headerlink" title="String"></a>String</h3><pre><code>type StringHeader struct {
+    Data uintptr
+    Len  int
+}
+</code></pre><hr>
+<h3 id="Slice"><a href="#Slice" class="headerlink" title="Slice"></a>Slice</h3><pre><code>type SliceHeader struct {
+    Data uintptr
+    Len  int
+    Cap  int
+}
+</code></pre><hr>
+<h3 id="把Slice转换为String的语法为"><a href="#把Slice转换为String的语法为" class="headerlink" title="把Slice转换为String的语法为"></a>把Slice转换为String的语法为</h3><pre><code>[]byte(&quot;string&quot;)
+string([]byte{1,2,3})
+</code></pre><p><strong>注意：这种实现会有拷贝操作</strong></p>
+<hr>
+<h3 id="如何避免拷贝操作呢？"><a href="#如何避免拷贝操作呢？" class="headerlink" title="如何避免拷贝操作呢？"></a>如何避免拷贝操作呢？</h3><p>答案是自己实现指针转换（也可用反射实现头部转换），省去复制数据部分，同时注意这种实现后底层的数据不能再更改了，不然容易引发错误</p>
+<h4 id="直接修改指针类型并构建相应头部"><a href="#直接修改指针类型并构建相应头部" class="headerlink" title="直接修改指针类型并构建相应头部"></a>直接修改指针类型并构建相应头部</h4><pre><code>func String2Slice(s string) []byte {
+    sp := *(*[2]uintptr)(unsafe.Pointer(&amp;s))
+    bp := [3]uintptr{sp[0], sp[1], sp[1]}
+    return *(*[]byte)(unsafe.Pointer(&amp;bp))
+}
+
+func BytesToString(b []byte) string {
+    return *(*string)(unsafe.Pointer(&amp;b))
+}
+</code></pre><h4 id="使用反射机制获取到头部再进行转换"><a href="#使用反射机制获取到头部再进行转换" class="headerlink" title="使用反射机制获取到头部再进行转换"></a>使用反射机制获取到头部再进行转换</h4><pre><code>func Slice2String(b []byte) (s string) {
+    pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&amp;b))
+    pstring := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+    pstring.Data = pbytes.Data
+    pstring.Len = pbytes.Len
+    return
+}
+
+
+func String2Slice(s string) (b []byte) {
+    pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&amp;b))
+    pstring := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+    pbytes.Data = pstring.Data
+    pbytes.Len = pstring.Len
+    pbytes.Cap = pstring.Len
+    return
+}
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——事务深度理解.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/MySQL/MySQL——事务深度理解.html" itemprop="url">MySQL——事务深度理解</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="autocommit"><a href="#autocommit" class="headerlink" title="@@autocommit"></a>@@autocommit</h3><ul>
+<li>变量 @@autocommit<br>  select @@autocommit;<br>  set @@autocommit = 0;</li>
+<li>@@autocommit 为0时表示不以显示事务开头的语句或者以事务开头(<code>begin;</code> 或者 <code>start transaction;</code>)都会被缓存起来并且在<code>commit;</code>提交前都可以用<code>rollback;</code>回滚</li>
+<li>@@autocommit 为1时表示必须以事务开头的语句才会被缓存，否则一个sql语句将会被当做一个事务提交，将不能使用<code>rollback;</code>语句回滚</li>
+</ul>
+<p><strong>说明：不是所有引擎都支持事务，常用的支持事务的引擎是InnoDB</strong></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——引擎比较说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -300,23 +753,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-26T00:00:00+08:00">
-                2018-05-26
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -421,7 +858,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——事务深度理解.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Go/Go语言——struct类型做为函数参数.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -440,27 +877,11 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/MySQL/MySQL——事务深度理解.html" itemprop="url">MySQL——事务深度理解</a></h1>
+                <a class="post-title-link" href="/Notes/Go/Go语言——struct类型做为函数参数.html" itemprop="url">Go语言——struct类型作为函数参数</a></h1>
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-26T00:00:00+08:00">
-                2018-05-26
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -492,13 +913,16 @@
       
         
           
-            <hr>
-<h3 id="autocommit"><a href="#autocommit" class="headerlink" title="@@autocommit"></a>@@autocommit</h3><ul>
-<li>变量 @@autocommit<br>  select @@autocommit;<br>  set @@autocommit = 0;</li>
-<li>@@autocommit 为0时表示不以显示事务开头的语句或者以事务开头(<code>begin;</code> 或者 <code>start transaction;</code>)都会被缓存起来并且在<code>commit;</code>提交前都可以用<code>rollback;</code>回滚</li>
-<li>@@autocommit 为1时表示必须以事务开头的语句才会被缓存，否则一个sql语句将会被当做一个事务提交，将不能使用<code>rollback;</code>语句回滚</li>
+            <p><em>本文先给出Go语言中struct类型作为函数参数传入的例子，然后给出总结</em></p>
+<hr>
+<h3 id="首先看下面代码"><a href="#首先看下面代码" class="headerlink" title="首先看下面代码"></a>首先看下面代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">func changeValue(person Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func changePoint(person *Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line">func main()  &#123;</span><br><span class="line">	person := Person&#123;</span><br><span class="line">		name:&quot;origin&quot;,</span><br><span class="line">	&#125;</span><br><span class="line">	changeValue(person)</span><br><span class="line">	fmt.Printf(&quot;Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">	changePoint(&amp;person)</span><br><span class="line">	fmt.Printf(&quot;*Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//output:</span><br><span class="line">//Person:</span><br><span class="line">// person.name: origin---person.age: 0</span><br><span class="line">//*Person:</span><br><span class="line">// person.name: zhoujiahong---person.age: 22</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>struct类型的传递是按值传递的，与数组[5]byte等的传递相似，也可以理解为和C++一样</li>
+<li>struct类型传递与切片不同，切片事实上是一个指针（栈）指向一块数组（堆）这样的数据结构，所以无论如何都是传入指针或者是指针（栈）的指针（指向栈）</li>
+<li>可以理解为: 切片类似于Java（切片还多了个特色，通过传入切片可以修改指针（栈）本身，而Java是做不到的）， 而数组类似于C++</li>
 </ul>
-<p><strong>说明：不是所有引擎都支持事务，常用的支持事务的引擎是InnoDB</strong></p>
+<p><strong>注意：struct类型与切片传值方式不同而与数组相同</strong></p>
 
           
         
@@ -570,23 +994,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-12T00:00:00+08:00">
-                2018-05-12
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -697,263 +1105,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Go/Go语言——struct类型做为函数参数.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Go/Go语言——struct类型做为函数参数.html" itemprop="url">Go语言——struct类型作为函数参数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-12T00:00:00+08:00">
-                2018-05-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文先给出Go语言中struct类型作为函数参数传入的例子，然后给出总结</em></p>
-<hr>
-<h3 id="首先看下面代码"><a href="#首先看下面代码" class="headerlink" title="首先看下面代码"></a>首先看下面代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">func changeValue(person Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func changePoint(person *Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line">func main()  &#123;</span><br><span class="line">	person := Person&#123;</span><br><span class="line">		name:&quot;origin&quot;,</span><br><span class="line">	&#125;</span><br><span class="line">	changeValue(person)</span><br><span class="line">	fmt.Printf(&quot;Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">	changePoint(&amp;person)</span><br><span class="line">	fmt.Printf(&quot;*Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//output:</span><br><span class="line">//Person:</span><br><span class="line">// person.name: origin---person.age: 0</span><br><span class="line">//*Person:</span><br><span class="line">// person.name: zhoujiahong---person.age: 22</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>struct类型的传递是按值传递的，与数组[5]byte等的传递相似，也可以理解为和C++一样</li>
-<li>struct类型传递与切片不同，切片事实上是一个指针（栈）指向一块数组（堆）这样的数据结构，所以无论如何都是传入指针或者是指针（栈）的指针（指向栈）</li>
-<li>可以理解为: 切片类似于Java（切片还多了个特色，通过传入切片可以修改指针（栈）本身，而Java是做不到的）， 而数组类似于C++</li>
-</ul>
-<p><strong>注意：struct类型与切片传值方式不同而与数组相同</strong></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/hello-world.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/hello-world.html" itemprop="url">Hello World</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-10T00:00:00+08:00">
-                2018-05-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——命令总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -977,23 +1128,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-10T00:00:00+08:00">
-                2018-05-10
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1088,6 +1223,118 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/hello-world.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/hello-world.html" itemprop="url">Hello World</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——项目文件目录说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1111,23 +1358,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-05-10T00:00:00+08:00">
-                2018-05-10
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1248,23 +1479,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-28T00:00:00+08:00">
-                2018-04-28
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -1441,544 +1656,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——LR-逻辑回归.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——LR-逻辑回归.html" itemprop="url">ML——LR-逻辑回归</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-20T00:00:00+08:00">
-                2018-04-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-<hr>
-<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
-<li>假设有m样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)<ul>
-<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{m}, y_{m}))\)</li>
-</ul>
-</li>
-<li>假设\(w, \theta, x_{i}\)等所有向量都为列向量</li>
-</ul>
-<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
-<li>线性回归模型<br>$$f(x) = w^{T}x + b$$</li>
-<li>令<br>$$<br>\begin{align}<br>\theta &amp;= (w; b) \\<br>x_{i} &amp;= (x_{i}; 1)<br>\end{align}<br>$$</li>
-<li>有<br>$$f(x) = \theta^{T} x$$</li>
-<li>逻辑回归决策函数<strong>在线性回归模型上加一个sigmoid函数</strong><br>$$<br>\begin{align}<br>h_{\theta}(x) &amp;= sigmoid(f(x)) \\<br>&amp;= \frac{1}{1+e^{-f(x)}} \\<br>&amp;= \frac{1}{1+e^{-\theta^{T} x}} \\<br>\end{align}<br>$$</li>
-<li>即<br>$$<br>\begin{align}<br>p(y=1|x) &amp;= h_{\theta}(x) = \frac{1}{1+e^{-\theta^{T} x}} = \frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}\\<br>p(y=0|x) &amp;= 1-h_{\theta}(x) = \frac{e^{-\theta^{T} x}}{1+e^{-\theta^{T} x}} = \frac{1}{1+e^{\theta^{T} x}} \\<br>\end{align}<br>$$</li>
-<li><strong>对数几率(log odds, 也称为logit)</strong>定义为: \(ln \frac{p}{1-p}\) ,在LR中有:<br>$$<br>\begin{align}<br>ln\frac{h_{\theta}(x)}{1-h_{\theta}(x)} = \theta^T x<br>\end{align}<br>$$</li>
-<li>分类超平面不确定,与最终的阈值有关,\(\alpha\)的值与最终阈值相关<br>$$w^{\star}x + b^{\star} = \alpha$$<ul>
-<li>分类超平面由\((w, b)\)和阈值唯一确定,(注意: SVM的分类超平面由\((w, b)\)唯一确定)</li>
-<li>这一点和SVM不同,SVM的分类超平面是确定的,详情参看<a href="/Notes/ML/Models/ML——SVM-支持向量机.html">ML——SVM-支持向量机</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><ul>
-<li>LR中使用<strong>极大似然法</strong><br>$$<br>\begin{align}<br>L(\theta) &amp;= p(Y|X;\theta) \\<br>&amp;= \prod_{i=1}^{m}p(y_{i}|x_{i}; \theta) \\<br>&amp;= \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}}<br>\end{align}<br>$$</li>
-<li>上面的式子不易求导优化,我们使用与上面的式子单调性和最优点等价的<strong>对数似然函数</strong>为<br>$$<br>\begin{align}<br>LL(\theta) &amp;= log L(\theta) \\<br>&amp;= log \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}} \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right ) \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right ) \\<br>\end{align}<br>$$<ul>
-<li>上面的式子中：<br>$$\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>加个负号即为为交叉熵损失函数<br>$$-\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>所以交叉熵损失函数与逻辑回归的对数似然损失函数（=逻辑回归对数似然函数的负数）是等价的</li>
-</ul>
-</li>
-<li>由前面的推导有<br>$$<br>\begin{align}<br>log \frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} = log\frac{\frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}}{\frac{1}{1+e^{\theta^{T} x}}} = log e^{\theta^{T} x} = \theta^{T}x\\<br>\end{align}<br>$$<br>$$log(p(y_{i} = 0|x_{i};\theta)) = log(\frac{1}{1+e^{\theta^{T} x}}) = -log(1+e^{\theta^{T} x})$$</li>
-<li>故而有<br>$$<br>\begin{align}<br>LL(\theta) &amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right )\\<br>&amp;= \sum_{i=1}^{m}\left ( y_{i}\theta^{T}x -  log(1+e^{\theta^{T}x}) \right)<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h4><ul>
-<li>最大化似然函数等价于最小化似然函数的负数</li>
-<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数</strong><br>$$loss(\theta) = -LL(\theta) = \sum_{i=1}^{m}\left (- y_{i}\theta^{T}x + log(1+e^{\theta^{T}x}) \right)$$</li>
-</ul>
-<h4 id="梯度下降法优化"><a href="#梯度下降法优化" class="headerlink" title="梯度下降法优化"></a>梯度下降法优化</h4><p><em>注意: 这里优化目标也可以用牛顿法</em></p>
-<ul>
-<li>目标,求一个\(\theta^{\star}\)满足似然函数最大化或者损失函数最小化<br>$$\theta^{\star} = \arg\max_{\theta} LL(\theta) = \arg\min_{\theta} -LL(\theta) = \arg\min_{\theta} loss(\theta)$$</li>
-<li>对数似然函数对参数\(\theta\)求导有<br>$$<br>\begin{align}<br>\frac{\partial loss(\theta)}{\partial\theta} &amp;= \sum_{i=1}^{m}\left ( -y_{i}x_{i} + \frac{x_{i}e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + \frac{e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta}(x_{i})\right ) \\<br>\end{align}<br>$$</li>
-<li>LR模型的梯度下降参数迭代公式<br>$$<br>\begin{align}<br>\theta^{t+1} &amp;= \theta^{t} - \alpha\sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta^{t}}(x_{i})\right ) \\<br>&amp;= \theta^{t} + \alpha\sum_{i=1}^{m}x_{i}\left ( y_{i} - h_{\theta^{t}}(x_{i})\right )<br>\end{align}<br>$$<ul>
-<li>其中\(\alpha\)为步长</li>
-</ul>
-</li>
-<li><strong>线性回归</strong>和<strong>LR模型</strong>的梯度下降法参数迭代公式表达式看似相同,但是不同的模型对应的<strong>\(h_{\theta}\)函数并不相同</strong></li>
-</ul>
-<hr>
-<h3 id="其他总结"><a href="#其他总结" class="headerlink" title="其他总结"></a>其他总结</h3><p><em>参考:<a href="https://www.cnblogs.com/ModifyRong/p/7739955.html" target="_blank" rel="noopener">https://www.cnblogs.com/ModifyRong/p/7739955.html</a></em></p>
-<ul>
-<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数(对数损失函数)</strong><ul>
-<li>对数似然损失函数定义为:<br>$$Loss(\theta) = -P(Y|X; \theta)$$</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;P213中定义LR的损失函数为逻辑斯蒂损失函数,在LR模型和最大熵模型中,逻辑斯蒂损失函数本质上与对数似然损失函数等价,可推导得到</li>
-</ul>
-</li>
-<li>一句话概括逻辑回归:<ul>
-<li><strong>逻辑回归是假设数据服从伯努利分布,通过极大似然函数的方法,运用梯度下降法或者牛顿法来求解参数,来达到将数据二分类的目的</strong></li>
-<li>逻辑回归的假设: <strong>数据服从伯努利分布</strong>, \(p(y=1|x) = 1-p(y=0|x)\)</li>
-<li>逻辑回归的损失函数: <strong>对数似然损失函数(交叉熵损失函数)</strong>, 也就是对数似然函数的负数</li>
-<li>逻辑回归的求解方法: <strong>梯度下降法或牛顿法</strong></li>
-<li>逻辑回归的目的: <strong>将数据二分类</strong></li>
-<li>逻辑回归如何分类: <strong>预测结果是连续的[0-1]的数</strong>,我们一般选择0.5作为阈值来分类,但是这个值可能是可以变化的,因为损失函数最小并不意味着0.5时分类精度最高</li>
-</ul>
-</li>
-<li>为什么要用极大似然法?等价于为什么要用对数似然损失函数作为损失函数?<ul>
-<li>损失函数一般有平方损失函数,对数损失函数,合页损失函数,绝对值损失函数等,极大似然函数取对数后等同于对数损失函数,在逻辑回归这个模型中,推导可以得到,对数损失函数训练求解参数的迭代函数只与\(x_{i}, y_{i}\)相关,与sigmoid函数的梯度等无关.这样的参数更新自始至终都比较稳定</li>
-<li>为什么不选平方损失函数的呢？其一是因为如果你使用平方损失函数,你会发现梯度更新的速度和sigmod函数本身的梯度是很相关的,sigmod函数在它在定义域内的梯度都不大于0.25, 这样训练会非常的慢</li>
-</ul>
-</li>
-<li>逻辑回归中,如果某些特征高度相关,甚至某些特征完全相同,会造成什么影响?<ul>
-<li>损失函数收敛后,没有影响,因为特征的相关性并不影响分类器效果,重复特征会分化特征的权重(10个重复特征和单个特征训练结果差别在于前者每个特征的权重是后者的十分之一),本质上最终结果不变的</li>
-<li>但是训练时由于特征重复,参数增多,模型复杂度增加,训练时长,内存等都会增加</li>
-</ul>
-</li>
-<li>为什么需要去掉高度相关的特征?<ul>
-<li>去掉高度相关的特征使得模型可解释性更好</li>
-<li>提高训练时间,节约内存,减少参数数量</li>
-<li>特征的提取本身也需要时间,实际工程项目中可以少提取一个特征往往能节约很多时间</li>
-</ul>
-</li>
-<li><strong>logistic与logit的区别</strong>?<ul>
-<li>logit: 又名 log adds , 指的是”对数几率”, 定义为\(ln\frac{p}{1-p}\)</li>
-<li>logistic: 又叫Sigmoid函数, 指的是”对数几率函数”, 本质上是一种”Sigmoid”函数, 定义为 \(f(x) = \frac{1}{1+e^{-x}}\)</li>
-</ul>
-</li>
-<li>简单介绍LR模型的优缺点:<ul>
-<li>优点:<ul>
-<li>模型简单,可解释性好,(如果对数据特征进行了归一化处理的话)可以从特征的权重看到不同特征对最终结果的影响</li>
-<li>模型效果往往不错(特征工程做得好的话)</li>
-<li>训练速度快, 成熟的SGD优化方法(SGD可以分布式)等</li>
-<li>内存占用小</li>
-<li>输出结果可以作为概率值,然后可以对阈值根据实际进行划分,不一定是确定的0.5,只是一般选择0.5而已</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li><strong>难以处理非线性数据,本质上是线性分类面</strong></li>
-<li><strong>难以处理数据不平衡问题</strong>, 这里如果正例远远多于负例,那么全都预测为正例,整体损失函数也不会太大</li>
-<li><strong>LR本身无法筛选特征</strong>,有时候会用GBDT和XGBoost来筛选特征,然后再用LR模型</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>扩展:逻辑回归可像SVM一样引入核函数处理非线性分类问题吗?<ul>
-<li>一般来说不可以</li>
-<li><strong>[存疑]</strong>理论上通过对原始样本非线性映射,似乎也可以,如果将\(f(x) = \theta^{T}x\)中的\(f(x)\)看做\(\theta\)看做变量,然后类比SVM的核函数,定义一个关于\(x_{i}\)的非线性映射<ul>
-<li>这里\(x_{i}\)表示第\(i\)个样本, 用\(x_{i}^{j}\)表示第\(i\)个样本的第\(j\)个维度<br>$$x_{i}^{j} = \phi_{j}(x_{i}^{j})$$</li>
-<li>基于上述非线性映射函数的定义,我们对每个样本都进行线性映射,每个维度用不同的映射函数(不同样本相同维度映射函数相同)</li>
-<li>这里的非线性映射与SVM的核函数不同,SVM不使用核函数的话,也可以通过相同的非线性映射的方式实现非线性分类</li>
-<li>使用核技巧后的LR模型将变得很慢,SVM与kernels是相配的,而LR与kernels会十分慢(来源<a href="https://www.cnblogs.com/yan2015/p/5183284.html" target="_blank" rel="noopener">SVM核技巧</a>)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>LR模型训练完成后，输出概率多少的样本应该评估为正样本？【以下分析为个人理解，暂无严格证明】<ul>
-<li><strong>LR模型的损失函数本质上是交叉熵损失函数，交叉熵损失函数本质是最小化预估分布与训练样本分布之间的差距，故而预估均值与真实训练样本均值应该相等</strong>，即LR模型的预估值均值理论上与训练样本标签均值相同（这里LR的预估值是Sigmoid的输出值，训练样本负样本标签为0，正样本标签为1）。【PS，一种辅助理解思考：假设训练集中的样本特征完全相同，但其中30%是正样本，另外70%为负样本，那么优秀的LR模型在预估该训练样本时应该输出约为0.3】</li>
-<li>进一步来说，当预估的平均值大于训练样本的均值时，即可判断为正样本。<ul>
-<li>举例，假设训练样本的均值为0.4，那么预估值大于0.4的样本均可视为正样本（思考：这种判定下模型的准确率\( \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}\)应该是最高的？）</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html" itemprop="url">ML——XGBoost-vs-传统GBDT</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-18T00:00:00+08:00">
-                2018-04-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍XGBoost和其他传统GBDT的比较的优劣</em><br><em>XGBoost又叫(Newton Boosting Tree)</em></p>
-<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
-<ul>
-<li>GBDT推导: <a href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">ML——GBDT-梯度提升树-推导过程</a></li>
-<li>XGBoost推导: <a href="/Notes/ML/Models/ML——XGBoost-推导过程.html">ML——XGBoost-推导过程</a></li>
-</ul>
-<hr>
-<h3 id="XGBoost的优点"><a href="#XGBoost的优点" class="headerlink" title="XGBoost的优点"></a>XGBoost的优点</h3><p><em>参考博客: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a></em></p>
-<ul>
-<li>XGBoost<strong>损失函数</strong>是<strong>二阶泰勒</strong>展开(与牛顿法对应),GBDT是<strong>一阶泰勒</strong>展开(与梯度下降法对应)<ul>
-<li>传统 GBDT 在优化时只用到一阶导数信息, 所以传统GBDT也叫 (Gradient Boosting)</li>
-<li>XGBoost 则对目标函数进行了二阶泰勒展开，同时用到了一阶和二阶导数, 所以XGBoost又叫(Newton Boosting Tree)</li>
-</ul>
-</li>
-<li><p>XGBoost加了<strong>正则项</strong>,普通的GBDT没有,所以XGBoost学出来的模型更简单,能防止过拟合,提高模型的泛化性能</p>
-</li>
-<li><p>XGBoost Shrinkage(缩减)</p>
-<ul>
-<li>每次进行完一次迭代后,将叶子节点的权重乘以该系数(一般叫做<code>eta</code>\(\eta\))</li>
-<li>可以理解为这里Shrinkage是将学习速率调小,从而需要的迭代次数增多</li>
-<li>减小学习率实际上是减弱了每棵树对整体的影响,从而让后面的树有更多的学习空间</li>
-<li>下面的表述还有待确定:<ul>
-<li>进一步惩罚决策树叶节点的值(惩罚的意思是叶节点越大,惩罚越多,损失函数越大)</li>
-<li>对叶节点的惩罚本身可以理解为一个正则化</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>结点分裂的<strong>增益计算公式</strong>不同</p>
-<ul>
-<li>传统 GBDT 一般采用的是<strong>最小二乘法</strong>作为内部分裂的增益计算指标(因为用的都是回归树)<ul>
-<li>注意: 这里论文中描述的最小绝对偏差回归(LAD)是第一步损失函数的定义,不是这一步中的信息增益计算</li>
-<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>在分裂结点时可以选择三种方式:<ul>
-<li><code>friedman_mse</code>(默认), mean squared error with improvement score by Friedman</li>
-<li><code>mse</code>: mean squared error</li>
-<li><code>mae</code>: mean absolute error</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>而 XGBoost 使用的是经过优化推导后的式子<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
-<li>注意: XGBoost中的信息增益计算形式固定为上面的计算方式,但是具体的值与损失函数的定义相关(因为 \(g_i\) 和 \(h_i\) 的是损失函数的一阶和二阶梯度)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>XGBoost<strong>支持自定义的损失函数</strong>,支持一阶和二阶可导就行</p>
-<ul>
-<li>注意,这里的损失函数指的是 \(l(y_i,\hat{y}_i)\), 单个样本预测值与目标值的差异, 也就是单个样本的损失函数</li>
-<li>从<a href="/Notes/ML/Models/ML——XGBoost-推导过程.html">ML——XGBoost-推导过程</a>中可知:<ul>
-<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
-<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
-</ul>
-</li>
-<li>XGBoost中只要损失函数二次可微分即可得到 \(g_i\) 和 \(h_i\)<ul>
-<li>\(g_i\) 和 \(h_i\) 本身与损失函数的定义形式无关, 只要求损失函数二阶可微分即可</li>
-</ul>
-</li>
-<li>只要有了 \(g_i\) 和 \(h_i\) 我们即可<ul>
-<li>根据预先推导的叶子节点分数表达式 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\) 求得叶子结点的分数</li>
-<li>根据预先推导的信息增益公式 \(Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma\) 确定分裂特征和分裂点</li>
-</ul>
-</li>
-<li>GBDT 损失函数关系一般选择<strong>最小二乘回归</strong>或者<strong>最小绝对偏差回归</strong><ul>
-<li><strong>最小方差回归</strong>: (Least-Squares Regression, LSR)<br>$$\begin{align} L(y,F(x)) = \frac{1}{2}(y-F(x))^{2} \end{align}$$</li>
-<li><strong>最小绝对偏差回归</strong>: (Least Absolute Deviation Regression, LAD)<br>$$\begin{align} L(y,F(x)) = |y-F(x)| \end{align}$$</li>
-<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>的损失函数是定义好的, 不能自己定义, 详细如下源码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">LOSS_FUNCTIONS = &#123;&apos;ls&apos;: LeastSquaresError,</span><br><span class="line">                  &apos;lad&apos;: LeastAbsoluteError,</span><br><span class="line">                  &apos;huber&apos;: HuberLossFunction,</span><br><span class="line">                  &apos;quantile&apos;: QuantileLossFunction,</span><br><span class="line">                  &apos;deviance&apos;: None,    # for both, multinomial and binomial</span><br><span class="line">                  &apos;exponential&apos;: ExponentialLoss,</span><br><span class="line">                  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">_SUPPORTED_LOSS = (&apos;deviance&apos;, &apos;exponential&apos;)</span><br><span class="line">....</span><br><span class="line"></span><br><span class="line">if (self.loss not in self._SUPPORTED_LOSS</span><br><span class="line">                or self.loss not in LOSS_FUNCTIONS):</span><br><span class="line">            raise ValueError(&quot;Loss &apos;&#123;0:s&#125;&apos; not supported. &quot;.format(self.loss))</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>XGBoost 借鉴了随机森林的做法，<strong>支持列采样</strong>，不仅能降低过拟合，还能减少计算量，这也是 XGBoost 异于传统 GBDT 的一个特性</p>
-<ul>
-<li>列采样: 这借鉴于随机森林中的做法,每棵树不使用所有特征,而是部分特征参与训练</li>
-<li>可以减少计算量,同时还能降低过拟合,简直优秀</li>
-</ul>
-</li>
-<li>XGBoost 有<strong>缺失值自动处理</strong>, 在计算分裂增益时不会考虑带有缺失值的样本，这样就减少了时间开销,在分裂点确定了之后，将带有缺失值的样本分别放在左子树和右子树，比较两者分裂增益，选择增益较大的那一边作为默认分裂方向<ul>
-<li>进一步理解稀疏数据的支持: [待更新]</li>
-</ul>
-</li>
-<li><strong>并行化处理</strong>：由于 Boosting 本身的特性，传统 GBDT 无法像随机森林那样树与树之间的并行化<ul>
-<li>XGBoost 的并行主要体现在特征粒度上，在对结点进行分裂时，由于已预先对特征排序并保存为block 结构，每个特征的增益计算就可以开多线程进行，极大提升了训练速度</li>
-</ul>
-</li>
-<li><strong>剪枝策略</strong>不同<ul>
-<li>传统 GBDT 在损失不再减少时会停止分裂，这是一种预剪枝的贪心策略，容易欠拟合</li>
-<li>XGBoost采用的是后剪枝的策略，先分裂到指定的最大深度 (max_depth) 再进行剪枝<ul>
-<li>而且和一般的后剪枝不同， XGBoost 的后剪枝是不需要验证集的[待更新:XGBoost剪枝的策略是怎样的?只依赖信息增益指标吗?]</li>
-<li>和<a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">博客</a>作者指出的一样,我这里并不是”纯粹的”后剪枝,因为提前设定了最大深度</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>基分类器的选择不同:</p>
-<ul>
-<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
-<li><strong>XGBoost</strong>后面的各种损失计算等都包含着树模型的复杂度,叶子节点分类等,所以是<strong>只能用CART,不能使用逻辑回归</strong>的</li>
-<li>(从函数空间定义和后面的公式推导来看)<strong>XGBoost中基函数只使用CART回归树，不能使用逻辑回归</strong></li>
-<li>但是事实上XGBoost的实现中是支持线性分类器作为基分类器的, 参数<code>booster[default=&#39;gbtree&#39;]</code>,可选为<code>booster=gblinear</code><ul>
-<li>使用<strong>线性分类器作为基分类器</strong>时, XGBoost相当于带有L1正则化和L2正则化的:<ul>
-<li>Logistic回归(分类问题)</li>
-<li>线性回归(回归问题)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>分桶策略</strong>算法不同</p>
-<ul>
-<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
-<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
-<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
-<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="XGBoost的缺点"><a href="#XGBoost的缺点" class="headerlink" title="XGBoost的缺点"></a>XGBoost的缺点</h3><p><em>注意这里是</em></p>
-<ul>
-<li><strong>空间消耗大</strong><ul>
-<li>因为要在训练之前先对<strong>每个特征</strong>进行<strong>预排序</strong>并将结果存储起来，所以空间消耗较大</li>
-<li>GBDT无需预排序,但是每次重新排序很耗时间</li>
-</ul>
-</li>
-<li>速度慢<ul>
-<li>虽然XGBoost速度比传统 GBDT 快了不少, 但是不如 LightGBM 快, 且 LightGBM 占用内存更低</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="XGBoost为什么能够并行"><a href="#XGBoost为什么能够并行" class="headerlink" title="XGBoost为什么能够并行?"></a>XGBoost为什么能够并行?</h3><p><em>而GBDT是不能并行的，原因是：<a href="https://www.136.la/shida/show-187480.html" target="_blank" rel="noopener">https://www.136.la/shida/show-187480.html</a></em></p>
-<ul>
-<li>GBDT不能并行的原因是没有预排序（XGB的预排序结果会存储到block结构）等，在有了预排序结果后，同一个特征的切割方式可以并行尝试计算增益</li>
-<li>决策树最耗时间(包括GBDT)的步骤是对特征值的排序<ul>
-<li>用于确定最佳分割点</li>
-</ul>
-</li>
-<li>XGBoost训练前,预先对数据进行了排序,称为预排序<ul>
-<li>将预先排序的结果保存为block结构, 后面迭代的时候重复使用这个结构,从而实现一次排序,多次使用,大大减少计算量</li>
-</ul>
-</li>
-<li>这个结构减少计算量的同时还为并行化提供了可能([待更新]实际上不用预排序也能并行的吧?只是每次需要先使用一个单一线程排序,然后再多个线程并行?只是不够并行)<ul>
-<li>进行结点的分裂时,需要计算每个特征的增益,然后选择增益最大的那个特征分裂</li>
-<li>这里我们可以同时使用多个线程计算不同特征的增益, 从而实现并行化</li>
-</ul>
-</li>
-<li>总结为三方面的并行, ([待更新]但是具体实现了哪些并行不确定)<ul>
-<li>同一层级的结点间每个结点的分裂可以并行</li>
-<li>同一个结点内部不同特征增益的计算可以并行</li>
-<li>同一个结点同一个特征的不同分裂点的增益计算可以并行</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GBDT为什么不能自定义损失函数"><a href="#GBDT为什么不能自定义损失函数" class="headerlink" title="GBDT为什么不能自定义损失函数?"></a>GBDT为什么不能自定义损失函数?</h3><p><em>GBDT为什么不能像XGBoost一样自定义损失函数?</em></p>
-<ul>
-<li>查看<code>sklearn.ensemble.GradientBoostingClassifier</code>的源码发现, 确实不支持自定义的损失函数</li>
-<li>[待更新],因为涉及到后面的参数更新方式?</li>
-</ul>
-<hr>
-<h3 id="XGBoost如何使用自定义的损失函数"><a href="#XGBoost如何使用自定义的损失函数" class="headerlink" title="XGBoost如何使用自定义的损失函数?"></a>XGBoost如何使用自定义的损失函数?</h3><p><em>模型直接调用<code>fit</code>函数无法传入自定义的损失函数, 需要在模型开始定义的时候传入或者使用<code>xgb.train</code>函数调用</em></p>
-<ul>
-<li><p>使用方法1:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier(objective=MyLossFunction)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用方法2:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier()</span><br><span class="line">xgb.train(xgb_model=clf, obj=MyLossFunction)</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/16/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><span class="page-number current">17</span><a class="page-number" href="/page/18/">18</a><span class="space">&hellip;</span><a class="page-number" href="/page/26/">26</a><a class="extend next" rel="next" href="/page/18/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/16/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><span class="page-number current">17</span><a class="page-number" href="/page/18/">18</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><a class="extend next" rel="next" href="/page/18/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2028,7 +1710,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">259</span>
+                  <span class="site-state-item-count">262</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

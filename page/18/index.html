@@ -277,6 +277,507 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——LR-逻辑回归.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——LR-逻辑回归.html" itemprop="url">ML——LR-逻辑回归</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+<hr>
+<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
+<li>假设有m样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)<ul>
+<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{m}, y_{m}))\)</li>
+</ul>
+</li>
+<li>假设\(w, \theta, x_{i}\)等所有向量都为列向量</li>
+</ul>
+<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
+<li>线性回归模型<br>$$f(x) = w^{T}x + b$$</li>
+<li>令<br>$$<br>\begin{align}<br>\theta &amp;= (w; b) \\<br>x_{i} &amp;= (x_{i}; 1)<br>\end{align}<br>$$</li>
+<li>有<br>$$f(x) = \theta^{T} x$$</li>
+<li>逻辑回归决策函数<strong>在线性回归模型上加一个sigmoid函数</strong><br>$$<br>\begin{align}<br>h_{\theta}(x) &amp;= sigmoid(f(x)) \\<br>&amp;= \frac{1}{1+e^{-f(x)}} \\<br>&amp;= \frac{1}{1+e^{-\theta^{T} x}} \\<br>\end{align}<br>$$</li>
+<li>即<br>$$<br>\begin{align}<br>p(y=1|x) &amp;= h_{\theta}(x) = \frac{1}{1+e^{-\theta^{T} x}} = \frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}\\<br>p(y=0|x) &amp;= 1-h_{\theta}(x) = \frac{e^{-\theta^{T} x}}{1+e^{-\theta^{T} x}} = \frac{1}{1+e^{\theta^{T} x}} \\<br>\end{align}<br>$$</li>
+<li><strong>对数几率(log odds, 也称为logit)</strong>定义为: \(ln \frac{p}{1-p}\) ,在LR中有:<br>$$<br>\begin{align}<br>ln\frac{h_{\theta}(x)}{1-h_{\theta}(x)} = \theta^T x<br>\end{align}<br>$$</li>
+<li>分类超平面不确定,与最终的阈值有关,\(\alpha\)的值与最终阈值相关<br>$$w^{\star}x + b^{\star} = \alpha$$<ul>
+<li>分类超平面由\((w, b)\)和阈值唯一确定,(注意: SVM的分类超平面由\((w, b)\)唯一确定)</li>
+<li>这一点和SVM不同,SVM的分类超平面是确定的,详情参看<a href="/Notes/ML/Models/ML——SVM-支持向量机.html">ML——SVM-支持向量机</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><ul>
+<li>LR中使用<strong>极大似然法</strong><br>$$<br>\begin{align}<br>L(\theta) &amp;= p(Y|X;\theta) \\<br>&amp;= \prod_{i=1}^{m}p(y_{i}|x_{i}; \theta) \\<br>&amp;= \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}}<br>\end{align}<br>$$</li>
+<li>上面的式子不易求导优化,我们使用与上面的式子单调性和最优点等价的<strong>对数似然函数</strong>为<br>$$<br>\begin{align}<br>LL(\theta) &amp;= log L(\theta) \\<br>&amp;= log \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}} \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right ) \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right ) \\<br>\end{align}<br>$$<ul>
+<li>上面的式子中：<br>$$\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>加个负号即为为交叉熵损失函数<br>$$-\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>所以交叉熵损失函数与逻辑回归的对数似然损失函数（=逻辑回归对数似然函数的负数）是等价的</li>
+</ul>
+</li>
+<li>由前面的推导有<br>$$<br>\begin{align}<br>log \frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} = log\frac{\frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}}{\frac{1}{1+e^{\theta^{T} x}}} = log e^{\theta^{T} x} = \theta^{T}x\\<br>\end{align}<br>$$<br>$$log(p(y_{i} = 0|x_{i};\theta)) = log(\frac{1}{1+e^{\theta^{T} x}}) = -log(1+e^{\theta^{T} x})$$</li>
+<li>故而有<br>$$<br>\begin{align}<br>LL(\theta) &amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right )\\<br>&amp;= \sum_{i=1}^{m}\left ( y_{i}\theta^{T}x -  log(1+e^{\theta^{T}x}) \right)<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h4><ul>
+<li>最大化似然函数等价于最小化似然函数的负数</li>
+<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数</strong><br>$$loss(\theta) = -LL(\theta) = \sum_{i=1}^{m}\left (- y_{i}\theta^{T}x + log(1+e^{\theta^{T}x}) \right)$$</li>
+</ul>
+<h4 id="梯度下降法优化"><a href="#梯度下降法优化" class="headerlink" title="梯度下降法优化"></a>梯度下降法优化</h4><p><em>注意: 这里优化目标也可以用牛顿法</em></p>
+<ul>
+<li>目标,求一个\(\theta^{\star}\)满足似然函数最大化或者损失函数最小化<br>$$\theta^{\star} = \arg\max_{\theta} LL(\theta) = \arg\min_{\theta} -LL(\theta) = \arg\min_{\theta} loss(\theta)$$</li>
+<li>对数似然函数对参数\(\theta\)求导有<br>$$<br>\begin{align}<br>\frac{\partial loss(\theta)}{\partial\theta} &amp;= \sum_{i=1}^{m}\left ( -y_{i}x_{i} + \frac{x_{i}e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + \frac{e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta}(x_{i})\right ) \\<br>\end{align}<br>$$</li>
+<li>LR模型的梯度下降参数迭代公式<br>$$<br>\begin{align}<br>\theta^{t+1} &amp;= \theta^{t} - \alpha\sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta^{t}}(x_{i})\right ) \\<br>&amp;= \theta^{t} + \alpha\sum_{i=1}^{m}x_{i}\left ( y_{i} - h_{\theta^{t}}(x_{i})\right )<br>\end{align}<br>$$<ul>
+<li>其中\(\alpha\)为步长</li>
+</ul>
+</li>
+<li><strong>线性回归</strong>和<strong>LR模型</strong>的梯度下降法参数迭代公式表达式看似相同,但是不同的模型对应的<strong>\(h_{\theta}\)函数并不相同</strong></li>
+</ul>
+<hr>
+<h3 id="其他总结"><a href="#其他总结" class="headerlink" title="其他总结"></a>其他总结</h3><p><em>参考:<a href="https://www.cnblogs.com/ModifyRong/p/7739955.html" target="_blank" rel="noopener">https://www.cnblogs.com/ModifyRong/p/7739955.html</a></em></p>
+<ul>
+<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数(对数损失函数)</strong><ul>
+<li>对数似然损失函数定义为:<br>$$Loss(\theta) = -P(Y|X; \theta)$$</li>
+<li>&lt;&lt;统计学习方法&gt;&gt;P213中定义LR的损失函数为逻辑斯蒂损失函数,在LR模型和最大熵模型中,逻辑斯蒂损失函数本质上与对数似然损失函数等价,可推导得到</li>
+</ul>
+</li>
+<li>一句话概括逻辑回归:<ul>
+<li><strong>逻辑回归是假设数据服从伯努利分布,通过极大似然函数的方法,运用梯度下降法或者牛顿法来求解参数,来达到将数据二分类的目的</strong></li>
+<li>逻辑回归的假设: <strong>数据服从伯努利分布</strong>, \(p(y=1|x) = 1-p(y=0|x)\)</li>
+<li>逻辑回归的损失函数: <strong>对数似然损失函数(交叉熵损失函数)</strong>, 也就是对数似然函数的负数</li>
+<li>逻辑回归的求解方法: <strong>梯度下降法或牛顿法</strong></li>
+<li>逻辑回归的目的: <strong>将数据二分类</strong></li>
+<li>逻辑回归如何分类: <strong>预测结果是连续的[0-1]的数</strong>,我们一般选择0.5作为阈值来分类,但是这个值可能是可以变化的,因为损失函数最小并不意味着0.5时分类精度最高</li>
+</ul>
+</li>
+<li>为什么要用极大似然法?等价于为什么要用对数似然损失函数作为损失函数?<ul>
+<li>损失函数一般有平方损失函数,对数损失函数,合页损失函数,绝对值损失函数等,极大似然函数取对数后等同于对数损失函数,在逻辑回归这个模型中,推导可以得到,对数损失函数训练求解参数的迭代函数只与\(x_{i}, y_{i}\)相关,与sigmoid函数的梯度等无关.这样的参数更新自始至终都比较稳定</li>
+<li>为什么不选平方损失函数的呢？其一是因为如果你使用平方损失函数,你会发现梯度更新的速度和sigmod函数本身的梯度是很相关的,sigmod函数在它在定义域内的梯度都不大于0.25, 这样训练会非常的慢</li>
+</ul>
+</li>
+<li>逻辑回归中,如果某些特征高度相关,甚至某些特征完全相同,会造成什么影响?<ul>
+<li>损失函数收敛后,没有影响,因为特征的相关性并不影响分类器效果,重复特征会分化特征的权重(10个重复特征和单个特征训练结果差别在于前者每个特征的权重是后者的十分之一),本质上最终结果不变的</li>
+<li>但是训练时由于特征重复,参数增多,模型复杂度增加,训练时长,内存等都会增加</li>
+</ul>
+</li>
+<li>为什么需要去掉高度相关的特征?<ul>
+<li>去掉高度相关的特征使得模型可解释性更好</li>
+<li>提高训练时间,节约内存,减少参数数量</li>
+<li>特征的提取本身也需要时间,实际工程项目中可以少提取一个特征往往能节约很多时间</li>
+</ul>
+</li>
+<li><strong>logistic与logit的区别</strong>?<ul>
+<li>logit: 又名 log adds , 指的是”对数几率”, 定义为\(ln\frac{p}{1-p}\)</li>
+<li>logistic: 又叫Sigmoid函数, 指的是”对数几率函数”, 本质上是一种”Sigmoid”函数, 定义为 \(f(x) = \frac{1}{1+e^{-x}}\)</li>
+</ul>
+</li>
+<li>简单介绍LR模型的优缺点:<ul>
+<li>优点:<ul>
+<li>模型简单,可解释性好,(如果对数据特征进行了归一化处理的话)可以从特征的权重看到不同特征对最终结果的影响</li>
+<li>模型效果往往不错(特征工程做得好的话)</li>
+<li>训练速度快, 成熟的SGD优化方法(SGD可以分布式)等</li>
+<li>内存占用小</li>
+<li>输出结果可以作为概率值,然后可以对阈值根据实际进行划分,不一定是确定的0.5,只是一般选择0.5而已</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li><strong>难以处理非线性数据,本质上是线性分类面</strong></li>
+<li><strong>难以处理数据不平衡问题</strong>, 这里如果正例远远多于负例,那么全都预测为正例,整体损失函数也不会太大</li>
+<li><strong>LR本身无法筛选特征</strong>,有时候会用GBDT和XGBoost来筛选特征,然后再用LR模型</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>扩展:逻辑回归可像SVM一样引入核函数处理非线性分类问题吗?<ul>
+<li>一般来说不可以</li>
+<li><strong>[存疑]</strong>理论上通过对原始样本非线性映射,似乎也可以,如果将\(f(x) = \theta^{T}x\)中的\(f(x)\)看做\(\theta\)看做变量,然后类比SVM的核函数,定义一个关于\(x_{i}\)的非线性映射<ul>
+<li>这里\(x_{i}\)表示第\(i\)个样本, 用\(x_{i}^{j}\)表示第\(i\)个样本的第\(j\)个维度<br>$$x_{i}^{j} = \phi_{j}(x_{i}^{j})$$</li>
+<li>基于上述非线性映射函数的定义,我们对每个样本都进行线性映射,每个维度用不同的映射函数(不同样本相同维度映射函数相同)</li>
+<li>这里的非线性映射与SVM的核函数不同,SVM不使用核函数的话,也可以通过相同的非线性映射的方式实现非线性分类</li>
+<li>使用核技巧后的LR模型将变得很慢,SVM与kernels是相配的,而LR与kernels会十分慢(来源<a href="https://www.cnblogs.com/yan2015/p/5183284.html" target="_blank" rel="noopener">SVM核技巧</a>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>LR模型训练完成后，输出概率多少的样本应该评估为正样本？【以下分析为个人理解，暂无严格证明】<ul>
+<li><strong>LR模型的损失函数本质上是交叉熵损失函数，交叉熵损失函数本质是最小化预估分布与训练样本分布之间的差距，故而预估均值与真实训练样本均值应该相等</strong>，即LR模型的预估值均值理论上与训练样本标签均值相同（这里LR的预估值是Sigmoid的输出值，训练样本负样本标签为0，正样本标签为1）。【PS，一种辅助理解思考：假设训练集中的样本特征完全相同，但其中30%是正样本，另外70%为负样本，那么优秀的LR模型在预估该训练样本时应该输出约为0.3】</li>
+<li>进一步来说，当预估的平均值大于训练样本的均值时，即可判断为正样本。<ul>
+<li>举例，假设训练样本的均值为0.4，那么预估值大于0.4的样本均可视为正样本（思考：这种判定下模型的准确率\( \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}\)应该是最高的？）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html" itemprop="url">ML——XGBoost-vs-传统GBDT</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍XGBoost和其他传统GBDT的比较的优劣</em><br><em>XGBoost又叫(Newton Boosting Tree)</em></p>
+<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
+<ul>
+<li>GBDT推导: <a href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">ML——GBDT-梯度提升树-推导过程</a></li>
+<li>XGBoost推导: <a href="/Notes/ML/Models/ML——XGBoost-推导过程.html">ML——XGBoost-推导过程</a></li>
+</ul>
+<hr>
+<h3 id="XGBoost的优点"><a href="#XGBoost的优点" class="headerlink" title="XGBoost的优点"></a>XGBoost的优点</h3><p><em>参考博客: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a></em></p>
+<ul>
+<li>XGBoost<strong>损失函数</strong>是<strong>二阶泰勒</strong>展开(与牛顿法对应),GBDT是<strong>一阶泰勒</strong>展开(与梯度下降法对应)<ul>
+<li>传统 GBDT 在优化时只用到一阶导数信息, 所以传统GBDT也叫 (Gradient Boosting)</li>
+<li>XGBoost 则对目标函数进行了二阶泰勒展开，同时用到了一阶和二阶导数, 所以XGBoost又叫(Newton Boosting Tree)</li>
+</ul>
+</li>
+<li><p>XGBoost加了<strong>正则项</strong>,普通的GBDT没有,所以XGBoost学出来的模型更简单,能防止过拟合,提高模型的泛化性能</p>
+</li>
+<li><p>XGBoost Shrinkage(缩减)</p>
+<ul>
+<li>每次进行完一次迭代后,将叶子节点的权重乘以该系数(一般叫做<code>eta</code>\(\eta\))</li>
+<li>可以理解为这里Shrinkage是将学习速率调小,从而需要的迭代次数增多</li>
+<li>减小学习率实际上是减弱了每棵树对整体的影响,从而让后面的树有更多的学习空间</li>
+<li>下面的表述还有待确定:<ul>
+<li>进一步惩罚决策树叶节点的值(惩罚的意思是叶节点越大,惩罚越多,损失函数越大)</li>
+<li>对叶节点的惩罚本身可以理解为一个正则化</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>结点分裂的<strong>增益计算公式</strong>不同</p>
+<ul>
+<li>传统 GBDT 一般采用的是<strong>最小二乘法</strong>作为内部分裂的增益计算指标(因为用的都是回归树)<ul>
+<li>注意: 这里论文中描述的最小绝对偏差回归(LAD)是第一步损失函数的定义,不是这一步中的信息增益计算</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>在分裂结点时可以选择三种方式:<ul>
+<li><code>friedman_mse</code>(默认), mean squared error with improvement score by Friedman</li>
+<li><code>mse</code>: mean squared error</li>
+<li><code>mae</code>: mean absolute error</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>而 XGBoost 使用的是经过优化推导后的式子<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>注意: XGBoost中的信息增益计算形式固定为上面的计算方式,但是具体的值与损失函数的定义相关(因为 \(g_i\) 和 \(h_i\) 的是损失函数的一阶和二阶梯度)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost<strong>支持自定义的损失函数</strong>,支持一阶和二阶可导就行</p>
+<ul>
+<li>注意,这里的损失函数指的是 \(l(y_i,\hat{y}_i)\), 单个样本预测值与目标值的差异, 也就是单个样本的损失函数</li>
+<li>从<a href="/Notes/ML/Models/ML——XGBoost-推导过程.html">ML——XGBoost-推导过程</a>中可知:<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li>XGBoost中只要损失函数二次可微分即可得到 \(g_i\) 和 \(h_i\)<ul>
+<li>\(g_i\) 和 \(h_i\) 本身与损失函数的定义形式无关, 只要求损失函数二阶可微分即可</li>
+</ul>
+</li>
+<li>只要有了 \(g_i\) 和 \(h_i\) 我们即可<ul>
+<li>根据预先推导的叶子节点分数表达式 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\) 求得叶子结点的分数</li>
+<li>根据预先推导的信息增益公式 \(Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma\) 确定分裂特征和分裂点</li>
+</ul>
+</li>
+<li>GBDT 损失函数关系一般选择<strong>最小二乘回归</strong>或者<strong>最小绝对偏差回归</strong><ul>
+<li><strong>最小方差回归</strong>: (Least-Squares Regression, LSR)<br>$$\begin{align} L(y,F(x)) = \frac{1}{2}(y-F(x))^{2} \end{align}$$</li>
+<li><strong>最小绝对偏差回归</strong>: (Least Absolute Deviation Regression, LAD)<br>$$\begin{align} L(y,F(x)) = |y-F(x)| \end{align}$$</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>的损失函数是定义好的, 不能自己定义, 详细如下源码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">LOSS_FUNCTIONS = &#123;&apos;ls&apos;: LeastSquaresError,</span><br><span class="line">                  &apos;lad&apos;: LeastAbsoluteError,</span><br><span class="line">                  &apos;huber&apos;: HuberLossFunction,</span><br><span class="line">                  &apos;quantile&apos;: QuantileLossFunction,</span><br><span class="line">                  &apos;deviance&apos;: None,    # for both, multinomial and binomial</span><br><span class="line">                  &apos;exponential&apos;: ExponentialLoss,</span><br><span class="line">                  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">_SUPPORTED_LOSS = (&apos;deviance&apos;, &apos;exponential&apos;)</span><br><span class="line">....</span><br><span class="line"></span><br><span class="line">if (self.loss not in self._SUPPORTED_LOSS</span><br><span class="line">                or self.loss not in LOSS_FUNCTIONS):</span><br><span class="line">            raise ValueError(&quot;Loss &apos;&#123;0:s&#125;&apos; not supported. &quot;.format(self.loss))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost 借鉴了随机森林的做法，<strong>支持列采样</strong>，不仅能降低过拟合，还能减少计算量，这也是 XGBoost 异于传统 GBDT 的一个特性</p>
+<ul>
+<li>列采样: 这借鉴于随机森林中的做法,每棵树不使用所有特征,而是部分特征参与训练</li>
+<li>可以减少计算量,同时还能降低过拟合,简直优秀</li>
+</ul>
+</li>
+<li>XGBoost 有<strong>缺失值自动处理</strong>, 在计算分裂增益时不会考虑带有缺失值的样本，这样就减少了时间开销,在分裂点确定了之后，将带有缺失值的样本分别放在左子树和右子树，比较两者分裂增益，选择增益较大的那一边作为默认分裂方向<ul>
+<li>进一步理解稀疏数据的支持: [待更新]</li>
+</ul>
+</li>
+<li><strong>并行化处理</strong>：由于 Boosting 本身的特性，传统 GBDT 无法像随机森林那样树与树之间的并行化<ul>
+<li>XGBoost 的并行主要体现在特征粒度上，在对结点进行分裂时，由于已预先对特征排序并保存为block 结构，每个特征的增益计算就可以开多线程进行，极大提升了训练速度</li>
+</ul>
+</li>
+<li><strong>剪枝策略</strong>不同<ul>
+<li>传统 GBDT 在损失不再减少时会停止分裂，这是一种预剪枝的贪心策略，容易欠拟合</li>
+<li>XGBoost采用的是后剪枝的策略，先分裂到指定的最大深度 (max_depth) 再进行剪枝<ul>
+<li>而且和一般的后剪枝不同， XGBoost 的后剪枝是不需要验证集的[待更新:XGBoost剪枝的策略是怎样的?只依赖信息增益指标吗?]</li>
+<li>和<a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">博客</a>作者指出的一样,我这里并不是”纯粹的”后剪枝,因为提前设定了最大深度</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>基分类器的选择不同:</p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li><strong>XGBoost</strong>后面的各种损失计算等都包含着树模型的复杂度,叶子节点分类等,所以是<strong>只能用CART,不能使用逻辑回归</strong>的</li>
+<li>(从函数空间定义和后面的公式推导来看)<strong>XGBoost中基函数只使用CART回归树，不能使用逻辑回归</strong></li>
+<li>但是事实上XGBoost的实现中是支持线性分类器作为基分类器的, 参数<code>booster[default=&#39;gbtree&#39;]</code>,可选为<code>booster=gblinear</code><ul>
+<li>使用<strong>线性分类器作为基分类器</strong>时, XGBoost相当于带有L1正则化和L2正则化的:<ul>
+<li>Logistic回归(分类问题)</li>
+<li>线性回归(回归问题)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>分桶策略</strong>算法不同</p>
+<ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost的缺点"><a href="#XGBoost的缺点" class="headerlink" title="XGBoost的缺点"></a>XGBoost的缺点</h3><p><em>注意这里是</em></p>
+<ul>
+<li><strong>空间消耗大</strong><ul>
+<li>因为要在训练之前先对<strong>每个特征</strong>进行<strong>预排序</strong>并将结果存储起来，所以空间消耗较大</li>
+<li>GBDT无需预排序,但是每次重新排序很耗时间</li>
+</ul>
+</li>
+<li>速度慢<ul>
+<li>虽然XGBoost速度比传统 GBDT 快了不少, 但是不如 LightGBM 快, 且 LightGBM 占用内存更低</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost为什么能够并行"><a href="#XGBoost为什么能够并行" class="headerlink" title="XGBoost为什么能够并行?"></a>XGBoost为什么能够并行?</h3><p><em>而GBDT是不能并行的，原因是：<a href="https://www.136.la/shida/show-187480.html" target="_blank" rel="noopener">https://www.136.la/shida/show-187480.html</a></em></p>
+<ul>
+<li>GBDT不能并行的原因是没有预排序（XGB的预排序结果会存储到block结构）等，在有了预排序结果后，同一个特征的切割方式可以并行尝试计算增益</li>
+<li>决策树最耗时间(包括GBDT)的步骤是对特征值的排序<ul>
+<li>用于确定最佳分割点</li>
+</ul>
+</li>
+<li>XGBoost训练前,预先对数据进行了排序,称为预排序<ul>
+<li>将预先排序的结果保存为block结构, 后面迭代的时候重复使用这个结构,从而实现一次排序,多次使用,大大减少计算量</li>
+</ul>
+</li>
+<li>这个结构减少计算量的同时还为并行化提供了可能([待更新]实际上不用预排序也能并行的吧?只是每次需要先使用一个单一线程排序,然后再多个线程并行?只是不够并行)<ul>
+<li>进行结点的分裂时,需要计算每个特征的增益,然后选择增益最大的那个特征分裂</li>
+<li>这里我们可以同时使用多个线程计算不同特征的增益, 从而实现并行化</li>
+</ul>
+</li>
+<li>总结为三方面的并行, ([待更新]但是具体实现了哪些并行不确定)<ul>
+<li>同一层级的结点间每个结点的分裂可以并行</li>
+<li>同一个结点内部不同特征增益的计算可以并行</li>
+<li>同一个结点同一个特征的不同分裂点的增益计算可以并行</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GBDT为什么不能自定义损失函数"><a href="#GBDT为什么不能自定义损失函数" class="headerlink" title="GBDT为什么不能自定义损失函数?"></a>GBDT为什么不能自定义损失函数?</h3><p><em>GBDT为什么不能像XGBoost一样自定义损失函数?</em></p>
+<ul>
+<li>查看<code>sklearn.ensemble.GradientBoostingClassifier</code>的源码发现, 确实不支持自定义的损失函数</li>
+<li>[待更新],因为涉及到后面的参数更新方式?</li>
+</ul>
+<hr>
+<h3 id="XGBoost如何使用自定义的损失函数"><a href="#XGBoost如何使用自定义的损失函数" class="headerlink" title="XGBoost如何使用自定义的损失函数?"></a>XGBoost如何使用自定义的损失函数?</h3><p><em>模型直接调用<code>fit</code>函数无法传入自定义的损失函数, 需要在模型开始定义的时候传入或者使用<code>xgb.train</code>函数调用</em></p>
+<ul>
+<li><p>使用方法1:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier(objective=MyLossFunction)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用方法2:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier()</span><br><span class="line">xgb.train(xgb_model=clf, obj=MyLossFunction)</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Algorithm——AVL树和红黑树等各种树结构总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -300,23 +801,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-04-09T00:00:00+08:00">
-                2018-04-09
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -477,7 +962,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——关于列表list的操作.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -496,27 +981,11 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html" itemprop="url">Python——为什么Python中没有自增++和自减--操作?</a></h1>
+                <a class="post-title-link" href="/Notes/Python/Python——关于列表list的操作.html" itemprop="url">Python——关于列表list的操作</a></h1>
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -548,13 +1017,538 @@
       
         
           
-            <p><em>C++和Java等语言都有++和–操作,为什么以方便自居的Python却没有这种操作呢?</em></p>
+            <p><em>Python的list有很多强大的功能,有些比较罕见的操作可能很有用,需要我们记住</em></p>
+<h4 id="list的常见操作"><a href="#list的常见操作" class="headerlink" title="list的常见操作"></a>list的常见操作</h4><h5 id="list子列表"><a href="#list子列表" class="headerlink" title="list子列表"></a>list子列表</h5><ul>
+<li><strong>注意使用子列表时是一个新对象,操作子列表与原始list无关</strong></li>
+<li>在快速排序和归并排序中不可将子列表传入,以期待可以从函数中修改原始列表的值</li>
+</ul>
+<h5 id="list反序子列表"><a href="#list反序子列表" class="headerlink" title="list反序子列表"></a>list反序子列表</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 3]</span><br><span class="line">l1 = l[::-1]</span><br><span class="line">print l</span><br><span class="line">print l1</span><br><span class="line"># output:</span><br><span class="line">[1, 2, 3]</span><br><span class="line">[3, 2, 1]</span><br></pre></td></tr></table></figure>
+<h4 id="list的罕见操作"><a href="#list的罕见操作" class="headerlink" title="list的罕见操作"></a>list的罕见操作</h4><h5 id="remove-object"><a href="#remove-object" class="headerlink" title="remove(object)"></a>remove(object)</h5><ul>
+<li>移除列表中第一个与object相等的对象<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 2, 3, 4]</span><br><span class="line">l.remove(2)</span><br><span class="line">print l</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">[1, 2, 3, 4]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h5 id="pop-index"><a href="#pop-index" class="headerlink" title="pop(index)"></a>pop(index)</h5><ul>
+<li>从列表中移除一个元素,并返回该元素,index为索引</li>
+<li>默认移除最后一个<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 2, 3, 4, 5]</span><br><span class="line">l.pop(0)</span><br><span class="line">print l</span><br><span class="line">l.pop()</span><br><span class="line">print l</span><br><span class="line"># output:</span><br><span class="line">[2, 2, 3, 4, 5]</span><br><span class="line">[2, 2, 3, 4]</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——双端队列deque.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——双端队列deque.html" itemprop="url">Python——双端队列deque</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍Python中双端队列(double-ended queue, 简称为deque)的用法</em></p>
 <hr>
-<h3 id="Python的数值对象"><a href="#Python的数值对象" class="headerlink" title="Python的数值对象"></a>Python的数值对象</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">a = 1</span><br><span class="line">b = 1</span><br><span class="line">c = 1000123</span><br><span class="line">d = 1000123</span><br><span class="line"></span><br><span class="line">print id(a)</span><br><span class="line">print id(b)</span><br><span class="line">print id(c)</span><br><span class="line">print id(d)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">94181316498840</span><br><span class="line">94181316498840</span><br><span class="line">94181323965720</span><br><span class="line">94181323965720</span><br></pre></td></tr></table></figure>
+<h3 id="导入包"><a href="#导入包" class="headerlink" title="导入包"></a>导入包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line">import collections</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import collections</span><br><span class="line">dq = collections.deque()</span><br><span class="line">dq.append(3)</span><br><span class="line">dq.append(4)</span><br><span class="line">dq.append(1)</span><br><span class="line">dq.appendleft(9)</span><br><span class="line">dq.appendleft(10)</span><br><span class="line">print dq</span><br><span class="line">print dq.pop()</span><br><span class="line">print dq</span><br><span class="line">print dq.popleft()</span><br><span class="line">print dq</span><br><span class="line"></span><br><span class="line">while len(dq):</span><br><span class="line">    print dq.pop()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">deque([10, 9, 3, 4, 1])</span><br><span class="line">1</span><br><span class="line">deque([10, 9, 3, 4])</span><br><span class="line">10</span><br><span class="line">deque([9, 3, 4])</span><br><span class="line">4</span><br><span class="line">3</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
 <ul>
-<li>Python数值对象都是不可变类型,与String一样,所以不能修改对象内部数据</li>
-<li>C++中的<code>i++</code>修改内存中对象本身,数值增加1,而Python不能修改对象本身</li>
-<li>与C++中字符串可以修改,Python中不能修改是一个道理</li>
+<li>注意,deque没有<code>qsize()</code>函数,但是可以像普通队列一样使用Python内嵌的<code>len</code>函数</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——优先队列PriorityQueue.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——优先队列PriorityQueue.html" itemprop="url">Python——优先队列PriorityQueue</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍Python中优先队列的用法</em></p>
+<ul>
+<li>注意: <code>queue</code>并不能算是Python标准库,所以在LeetCode等OJ环境中不能使用, 想要使用优先队列的话可以使用Python的标准库<code>heapq</code></li>
+<li><code>heapq</code>的使用请参考 <a href="/Notes/Python/Python——heapq模块-最大堆最小堆.html">Python——heapq模块-最大堆最小堆</a></li>
+</ul>
+<hr>
+<h3 id="导入包"><a href="#导入包" class="headerlink" title="导入包"></a>导入包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from Queue import PriorityQueue</span><br><span class="line"># or</span><br><span class="line">from queue import PriorityQueue</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>queue</code>包名已经弃用,测试发现本地Python2.7环境可以用,但是LeetCode线上环境不能用</li>
+<li>推荐使用<code>Queue</code></li>
+</ul>
+<hr>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">from Queue import PriorityQueue</span><br><span class="line"></span><br><span class="line">pq = PriorityQueue()</span><br><span class="line"></span><br><span class="line">pq.put((10, &quot;start&quot;))</span><br><span class="line">pq.put((5, &quot;b&quot;, 12, 123))</span><br><span class="line">pq.put((5, &quot;a&quot;, 6))</span><br><span class="line">pq.put(1)</span><br><span class="line">pq.put(4)</span><br><span class="line">pq.put([0, &quot;a&quot;])</span><br><span class="line">pq.put([8, &quot;b&quot;])</span><br><span class="line">pq.put(&quot;avb&quot;)</span><br><span class="line">pq.put(None)</span><br><span class="line"></span><br><span class="line"># while pq.not_empty()</span><br><span class="line"># while not pq.empty()</span><br><span class="line">while pq.qsize():</span><br><span class="line">    print pq.get()</span><br><span class="line"># output:</span><br><span class="line">None</span><br><span class="line">1</span><br><span class="line">4</span><br><span class="line">[0, &apos;a&apos;]</span><br><span class="line">[8, &apos;b&apos;]</span><br><span class="line">avb</span><br><span class="line">(5, &apos;a&apos;, 6)</span><br><span class="line">(5, &apos;b&apos;, 12, 123)</span><br><span class="line">(10, &apos;start&apos;)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>不能使用<code>not pq</code>这样的语句判断优先队列是否收敛,他不是普通的内嵌对象(list,str等是内嵌对象),除非<code>pq == None</code>否则,双端队列对象永远为<code>not pq == False</code></li>
+<li><p>下面用法最优:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">while pq.qsize():</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>PriorityQueue中默认递增排序(这一点与Python中的sorted函数和sort()函数一样),每次get(),移除并返回最小的对象</p>
+</li>
+<li>PriorityQueue中,可以同时添加不同类别的对象</li>
+<li>PriorityQueue会将对象首先按照类别排序,然后各个类别内部按照不同数值排序</li>
+<li>若传入对象是可以直接比较大小的类型即可直接传入,包括tuple, list, str, int(long)等类型<ul>
+<li>Python中list,tuple,str等都是可以直接比较大小的,默认使用他们的第一个元素比较大小,如果第一个元素相等,则比较第二个元素,以此类推</li>
+<li>详细情况参考本文后面的说明</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Python中的内嵌对象比较大小"><a href="#Python中的内嵌对象比较大小" class="headerlink" title="Python中的内嵌对象比较大小"></a>Python中的内嵌对象比较大小</h3><ul>
+<li>Python中类别间也可以比较大小,默认类别间大小为:tuple &gt; str &gt; list &gt; int(long) &gt; None, 但是记不清楚的话不建议使用Python的这个特性,容易造成错误</li>
+<li>Python中list,tuple,str等都是可以直接比较大小的,默认使用他们的第一个元素比较大小,如果第一个元素相等,则比较第二个元素,以此类推</li>
+<li>Python中类别间也可以比较大小,默认类别间大小为:tuple &gt; str &gt; list &gt; int(long) &gt; None, 但是记不清楚的话不建议使用Python的这个特性,容易造成错误<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ls = [(1, &apos;b&apos;), (1, &apos;a&apos;), (2, &apos;a&apos;), [1, &apos;a&apos;], [1, &apos;b&apos;], [2, &apos;a&apos;], &apos;1a&apos;, &apos;1b&apos;, &apos;2a&apos;, 1, 2, 3, None]</span><br><span class="line">ls.sort()</span><br><span class="line">print ls</span><br><span class="line"># output</span><br><span class="line">[None, 1, 2, 3, [1, &apos;a&apos;], [1, &apos;b&apos;], [2, &apos;a&apos;], &apos;1a&apos;, &apos;1b&apos;, &apos;2a&apos;, (1, &apos;a&apos;), (1, &apos;b&apos;), (2, &apos;a&apos;)]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="Python自定义对象比较大小"><a href="#Python自定义对象比较大小" class="headerlink" title="Python自定义对象比较大小"></a>Python自定义对象比较大小</h3><ul>
+<li>在做算法题时,没必要的情况下不建议使用</li>
+<li><p>在做工程时建议使用这种方式</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">import Queue</span><br><span class="line">class Node():</span><br><span class="line">    def __init__(self, val):</span><br><span class="line">        self.val = val</span><br><span class="line"></span><br><span class="line">    def __lt__(self, other):</span><br><span class="line">        return self.val &lt; other.val</span><br><span class="line"></span><br><span class="line">pq = Queue.PriorityQueue()</span><br><span class="line">pq.put(Node(5))</span><br><span class="line">pq.put(Node(1))</span><br><span class="line"></span><br><span class="line">while pq.qsize():</span><br><span class="line">    print pq.get().val</span><br><span class="line"># output</span><br><span class="line">1</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>注意<code>__lt__</code>函数中是小于号,说明递增排序,大于号,说明递减排序</p>
+</li>
+<li>PriorityQueue对象不是普通Python内嵌对象,不能使用Python内嵌的<code>len</code>函数</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——参数*args与**kwargs的意义.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——参数*args与**kwargs的意义.html" itemprop="url">Python——参数*args与**kwargs的意义***</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Python中常常使用\</em>args与**kwargs这样的参数形式定义函数的参数,他们表示该函数可以接受任何类型任何数量的参数*</p>
+<ul>
+<li>参考博客:<a href="https://blog.csdn.net/maliao1123/article/details/52152989" target="_blank" rel="noopener">https://blog.csdn.net/maliao1123/article/details/52152989</a></li>
+</ul>
+<hr>
+<h3 id="一句话解释"><a href="#一句话解释" class="headerlink" title="一句话解释"></a>一句话解释</h3><ul>
+<li>*args是非关键字参数，用于元</li>
+<li>**kwargs是关键字参数，用于字典</li>
+</ul>
+<hr>
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def test(*args, **kwargs):</span><br><span class="line">    print &quot;args: &quot;, args</span><br><span class="line">    print &quot;kwargs: &quot;, kwargs</span><br><span class="line"></span><br><span class="line">test(1,2,3)</span><br><span class="line">test(a=1, b=2)</span><br><span class="line">test(1, a=2, c=2)</span><br><span class="line"># output</span><br><span class="line">args:  (1, 2, 3)</span><br><span class="line">kwargs:  &#123;&#125;</span><br><span class="line">args:  ()</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 1, &apos;b&apos;: 2&#125;</span><br><span class="line">args:  (1,)</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 2, &apos;c&apos;: 2&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>注意: 关键字参数后面不能有非关键字参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test(1, a=1, 2)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>上面的函数调用会造成语法错误</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>*args表示任何多个无名参数，它是一个tuple；</li>
+<li>**kwargs表示关键字参数，它是一个dict</li>
+<li>同时使用*args和**kwargs时，必须*args参数列要在**kwargs前<ul>
+<li>否则提示语法错误“SyntaxError: non-keyword arg after keyword arg”</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——heapq模块-最大堆最小堆.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——heapq模块-最大堆最小堆.html" itemprop="url">Python——heapq模块-最大堆最小堆</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>由于<code>queue</code>不是Python标准库,所以在LeetCode等OJ上面不能直接使用,我们可以选择<code>heapq</code>来使用最大最小堆</em></p>
+<hr>
+<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><ul>
+<li><p>堆排序示例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [2, 3, 5, 1, 54, 23, 132]</span><br><span class="line">heap = []</span><br><span class="line">for num in nums:</span><br><span class="line">    heapq.heappush(heap, num)</span><br><span class="line"># 等价于</span><br><span class="line">heapq.heapify(nums)</span><br><span class="line"></span><br><span class="line"># heap sort by incresing</span><br><span class="line">print([heapq.heappop(heap) for _ in range(len(nums))])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>加入元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">heapq.heappush(heap, num)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>弹出元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">num = heapq.heappop(heap)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取最大最小值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [1, 3, 4, 5, 2]</span><br><span class="line">print(heapq.nlargest(3, nums))</span><br><span class="line">print(heapq.nsmallest(3, nums))</span><br><span class="line"></span><br><span class="line">#Output:</span><br><span class="line">[5, 4, 3]</span><br><span class="line">[1, 2, 3]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取堆顶元素</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top = nums[0]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="最大堆的实现"><a href="#最大堆的实现" class="headerlink" title="最大堆的实现"></a>最大堆的实现</h3><ul>
+<li>由于Python <code>heapq</code>模块只实现了最小堆, 最大堆需要我们自己实现</li>
+<li>一种简单可行的实现方案:<ul>
+<li>在加入和弹出时,<strong>把元素取反</strong>,从而<strong>实现最大堆</strong></li>
+</ul>
+</li>
 </ul>
 
           
@@ -627,23 +1621,7 @@
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -809,7 +1787,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——参数*args与**kwargs的意义.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -828,27 +1806,11 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Python/Python——参数*args与**kwargs的意义.html" itemprop="url">Python——参数*args与**kwargs的意义***</a></h1>
+                <a class="post-title-link" href="/Notes/Python/Python——为什么Python中没有自增++和自减--操作?.html" itemprop="url">Python——为什么Python中没有自增++和自减--操作?</a></h1>
         
 
         <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
+          
 
           
 
@@ -880,1175 +1842,13 @@
       
         
           
-            <p><em>Python中常常使用\</em>args与**kwargs这样的参数形式定义函数的参数,他们表示该函数可以接受任何类型任何数量的参数*</p>
-<ul>
-<li>参考博客:<a href="https://blog.csdn.net/maliao1123/article/details/52152989" target="_blank" rel="noopener">https://blog.csdn.net/maliao1123/article/details/52152989</a></li>
-</ul>
+            <p><em>C++和Java等语言都有++和–操作,为什么以方便自居的Python却没有这种操作呢?</em></p>
 <hr>
-<h3 id="一句话解释"><a href="#一句话解释" class="headerlink" title="一句话解释"></a>一句话解释</h3><ul>
-<li>*args是非关键字参数，用于元</li>
-<li>**kwargs是关键字参数，用于字典</li>
-</ul>
-<hr>
-<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def test(*args, **kwargs):</span><br><span class="line">    print &quot;args: &quot;, args</span><br><span class="line">    print &quot;kwargs: &quot;, kwargs</span><br><span class="line"></span><br><span class="line">test(1,2,3)</span><br><span class="line">test(a=1, b=2)</span><br><span class="line">test(1, a=2, c=2)</span><br><span class="line"># output</span><br><span class="line">args:  (1, 2, 3)</span><br><span class="line">kwargs:  &#123;&#125;</span><br><span class="line">args:  ()</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 1, &apos;b&apos;: 2&#125;</span><br><span class="line">args:  (1,)</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 2, &apos;c&apos;: 2&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Python的数值对象"><a href="#Python的数值对象" class="headerlink" title="Python的数值对象"></a>Python的数值对象</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">a = 1</span><br><span class="line">b = 1</span><br><span class="line">c = 1000123</span><br><span class="line">d = 1000123</span><br><span class="line"></span><br><span class="line">print id(a)</span><br><span class="line">print id(b)</span><br><span class="line">print id(c)</span><br><span class="line">print id(d)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">94181316498840</span><br><span class="line">94181316498840</span><br><span class="line">94181323965720</span><br><span class="line">94181323965720</span><br></pre></td></tr></table></figure>
 <ul>
-<li><p>注意: 关键字参数后面不能有非关键字参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test(1, a=1, 2)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>上面的函数调用会造成语法错误</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>*args表示任何多个无名参数，它是一个tuple；</li>
-<li>**kwargs表示关键字参数，它是一个dict</li>
-<li>同时使用*args和**kwargs时，必须*args参数列要在**kwargs前<ul>
-<li>否则提示语法错误“SyntaxError: non-keyword arg after keyword arg”</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——双端队列deque.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——双端队列deque.html" itemprop="url">Python——双端队列deque</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍Python中双端队列(double-ended queue, 简称为deque)的用法</em></p>
-<hr>
-<h3 id="导入包"><a href="#导入包" class="headerlink" title="导入包"></a>导入包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line">import collections</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import collections</span><br><span class="line">dq = collections.deque()</span><br><span class="line">dq.append(3)</span><br><span class="line">dq.append(4)</span><br><span class="line">dq.append(1)</span><br><span class="line">dq.appendleft(9)</span><br><span class="line">dq.appendleft(10)</span><br><span class="line">print dq</span><br><span class="line">print dq.pop()</span><br><span class="line">print dq</span><br><span class="line">print dq.popleft()</span><br><span class="line">print dq</span><br><span class="line"></span><br><span class="line">while len(dq):</span><br><span class="line">    print dq.pop()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">deque([10, 9, 3, 4, 1])</span><br><span class="line">1</span><br><span class="line">deque([10, 9, 3, 4])</span><br><span class="line">10</span><br><span class="line">deque([9, 3, 4])</span><br><span class="line">4</span><br><span class="line">3</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
-<ul>
-<li>注意,deque没有<code>qsize()</code>函数,但是可以像普通队列一样使用Python内嵌的<code>len</code>函数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——heapq模块-最大堆最小堆.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——heapq模块-最大堆最小堆.html" itemprop="url">Python——heapq模块-最大堆最小堆</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>由于<code>queue</code>不是Python标准库,所以在LeetCode等OJ上面不能直接使用,我们可以选择<code>heapq</code>来使用最大最小堆</em></p>
-<hr>
-<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><ul>
-<li><p>堆排序示例</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [2, 3, 5, 1, 54, 23, 132]</span><br><span class="line">heap = []</span><br><span class="line">for num in nums:</span><br><span class="line">    heapq.heappush(heap, num)</span><br><span class="line"># 等价于</span><br><span class="line">heapq.heapify(nums)</span><br><span class="line"></span><br><span class="line"># heap sort by incresing</span><br><span class="line">print([heapq.heappop(heap) for _ in range(len(nums))])</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>加入元素</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">heapq.heappush(heap, num)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>弹出元素</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">num = heapq.heappop(heap)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>获取最大最小值</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">import heapq</span><br><span class="line"></span><br><span class="line">nums = [1, 3, 4, 5, 2]</span><br><span class="line">print(heapq.nlargest(3, nums))</span><br><span class="line">print(heapq.nsmallest(3, nums))</span><br><span class="line"></span><br><span class="line">#Output:</span><br><span class="line">[5, 4, 3]</span><br><span class="line">[1, 2, 3]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>获取堆顶元素</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top = nums[0]</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h3 id="最大堆的实现"><a href="#最大堆的实现" class="headerlink" title="最大堆的实现"></a>最大堆的实现</h3><ul>
-<li>由于Python <code>heapq</code>模块只实现了最小堆, 最大堆需要我们自己实现</li>
-<li>一种简单可行的实现方案:<ul>
-<li>在加入和弹出时,<strong>把元素取反</strong>,从而<strong>实现最大堆</strong></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——优先队列PriorityQueue.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——优先队列PriorityQueue.html" itemprop="url">Python——优先队列PriorityQueue</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍Python中优先队列的用法</em></p>
-<ul>
-<li>注意: <code>queue</code>并不能算是Python标准库,所以在LeetCode等OJ环境中不能使用, 想要使用优先队列的话可以使用Python的标准库<code>heapq</code></li>
-<li><code>heapq</code>的使用请参考 <a href="/Notes/Python/Python——heapq模块-最大堆最小堆.html">Python——heapq模块-最大堆最小堆</a></li>
-</ul>
-<hr>
-<h3 id="导入包"><a href="#导入包" class="headerlink" title="导入包"></a>导入包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from Queue import PriorityQueue</span><br><span class="line"># or</span><br><span class="line">from queue import PriorityQueue</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>queue</code>包名已经弃用,测试发现本地Python2.7环境可以用,但是LeetCode线上环境不能用</li>
-<li>推荐使用<code>Queue</code></li>
-</ul>
-<hr>
-<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">from Queue import PriorityQueue</span><br><span class="line"></span><br><span class="line">pq = PriorityQueue()</span><br><span class="line"></span><br><span class="line">pq.put((10, &quot;start&quot;))</span><br><span class="line">pq.put((5, &quot;b&quot;, 12, 123))</span><br><span class="line">pq.put((5, &quot;a&quot;, 6))</span><br><span class="line">pq.put(1)</span><br><span class="line">pq.put(4)</span><br><span class="line">pq.put([0, &quot;a&quot;])</span><br><span class="line">pq.put([8, &quot;b&quot;])</span><br><span class="line">pq.put(&quot;avb&quot;)</span><br><span class="line">pq.put(None)</span><br><span class="line"></span><br><span class="line"># while pq.not_empty()</span><br><span class="line"># while not pq.empty()</span><br><span class="line">while pq.qsize():</span><br><span class="line">    print pq.get()</span><br><span class="line"># output:</span><br><span class="line">None</span><br><span class="line">1</span><br><span class="line">4</span><br><span class="line">[0, &apos;a&apos;]</span><br><span class="line">[8, &apos;b&apos;]</span><br><span class="line">avb</span><br><span class="line">(5, &apos;a&apos;, 6)</span><br><span class="line">(5, &apos;b&apos;, 12, 123)</span><br><span class="line">(10, &apos;start&apos;)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>不能使用<code>not pq</code>这样的语句判断优先队列是否收敛,他不是普通的内嵌对象(list,str等是内嵌对象),除非<code>pq == None</code>否则,双端队列对象永远为<code>not pq == False</code></li>
-<li><p>下面用法最优:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">while pq.qsize():</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>PriorityQueue中默认递增排序(这一点与Python中的sorted函数和sort()函数一样),每次get(),移除并返回最小的对象</p>
-</li>
-<li>PriorityQueue中,可以同时添加不同类别的对象</li>
-<li>PriorityQueue会将对象首先按照类别排序,然后各个类别内部按照不同数值排序</li>
-<li>若传入对象是可以直接比较大小的类型即可直接传入,包括tuple, list, str, int(long)等类型<ul>
-<li>Python中list,tuple,str等都是可以直接比较大小的,默认使用他们的第一个元素比较大小,如果第一个元素相等,则比较第二个元素,以此类推</li>
-<li>详细情况参考本文后面的说明</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Python中的内嵌对象比较大小"><a href="#Python中的内嵌对象比较大小" class="headerlink" title="Python中的内嵌对象比较大小"></a>Python中的内嵌对象比较大小</h3><ul>
-<li>Python中类别间也可以比较大小,默认类别间大小为:tuple &gt; str &gt; list &gt; int(long) &gt; None, 但是记不清楚的话不建议使用Python的这个特性,容易造成错误</li>
-<li>Python中list,tuple,str等都是可以直接比较大小的,默认使用他们的第一个元素比较大小,如果第一个元素相等,则比较第二个元素,以此类推</li>
-<li>Python中类别间也可以比较大小,默认类别间大小为:tuple &gt; str &gt; list &gt; int(long) &gt; None, 但是记不清楚的话不建议使用Python的这个特性,容易造成错误<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ls = [(1, &apos;b&apos;), (1, &apos;a&apos;), (2, &apos;a&apos;), [1, &apos;a&apos;], [1, &apos;b&apos;], [2, &apos;a&apos;], &apos;1a&apos;, &apos;1b&apos;, &apos;2a&apos;, 1, 2, 3, None]</span><br><span class="line">ls.sort()</span><br><span class="line">print ls</span><br><span class="line"># output</span><br><span class="line">[None, 1, 2, 3, [1, &apos;a&apos;], [1, &apos;b&apos;], [2, &apos;a&apos;], &apos;1a&apos;, &apos;1b&apos;, &apos;2a&apos;, (1, &apos;a&apos;), (1, &apos;b&apos;), (2, &apos;a&apos;)]</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h3 id="Python自定义对象比较大小"><a href="#Python自定义对象比较大小" class="headerlink" title="Python自定义对象比较大小"></a>Python自定义对象比较大小</h3><ul>
-<li>在做算法题时,没必要的情况下不建议使用</li>
-<li><p>在做工程时建议使用这种方式</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">import Queue</span><br><span class="line">class Node():</span><br><span class="line">    def __init__(self, val):</span><br><span class="line">        self.val = val</span><br><span class="line"></span><br><span class="line">    def __lt__(self, other):</span><br><span class="line">        return self.val &lt; other.val</span><br><span class="line"></span><br><span class="line">pq = Queue.PriorityQueue()</span><br><span class="line">pq.put(Node(5))</span><br><span class="line">pq.put(Node(1))</span><br><span class="line"></span><br><span class="line">while pq.qsize():</span><br><span class="line">    print pq.get().val</span><br><span class="line"># output</span><br><span class="line">1</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>注意<code>__lt__</code>函数中是小于号,说明递增排序,大于号,说明递减排序</p>
-</li>
-<li>PriorityQueue对象不是普通Python内嵌对象,不能使用Python内嵌的<code>len</code>函数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——关于列表list的操作.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——关于列表list的操作.html" itemprop="url">Python——关于列表list的操作</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-26T00:00:00+08:00">
-                2018-03-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Python的list有很多强大的功能,有些比较罕见的操作可能很有用,需要我们记住</em></p>
-<h4 id="list的常见操作"><a href="#list的常见操作" class="headerlink" title="list的常见操作"></a>list的常见操作</h4><h5 id="list子列表"><a href="#list子列表" class="headerlink" title="list子列表"></a>list子列表</h5><ul>
-<li><strong>注意使用子列表时是一个新对象,操作子列表与原始list无关</strong></li>
-<li>在快速排序和归并排序中不可将子列表传入,以期待可以从函数中修改原始列表的值</li>
-</ul>
-<h5 id="list反序子列表"><a href="#list反序子列表" class="headerlink" title="list反序子列表"></a>list反序子列表</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 3]</span><br><span class="line">l1 = l[::-1]</span><br><span class="line">print l</span><br><span class="line">print l1</span><br><span class="line"># output:</span><br><span class="line">[1, 2, 3]</span><br><span class="line">[3, 2, 1]</span><br></pre></td></tr></table></figure>
-<h4 id="list的罕见操作"><a href="#list的罕见操作" class="headerlink" title="list的罕见操作"></a>list的罕见操作</h4><h5 id="remove-object"><a href="#remove-object" class="headerlink" title="remove(object)"></a>remove(object)</h5><ul>
-<li>移除列表中第一个与object相等的对象<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 2, 3, 4]</span><br><span class="line">l.remove(2)</span><br><span class="line">print l</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">[1, 2, 3, 4]</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h5 id="pop-index"><a href="#pop-index" class="headerlink" title="pop(index)"></a>pop(index)</h5><ul>
-<li>从列表中移除一个元素,并返回该元素,index为索引</li>
-<li>默认移除最后一个<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">l = [1, 2, 2, 3, 4, 5]</span><br><span class="line">l.pop(0)</span><br><span class="line">print l</span><br><span class="line">l.pop()</span><br><span class="line">print l</span><br><span class="line"># output:</span><br><span class="line">[2, 2, 3, 4, 5]</span><br><span class="line">[2, 2, 3, 4]</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最优化方法-无约束参数优化方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html" itemprop="url">ML——最优化方法-无约束参数优化方法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p><strong>本文介绍无约束的参数优化方法：梯度下降法(Gradient Descent)、牛顿法(Newton’s Method)和拟牛顿法(Quasi-Newton Methods)</strong></p>
-<hr>
-<h3 id="无约束参数优化方法概览"><a href="#无约束参数优化方法概览" class="headerlink" title="无约束参数优化方法概览"></a>无约束参数优化方法概览</h3><h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><p>$$<br>\begin{align}<br>\theta^{\star} = \arg\max_{\theta}L(\theta)<br>\end{align}<br>$$</p>
-<h4 id="直接法"><a href="#直接法" class="headerlink" title="直接法"></a>直接法</h4><h5 id="使用直接法需要满足两个条件"><a href="#使用直接法需要满足两个条件" class="headerlink" title="使用直接法需要满足两个条件"></a>使用直接法需要满足两个条件</h5><ul>
-<li>\(L(\theta)\)为关于\(\theta\)的凸函数</li>
-<li>\(\nabla L(\theta)=0\)有解析解(又名闭式解，指的是有限个常见运算的组合给出的形式)</li>
-</ul>
-<h5 id="求解"><a href="#求解" class="headerlink" title="求解"></a>求解</h5><ul>
-<li>目标函数直接对参数求导后令目标函数导数为0: $$\nabla L(\theta)=0$$</li>
-</ul>
-<h4 id="迭代法"><a href="#迭代法" class="headerlink" title="迭代法"></a>迭代法</h4><ul>
-<li>包括梯度下降法和牛顿法，牛顿法又可以拓展为拟牛顿法</li>
-</ul>
-<hr>
-<h3 id="梯度下降法"><a href="#梯度下降法" class="headerlink" title="梯度下降法"></a>梯度下降法</h3><p><em>更详细的说明参考<a href="/Notes/ML/ML——最小二乘与梯度下降.html" title="/Notes/ML/ML——最小二乘与梯度下降.html">ML——最小二乘与梯度下降</a>中的介绍</em></p>
-<ul>
-<li>梯度下降法通过每次迭代沿着梯度下降最快的方向(梯度的负方向)前进一个\(\Delta \theta\)长度</li>
-<li>\(\Delta \theta\)为步长\(\alpha\)(参数)乘以梯度的模(变化率)的方法，实现对极大(小)值的一步步逼近</li>
-</ul>
-<hr>
-<h3 id="牛顿法"><a href="#牛顿法" class="headerlink" title="牛顿法"></a>牛顿法</h3><h4 id="数学中的牛顿法"><a href="#数学中的牛顿法" class="headerlink" title="数学中的牛顿法"></a>数学中的牛顿法</h4><ul>
-<li>牛顿法的本质是求函数值\(f(x)\)为零(\(f(x)=0\))时参数(自变量\(x\))的值</li>
-<li>本质上说，牛顿法是用逼近的方法来<strong>解方程</strong>的一种方法</li>
-</ul>
-<h5 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>对于确定的方程\(f(x)=0\)，我们的目标是求解自变量\(x\)的值</li>
-<li>1.初始值定义为\(x=x_{0}\)</li>
-<li>2.牛顿法通过迭代每次从当前点\(x={k}\)沿着斜率\(\frac{\partial f(x)}{\partial x}, x=x_{k}\)出发做一条直线,并求出其表达式</li>
-<li>3.求出该直线与x轴的交点\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)</li>
-<li>4.设置下一次迭代的点为\(x=x_{k+1}\)</li>
-<li>5.重复2到4，直到斜率小于某个阈值\(\epsilon\)时停止迭代</li>
-<li>6.迭代停止时\(x=x_{k+1}\)就是方程的近似解</li>
-<li>迭代过程图示化如下：<br><em>图片引用自博客：<a href="https://www.cnblogs.com/lyr2015/p/9010532.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyr2015/p/9010532.html</a></em><img src="/Notes/ML/ML——最优化方法-无约束参数优化方法/Newton.png">
-</li>
-</ul>
-<h5 id="迭代公式推导"><a href="#迭代公式推导" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h5><ul>
-<li>上述迭代流程中迭代公式\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)的推导如下：<img src="/Notes/ML/ML——最优化方法-无约束参数优化方法/Newton_Derivation.jpg">
-</li>
-</ul>
-<h4 id="最优化方法中的牛顿法"><a href="#最优化方法中的牛顿法" class="headerlink" title="最优化方法中的牛顿法"></a>最优化方法中的牛顿法</h4><ul>
-<li>最优化方法的目标是学习函数\(f(\theta)\)的极小/大值(若\(f(\theta)\)是凸函数，则为最小/大值)</li>
-<li>可以证明，目标函数(凸函数)取最优点(最大/小值)时，目标函数的导数\(\frac{\partial f(\theta)}{\partial \theta}=0, 其中\theta=\theta^{\star}\)</li>
-<li>基于这个事实，在知道目标函数的导数\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)的表达式后，我们可以列出方程\(f{}’(\theta)=0\)<ul>
-<li>此时方程的解\(\theta^{\star}\)就是原始目标函数的最优解</li>
-</ul>
-</li>
-<li>解上述方程\(\frac{\partial f(\theta)}{\partial \theta}=0\)时我们即可使用<strong>数学中的牛顿法</strong></li>
-</ul>
-<h5 id="算法流程-1"><a href="#算法流程-1" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>具体算法步骤与<strong>数学中的算法流程</strong>小节一致，不同的地方在于此时迭代公式变为\(\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}\)</li>
-<li>在具体的实现中，我们一般会直接推导出每一步的迭代公式，按照公式迭代即可得到最优解</li>
-</ul>
-<h4 id="迭代公式推导-1"><a href="#迭代公式推导-1" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h4><ul>
-<li>根据上述事实，此时我们的目标函数为\(f(\theta)\)，目标方程方程为\(f{}’(\theta)=0\)</li>
-<li>此时迭代公式为$$\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}$$</li>
-<li>当参数数量不止一个时，\(\theta\)表示一个向量，此时迭代公式为$$\theta_{k+1}=\theta_{k}-H_{k}^{-1}\nabla_{\theta}f(\theta_{k})$$<ul>
-<li>其中\(H_{k}^{-1}\)为海森矩阵\(H_{k}\)的逆, \(H_{k}=H(\theta_{k})\)</li>
-<li>\(H_{k}^{-1}\)和\(\frac{1}{f{}’{}’(\theta_{k})}\)分别是多维和一维参数时目标函数的二阶导</li>
-<li>海森矩阵是目标函数对参数的二阶导数，\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>推导步骤和上面的<strong>数学中的迭代公式</strong>推导一致</li>
-</ul>
-<hr>
-<h3 id="牛顿法与梯度下降法的一种简单推导方法"><a href="#牛顿法与梯度下降法的一种简单推导方法" class="headerlink" title="牛顿法与梯度下降法的一种简单推导方法"></a>牛顿法与梯度下降法的一种简单推导方法</h3><ul>
-<li>用泰勒展开来推导,详情待更新(参考&lt;&lt;百面&gt;&gt;P149)</li>
-</ul>
-<h4 id="迭代法的思想"><a href="#迭代法的思想" class="headerlink" title="迭代法的思想"></a>迭代法的思想</h4><ul>
-<li>最小化目标函数<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>\end{align}<br>$$</li>
-<li>注意,如果这里是max最大化目标函数的话,对应的是梯度上升法,此时后面推导的步骤中加入L2正则项时为了使得\(\left | \delta \right |_{2}^{2}\)的值最小,正则项的权重应该为负数,这样整体目标函数最大时正则项才能取得最小值,最终推导得到的结果也将变成梯度上升的表达式,(\(\alpha &gt; 0\)时对应的参数迭代公式变成加好而不是减号)</li>
-<li>但是实际上最大化目标函数可以价格负号转变为最小化目标函数,所以其实掌握最小化目标函数的优化方法即可</li>
-</ul>
-<h4 id="一阶法——梯度下降法"><a href="#一阶法——梯度下降法" class="headerlink" title="一阶法——梯度下降法"></a>一阶法——梯度下降法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做一阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta \\<br>\end{align}<br>$$</li>
-<li>由于上式在\(\delta\)非常小时才成立，所以我们一般加上加入L2正则项（L2正则项可以保证\(\delta\)的值不会太大),为了保证\(\left | \delta \right |_{2}^{2}\)的值最小,要求\(\alpha &gt; 0\), 才能保证目标函数最小时正则项也对应最小 (梯度提升法中要求\(\alpha &lt; 0\)或者需要在正则项前面的系数加上负号,才能保证目标函数最大时正则项最小)<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2} \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2}) \\<br>&amp;= -\alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="二阶法——牛顿迭代法"><a href="#二阶法——牛顿迭代法" class="headerlink" title="二阶法——牛顿迭代法"></a>二阶法——牛顿迭代法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做二阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta)  \\<br>&amp;= -\nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t}) \\<br>&amp;= -H(\theta_{t})^{-1}\nabla L(\theta_{t}) \\<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<hr>
-<h3 id="比较梯度下降法与牛顿法"><a href="#比较梯度下降法与牛顿法" class="headerlink" title="比较梯度下降法与牛顿法"></a>比较梯度下降法与牛顿法</h3><ul>
-<li>一般来说，牛顿法收敛速度快<ul>
-<li>一种解释是梯度下降法用<strong>一次平面去拟合局部区域</strong>牛顿法是用<strong>二次曲面去拟合局部区域</strong>，所以后者能得到更好的拟合效果，迭代的方向也就越精确</li>
-<li>另一种解释是梯度下降只能看到当前目标函数的下降方向，牛顿法可以看到当前当前目标函数的下降方向，同时还能看到一阶导数的变化趋势，所以拟合更快</li>
-</ul>
-</li>
-<li>梯度下降法中有个超参数\(\alpha\)<ul>
-<li>牛顿法中海森矩阵的逆在迭代过程中不断减小，可以起到逐步减小步长的效果(这里的步长与梯度下降中的\(\alpha\)步长不一样,梯度下降中的\(\alpha\)是超参数,表示每次向着负梯度移动的长度,而牛顿法中没有超参数)</li>
-<li>为了防止震荡,这个步长\(\alpha\)也可以随着迭代次数不断减小</li>
-</ul>
-</li>
-<li>梯度下降法可能造成震荡<ul>
-<li>越接近最优值时，步长\(\alpha\)应该不断减小，否则会在最优值附近来回震荡</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第一版附录A中,\(\alpha\)是不断变化的,能保证不会造成震荡</li>
-</ul>
-</li>
-<li>牛顿法在多变量时需要求海森矩阵H的逆,比较复杂,时间和空间上有要求,不如梯度下降法来的容易</li>
-</ul>
-<hr>
-<h3 id="拟牛顿法"><a href="#拟牛顿法" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h3><ul>
-<li>解决牛顿法求取海森矩阵\(H\)的逆\(H^{-1}\)时比较耗时间的难题</li>
-<li>用一个近似矩阵\(B\)代替海森矩阵\(H\)的逆\(H^{-1}\)</li>
-<li>不同算法近似矩阵\(B\)的计算有差异</li>
-<li>常见的拟牛顿法：BFGS,L-BFGS和OWL-QN等<ul>
-<li>&lt;&lt;统计学习方法&gt;&gt;中讲解了三个拟牛顿算法: DFP,BFGS和Broyden类算法</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><em>归纳自&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<h4 id="相同迭代公式"><a href="#相同迭代公式" class="headerlink" title="相同迭代公式"></a>相同迭代公式</h4><ul>
-<li>目标函数为\(f(\theta)\),最优化方法的终极目标是求\(f(\theta)\)的最大值点(或极大值点)</li>
-<li>目标函数的一阶导数<ul>
-<li>参数一维时为:\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)</li>
-<li>参数多维时为:\(\nabla f(\theta)\)</li>
-</ul>
-</li>
-<li>目标函数的二阶导数<ul>
-<li>参数一维时为:\(f{}’{}’(\theta)\)</li>
-<li>参数多维时为:(海森矩阵)\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>梯度下降法,牛顿法和拟牛顿法的迭代参数均可表示为下面的迭代形式:<br>$$\theta_{k+1}=\theta_{k}+\lambda_{k}p_{k}$$</li>
-<li>均通过一阶导数\(\left | \nabla f(\theta) \right |&lt;\epsilon\)为<strong>收敛判断条件</strong><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中,梯度下降法还可以通过\(\left | \theta_{k+1}-\theta_{k+} \right |&lt;\epsilon\)或\(\left | f(\theta_{k+1})-f(\theta_{k+}) \right |&lt;\epsilon\)来判断收敛</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降法-1"><a href="#梯度下降法-1" class="headerlink" title="梯度下降法"></a>梯度下降法</h4><ul>
-<li>\(p_{k}=\nabla f(x)\) </li>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h4 id="牛顿法-1"><a href="#牛顿法-1" class="headerlink" title="牛顿法"></a>牛顿法</h4><ul>
-<li>\(p_{k}=-H_{k}^{-1}\nabla f(\theta)\)</li>
-<li>\(\lambda_{k}=1\)是固定长度的,详情见<strong>数学中的牛顿法</strong>的推导,每次迭代到斜率与横轴的交点<br>$$\lambda_{k}=1$$</li>
-</ul>
-<h4 id="拟牛顿法-1"><a href="#拟牛顿法-1" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h4><ul>
-<li>核心思想是找一个容易计算的近似矩阵(可以迭代计算,而不是每次重新计算逆矩阵的矩阵)替代原始牛顿法中的海森矩阵\(H\)(\(B\))或者海森矩阵的逆矩阵\(H^{-1}\)(\(G\))</li>
-</ul>
-<h5 id="DFP算法"><a href="#DFP算法" class="headerlink" title="DFP算法"></a>DFP算法</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>\(p_{k}=-G_{k}\nabla f(\theta)\)<ul>
-<li>关于\(G_{k}\)的计算:<ul>
-<li>初始化\(G(0)\)为正定对称矩阵</li>
-<li>\(G_{k+1}=G_{k}+\frac{\delta_{k}\delta_{k}^{T}}{\delta_{k}^{T}y_{k}}-\frac{G_{k}y_{k}y_{k}^{T}G_{k}}{y_{k}^{T}G_{k}y_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="BFGS算法"><a href="#BFGS算法" class="headerlink" title="BFGS算法"></a>BFGS算法</h5><ul>
-<li>使用\(B_{k}\)逼近海森矩阵\(H_{k}\)</li>
-<li>\(p_{k}=-B_{k}^{-1}\nabla f(\theta)\)<ul>
-<li>关于\(B_{k}\)的计算:<ul>
-<li>初始化\(B(0)\)为正定对称矩阵</li>
-<li>\(B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{T}}{y_{k}^{T}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{T}B_{k}}{\delta_{k}^{T}B_{k}\delta_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="Broyden类算法-Broyden’s-algorithm"><a href="#Broyden类算法-Broyden’s-algorithm" class="headerlink" title="Broyden类算法(Broyden’s algorithm)"></a>Broyden类算法(Broyden’s algorithm)</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>在BFGS中取\(G^{BFGS}=B^{-1}\)</li>
-<li>利用DFP和BFGS二者的<strong>线性组合</strong>选择合适的海森矩阵的逆矩阵\(H^{-1}\)的替代矩阵<br>$$G_{k+1}=\alpha G^{DFP}+(1-\alpha)G^{BFGS}$$</li>
-<li>可以证明\(G\)此时是正定的</li>
-<li>\(0\leq \alpha \leq 1\)</li>
-<li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——采样方法.html" itemprop="url">ML——采样方法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
-                2018-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍几种采样的方法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="计算机能做什么样的采样"><a href="#计算机能做什么样的采样" class="headerlink" title="计算机能做什么样的采样"></a>计算机能做什么样的采样</h3><h4 id="Uniform"><a href="#Uniform" class="headerlink" title="Uniform"></a>Uniform</h4><ul>
-<li>本质上来讲,计算机只能实现对<strong>均匀分布</strong>(Uniform Distribution)的采样</li>
-</ul>
-<h4 id="numpy-random模块功能介绍"><a href="#numpy-random模块功能介绍" class="headerlink" title="numpy.random模块功能介绍"></a><code>numpy.random</code>模块功能介绍</h4><p><em><code>numpy.random</code>是用来实现随机数生成的库</em></p>
-<ul>
-<li>生成随机数<code>random</code></li>
-<li>生成某个随机数的随机样本<code>random_sample</code></li>
-<li>对序列做随机<code>shuffle</code>,<code>choice</code>等</li>
-</ul>
-<h4 id="numpy-random模块的采样"><a href="#numpy-random模块的采样" class="headerlink" title="numpy.random模块的采样"></a><code>numpy.random</code>模块的采样</h4><p><em><code>numpy.random</code>模块下实现了很多常见分布的采样函数(他们本质上都是计算机通过多次均匀分布采样实现的)</em></p>
-<h5 id="单变量分布"><a href="#单变量分布" class="headerlink" title="单变量分布"></a>单变量分布</h5><ul>
-<li><code>beta</code>:beta分布</li>
-<li><code>binomial</code>:二项分布</li>
-<li><code>chisquare</code>:卡方分布</li>
-<li><code>exponential</code>:指数分布</li>
-<li>还有更多…</li>
-</ul>
-<h5 id="多变量分布"><a href="#多变量分布" class="headerlink" title="多变量分布"></a>多变量分布</h5><ul>
-<li><code>dirichlet</code> : Multivariate generalization of Beta distribution. 狄利克雷分布</li>
-<li><code>multinomial</code>: Multivariate generalization of the binomial distribution. 多项分布</li>
-<li><code>multivariate_normal</code>: Multivariate generalization of the normal distribution. 多变量正太(高斯)分布</li>
-</ul>
-<h5 id="标准分布"><a href="#标准分布" class="headerlink" title="标准分布"></a>标准分布</h5><ul>
-<li><code>standard_cauchy</code>:      Standard Cauchy-Lorentz distribution.</li>
-<li><code>standard_exponential</code>: Standard exponential distribution.</li>
-<li><code>standard_gamma</code>:       Standard Gamma distribution.</li>
-<li><code>standard_normal</code>:      Standard normal distribution.</li>
-<li><code>standard_t</code>:           Standard Student’s t-distribution.</li>
-</ul>
-<hr>
-<h3 id="复杂分布的采样方式"><a href="#复杂分布的采样方式" class="headerlink" title="复杂分布的采样方式"></a>复杂分布的采样方式</h3><p><em>在实践中,往往有很多复杂的分布,复杂到我们无法直接对他进行采样</em><br><em>有些时候我们甚至不知道目标函数的分布函数</em></p>
-<h4 id="逆变换采样"><a href="#逆变换采样" class="headerlink" title="逆变换采样"></a>逆变换采样</h4><p><em>Inverse Transform Sampling</em></p>
-<ul>
-<li>目标函数: \(p(x)\)</li>
-<li><p>相关补充: </p>
-<ul>
-<li>求函数的累积分布函数\(\Phi^{-1}(x) = \int_{- \infty}^{x}p(t)d_{t}\)</li>
-<li>求累计分布函数的逆函数(反函数)</li>
-</ul>
-</li>
-<li><p>采样步骤:</p>
-<ul>
-<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
-<li>计算: \(x_{i} = \Phi^{-1}(u_{i})\), 其中\(\Phi^{-1}(\cdot)\)是\(p(x)\)的<strong>累积分布函数(CDF)的逆函数</strong></li>
-<li>\(x_{i}\)服从\(p(x)\)分布</li>
-</ul>
-</li>
-<li><p>优缺点:</p>
-<ul>
-<li>优点:<ul>
-<li>仅需进行一个均匀分布采样即可</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li>需要求解累积分布函数的逆函数</li>
-<li>累积分布函数的逆函数不一定容易求解,有些甚至无法求解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>证明:</p>
-<ul>
-<li>示意图如下:  <img src="/Notes/ML/ML——采样方法/inverse_transform_sampling.png"></li>
-<li>图中纵轴就是均匀分布采样的结果,然后丛纵轴对应到的累计分布函数\(\Phi(x)\)的曲线上概率越大的地方实际上也就是累积分布函数的导数(原始分布函数\(p(x)\))最大的地方</li>
-<li>这个对应过程等价于我们将\(x\)轴和\(y\)轴互换,也就是求累积分布函数的逆函数即可</li>
-</ul>
-</li>
-</ul>
-<h4 id="拒绝采样"><a href="#拒绝采样" class="headerlink" title="拒绝采样"></a>拒绝采样</h4><p><em>别名: Accept-Reject Sampling, <strong>接受-拒绝采样</strong></em></p>
-<ul>
-<li>目标函数: \(p(x)\)</li>
-<li><p>相关补充: </p>
-<ul>
-<li><strong>(参考分布寻找)</strong>: 寻找一个容易采样的分布\(q(x)\),满足\(p(x) \leq M\cdot q(x)\)</li>
-<li>一般选择正太分布等</li>
-<li>\(M &gt; 1\),从后面的证明可以知道, M越小越好</li>
-</ul>
-</li>
-<li><p>采样步骤:</p>
-<ul>
-<li>参考分布采样:\(x_{i} \sim q(x)\)</li>
-<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
-<li>判断是否接受: 如果\(u_{i} &lt; \frac{p(x_{i})}{M\cdot q(x_{i})}\),则接受采样,否则拒绝本次采样(丢弃本次采样的\(x_{i}\))</li>
-<li>\(x_{i}\)服从\(p(x)\)分布(不包括被拒绝的样本)</li>
-</ul>
-</li>
-<li>证明: <ul>
-<li>由采样步骤得到,最终得到的分布服从$$q(x)\cdot \frac{p(x)}{M\cdot q(x)} = \frac{1}{M}p(x)$$</li>
-<li>对上述分布进行归一化即可得到采样的样本服从\(p(x)\)</li>
-<li><em>从\(\frac{1}{M}p(x)\)这里也可以看出来采样的效率由M值的大小决定,M越小,采样效率越高</em></li>
-</ul>
-</li>
-<li>优缺点:<ul>
-<li>优点:<ul>
-<li>复杂分布变成简单分布采样+一个均匀分布,有时候甚至可以将参考分布也使用均匀分布</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li>参考分布\(q(x)\)的选择很难的</li>
-<li>不合适的参考分布可能导致采样效率低下</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>解决\(q(x)\)难以寻找的一种解决方案: <strong>自适应拒绝采样</strong>(Adaptive Rejection Sampling)<ul>
-<li>只适用于目标函数为凸函数</li>
-<li>使用分段线性函数来覆盖目标函数</li>
-<li>下面是示意图片(图片来源: <a href="https://www.jianshu.com/p/3fb6f4d39c60" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb6f4d39c60</a>)<img src="/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="重要性采样"><a href="#重要性采样" class="headerlink" title="重要性采样"></a>重要性采样</h4><p><em>Importance Sampling</em></p>
-<ul>
-<li>重要性采样与前面两者不同,重要性采样解决的问题是在求一个函数的关于原始分布的期望时</li>
-<li>目标定义: \(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
-<li>直接对\(p(x)\)采样可能存在的两个问题:<ul>
-<li>\(p(x)\)可能难以采样</li>
-<li>\(p(x)\)采样到的样本大多都在\(f(x)\)比较小的地方,即\(f(x)\)与\(p(x)\)的差别太大导致有限次采样无法正确评估原始期望,采样次数不够大的话偏差可能很大<ul>
-<li>这里一种解决方案是采样足够多的次数,多花点时间保证所有样本量足够,降低偏差</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>解决方案:</p>
-<ul>
-<li><p>引入一个容易采样的参考分布\(q(x)\),满足<br>$$<br>\begin{align}<br>E_{x\sim p(x)}[f(x)] &amp;= \int_{x}f(x)p(x)d_{x} \\<br>&amp;= \int_{x}f(x)\frac{p(x)}{q(x)}q(x)d_{x} \\<br>&amp;= \int_{x}f(x)w(x)q(x)d_{x} \\<br>\end{align}<br>$$</p>
-</li>
-<li><p>其中\(w(x) = \frac{p(x)}{q(x)}\)称为样本\(x\)的重要性权重(Importance Weight),不同样本的重要性权重不同</p>
-</li>
-<li>与直接从\(p(x)\)中采样相比,相同采样次数,最终得到期望偏差会更小,因为\(p(x)\)会<strong>增大在\(f(x)\)大但是\(p(x)\)极小处</strong>的样本被采样的概率,然后调低这个样本的权重</li>
-<li>示意图片:<img src="/Notes/ML/ML——采样方法/importance_sampling.jpg">
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li><strong>逆采样和拒绝采样</strong>都是在通过简单分布采样来采样原始分布的样本,最终的样本就是服从原始分布的样本\(x_{i}\sim p(x)\)</li>
-<li><strong>重要性采样</strong>本质上是通过简单分布来采样和重要性权重来估计某个函数在原始分布上的期望\(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
-<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC),MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法,关于MCMC详情可参考我的博客<a href="/Notes/ML/ML——MCMC采样.html">ML——MCMC采样</a></li>
+<li>Python数值对象都是不可变类型,与String一样,所以不能修改对象内部数据</li>
+<li>C++中的<code>i++</code>修改内存中对象本身,数值增加1,而Python不能修改对象本身</li>
+<li>与C++中字符串可以修改,Python中不能修改是一个道理</li>
 </ul>
 
           
@@ -2089,7 +1889,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/17/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><span class="page-number current">18</span><a class="page-number" href="/page/19/">19</a><span class="space">&hellip;</span><a class="page-number" href="/page/26/">26</a><a class="extend next" rel="next" href="/page/19/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/17/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><span class="page-number current">18</span><a class="page-number" href="/page/19/">19</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><a class="extend next" rel="next" href="/page/19/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2139,7 +1939,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">259</span>
+                  <span class="site-state-item-count">262</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
