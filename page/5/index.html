@@ -836,7 +836,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——xDeepFM.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -855,7 +855,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——xDeepFM.html" itemprop="url">DL——xDeepFM</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——DDIM.html" itemprop="url">DL——DDIM</a></h1>
         
 
         <div class="post-meta">
@@ -891,25 +891,74 @@
       
         
           
-            <p><em>文本介绍xDeepFM的理论介绍,包括阅读论文后自己的理解</em></p>
+            <p><em>文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍</em></p>
 <p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
 <ul>
-<li>上篇博客参考: <a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
-<li>原始论文: <a href="https://arxiv.org/pdf/1803.05170.pdf" target="_blank" rel="noopener">xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, KDD 2018</a></li>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">DENOISING DIFFUSION IMPLICIT MODELS, ICLR 2021</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/627616358" target="_blank" rel="noopener">一文读懂DDIM凭什么可以加速DDPM的采样效率</a></li>
+<li><a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a></li>
 </ul>
-<h3 id="xDeepFM结构图"><a href="#xDeepFM结构图" class="headerlink" title="xDeepFM结构图"></a>xDeepFM结构图</h3><img src="/Notes/DL/DL——xDeepFM/xDeepFM_overview.png">
-<ul>
-<li>显然, 上图中除了 CIN 部分以外,其他跟 DeepFM 基本是相同的, 所以我们本文主要讲述 CIN 组件部分, 其他的嵌入层等可参考我之前的博客<a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
+</li>
 </ul>
-<h4 id="CIN组件"><a href="#CIN组件" class="headerlink" title="CIN组件"></a>CIN组件</h4><p><em>Compressed Interaction Network</em></p>
+<h3 id="DDPM为什么慢？"><a href="#DDPM为什么慢？" class="headerlink" title="DDPM为什么慢？"></a>DDPM为什么慢？</h3><ul>
+<li>采样步数不能太小，否则单次破坏力度过大，不容易恢复？</li>
+<li>不能跳步，否则不遵循马尔科夫过程</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><ul>
+<li>核心是在DDPM的基础上，增加解决马尔科夫问题</li>
+<li>直观理解<img src="/Notes/DL/DL——DDIM/DDIM-P1.png"></li>
+<li>推导结果，推导流程有时间再补充<img src="/Notes/DL/DL——DDIM/DDIM-P2.png">
 <ul>
-<li>论文中首先提出的就是这个CIN网络(Compressed Interaction Network)</li>
-<li>结构图如下:<img src="/Notes/DL/DL——xDeepFM/cin_overview.png"></li>
-<li>理解<ul>
-<li>每个隐藏层都与一个池化操作连接到一起</li>
-<li>特征阶数与网络层数相关</li>
-<li>可以与 RNN 对应着看, 当前网络层由上一个隐藏层和一个额外输入确定</li>
-<li>确切的说: CIN 中当前层输入是前一层的隐藏层 + 原来的特征向量</li>
+<li>当采样方差\(\sigma\)满足一定条件时，上面的式子会满足马尔科夫过程，即等价于DDPM</li>
+</ul>
+</li>
+<li>图示跳步采样（生成）的原理：<img src="/Notes/DL/DL——DDIM/DDIM-P3.png">
+</li>
+</ul>
+<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><h4 id="DDPM的训练和推理"><a href="#DDPM的训练和推理" class="headerlink" title="DDPM的训练和推理"></a>DDPM的训练和推理</h4><img src="/Notes/DL/DL——DDIM/ddpm-training-and-sampling.png">
+<h4 id="DDIM的训练和推理"><a href="#DDIM的训练和推理" class="headerlink" title="DDIM的训练和推理"></a>DDIM的训练和推理</h4><ul>
+<li>训练过程与DDPM基本一致，但DDIM只需要采样固定间隔的步数即可<ul>
+<li>如果已经有训练好的DDPM，可以直接用，因为DDPM的训练时间步包含了DDIM的训练时间步</li>
+</ul>
+</li>
+<li><p>推理过程</p>
+<img src="/Notes/DL/DL——DDIM/DDIM-P4.png">
+</li>
+<li><p>推理时，一般会设置\(\sigma=0\)，即DDIM是确定性的，也就是DDIM中I(Implicit)区别于DDPM中(Probabilistic)的原因</p>
+</li>
+</ul>
+<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
+<li>实验设置<img src="/Notes/DL/DL——DDIM/DDIM-P5-0.png"></li>
+<li>结果展示<img src="/Notes/DL/DL——DDIM/DDIM-P5.png"></li>
+<li>结果分析<img src="/Notes/DL/DL——DDIM/DDIM-P6.png"></li>
+<li>从图中可以得出结论<ul>
+<li>\(\sigma\)越小（\(\eta\)越小，方差越小），即方差越小，效果越好，DDIM最好（DDIM对应\(\eta=0\)且\(\sigma=0\)）</li>
+<li>当\(T=1000\)时（或者\(T\)非常大时），DDPM效果最好（DDPM对应\(\eta=1\)且\(\sigma = \hat{\sigma}\)）</li>
+<li>小节：当采样步数少时（即间隔大时），使用DDIM效果更好，DDPM效果非常差；当采样步数很大时，DDPM效果微微好于DDIM</li>
+</ul>
+</li>
+</ul>
+<h3 id="DDIM对比DDPM"><a href="#DDIM对比DDPM" class="headerlink" title="DDIM对比DDPM"></a>DDIM对比DDPM</h3><ul>
+<li>DDIM训练流程与DDPM完全相同，只是推理(采样)过程不同</li>
+<li>DDIM主要解决DDPM采样慢的问题<ul>
+<li>DDPM有符合马尔科夫假设，需要一步步采样，效率慢</li>
+<li>DDIM没有马尔科夫假设，可以跳步生成图片，且可以不采样（标准的DDIM就是不采样的，论文中，噪音的方差越小，得到的效果越好）</li>
+</ul>
+</li>
+</ul>
+<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
+<li>DDPM采样时不能去掉噪音，为什么DDIM可以？<ul>
+<li>回答：因为DDIM采样中，噪音的方差\(\sigma\)是通过实验发现效果比较好的</li>
+<li>具体原因？</li>
+</ul>
+</li>
+<li>为什么DDPM和DDIM训练逻辑基本一致，但DDPM推断必须遵循马尔科夫性，而DDIM不需要？<ul>
+<li>回答：<ul>
+<li>训练时：DDIM和DDPM训练过程都遵循马尔科夫过程。DDIM可以按照一定间隔采样时间步，但实际上也是经过在满足马尔科夫过程的情况下推导出来的，DDPM和DDIM的训练采样公式都是因为方差可以累加实现跳跃采样的</li>
+<li>推断时：因为DDPM的采样公式是在满足马尔科夫过程情况下推导出来的， 而DDIM的采样公式是在非马尔科夫过程情况下推导出来的，所以使用DDPM采样公式时，不能跳步；使用DDIM采样公式时（注意：实际上DDIM不采样，直接确定性生成），可以跳步</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1111,7 +1160,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——xDeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1130,7 +1179,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——DDIM.html" itemprop="url">DL——DDIM</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——xDeepFM.html" itemprop="url">DL——xDeepFM</a></h1>
         
 
         <div class="post-meta">
@@ -1166,74 +1215,155 @@
       
         
           
-            <p><em>文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍</em></p>
+            <p><em>文本介绍xDeepFM的理论介绍,包括阅读论文后自己的理解</em></p>
 <p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
 <ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">DENOISING DIFFUSION IMPLICIT MODELS, ICLR 2021</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/627616358" target="_blank" rel="noopener">一文读懂DDIM凭什么可以加速DDPM的采样效率</a></li>
-<li><a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a></li>
+<li>上篇博客参考: <a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
+<li>原始论文: <a href="https://arxiv.org/pdf/1803.05170.pdf" target="_blank" rel="noopener">xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, KDD 2018</a></li>
 </ul>
-</li>
-</ul>
-<h3 id="DDPM为什么慢？"><a href="#DDPM为什么慢？" class="headerlink" title="DDPM为什么慢？"></a>DDPM为什么慢？</h3><ul>
-<li>采样步数不能太小，否则单次破坏力度过大，不容易恢复？</li>
-<li>不能跳步，否则不遵循马尔科夫过程</li>
-</ul>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><ul>
-<li>核心是在DDPM的基础上，增加解决马尔科夫问题</li>
-<li>直观理解<img src="/Notes/DL/DL——DDIM/DDIM-P1.png"></li>
-<li>推导结果，推导流程有时间再补充<img src="/Notes/DL/DL——DDIM/DDIM-P2.png">
+<h3 id="xDeepFM结构图"><a href="#xDeepFM结构图" class="headerlink" title="xDeepFM结构图"></a>xDeepFM结构图</h3><img src="/Notes/DL/DL——xDeepFM/xDeepFM_overview.png">
 <ul>
-<li>当采样方差\(\sigma\)满足一定条件时，上面的式子会满足马尔科夫过程，即等价于DDPM</li>
+<li>显然, 上图中除了 CIN 部分以外,其他跟 DeepFM 基本是相同的, 所以我们本文主要讲述 CIN 组件部分, 其他的嵌入层等可参考我之前的博客<a href="/Notes/DL/DL——DeepFM.html">DeepFM</a></li>
 </ul>
-</li>
-<li>图示跳步采样（生成）的原理：<img src="/Notes/DL/DL——DDIM/DDIM-P3.png">
-</li>
-</ul>
-<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><h4 id="DDPM的训练和推理"><a href="#DDPM的训练和推理" class="headerlink" title="DDPM的训练和推理"></a>DDPM的训练和推理</h4><img src="/Notes/DL/DL——DDIM/ddpm-training-and-sampling.png">
-<h4 id="DDIM的训练和推理"><a href="#DDIM的训练和推理" class="headerlink" title="DDIM的训练和推理"></a>DDIM的训练和推理</h4><ul>
-<li>训练过程与DDPM基本一致，但DDIM只需要采样固定间隔的步数即可<ul>
-<li>如果已经有训练好的DDPM，可以直接用，因为DDPM的训练时间步包含了DDIM的训练时间步</li>
-</ul>
-</li>
-<li><p>推理过程</p>
-<img src="/Notes/DL/DL——DDIM/DDIM-P4.png">
-</li>
-<li><p>推理时，一般会设置\(\sigma=0\)，即DDIM是确定性的，也就是DDIM中I(Implicit)区别于DDPM中(Probabilistic)的原因</p>
-</li>
-</ul>
-<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
-<li>实验设置<img src="/Notes/DL/DL——DDIM/DDIM-P5-0.png"></li>
-<li>结果展示<img src="/Notes/DL/DL——DDIM/DDIM-P5.png"></li>
-<li>结果分析<img src="/Notes/DL/DL——DDIM/DDIM-P6.png"></li>
-<li>从图中可以得出结论<ul>
-<li>\(\sigma\)越小（\(\eta\)越小，方差越小），即方差越小，效果越好，DDIM最好（DDIM对应\(\eta=0\)且\(\sigma=0\)）</li>
-<li>当\(T=1000\)时（或者\(T\)非常大时），DDPM效果最好（DDPM对应\(\eta=1\)且\(\sigma = \hat{\sigma}\)）</li>
-<li>小节：当采样步数少时（即间隔大时），使用DDIM效果更好，DDPM效果非常差；当采样步数很大时，DDPM效果微微好于DDIM</li>
+<h4 id="CIN组件"><a href="#CIN组件" class="headerlink" title="CIN组件"></a>CIN组件</h4><p><em>Compressed Interaction Network</em></p>
+<ul>
+<li>论文中首先提出的就是这个CIN网络(Compressed Interaction Network)</li>
+<li>结构图如下:<img src="/Notes/DL/DL——xDeepFM/cin_overview.png"></li>
+<li>理解<ul>
+<li>每个隐藏层都与一个池化操作连接到一起</li>
+<li>特征阶数与网络层数相关</li>
+<li>可以与 RNN 对应着看, 当前网络层由上一个隐藏层和一个额外输入确定</li>
+<li>确切的说: CIN 中当前层输入是前一层的隐藏层 + 原来的特征向量</li>
 </ul>
 </li>
 </ul>
-<h3 id="DDIM对比DDPM"><a href="#DDIM对比DDPM" class="headerlink" title="DDIM对比DDPM"></a>DDIM对比DDPM</h3><ul>
-<li>DDIM训练流程与DDPM完全相同，只是推理(采样)过程不同</li>
-<li>DDIM主要解决DDPM采样慢的问题<ul>
-<li>DDPM有符合马尔科夫假设，需要一步步采样，效率慢</li>
-<li>DDIM没有马尔科夫假设，可以跳步生成图片，且可以不采样（标准的DDIM就是不采样的，论文中，噪音的方差越小，得到的效果越好）</li>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——isinstance的困境.html" itemprop="url">Python——类的__class__属性与isinstance函数的用法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="不同文件为入口文件时"><a href="#不同文件为入口文件时" class="headerlink" title="不同文件为入口文件时"></a>不同文件为入口文件时</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line"></span><br><span class="line">class Apple:</span><br><span class="line">	def __init__(self):</span><br><span class="line">		name = &quot;HongFuShi&quot;</span><br><span class="line"></span><br><span class="line">apple = Apple()</span><br><span class="line">print apple.__class__</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">import fruit</span><br></pre></td></tr></table></figure>
+<ul>
+<li>考虑一个文件名为<em>fruit.py</em>的文件夹中定义了一个类<code>Apple</code>,同时初始化一个对象<code>apple</code><ul>
+<li>若执行<code>python fruit.py</code>: 输入”<strong>main</strong>.Apple”</li>
+<li>若将当前文件导入到另一个文件<em>run.py</em>中,然后执行<code>python run.py</code>: 输出”fruit.Apple”</li>
+<li>也就是说,执行不同文件,类<code>Apple</code>的前缀不同</li>
 </ul>
 </li>
 </ul>
-<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
-<li>DDPM采样时不能去掉噪音，为什么DDIM可以？<ul>
-<li>回答：因为DDIM采样中，噪音的方差\(\sigma\)是通过实验发现效果比较好的</li>
-<li>具体原因？</li>
-</ul>
-</li>
-<li>为什么DDPM和DDIM训练逻辑基本一致，但DDPM推断必须遵循马尔科夫性，而DDIM不需要？<ul>
-<li>回答：<ul>
-<li>训练时：DDIM和DDPM训练过程都遵循马尔科夫过程。DDIM可以按照一定间隔采样时间步，但实际上也是经过在满足马尔科夫过程的情况下推导出来的，DDPM和DDIM的训练采样公式都是因为方差可以累加实现跳跃采样的</li>
-<li>推断时：因为DDPM的采样公式是在满足马尔科夫过程情况下推导出来的， 而DDIM的采样公式是在非马尔科夫过程情况下推导出来的，所以使用DDPM采样公式时，不能跳步；使用DDIM采样公式时（注意：实际上DDIM不采样，直接确定性生成），可以跳步</li>
-</ul>
-</li>
+<hr>
+<h3 id="isinstance的困境"><a href="#isinstance的困境" class="headerlink" title="isinstance的困境"></a>isinstance的困境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line">class Apple(object):</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    from run import get_apple</span><br><span class="line">    apple1 = Apple()</span><br><span class="line">    print apple1.__class__</span><br><span class="line">    apple2 = get_apple()</span><br><span class="line">    print apple2.__class__</span><br><span class="line">    print isinstance(apple2, Apple)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">from fruit import Apple</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_apple():</span><br><span class="line">    apple = Apple()</span><br><span class="line">    print apple.__class__</span><br><span class="line">    return apple</span><br></pre></td></tr></table></figure>
+<ul>
+<li>此时执行<code>python run.py</code>, 无任何输出</li>
+<li><p>若执行<code>python fruit.py</code>, 则输出如下:</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &apos;__main__.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">False</span><br></pre></td></tr></table></figure>
+<ul>
+<li>此时<code>fruit.py</code>是程序的入口文件</li>
+<li>在入口文件中执行<code>apple1 = Apple()</code>后得到的类将是<code>__main__.Apple</code></li>
+<li>在入口文件被导入到<code>run.py</code>文件中后,执行<code>apple2 = Apple()</code>后得到的类将是<code>fruit.Apple</code></li>
+<li>此时,由于<code>apple2</code>的类别是<code>fruit.Apple</code>且<code>Apple</code>在<code>fruit.py</code>中是<code>__main__.Apple</code>,造成<code>isinstance(apple2, Apple)</code>返回<code>False</code></li>
+<li>isinstance的困境: <strong>看起来是同一个类,但执行isinstance后返回False</strong></li>
 </ul>
 </li>
 </ul>
@@ -1426,136 +1556,6 @@
 </li>
 <li><p>举个例子体现对两个不同知识图谱的融合</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http://www.zhangsan.com/ontology/Person rdf:type owl:Class . </span><br><span class="line">http://www.lisi.com/ontology/Human rdf:type owl:Class . </span><br><span class="line">http://www.zhangsan.com/ontology/Person owl:equivalentClass http://www.lisi.com/ontology/Human .</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——isinstance的困境.html" itemprop="url">Python——类的__class__属性与isinstance函数的用法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="不同文件为入口文件时"><a href="#不同文件为入口文件时" class="headerlink" title="不同文件为入口文件时"></a>不同文件为入口文件时</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line"></span><br><span class="line">class Apple:</span><br><span class="line">	def __init__(self):</span><br><span class="line">		name = &quot;HongFuShi&quot;</span><br><span class="line"></span><br><span class="line">apple = Apple()</span><br><span class="line">print apple.__class__</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">import fruit</span><br></pre></td></tr></table></figure>
-<ul>
-<li>考虑一个文件名为<em>fruit.py</em>的文件夹中定义了一个类<code>Apple</code>,同时初始化一个对象<code>apple</code><ul>
-<li>若执行<code>python fruit.py</code>: 输入”<strong>main</strong>.Apple”</li>
-<li>若将当前文件导入到另一个文件<em>run.py</em>中,然后执行<code>python run.py</code>: 输出”fruit.Apple”</li>
-<li>也就是说,执行不同文件,类<code>Apple</code>的前缀不同</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="isinstance的困境"><a href="#isinstance的困境" class="headerlink" title="isinstance的困境"></a>isinstance的困境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line">class Apple(object):</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    from run import get_apple</span><br><span class="line">    apple1 = Apple()</span><br><span class="line">    print apple1.__class__</span><br><span class="line">    apple2 = get_apple()</span><br><span class="line">    print apple2.__class__</span><br><span class="line">    print isinstance(apple2, Apple)</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">from fruit import Apple</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_apple():</span><br><span class="line">    apple = Apple()</span><br><span class="line">    print apple.__class__</span><br><span class="line">    return apple</span><br></pre></td></tr></table></figure>
-<ul>
-<li>此时执行<code>python run.py</code>, 无任何输出</li>
-<li><p>若执行<code>python fruit.py</code>, 则输出如下:</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &apos;__main__.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">False</span><br></pre></td></tr></table></figure>
-<ul>
-<li>此时<code>fruit.py</code>是程序的入口文件</li>
-<li>在入口文件中执行<code>apple1 = Apple()</code>后得到的类将是<code>__main__.Apple</code></li>
-<li>在入口文件被导入到<code>run.py</code>文件中后,执行<code>apple2 = Apple()</code>后得到的类将是<code>fruit.Apple</code></li>
-<li>此时,由于<code>apple2</code>的类别是<code>fruit.Apple</code>且<code>Apple</code>在<code>fruit.py</code>中是<code>__main__.Apple</code>,造成<code>isinstance(apple2, Apple)</code>返回<code>False</code></li>
-<li>isinstance的困境: <strong>看起来是同一个类,但执行isinstance后返回False</strong></li>
-</ul>
-</li>
 </ul>
 
           
