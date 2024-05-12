@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最优化方法-无约束参数优化方法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——最优化方法-无约束参数优化方法.html" itemprop="url">ML——最优化方法-无约束参数优化方法</a></h1>
         
 
         <div class="post-meta">
@@ -332,42 +332,194 @@
       
         
           
-            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
+<p><strong>本文介绍无约束的参数优化方法：梯度下降法(Gradient Descent)、牛顿法(Newton’s Method)和拟牛顿法(Quasi-Newton Methods)</strong></p>
 <hr>
-<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
-<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+<h3 id="无约束参数优化方法概览"><a href="#无约束参数优化方法概览" class="headerlink" title="无约束参数优化方法概览"></a>无约束参数优化方法概览</h3><h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><p>$$<br>\begin{align}<br>\theta^{\star} = \arg\max_{\theta}L(\theta)<br>\end{align}<br>$$</p>
+<h4 id="直接法"><a href="#直接法" class="headerlink" title="直接法"></a>直接法</h4><h5 id="使用直接法需要满足两个条件"><a href="#使用直接法需要满足两个条件" class="headerlink" title="使用直接法需要满足两个条件"></a>使用直接法需要满足两个条件</h5><ul>
+<li>\(L(\theta)\)为关于\(\theta\)的凸函数</li>
+<li>\(\nabla L(\theta)=0\)有解析解(又名闭式解，指的是有限个常见运算的组合给出的形式)</li>
 </ul>
-<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
-<li>FFM把相同性质的特征归于同一个Field,<ul>
-<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+<h5 id="求解"><a href="#求解" class="headerlink" title="求解"></a>求解</h5><ul>
+<li>目标函数直接对参数求导后令目标函数导数为0: $$\nabla L(\theta)=0$$</li>
+</ul>
+<h4 id="迭代法"><a href="#迭代法" class="headerlink" title="迭代法"></a>迭代法</h4><ul>
+<li>包括梯度下降法和牛顿法，牛顿法又可以拓展为拟牛顿法</li>
+</ul>
+<hr>
+<h3 id="梯度下降法"><a href="#梯度下降法" class="headerlink" title="梯度下降法"></a>梯度下降法</h3><p><em>更详细的说明参考<a href="/Notes/ML/ML——最小二乘与梯度下降.html" title="/Notes/ML/ML——最小二乘与梯度下降.html">ML——最小二乘与梯度下降</a>中的介绍</em></p>
+<ul>
+<li>梯度下降法通过每次迭代沿着梯度下降最快的方向(梯度的负方向)前进一个\(\Delta \theta\)长度</li>
+<li>\(\Delta \theta\)为步长\(\alpha\)(参数)乘以梯度的模(变化率)的方法，实现对极大(小)值的一步步逼近</li>
+</ul>
+<hr>
+<h3 id="牛顿法"><a href="#牛顿法" class="headerlink" title="牛顿法"></a>牛顿法</h3><h4 id="数学中的牛顿法"><a href="#数学中的牛顿法" class="headerlink" title="数学中的牛顿法"></a>数学中的牛顿法</h4><ul>
+<li>牛顿法的本质是求函数值\(f(x)\)为零(\(f(x)=0\))时参数(自变量\(x\))的值</li>
+<li>本质上说，牛顿法是用逼近的方法来<strong>解方程</strong>的一种方法</li>
+</ul>
+<h5 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
+<li>对于确定的方程\(f(x)=0\)，我们的目标是求解自变量\(x\)的值</li>
+<li>1.初始值定义为\(x=x_{0}\)</li>
+<li>2.牛顿法通过迭代每次从当前点\(x={k}\)沿着斜率\(\frac{\partial f(x)}{\partial x}, x=x_{k}\)出发做一条直线,并求出其表达式</li>
+<li>3.求出该直线与x轴的交点\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)</li>
+<li>4.设置下一次迭代的点为\(x=x_{k+1}\)</li>
+<li>5.重复2到4，直到斜率小于某个阈值\(\epsilon\)时停止迭代</li>
+<li>6.迭代停止时\(x=x_{k+1}\)就是方程的近似解</li>
+<li>迭代过程图示化如下：<br><em>图片引用自博客：<a href="https://www.cnblogs.com/lyr2015/p/9010532.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyr2015/p/9010532.html</a></em><img src="/Notes/ML/ML——最优化方法-无约束参数优化方法/Newton.png">
+</li>
+</ul>
+<h5 id="迭代公式推导"><a href="#迭代公式推导" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h5><ul>
+<li>上述迭代流程中迭代公式\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)的推导如下：<img src="/Notes/ML/ML——最优化方法-无约束参数优化方法/Newton_Derivation.jpg">
+</li>
+</ul>
+<h4 id="最优化方法中的牛顿法"><a href="#最优化方法中的牛顿法" class="headerlink" title="最优化方法中的牛顿法"></a>最优化方法中的牛顿法</h4><ul>
+<li>最优化方法的目标是学习函数\(f(\theta)\)的极小/大值(若\(f(\theta)\)是凸函数，则为最小/大值)</li>
+<li>可以证明，目标函数(凸函数)取最优点(最大/小值)时，目标函数的导数\(\frac{\partial f(\theta)}{\partial \theta}=0, 其中\theta=\theta^{\star}\)</li>
+<li>基于这个事实，在知道目标函数的导数\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)的表达式后，我们可以列出方程\(f{}’(\theta)=0\)<ul>
+<li>此时方程的解\(\theta^{\star}\)就是原始目标函数的最优解</li>
 </ul>
 </li>
-<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+<li>解上述方程\(\frac{\partial f(\theta)}{\partial \theta}=0\)时我们即可使用<strong>数学中的牛顿法</strong></li>
 </ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
-<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
-<li>假设样本的特征有 \(n\) 个</li>
-<li>假设filed有 \(f\) 个</li>
+<h5 id="算法流程-1"><a href="#算法流程-1" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
+<li>具体算法步骤与<strong>数学中的算法流程</strong>小节一致，不同的地方在于此时迭代公式变为\(\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}\)</li>
+<li>在具体的实现中，我们一般会直接推导出每一步的迭代公式，按照公式迭代即可得到最优解</li>
 </ul>
-</li>
-<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
-<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
-<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
-<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
-</ul>
-</li>
-<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
-</ul>
-<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
-<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
-<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+<h4 id="迭代公式推导-1"><a href="#迭代公式推导-1" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h4><ul>
+<li>根据上述事实，此时我们的目标函数为\(f(\theta)\)，目标方程方程为\(f{}’(\theta)=0\)</li>
+<li>此时迭代公式为$$\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}$$</li>
+<li>当参数数量不止一个时，\(\theta\)表示一个向量，此时迭代公式为$$\theta_{k+1}=\theta_{k}-H_{k}^{-1}\nabla_{\theta}f(\theta_{k})$$<ul>
+<li>其中\(H_{k}^{-1}\)为海森矩阵\(H_{k}\)的逆, \(H_{k}=H(\theta_{k})\)</li>
+<li>\(H_{k}^{-1}\)和\(\frac{1}{f{}’{}’(\theta_{k})}\)分别是多维和一维参数时目标函数的二阶导</li>
+<li>海森矩阵是目标函数对参数的二阶导数，\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
 </ul>
 </li>
-<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
-<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+<li>推导步骤和上面的<strong>数学中的迭代公式</strong>推导一致</li>
+</ul>
+<hr>
+<h3 id="牛顿法与梯度下降法的一种简单推导方法"><a href="#牛顿法与梯度下降法的一种简单推导方法" class="headerlink" title="牛顿法与梯度下降法的一种简单推导方法"></a>牛顿法与梯度下降法的一种简单推导方法</h3><ul>
+<li>用泰勒展开来推导,详情待更新(参考&lt;&lt;百面&gt;&gt;P149)</li>
+</ul>
+<h4 id="迭代法的思想"><a href="#迭代法的思想" class="headerlink" title="迭代法的思想"></a>迭代法的思想</h4><ul>
+<li>最小化目标函数<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>\end{align}<br>$$</li>
+<li>注意,如果这里是max最大化目标函数的话,对应的是梯度上升法,此时后面推导的步骤中加入L2正则项时为了使得\(\left | \delta \right |_{2}^{2}\)的值最小,正则项的权重应该为负数,这样整体目标函数最大时正则项才能取得最小值,最终推导得到的结果也将变成梯度上升的表达式,(\(\alpha &gt; 0\)时对应的参数迭代公式变成加好而不是减号)</li>
+<li>但是实际上最大化目标函数可以价格负号转变为最小化目标函数,所以其实掌握最小化目标函数的优化方法即可</li>
+</ul>
+<h4 id="一阶法——梯度下降法"><a href="#一阶法——梯度下降法" class="headerlink" title="一阶法——梯度下降法"></a>一阶法——梯度下降法</h4><ul>
+<li>对目标函数在\(L(\theta_{t} + \delta)\)处做一阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta \\<br>\end{align}<br>$$</li>
+<li>由于上式在\(\delta\)非常小时才成立，所以我们一般加上加入L2正则项（L2正则项可以保证\(\delta\)的值不会太大),为了保证\(\left | \delta \right |_{2}^{2}\)的值最小,要求\(\alpha &gt; 0\), 才能保证目标函数最小时正则项也对应最小 (梯度提升法中要求\(\alpha &lt; 0\)或者需要在正则项前面的系数加上负号,才能保证目标函数最大时正则项最小)<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2} \\<br>\end{align}<br>$$</li>
+<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2}) \\<br>&amp;= -\alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
+<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="二阶法——牛顿迭代法"><a href="#二阶法——牛顿迭代法" class="headerlink" title="二阶法——牛顿迭代法"></a>二阶法——牛顿迭代法</h4><ul>
+<li>对目标函数在\(L(\theta_{t} + \delta)\)处做二阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta \\<br>\end{align}<br>$$</li>
+<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta)  \\<br>&amp;= -\nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t}) \\<br>&amp;= -H(\theta_{t})^{-1}\nabla L(\theta_{t}) \\<br>\end{align}<br>$$</li>
+<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
+</ul>
+<hr>
+<h3 id="比较梯度下降法与牛顿法"><a href="#比较梯度下降法与牛顿法" class="headerlink" title="比较梯度下降法与牛顿法"></a>比较梯度下降法与牛顿法</h3><ul>
+<li>一般来说，牛顿法收敛速度快<ul>
+<li>一种解释是梯度下降法用<strong>一次平面去拟合局部区域</strong>牛顿法是用<strong>二次曲面去拟合局部区域</strong>，所以后者能得到更好的拟合效果，迭代的方向也就越精确</li>
+<li>另一种解释是梯度下降只能看到当前目标函数的下降方向，牛顿法可以看到当前当前目标函数的下降方向，同时还能看到一阶导数的变化趋势，所以拟合更快</li>
+</ul>
+</li>
+<li>梯度下降法中有个超参数\(\alpha\)<ul>
+<li>牛顿法中海森矩阵的逆在迭代过程中不断减小，可以起到逐步减小步长的效果(这里的步长与梯度下降中的\(\alpha\)步长不一样,梯度下降中的\(\alpha\)是超参数,表示每次向着负梯度移动的长度,而牛顿法中没有超参数)</li>
+<li>为了防止震荡,这个步长\(\alpha\)也可以随着迭代次数不断减小</li>
+</ul>
+</li>
+<li>梯度下降法可能造成震荡<ul>
+<li>越接近最优值时，步长\(\alpha\)应该不断减小，否则会在最优值附近来回震荡</li>
+<li>&lt;&lt;统计学习方法&gt;&gt;第一版附录A中,\(\alpha\)是不断变化的,能保证不会造成震荡</li>
+</ul>
+</li>
+<li>牛顿法在多变量时需要求海森矩阵H的逆,比较复杂,时间和空间上有要求,不如梯度下降法来的容易</li>
+</ul>
+<hr>
+<h3 id="拟牛顿法"><a href="#拟牛顿法" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h3><ul>
+<li>解决牛顿法求取海森矩阵\(H\)的逆\(H^{-1}\)时比较耗时间的难题</li>
+<li>用一个近似矩阵\(B\)代替海森矩阵\(H\)的逆\(H^{-1}\)</li>
+<li>不同算法近似矩阵\(B\)的计算有差异</li>
+<li>常见的拟牛顿法：BFGS,L-BFGS和OWL-QN等<ul>
+<li>&lt;&lt;统计学习方法&gt;&gt;中讲解了三个拟牛顿算法: DFP,BFGS和Broyden类算法</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><em>归纳自&lt;&lt;统计学习方法&gt;&gt;</em></p>
+<h4 id="相同迭代公式"><a href="#相同迭代公式" class="headerlink" title="相同迭代公式"></a>相同迭代公式</h4><ul>
+<li>目标函数为\(f(\theta)\),最优化方法的终极目标是求\(f(\theta)\)的最大值点(或极大值点)</li>
+<li>目标函数的一阶导数<ul>
+<li>参数一维时为:\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)</li>
+<li>参数多维时为:\(\nabla f(\theta)\)</li>
+</ul>
+</li>
+<li>目标函数的二阶导数<ul>
+<li>参数一维时为:\(f{}’{}’(\theta)\)</li>
+<li>参数多维时为:(海森矩阵)\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
+</ul>
+</li>
+<li>梯度下降法,牛顿法和拟牛顿法的迭代参数均可表示为下面的迭代形式:<br>$$\theta_{k+1}=\theta_{k}+\lambda_{k}p_{k}$$</li>
+<li>均通过一阶导数\(\left | \nabla f(\theta) \right |&lt;\epsilon\)为<strong>收敛判断条件</strong><ul>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中,梯度下降法还可以通过\(\left | \theta_{k+1}-\theta_{k+} \right |&lt;\epsilon\)或\(\left | f(\theta_{k+1})-f(\theta_{k+}) \right |&lt;\epsilon\)来判断收敛</li>
+</ul>
+</li>
+</ul>
+<h4 id="梯度下降法-1"><a href="#梯度下降法-1" class="headerlink" title="梯度下降法"></a>梯度下降法</h4><ul>
+<li>\(p_{k}=\nabla f(x)\) </li>
+<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
+</ul>
+<h4 id="牛顿法-1"><a href="#牛顿法-1" class="headerlink" title="牛顿法"></a>牛顿法</h4><ul>
+<li>\(p_{k}=-H_{k}^{-1}\nabla f(\theta)\)</li>
+<li>\(\lambda_{k}=1\)是固定长度的,详情见<strong>数学中的牛顿法</strong>的推导,每次迭代到斜率与横轴的交点<br>$$\lambda_{k}=1$$</li>
+</ul>
+<h4 id="拟牛顿法-1"><a href="#拟牛顿法-1" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h4><ul>
+<li>核心思想是找一个容易计算的近似矩阵(可以迭代计算,而不是每次重新计算逆矩阵的矩阵)替代原始牛顿法中的海森矩阵\(H\)(\(B\))或者海森矩阵的逆矩阵\(H^{-1}\)(\(G\))</li>
+</ul>
+<h5 id="DFP算法"><a href="#DFP算法" class="headerlink" title="DFP算法"></a>DFP算法</h5><ul>
+<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
+<li>\(p_{k}=-G_{k}\nabla f(\theta)\)<ul>
+<li>关于\(G_{k}\)的计算:<ul>
+<li>初始化\(G(0)\)为正定对称矩阵</li>
+<li>\(G_{k+1}=G_{k}+\frac{\delta_{k}\delta_{k}^{T}}{\delta_{k}^{T}y_{k}}-\frac{G_{k}y_{k}y_{k}^{T}G_{k}}{y_{k}^{T}G_{k}y_{k}}\)<ul>
+<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
+<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
+</ul>
+<h5 id="BFGS算法"><a href="#BFGS算法" class="headerlink" title="BFGS算法"></a>BFGS算法</h5><ul>
+<li>使用\(B_{k}\)逼近海森矩阵\(H_{k}\)</li>
+<li>\(p_{k}=-B_{k}^{-1}\nabla f(\theta)\)<ul>
+<li>关于\(B_{k}\)的计算:<ul>
+<li>初始化\(B(0)\)为正定对称矩阵</li>
+<li>\(B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{T}}{y_{k}^{T}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{T}B_{k}}{\delta_{k}^{T}B_{k}\delta_{k}}\)<ul>
+<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
+<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
+</ul>
+<h5 id="Broyden类算法-Broyden’s-algorithm"><a href="#Broyden类算法-Broyden’s-algorithm" class="headerlink" title="Broyden类算法(Broyden’s algorithm)"></a>Broyden类算法(Broyden’s algorithm)</h5><ul>
+<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
+<li>在BFGS中取\(G^{BFGS}=B^{-1}\)</li>
+<li>利用DFP和BFGS二者的<strong>线性组合</strong>选择合适的海森矩阵的逆矩阵\(H^{-1}\)的替代矩阵<br>$$G_{k+1}=\alpha G^{DFP}+(1-\alpha)G^{BFGS}$$</li>
+<li>可以证明\(G\)此时是正定的</li>
+<li>\(0\leq \alpha \leq 1\)</li>
+<li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
 </ul>
 
           
@@ -417,7 +569,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -436,7 +588,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
         
 
         <div class="post-meta">
@@ -472,63 +624,105 @@
       
         
           
-            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
+            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
 <hr>
-<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
-<li>学得的模型能适用于训练过程中从未观察到的数据</li>
-<li>也就是说:测试集未知</li>
+<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
+<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
 </ul>
-<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
-<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
-<li>也就是说:测试集就是训练时观察到的未标记数据</li>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>假设训练数据为:\(\{(x, y)\}\)<ul>
+<li>\(x\)特征维度为n(One-Hot编码后的维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度)<ul>
+<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
 </ul>
-<hr>
-<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
-<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
-<li>都是迭代扩充标记数据集的算法:<ul>
-<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
+</li>
+<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+</ul>
+</li>
+<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
+<li>未挖掘到特征之间的关联关系,<ul>
+<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
+<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
 </ul>
 </li>
 </ul>
-<hr>
-<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
-<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
-<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
+</li>
+<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
+<li>n是样本的特征数量</li>
+<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
+<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
+<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
 </ul>
-<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
-<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
-<li>半监督学习和主动学习的测试集都是未知数据</li>
-<li>半监督学习是基于”开放世界”假设的</li>
-<li>直推学习是基于”封闭世界”假设的</li>
+</li>
+<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
+<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
 </ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
-<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
-<thead>
-<tr>
-<th style="text-align:left">学习算法</th>
-<th style="text-align:center">是否需要专家知识(人工)</th>
-<th style="text-align:center">是否具有泛化性</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">半监督学习</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td style="text-align:left">主动学习</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td style="text-align:left">直推学习</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
-</tr>
-</tbody>
-</table>
+</li>
+<li>解决问题的灵感<ul>
+<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+</ul>
+</li>
+<li>FM解决问题的方法:<ul>
+<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
+<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
+<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
+<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
+<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
+<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
+<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
+<li>问题: 以前不能用来学习吗?</li>
+<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
+<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
+$$
+\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
+$$
+-->
+</li>
+</ul>
+<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
+<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
+<ul>
+<li>上式中：<ul>
+<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
+<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
+<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
+<li>整体模型的参数一共是\(1+n+nk\)个<ul>
+<li>偏执项一个\(w_{0}\)</li>
+<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
+<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
+<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
+<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
+<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
+</ul>
+</li>
+<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
+<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
+<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
+<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
+<li>显然可得结论</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
+<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS——FMM模型.html">RS——FMM模型</a></li>
+</ul>
 
           
         
@@ -1344,7 +1538,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1363,7 +1557,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
         
 
         <div class="post-meta">
@@ -1399,64 +1593,28 @@
       
         
           
-            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
-<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
-<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
+            <hr>
+<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
+<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
+<li>并不会因为参数都为0就导致所有神经元死亡！</li>
 </ul>
 <hr>
-<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
-<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
-<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
-<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
-<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
-<li>结构图如下所示<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
-<li><p>上面图的代码构建如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
+<li>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</li>
+<li>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</li>
+<li><p>单层隐藏层的神经网络一般这样初始化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
 <ul>
-<li>从图中的推导可知,梯度符合预期</li>
-<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
+<li>适用于单层隐藏层神经网络的参数</li>
+<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
 </ul>
 </li>
 </ul>
-<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
-<li>修改上面的构建为<ul>
-<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
-</ul>
-</li>
-<li>结构图如下:<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
-<li><p>代码如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-<ul>
-<li>显然推导结果符合代码输出预期</li>
-<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
-</ul>
-</li>
-</ul>
-<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
-<li>还以上面的结构图为例</li>
-<li>直接求中间节点 \(z\) 关于自变量的梯度</li>
-<li><p>代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
-</ul>
-</li>
-</ul>
-<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
-<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
-</ul>
-<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
+<hr>
+<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
+<li>不是越深越好</li>
+<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
+<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 
           
@@ -1506,7 +1664,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习-元学习-联邦学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1525,7 +1683,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——迁移学习-元学习-联邦学习.html" itemprop="url">DL——迁移学习-元学习-联邦学习</a></h1>
         
 
         <div class="post-meta">
@@ -1561,182 +1719,21 @@
       
         
           
-            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
-<hr>
-<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
-<li>图示如下</li>
+            <h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
+<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
+<li>元学习侧重于快速适应新任务的能力</li>
+<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
 </ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
-<hr>
-<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
-<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
-<li>动图</li>
+<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
+<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
+<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
 </ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
-<hr>
-<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
-<ul>
-<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
-<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
-<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
+<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
+<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
 </ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
-<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
-<ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
-</ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
-</ul>
-</li>
-</ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
-</li>
-</ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</li>
-</ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
-<ul>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
-<ul>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
-</ul>
-</li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
+<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
+<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
 </ul>
 
           
@@ -1921,6 +1918,116 @@
 </ul>
 </li>
 <li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——使用问题记录.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——使用问题记录.html" itemprop="url">PyTorch——使用问题记录</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="PyTorch和torchvision版本不兼容"><a href="#PyTorch和torchvision版本不兼容" class="headerlink" title="PyTorch和torchvision版本不兼容"></a>PyTorch和torchvision版本不兼容</h3><ul>
+<li><p>问题描述：<br><code>RuntimeError: Couldn&#39;t load custom C++ ops. This can happen if your PyTorch and torchvision versions are incompatible, or if you had errors while compiling torchvision from source. For further information on the compatible versions, check https://github.com/pytorch/vision#installation for the compatibility matrix. Please check your PyTorch version with torch.version and your torchvision version with torchvision.version and verify if they are compatible, and if not please reinstall torchvision so that it matches your PyTorch install.</code></p>
+</li>
+<li><p>解决方案：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch torchvision --upgrade</span><br></pre></td></tr></table></figure>
+</li>
 </ul>
 
           

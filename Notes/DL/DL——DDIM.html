@@ -95,7 +95,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDIM/DDIM-P5-0.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDIM/DDIM-P5.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDIM/DDIM-P6.png">
-<meta property="og:updated_time" content="2024-05-10T14:59:17.591Z">
+<meta property="og:updated_time" content="2024-05-12T16:48:12.420Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="DL——DDIM">
 <meta name="twitter:description" content="文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍   参考链接： 原始论文：DENOISING DIFFUSION IMPLICIT MODELS, ICLR 2021 一文读懂DDIM凭什么可以加速DDPM的采样效率 一个视频看懂DDIM凭什么加速采样|扩散模型相关    DDPM为什么慢？ 采样步数不能太小，否则单次破坏力度过大，不容易恢复？">
@@ -385,6 +385,38 @@
 </ul>
 </li>
 </ul>
+<h3 id="代码亲测"><a href="#代码亲测" class="headerlink" title="代码亲测"></a>代码亲测</h3><ul>
+<li><p>各种\(\alpha,\beta\)的定义技巧：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">num_steps = 100</span><br><span class="line">betas = torch.linspace(-6,6,num_steps) </span><br><span class="line">betas = torch.sigmoid(betas)*(0.5e-2 - 1e-5)+1e-5 # beta逐步递增</span><br><span class="line">alphas = 1-betas</span><br><span class="line">print(&quot;alphas: %s&quot; % alphas)</span><br><span class="line">alphas_prod = torch.cumprod(alphas,0) # 连乘</span><br><span class="line">alphas_bar = alphas_prod</span><br><span class="line">alphas_prod_p = torch.cat([torch.tensor([1]).float(),alphas_prod[:-1]],0) # previous连乘</span><br><span class="line">alphas_bar_sqrt = torch.sqrt(alphas_bar)</span><br><span class="line">one_minus_alphas_bar_log = torch.log(1 - alphas_bar)</span><br><span class="line">one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_bar)</span><br><span class="line"></span><br><span class="line"># 模型定义：model(x, t)</span><br><span class="line"># 采样方式：torch.randn_like(x)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实现细节(为了清晰表达，对原始采样公式有所修改)：<br>$$<br>x_s = \sqrt{\bar{\alpha}_s}\left(\frac{x_k-\sqrt{1-\bar{\alpha}_k}\epsilon_{\theta}(x_k,k)}{\bar{\alpha}_k}\right) + \sqrt{1-\bar{\alpha}_s-a_1\sigma_k^2}\epsilon_{\theta}(x_k,k) + a_2\sigma_k \epsilon<br>$$</p>
+<ul>
+<li>其中：\(\sigma_k^2 = \beta_t\)</li>
+<li>注意：\(a_1,a_2\)是新加的，拆开\(a_1,a_2\)的原因是实验发现两者可以设置不同值，且有以下现象：<ul>
+<li>\(a_2=0,a_1=1.0\)时，此时表示不采样，整个生成过程中没有添加随机值（除了初始样本为随机值外），不影响样本的生成质量，相对有随机值生成效果甚至更好</li>
+<li>\(a_1=0\)时，无论\(a_2\)值为多少，生成的样本均是类似乱码的图</li>
+<li>\(a_1&gt;0.5\)时，无论\(a_2\)值是否为0，生成的样本均不错（\(a_1\)的值不能太小，否则效果会不好）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>亲测实验结果与论文有偏差的原因分析:</p>
+<ul>
+<li>如果采样步数较少，效果也不好，但当采样间隔为2时，即跳一步采样，效果还可以（不如间隔为1）<ul>
+<li>采样步数越多，效果越好（与原始论文结果一样）</li>
+</ul>
+</li>
+<li>为什么本人实现的DDIM采样步数不能太少？（跳步10步时效果较差，与原始论文结果不一致）<ul>
+<li>DDIM可能对模型要求很高，本人尝试环境中模型过于简单？训练样本过少？</li>
+</ul>
+</li>
+<li>为什么\(a_1=0\)时，效果非常差？<ul>
+<li>待解答</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <h3 id="DDIM对比DDPM"><a href="#DDIM对比DDPM" class="headerlink" title="DDIM对比DDPM"></a>DDIM对比DDPM</h3><ul>
 <li>DDIM训练流程与DDPM完全相同，只是推理(采样)过程不同</li>
 <li>DDIM主要解决DDPM采样慢的问题<ul>
@@ -438,8 +470,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/DL/DL——DDPM.html" rel="next" title="DL——DDPM">
-                <i class="fa fa-chevron-left"></i> DL——DDPM
+              <a href="/Notes/DL/DL——xDeepFM.html" rel="next" title="DL——xDeepFM">
+                <i class="fa fa-chevron-left"></i> DL——xDeepFM
               </a>
             
           </div>
@@ -448,8 +480,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/Others/CSDN——打印博客.html" rel="prev" title="CSDN——打印博客">
-                CSDN——打印博客 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/DL/DL——DDPM.html" rel="prev" title="DL——DDPM">
+                DL——DDPM <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -593,7 +625,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#DDPM为什么慢？"><span class="nav-number">1.</span> <span class="nav-text">DDPM为什么慢？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练和推理"><span class="nav-number">3.</span> <span class="nav-text">训练和推理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#DDPM的训练和推理"><span class="nav-number">3.1.</span> <span class="nav-text">DDPM的训练和推理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DDIM的训练和推理"><span class="nav-number">3.2.</span> <span class="nav-text">DDIM的训练和推理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实验结果"><span class="nav-number">4.</span> <span class="nav-text">实验结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DDIM对比DDPM"><span class="nav-number">5.</span> <span class="nav-text">DDIM对比DDPM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题和解答"><span class="nav-number">6.</span> <span class="nav-text">一些问题和解答</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#DDPM为什么慢？"><span class="nav-number">1.</span> <span class="nav-text">DDPM为什么慢？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练和推理"><span class="nav-number">3.</span> <span class="nav-text">训练和推理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#DDPM的训练和推理"><span class="nav-number">3.1.</span> <span class="nav-text">DDPM的训练和推理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DDIM的训练和推理"><span class="nav-number">3.2.</span> <span class="nav-text">DDIM的训练和推理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实验结果"><span class="nav-number">4.</span> <span class="nav-text">实验结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码亲测"><span class="nav-number">5.</span> <span class="nav-text">代码亲测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DDIM对比DDPM"><span class="nav-number">6.</span> <span class="nav-text">DDIM对比DDPM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题和解答"><span class="nav-number">7.</span> <span class="nav-text">一些问题和解答</span></a></li></ol></div>
             
 
           </div>
