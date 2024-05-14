@@ -277,7 +277,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Shell/Shell——进程查找.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -296,7 +296,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+                <a class="post-title-link" href="/Notes/Shell/Shell——进程查找.html" itemprop="url">Shell——进程查找</a></h1>
         
 
         <div class="post-meta">
@@ -332,64 +332,14 @@
       
         
           
-            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
-<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
-<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
-</ul>
-<hr>
-<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
-<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
-<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
-<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
-<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
+            <hr>
+<h3 id="ps"><a href="#ps" class="headerlink" title="ps"></a>ps</h3><ul>
+<li>应用场景：当使用命令<code>sh run.sh</code>启动一个进程后，想要删除，却不知道进程号</li>
+<li>查找步骤：<ul>
+<li>首先使用<code>ps aux | grep run.sh</code>列出进程</li>
+<li>杀死进程<code>kill -9 [PID]</code></li>
 </ul>
 </li>
-</ul>
-<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
-<li>结构图如下所示<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
-<li><p>上面图的代码构建如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-<ul>
-<li>从图中的推导可知,梯度符合预期</li>
-<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
-<li>修改上面的构建为<ul>
-<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
-</ul>
-</li>
-<li>结构图如下:<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
-<li><p>代码如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-<ul>
-<li>显然推导结果符合代码输出预期</li>
-<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
-</ul>
-</li>
-</ul>
-<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
-<li>还以上面的结构图为例</li>
-<li>直接求中间节点 \(z\) 关于自变量的梯度</li>
-<li><p>代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
-</ul>
-</li>
-</ul>
-<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
-<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
-</ul>
-<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
 </ul>
 
           
@@ -496,190 +446,6 @@
           
             <hr>
 <p>*参考链接：<a href="https://www.jianshu.com/p/608872377546" target="_blank" rel="noopener">Spark调优 | 一文搞定 Join 优化</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
-<hr>
-<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
-<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
-<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
-</ul>
-<hr>
-<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
-<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
-</ul>
-<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
-<li>NNLM网络结构图如下：</li>
-</ul>
-<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
-<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
-<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
-</ul>
-<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
-<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
-<li>将构造的数据集作为训练样本集</li>
-<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
-</ul>
-<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
-<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
-<ul>
-<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
-</ul>
-</li>
-<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
-<ul>
-<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
-</ul>
-</li>
-</ul>
-<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
-<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
-</li>
-<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
-</li>
-<li>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</li>
-<li>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</li>
-<li>b:输出层的偏执参数</li>
-<li>d:隐含层的偏执参数</li>
-</ul>
-<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
-<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
-<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
-<li>\(R(\theta)\)是正则项</li>
-</ul>
-</li>
-<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T} log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
-<li>我们选择优化对数似然函数，原因如下：<ul>
-<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
-<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
-<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
-<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
-</ul>
-</li>
-</ul>
-<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
-<li>最大化对数似然函数(等价于最大化似然函数)</li>
-</ul>
-<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
-<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
-<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
-<li>\(\lambda\)为步长</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
-<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
-<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
-</ul>
-</li>
-<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
-</ul>
 
           
         
@@ -1219,7 +985,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习-元学习-联邦学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——特殊函数的反向传播.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1238,7 +1004,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——迁移学习-元学习-联邦学习.html" itemprop="url">DL——迁移学习-元学习-联邦学习</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——特殊函数的反向传播.html" itemprop="url">DL——特殊函数的反向传播</a></h1>
         
 
         <div class="post-meta">
@@ -1274,22 +1040,277 @@
       
         
           
-            <h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
-<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
-<li>元学习侧重于快速适应新任务的能力</li>
-<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
+            <hr>
+<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
 </ul>
-<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
-<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
-<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
+<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&amp;utm_medium=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7Edefault-1.pc_relevant_aa&amp;depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7Edefault-1.pc_relevant_aa&amp;utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
+<li>参考文献：Cross DQN</li>
 </ul>
-<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
-<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
-<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
+<p><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></p>
+<ul>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
 </ul>
-<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
-<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+</li>
 </ul>
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制<ul>
+<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+</ul>
+</li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
+<li>现有查询<strong>向量</strong> q </li>
+<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
+<li>要求是样本与 q 越相关，权重越大</li>
+</ul>
+</li>
+<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
+<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
+<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
+<li>按照这个比例将 Value 中的样本加权输出结果</li>
+<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
+<li>也就是 q 对应的结果</li>
+</ul>
+<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
+<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
+<li>相当于重复 m 次做单个请求为向量的运算</li>
+<li>每个 q 都能得到一个结果</li>
+<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
+</ul>
+<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
+<li>当 Key 与 Value 相同时<ul>
+<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
+<li>NLP中一般都是这样的</li>
+</ul>
+</li>
+<li>当 Key 与 Query 相同时，<ul>
+<li>其实是找自身不同样本间的相关性</li>
+<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
+<li>NLP中Self-Attention是这样的</li>
+</ul>
+</li>
+<li>Self-Attention是 Key == Value == Query 的情况</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
 
           
         
@@ -1478,124 +1499,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>训练时梯度出现nan或-nan</li>
-<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
-</ul>
-<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
-<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
-<li>在问题确认过程中，需要一步步排除：<ul>
-<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
-<li>排除log参数为负数或0的情况</li>
-<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
-<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
-<li>有时候会是TensorFlow版本导致，需要注意</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Scala/Scala——Scala对象转Java对象.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1665,6 +1568,124 @@
 </li>
 <li><p>List对象转换</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val a: List[Double] = List(1.0D,2.0D,3.0D,4.0D)</span><br><span class="line">calList(list.map(java.lang.Double.valueOf).asJava) // calDouble的参数要求是Java的对象</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>训练时梯度出现nan或-nan</li>
+<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
+</ul>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
+<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
+<li>在问题确认过程中，需要一步步排除：<ul>
+<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
+<li>排除log参数为负数或0的情况</li>
+<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
+<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
+<li>有时候会是TensorFlow版本导致，需要注意</li>
 </ul>
 </li>
 </ul>
