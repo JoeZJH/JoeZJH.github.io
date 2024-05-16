@@ -277,6 +277,597 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——采样方法.html" itemprop="url">ML——采样方法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍几种采样的方法</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="计算机能做什么样的采样"><a href="#计算机能做什么样的采样" class="headerlink" title="计算机能做什么样的采样"></a>计算机能做什么样的采样</h3><h4 id="Uniform"><a href="#Uniform" class="headerlink" title="Uniform"></a>Uniform</h4><ul>
+<li>本质上来讲,计算机只能实现对<strong>均匀分布</strong>(Uniform Distribution)的采样</li>
+</ul>
+<h4 id="numpy-random模块功能介绍"><a href="#numpy-random模块功能介绍" class="headerlink" title="numpy.random模块功能介绍"></a><code>numpy.random</code>模块功能介绍</h4><p><em><code>numpy.random</code>是用来实现随机数生成的库</em></p>
+<ul>
+<li>生成随机数<code>random</code></li>
+<li>生成某个随机数的随机样本<code>random_sample</code></li>
+<li>对序列做随机<code>shuffle</code>,<code>choice</code>等</li>
+</ul>
+<h4 id="numpy-random模块的采样"><a href="#numpy-random模块的采样" class="headerlink" title="numpy.random模块的采样"></a><code>numpy.random</code>模块的采样</h4><p><em><code>numpy.random</code>模块下实现了很多常见分布的采样函数(他们本质上都是计算机通过多次均匀分布采样实现的)</em></p>
+<h5 id="单变量分布"><a href="#单变量分布" class="headerlink" title="单变量分布"></a>单变量分布</h5><ul>
+<li><code>beta</code>:beta分布</li>
+<li><code>binomial</code>:二项分布</li>
+<li><code>chisquare</code>:卡方分布</li>
+<li><code>exponential</code>:指数分布</li>
+<li>还有更多…</li>
+</ul>
+<h5 id="多变量分布"><a href="#多变量分布" class="headerlink" title="多变量分布"></a>多变量分布</h5><ul>
+<li><code>dirichlet</code> : Multivariate generalization of Beta distribution. 狄利克雷分布</li>
+<li><code>multinomial</code>: Multivariate generalization of the binomial distribution. 多项分布</li>
+<li><code>multivariate_normal</code>: Multivariate generalization of the normal distribution. 多变量正太(高斯)分布</li>
+</ul>
+<h5 id="标准分布"><a href="#标准分布" class="headerlink" title="标准分布"></a>标准分布</h5><ul>
+<li><code>standard_cauchy</code>:      Standard Cauchy-Lorentz distribution.</li>
+<li><code>standard_exponential</code>: Standard exponential distribution.</li>
+<li><code>standard_gamma</code>:       Standard Gamma distribution.</li>
+<li><code>standard_normal</code>:      Standard normal distribution.</li>
+<li><code>standard_t</code>:           Standard Student’s t-distribution.</li>
+</ul>
+<hr>
+<h3 id="复杂分布的采样方式"><a href="#复杂分布的采样方式" class="headerlink" title="复杂分布的采样方式"></a>复杂分布的采样方式</h3><p><em>在实践中,往往有很多复杂的分布,复杂到我们无法直接对他进行采样</em><br><em>有些时候我们甚至不知道目标函数的分布函数</em></p>
+<h4 id="逆变换采样"><a href="#逆变换采样" class="headerlink" title="逆变换采样"></a>逆变换采样</h4><p><em>Inverse Transform Sampling</em></p>
+<ul>
+<li>目标函数: \(p(x)\)</li>
+<li><p>相关补充: </p>
+<ul>
+<li>求函数的累积分布函数\(\Phi^{-1}(x) = \int_{- \infty}^{x}p(t)d_{t}\)</li>
+<li>求累计分布函数的逆函数(反函数)</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>计算: \(x_{i} = \Phi^{-1}(u_{i})\), 其中\(\Phi^{-1}(\cdot)\)是\(p(x)\)的<strong>累积分布函数(CDF)的逆函数</strong></li>
+<li>\(x_{i}\)服从\(p(x)\)分布</li>
+</ul>
+</li>
+<li><p>优缺点:</p>
+<ul>
+<li>优点:<ul>
+<li>仅需进行一个均匀分布采样即可</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>需要求解累积分布函数的逆函数</li>
+<li>累积分布函数的逆函数不一定容易求解,有些甚至无法求解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>证明:</p>
+<ul>
+<li>示意图如下:  <img src="/Notes/ML/ML——采样方法/inverse_transform_sampling.png"></li>
+<li>图中纵轴就是均匀分布采样的结果,然后丛纵轴对应到的累计分布函数\(\Phi(x)\)的曲线上概率越大的地方实际上也就是累积分布函数的导数(原始分布函数\(p(x)\))最大的地方</li>
+<li>这个对应过程等价于我们将\(x\)轴和\(y\)轴互换,也就是求累积分布函数的逆函数即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="拒绝采样"><a href="#拒绝采样" class="headerlink" title="拒绝采样"></a>拒绝采样</h4><p><em>别名: Accept-Reject Sampling, <strong>接受-拒绝采样</strong></em></p>
+<ul>
+<li>目标函数: \(p(x)\)</li>
+<li><p>相关补充: </p>
+<ul>
+<li><strong>(参考分布寻找)</strong>: 寻找一个容易采样的分布\(q(x)\),满足\(p(x) \leq M\cdot q(x)\)</li>
+<li>一般选择正太分布等</li>
+<li>\(M &gt; 1\),从后面的证明可以知道, M越小越好</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>参考分布采样:\(x_{i} \sim q(x)\)</li>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u_{i} &lt; \frac{p(x_{i})}{M\cdot q(x_{i})}\),则接受采样,否则拒绝本次采样(丢弃本次采样的\(x_{i}\))</li>
+<li>\(x_{i}\)服从\(p(x)\)分布(不包括被拒绝的样本)</li>
+</ul>
+</li>
+<li>证明: <ul>
+<li>由采样步骤得到,最终得到的分布服从$$q(x)\cdot \frac{p(x)}{M\cdot q(x)} = \frac{1}{M}p(x)$$</li>
+<li>对上述分布进行归一化即可得到采样的样本服从\(p(x)\)</li>
+<li><em>从\(\frac{1}{M}p(x)\)这里也可以看出来采样的效率由M值的大小决定,M越小,采样效率越高</em></li>
+</ul>
+</li>
+<li>优缺点:<ul>
+<li>优点:<ul>
+<li>复杂分布变成简单分布采样+一个均匀分布,有时候甚至可以将参考分布也使用均匀分布</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>参考分布\(q(x)\)的选择很难的</li>
+<li>不合适的参考分布可能导致采样效率低下</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>解决\(q(x)\)难以寻找的一种解决方案: <strong>自适应拒绝采样</strong>(Adaptive Rejection Sampling)<ul>
+<li>只适用于目标函数为凸函数</li>
+<li>使用分段线性函数来覆盖目标函数</li>
+<li>下面是示意图片(图片来源: <a href="https://www.jianshu.com/p/3fb6f4d39c60" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb6f4d39c60</a>)<img src="/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="重要性采样"><a href="#重要性采样" class="headerlink" title="重要性采样"></a>重要性采样</h4><p><em>Importance Sampling</em></p>
+<ul>
+<li>重要性采样与前面两者不同,重要性采样解决的问题是在求一个函数的关于原始分布的期望时</li>
+<li>目标定义: \(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
+<li>直接对\(p(x)\)采样可能存在的两个问题:<ul>
+<li>\(p(x)\)可能难以采样</li>
+<li>\(p(x)\)采样到的样本大多都在\(f(x)\)比较小的地方,即\(f(x)\)与\(p(x)\)的差别太大导致有限次采样无法正确评估原始期望,采样次数不够大的话偏差可能很大<ul>
+<li>这里一种解决方案是采样足够多的次数,多花点时间保证所有样本量足够,降低偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>解决方案:</p>
+<ul>
+<li><p>引入一个容易采样的参考分布\(q(x)\),满足<br>$$<br>\begin{align}<br>E_{x\sim p(x)}[f(x)] &amp;= \int_{x}f(x)p(x)d_{x} \\<br>&amp;= \int_{x}f(x)\frac{p(x)}{q(x)}q(x)d_{x} \\<br>&amp;= \int_{x}f(x)w(x)q(x)d_{x} \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>其中\(w(x) = \frac{p(x)}{q(x)}\)称为样本\(x\)的重要性权重(Importance Weight),不同样本的重要性权重不同</p>
+</li>
+<li>与直接从\(p(x)\)中采样相比,相同采样次数,最终得到期望偏差会更小,因为\(p(x)\)会<strong>增大在\(f(x)\)大但是\(p(x)\)极小处</strong>的样本被采样的概率,然后调低这个样本的权重</li>
+<li>示意图片:<img src="/Notes/ML/ML——采样方法/importance_sampling.jpg">
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>逆采样和拒绝采样</strong>都是在通过简单分布采样来采样原始分布的样本,最终的样本就是服从原始分布的样本\(x_{i}\sim p(x)\)</li>
+<li><strong>重要性采样</strong>本质上是通过简单分布来采样和重要性权重来估计某个函数在原始分布上的期望\(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC),MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法,关于MCMC详情可参考我的博客<a href="/Notes/ML/ML——MCMC采样.html">ML——MCMC采样</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
+<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>假设训练数据为:\(\{(x, y)\}\)<ul>
+<li>\(x\)特征维度为n(One-Hot编码后的维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度)<ul>
+<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
+</ul>
+</li>
+<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+</ul>
+</li>
+<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
+<li>未挖掘到特征之间的关联关系,<ul>
+<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
+<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
+<li>n是样本的特征数量</li>
+<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
+<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
+<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
+</ul>
+</li>
+<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
+<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
+</ul>
+</li>
+<li>解决问题的灵感<ul>
+<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+</ul>
+</li>
+<li>FM解决问题的方法:<ul>
+<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
+<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
+<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
+<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
+<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
+<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
+<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
+<li>问题: 以前不能用来学习吗?</li>
+<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
+<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
+$$
+\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
+$$
+-->
+</li>
+</ul>
+<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
+<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
+<ul>
+<li>上式中：<ul>
+<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
+<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
+<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
+<li>整体模型的参数一共是\(1+n+nk\)个<ul>
+<li>偏执项一个\(w_{0}\)</li>
+<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
+<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
+<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
+<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
+<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
+</ul>
+</li>
+<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
+<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
+<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
+<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
+<li>显然可得结论</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
+<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS——FMM模型.html">RS——FMM模型</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -403,416 +994,6 @@
 </ul>
 <h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
 <li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考博客:<ul>
-<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
-<p>[待更新]</p>
-<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
-<ul>
-<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
-<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
-<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
-<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c \in C\)对特定项目\(s_{c}’ \in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
-<li>基于启发式的方法(Heuristic-based method): <ul>
-<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
-<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
-</ul>
-</li>
-<li>基于机器学习的方法(Machine learning-based mehod):<ul>
-<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
-<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \arg\max_{s \in S} u(c,s)$$</li>
-</ul>
-<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
-<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
-<li>直接对User-Item矩阵进行研究<ul>
-<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
-<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
-</ul>
-</li>
-</ul>
-<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
-<li>Traditional SVD<ul>
-<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
-<li>缺点:<ul>
-<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
-<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
-<li>计算复杂度高,空间消耗大</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>FunkSVD<ul>
-<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
-<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
-<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
-<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
-</ul>
-</li>
-<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
-<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
-<li>正则项是两个参数的L2正则</li>
-<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>BiasSVD<ul>
-<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
-<li>带有偏执项的SVD分解</li>
-<li>基于假设: <ul>
-<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
-<li>这些用户的固有属性与商品无关</li>
-</ul>
-</li>
-<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
-<li>这些商品的固有属性与用户无关</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}_{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum_{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
-<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
-<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
-<li>\(b_{u}\)[待更新]</li>
-<li>\(b_{i}\)[待更新]</li>
-<li>\(u\)[待更新]</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>SVD++<ul>
-<li>SVD++是对BiasSVD进行改进的</li>
-<li>基于假设:<ul>
-<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
-</ul>
-</li>
-<li>优化问题定义[待更新]</li>
-</ul>
-</li>
-<li>TimeSVD++<ul>
-<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
-<li>优化问题定义[待更新]</li>
-</ul>
-</li>
-<li>BiasSVDwithU</li>
-<li>NMF<br><em>非负矩阵分解Nonnegative Matrix Factorization</em></li>
-<li>PMF<br><em>概率矩阵分解Probabilistic Matrix Factorization</em></li>
-<li>WRMF<br><em>weighted regularized matrix factorization</em></li>
-</ul>
-<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
-<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
-<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
-<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML——Ensemble-集成学习.html">ML——Ensemble-集成学习</a></li>
-</ul>
-<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
-<ul>
-<li>核心目的: 填充User-Item矩阵中的缺失值</li>
-<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
-</ul>
-<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
-<ul>
-<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
-<li>模型衡量指标: Precision@K, Recall@K等</li>
-</ul>
-<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
-<ul>
-<li>核心目的: 将候选商品分类,然后用于推荐</li>
-<li>模型衡量指标: Accuracy</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——RF-随机森林.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——RF-随机森林.html" itemprop="url">ML——RF</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>随机森林是一种集成学习(Ensemble)方法,属于集成学习中的Bagging族,是一种典型的Bagging方法</em></p>
-<hr>
-<h3 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h3><h4 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h4><ul>
-<li>假设训练集总大小为N,特征总数为K</li>
-<li>有放回抽样N个训练样本<ul>
-<li>说明:这种有放回的抽样技术又称为自助法(Bootstrap)重采样技术 </li>
-</ul>
-</li>
-<li><strong>随机</strong>从所有特征中<strong>选取k个特征</strong>(k一般远小于总特征数K)</li>
-<li>用bootstrap采样的结果(N个样本)和k个特征训练一棵决策树(训练时不剪枝,每棵树都尽可能生长)</li>
-<li>重复上述三个步骤:bootstrap采样和训练新的决策树,直到生成m棵决策树</li>
-<li>将m棵决策树组合成随机森林</li>
-</ul>
-<h4 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h4><ul>
-<li>对于一个确定的未标记样本</li>
-<li>经过每一棵决策树预测</li>
-<li>投票产生结果,确定最终分类</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>避免过拟合(bootstrap采样[随机]和随机选择部分特征)</li>
-<li>便于处理高维度的数据</li>
-<li>对高维度的数据无需做特征选择,全部保留也无所谓</li>
-<li>可并行计算 </li>
-<li>模型实现简单</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型训练多棵树,所以训练时间长</li>
-<li>预测时经过多棵树,预测时间长</li>
-</ul>
-<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><ul>
-<li>决策树类型: 三种(ID3,C4.5,CART)均可选,默认均分的三种算法混合到一起<ul>
-<li>决策树详细信息可参考<a href="/Notes/ML/Models/ML——DT.html" title="/Notes/ML/Models/ML——DT.html">ML——DT</a></li>
-</ul>
-</li>
-<li>树的数量m:<ul>
-<li>n_estimators</li>
-<li>int i: n_estimators = i</li>
-<li>默认为10</li>
-</ul>
-</li>
-<li>特征个数k(以Sklearn库为例):<ul>
-<li>max_features = k</li>
-<li>int i: k = i</li>
-<li>float f: k = f * K</li>
-<li>sqrt: k = sqrt(K)</li>
-<li>log2: k = log2(K)</li>
-<li>None: k = K </li>
-<li>Sklearn.ensemble.RandomRorestClassifier默认是”auto”,也就是sqrt(K)</li>
-</ul>
-</li>
-<li>树的深度: <ul>
-<li>max_depth</li>
-<li>单棵树的深度</li>
-<li>默认是None,不做限制</li>
-<li>int i: 指定树的深度为i</li>
-</ul>
-</li>
-<li>叶子节点最小样本数:<ul>
-<li>int i: min_samples_leaf = i</li>
-<li>float f: min_samples_leaf = f * N</li>
-<li>默认为1</li>
-</ul>
-</li>
-</ul>
-<h4 id="问题-随机森林的随机体现在哪里"><a href="#问题-随机森林的随机体现在哪里" class="headerlink" title="问题: 随机森林的随机体现在哪里?"></a>问题: 随机森林的随机体现在哪里?</h4><ul>
-<li>个人理解<ul>
-<li>体现在<strong>每棵树的训练样本随机</strong>,有放回采样(自助法(Bootstrap)重采样技术)</li>
-<li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
-</ul>
-</li>
 </ul>
 
           
@@ -1629,7 +1810,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1648,7 +1829,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html" itemprop="url">DL——softmax遇上交叉熵损失时的梯度计算</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
         
 
         <div class="post-meta">
@@ -1684,183 +1865,25 @@
       
         
           
-            <hr>
-<h3 id="softmax"><a href="#softmax" class="headerlink" title="softmax"></a>softmax</h3><h4 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax_define.png">
-<h4 id="展开定义"><a href="#展开定义" class="headerlink" title="展开定义"></a>展开定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax.png">
+            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
 <hr>
-<h3 id="softmax求导"><a href="#softmax求导" class="headerlink" title="softmax求导"></a>softmax求导</h3><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/partial_softmax.png">
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
 <hr>
-<h3 id="交叉熵定义"><a href="#交叉熵定义" class="headerlink" title="交叉熵定义"></a>交叉熵定义</h3><p><em>Cross Entropy Loss</em><br><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/cross_entropy_loss.png"></p>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
 <hr>
-<h3 id="梯度计算"><a href="#梯度计算" class="headerlink" title="梯度计算"></a>梯度计算</h3><h4 id="偏置量的梯度"><a href="#偏置量的梯度" class="headerlink" title="偏置量的梯度"></a>偏置量的梯度</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_b.png">
-<h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em><br><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
-<hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL——深度学习中降低过拟合的方法.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML——模型的方差与偏差.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
-</ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
 <ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
 </ul>
 
           
@@ -1910,7 +1933,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——使用问题记录.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1929,7 +1952,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——使用问题记录.html" itemprop="url">PyTorch——使用问题记录</a></h1>
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
         
 
         <div class="post-meta">
@@ -1965,11 +1988,72 @@
       
         
           
-            <h3 id="PyTorch和torchvision版本不兼容"><a href="#PyTorch和torchvision版本不兼容" class="headerlink" title="PyTorch和torchvision版本不兼容"></a>PyTorch和torchvision版本不兼容</h3><ul>
-<li><p>问题描述：<br><code>RuntimeError: Couldn&#39;t load custom C++ ops. This can happen if your PyTorch and torchvision versions are incompatible, or if you had errors while compiling torchvision from source. For further information on the compatible versions, check https://github.com/pytorch/vision#installation for the compatibility matrix. Please check your PyTorch version with torch.version and your torchvision version with torchvision.version and verify if they are compatible, and if not please reinstall torchvision so that it matches your PyTorch install.</code></p>
+            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
+<hr>
+<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
+<li><p>ImageFolder</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>解决方案：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch torchvision --upgrade</span><br></pre></td></tr></table></figure>
+<li><p>COCO</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>MNIST</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>LSUN</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CIFAR10</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
+<li><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</li>
+<li><p>构造函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
+<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
+<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
+</ul>
+</li>
+<li>target_transform：对label的转换, 默认会自动编码<ul>
+<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
+<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
+<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
+<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
+</ul>
+</li>
+<li>loader：从硬盘读取图片的函数<ul>
+<li>不同的图像读取应该用不同的loader</li>
+<li>默认读取为RGB格式的PIL Image对象</li>
+<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
+<li><p>包导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
+<ul>
+<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
+<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
+<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
+</ul>
+</li>
+<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
+<ul>
+<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
 </li>
 </ul>
 
@@ -2061,7 +2145,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">263</span>
+                  <span class="site-state-item-count">264</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
