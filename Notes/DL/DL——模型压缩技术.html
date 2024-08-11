@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="DL,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="模型压缩 模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等 有时候模型量化和蒸馏会同时使用 剪枝不常见  模型量化 模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8） 数值上来看，量化是将连续值离散化的过程 参考链接： TinyML —— 模型量化（quantizati">
+<meta name="keywords" content="DL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DL——模型压缩技术">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/DL/DL——模型压缩技术.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="模型压缩 模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等 有时候模型量化和蒸馏会同时使用 剪枝不常见  模型量化 模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8） 数值上来看，量化是将连续值离散化的过程 参考链接： TinyML —— 模型量化（quantizati">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——模型压缩技术/Model-Distillation-Logits-vs-Features.png">
+<meta property="og:updated_time" content="2024-08-02T14:57:40.510Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="DL——模型压缩技术">
+<meta name="twitter:description" content="模型压缩 模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等 有时候模型量化和蒸馏会同时使用 剪枝不常见  模型量化 模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8） 数值上来看，量化是将连续值离散化的过程 参考链接： TinyML —— 模型量化（quantizati">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/DL/DL——模型压缩技术/Model-Distillation-Logits-vs-Features.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/DL/DL——模型压缩技术.html">
+
+
+
+
+
+  <title>DL——模型压缩技术 | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——模型压缩技术.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">DL——模型压缩技术</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="模型压缩"><a href="#模型压缩" class="headerlink" title="模型压缩"></a>模型压缩</h3><ul>
+<li>模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等</li>
+<li>有时候模型量化和蒸馏会同时使用</li>
+<li>剪枝不常见</li>
+</ul>
+<h3 id="模型量化"><a href="#模型量化" class="headerlink" title="模型量化"></a>模型量化</h3><ul>
+<li>模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8）</li>
+<li>数值上来看，量化是将连续值离散化的过程</li>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/693034534" target="_blank" rel="noopener">TinyML —— 模型量化（quantization）</a></li>
+<li>B站北大学生汇报：<a href="https://www.bilibili.com/video/BV1xf4y1f7wn/" target="_blank" rel="noopener">模型量化加速</a></li>
+<li><a href="https://juejin.cn/post/7259275893795782717" target="_blank" rel="noopener">QLoRA: 训练更大的GPT</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="线性量化与非线性量化"><a href="#线性量化与非线性量化" class="headerlink" title="线性量化与非线性量化"></a>线性量化与非线性量化</h4><ul>
+<li>线性量化(linear quantization)，也叫仿射量化(affine quantization)或者均匀量化<ul>
+<li>我们很容易给出量化公式：<br>其中，r(real value)值得是量化前的值，q(quantized value)是量化后的值，s(scale)是放缩比例，z(zero point)相当于是一个偏移量。</li>
+</ul>
+</li>
+<li>非线性量化（nonlinear quantization），也叫作非均匀量化</li>
+</ul>
+<h4 id="对称量化与非对称量化"><a href="#对称量化与非对称量化" class="headerlink" title="对称量化与非对称量化"></a>对称量化与非对称量化</h4><ul>
+<li>对称量化(symmetric quantization)：映射前后0点相同</li>
+<li>非对称量化(asymmetric quantization)：映射前后0点不相同</li>
+</ul>
+<h4 id="量化粒度"><a href="#量化粒度" class="headerlink" title="量化粒度"></a>量化粒度</h4><ul>
+<li>Per-Tensor Quantization（逐张量量化）：<ul>
+<li>这是最简单的量化方式，对整个张量（即模型中的一个参数矩阵或输入数据）使用相同的量化参数（比如最小值和最大值，或者量化因子）。</li>
+<li>由于所有值共享相同的量化参数，因此这种方法的精度较低，但计算简单，存储和传输效率高。</li>
+</ul>
+</li>
+<li>Per-Channel Quantization（逐通道量化）：<ul>
+<li>在这种量化方式中，每个通道（对于卷积神经网络中的滤波器来说，通道通常指的是滤波器输出的不同颜色或特征）使用不同的量化参数。</li>
+<li>这种方法比逐张量量化更精细，因为不同的通道可能具有不同的值范围，因此可以独立地进行量化，以保持每个通道的精度。</li>
+<li>因为有研究发现不同Channel的参数量级差距较大</li>
+</ul>
+</li>
+<li>Per-Layer Quantization（逐层量化）：<ul>
+<li>逐层量化意味着网络中的每一层都有自己的量化参数集。</li>
+<li>这种方法允许每一层根据其激活值的范围独立地进行量化，这可能比逐张量量化提供更好的精度，但比逐通道量化的计算成本要低。</li>
+</ul>
+</li>
+<li>Per-Axis Quantization（逐轴量化）：<ul>
+<li>这种量化方式通常用于多维张量，比如二维的权重矩阵。在这种情况下，”axis”可以指特定的维度，比如行或列。</li>
+<li>逐轴量化意味着沿着张量的一个或多个维度，量化参数是不同的。例如，在二维张量中，可以对每一行或每一列使用不同的量化参数。</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化方式（PTQ-vs-QAT"><a href="#量化方式（PTQ-vs-QAT" class="headerlink" title="量化方式（PTQ vs QAT)"></a>量化方式（PTQ vs QAT)</h4><ul>
+<li>PTQ(Post training quantization)，后训练量化，训完的模型直接量化，然后进行推理</li>
+<li>QAT(Quantization aware training)，量化感知训练，训练完的模型加载到内存，进行微调后再用于推理<ul>
+<li>LLM常用的思路就是float16训练base模型并存储，SFT时使用INT8量化并使用LoRA微调模型，然后存储LoRA参数，推理时加载base模型(INT8量化加载)和LoRA参数一起推理</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化位宽"><a href="#量化位宽" class="headerlink" title="量化位宽"></a>量化位宽</h4><ul>
+<li>统一位宽</li>
+<li>混合精度</li>
+</ul>
+<h4 id="量化模型训练梯度"><a href="#量化模型训练梯度" class="headerlink" title="量化模型训练梯度"></a>量化模型训练梯度</h4><ul>
+<li>梯度回传时量化是离散的，梯度为0，实际上可以设置为1，因为量化一般是阶梯函数，类似于线性的</li>
+</ul>
+<h4 id="最新的量化模型"><a href="#最新的量化模型" class="headerlink" title="最新的量化模型"></a>最新的量化模型</h4><h5 id="QLoRA"><a href="#QLoRA" class="headerlink" title="QLoRA"></a>QLoRA</h5><ul>
+<li>QLoRA是一种高效的微调方法，它允许在保持完整的16位微调任务性能的同时，将内存使用量降低到足以在单个48GB GPU上微调650亿参数模型。QLoRA通过冻结的4位量化预训练语言模型向低秩适配器（Low Rank Adapters，简称LoRA）反向传播梯度。这种方法的主要贡献包括：<ul>
+<li>4-bit NormalFloat (NF4)：一种新的数据类型，理论上对正态分布的权重是最优的。</li>
+<li>Double Quantization：通过量化量化常数来减少平均内存占用。</li>
+<li>Paged Optimizers：使用NVIDIA统一内存特性，自动在CPU和GPU之间进行页面转换，以避免梯度检查点操作时内存不足。</li>
+</ul>
+</li>
+<li>QLoRA主要用于微调训练阶段，使得在单个GPU上进行大型模型的微调成为可能，这对于资源有限的研究者和开发者来说是一个重大突破。</li>
+</ul>
+<h5 id="GPTQ"><a href="#GPTQ" class="headerlink" title="GPTQ"></a>GPTQ</h5><ul>
+<li>GPTQ（Generative Pre-trained Transformer Quantization）是一种针对生成预训练Transformer模型的量化技术。GPTQ旨在解决大型GPT模型的高计算和存储成本问题。这些模型由于其庞大的规模，即使在高性能GPU上进行推理也需要大量的计算资源。GPTQ通过以下方式来提高效率：<ul>
+<li>一次性权重量化：基于近似二阶信息的方法，可以在不需要重新训练的情况下压缩模型。</li>
+<li>高压缩率：能够将模型量化到每个权重3或4位，同时几乎不降低准确度。</li>
+<li>高效执行：允许在单个GPU上执行大型参数模型的生成推理，显著减少了所需的硬件资源。</li>
+</ul>
+</li>
+<li>GPTQ通过用于部署推理阶段，用于减少模型的大小和内存占用，使得这些大型模型更易于部署和使用。</li>
+</ul>
+<hr>
+<h3 id="模型蒸馏"><a href="#模型蒸馏" class="headerlink" title="模型蒸馏"></a>模型蒸馏</h3><ul>
+<li>模型蒸馏（Model Distillation），主要包含Logits蒸馏和特征蒸馏两大类</li>
+<li>以模型压缩为目标的模型蒸馏通常也叫作知识蒸馏，知识蒸馏主要目的是将一个大型、复杂、训练良好的模型（教师模型）的知识转移到一个小型、简单、更易于部署的模型（学生模型）中。<img src="/Notes/DL/DL——模型压缩技术/Model-Distillation-Logits-vs-Features.png"></li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/583273832" target="_blank" rel="noopener">知识蒸馏算法汇总</a><blockquote>
+<p>知识蒸馏有两大类：一类是logits蒸馏，另一类是特征蒸馏。logits蒸馏指的是在softmax时使用较高的温度系数，提升负标签的信息，然后使用Student和Teacher在高温softmax下logits的KL散度作为loss。中间特征蒸馏就是强迫Student去学习Teacher某些中间层的特征，直接匹配中间的特征或学习特征之间的转换关系。例如，在特征No.1和No.2中间，知识可以表示为如何模做两者中间的转化，可以用一个矩阵让学习者产生这个矩阵，学习者和转化之间的学习关系。 这篇文章汇总了常用的知识蒸馏的论文和代码，方便后续的学习和研究。</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="Logits蒸馏"><a href="#Logits蒸馏" class="headerlink" title="Logits蒸馏"></a>Logits蒸馏</h4><ul>
+<li>关注输出层</li>
+<li>也叫作基于反馈的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型的输出概率分布。通过最小化两个模型输出概率分布之间的KL散度（或其他相似性度量），学生模型学习教师模型的“软目标”，即对每个类别的概率预测，而不是单一的预测标签。</li>
+</ul>
+<h4 id="特征蒸馏"><a href="#特征蒸馏" class="headerlink" title="特征蒸馏"></a>特征蒸馏</h4><ul>
+<li>关注中间层</li>
+<li>也叫作基于特征的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型在中间层的激活或特征图。这通常通过最小化两个模型对应层的特征表示之间的距离（如L2距离或cosine相似度）来实现。</li>
+</ul>
+<hr>
+<h3 id="模型剪枝"><a href="#模型剪枝" class="headerlink" title="模型剪枝"></a>模型剪枝</h3><ul>
+<li>Model Pruning</li>
+<li>通过删减网络结构然后调整分布实现模型压缩，剪枝方法不常用</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/DL/" rel="tag"># DL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/Git/Git——管理HuggingFace项目.html" rel="next" title="Git——管理HuggingFace项目">
+                <i class="fa fa-chevron-left"></i> Git——管理HuggingFace项目
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/DL/DL——BERT.html" rel="prev" title="DL——BERT">
+                DL——BERT <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#模型压缩"><span class="nav-number">1.</span> <span class="nav-text">模型压缩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模型量化"><span class="nav-number">2.</span> <span class="nav-text">模型量化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#线性量化与非线性量化"><span class="nav-number">2.1.</span> <span class="nav-text">线性量化与非线性量化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#对称量化与非对称量化"><span class="nav-number">2.2.</span> <span class="nav-text">对称量化与非对称量化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#量化粒度"><span class="nav-number">2.3.</span> <span class="nav-text">量化粒度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#量化方式（PTQ-vs-QAT"><span class="nav-number">2.4.</span> <span class="nav-text">量化方式（PTQ vs QAT)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#量化位宽"><span class="nav-number">2.5.</span> <span class="nav-text">量化位宽</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#量化模型训练梯度"><span class="nav-number">2.6.</span> <span class="nav-text">量化模型训练梯度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#最新的量化模型"><span class="nav-number">2.7.</span> <span class="nav-text">最新的量化模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#QLoRA"><span class="nav-number">2.7.1.</span> <span class="nav-text">QLoRA</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#GPTQ"><span class="nav-number">2.7.2.</span> <span class="nav-text">GPTQ</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模型蒸馏"><span class="nav-number">3.</span> <span class="nav-text">模型蒸馏</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Logits蒸馏"><span class="nav-number">3.1.</span> <span class="nav-text">Logits蒸馏</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#特征蒸馏"><span class="nav-number">3.2.</span> <span class="nav-text">特征蒸馏</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模型剪枝"><span class="nav-number">4.</span> <span class="nav-text">模型剪枝</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

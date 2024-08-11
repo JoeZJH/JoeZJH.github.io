@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ML,GBDT,XGBoost,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="本文主要介绍XGBoost和其他传统GBDT的比较的优劣XGBoost又叫(Newton Boosting Tree)   GBDT推导: ML——GBDT-梯度提升树-推导过程 XGBoost推导: ML——XGBoost-推导过程   XGBoost的优点参考博客: https://www.cnblogs.com/massquantity/p/9794480.html  XGBoost损失函数">
+<meta name="keywords" content="ML,GBDT,XGBoost">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ML——XGBoost-vs-传统GBDT">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="本文主要介绍XGBoost和其他传统GBDT的比较的优劣XGBoost又叫(Newton Boosting Tree)   GBDT推导: ML——GBDT-梯度提升树-推导过程 XGBoost推导: ML——XGBoost-推导过程   XGBoost的优点参考博客: https://www.cnblogs.com/massquantity/p/9794480.html  XGBoost损失函数">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
+<meta property="og:updated_time" content="2024-08-02T14:57:40.591Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ML——XGBoost-vs-传统GBDT">
+<meta name="twitter:description" content="本文主要介绍XGBoost和其他传统GBDT的比较的优劣XGBoost又叫(Newton Boosting Tree)   GBDT推导: ML——GBDT-梯度提升树-推导过程 XGBoost推导: ML——XGBoost-推导过程   XGBoost的优点参考博客: https://www.cnblogs.com/massquantity/p/9794480.html  XGBoost损失函数">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
+
+
+
+
+
+  <title>ML——XGBoost-vs-传统GBDT | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ML——XGBoost-vs-传统GBDT</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><em>本文主要介绍XGBoost和其他传统GBDT的比较的优劣</em><br><em>XGBoost又叫(Newton Boosting Tree)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>GBDT推导: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT-%E6%A2%AF%E5%BA%A6%E6%8F%90%E5%8D%87%E6%A0%91-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——GBDT-梯度提升树-推导过程</a></li>
+<li>XGBoost推导: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——XGBoost-推导过程</a></li>
+</ul>
+<hr>
+<h3 id="XGBoost的优点"><a href="#XGBoost的优点" class="headerlink" title="XGBoost的优点"></a>XGBoost的优点</h3><p><em>参考博客: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a></em></p>
+<ul>
+<li><p>XGBoost<strong>损失函数</strong>是<strong>二阶泰勒</strong>展开(与牛顿法对应),GBDT是<strong>一阶泰勒</strong>展开(与梯度下降法对应)</p>
+<ul>
+<li>传统 GBDT 在优化时只用到一阶导数信息, 所以传统GBDT也叫 (Gradient Boosting)</li>
+<li>XGBoost 则对目标函数进行了二阶泰勒展开，同时用到了一阶和二阶导数, 所以XGBoost又叫(Newton Boosting Tree)</li>
+</ul>
+</li>
+<li><p>XGBoost加了<strong>正则项</strong>,普通的GBDT没有,所以XGBoost学出来的模型更简单,能防止过拟合,提高模型的泛化性能</p>
+</li>
+<li><p>XGBoost Shrinkage(缩减)</p>
+<ul>
+<li>每次进行完一次迭代后,将叶子节点的权重乘以该系数(一般叫做<code>eta</code>\(\eta\))</li>
+<li>可以理解为这里Shrinkage是将学习速率调小,从而需要的迭代次数增多</li>
+<li>减小学习率实际上是减弱了每棵树对整体的影响,从而让后面的树有更多的学习空间</li>
+<li>下面的表述还有待确定:<ul>
+<li>进一步惩罚决策树叶节点的值(惩罚的意思是叶节点越大,惩罚越多,损失函数越大)</li>
+<li>对叶节点的惩罚本身可以理解为一个正则化</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>结点分裂的<strong>增益计算公式</strong>不同</p>
+<ul>
+<li>传统 GBDT 一般采用的是<strong>最小二乘法</strong>作为内部分裂的增益计算指标(因为用的都是回归树)<ul>
+<li>注意: 这里论文中描述的最小绝对偏差回归(LAD)是第一步损失函数的定义,不是这一步中的信息增益计算</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>在分裂结点时可以选择三种方式:<ul>
+<li><code>friedman_mse</code>(默认), mean squared error with improvement score by Friedman</li>
+<li><code>mse</code>: mean squared error</li>
+<li><code>mae</code>: mean absolute error</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>而 XGBoost 使用的是经过优化推导后的式子<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>注意: XGBoost中的信息增益计算形式固定为上面的计算方式,但是具体的值与损失函数的定义相关(因为 \(g_i\) 和 \(h_i\) 的是损失函数的一阶和二阶梯度)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost<strong>支持自定义的损失函数</strong>,支持一阶和二阶可导就行</p>
+<ul>
+<li>注意,这里的损失函数指的是 \(l(y_i,\hat{y}_i)\), 单个样本预测值与目标值的差异, 也就是单个样本的损失函数</li>
+<li>从<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html">ML——XGBoost-推导过程</a>中可知:<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li>XGBoost中只要损失函数二次可微分即可得到 \(g_i\) 和 \(h_i\)<ul>
+<li>\(g_i\) 和 \(h_i\) 本身与损失函数的定义形式无关, 只要求损失函数二阶可微分即可</li>
+</ul>
+</li>
+<li>只要有了 \(g_i\) 和 \(h_i\) 我们即可<ul>
+<li>根据预先推导的叶子节点分数表达式 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\) 求得叶子结点的分数</li>
+<li>根据预先推导的信息增益公式 \(Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma\) 确定分裂特征和分裂点</li>
+</ul>
+</li>
+<li>GBDT 损失函数关系一般选择<strong>最小二乘回归</strong>或者<strong>最小绝对偏差回归</strong><ul>
+<li><strong>最小方差回归</strong>: (Least-Squares Regression, LSR)<br>$$\begin{align} L(y,F(x)) = \frac{1}{2}(y-F(x))^{2} \end{align}$$</li>
+<li><strong>最小绝对偏差回归</strong>: (Least Absolute Deviation Regression, LAD)<br>$$\begin{align} L(y,F(x)) = |y-F(x)| \end{align}$$</li>
+<li>查看源码: <code>sklearn.ensemble.GradientBoostingClassifier</code>的损失函数是定义好的, 不能自己定义, 详细如下源码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">LOSS_FUNCTIONS = &#123;&apos;ls&apos;: LeastSquaresError,</span><br><span class="line">                  &apos;lad&apos;: LeastAbsoluteError,</span><br><span class="line">                  &apos;huber&apos;: HuberLossFunction,</span><br><span class="line">                  &apos;quantile&apos;: QuantileLossFunction,</span><br><span class="line">                  &apos;deviance&apos;: None,    # for both, multinomial and binomial</span><br><span class="line">                  &apos;exponential&apos;: ExponentialLoss,</span><br><span class="line">                  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">_SUPPORTED_LOSS = (&apos;deviance&apos;, &apos;exponential&apos;)</span><br><span class="line">....</span><br><span class="line"></span><br><span class="line">if (self.loss not in self._SUPPORTED_LOSS</span><br><span class="line">                or self.loss not in LOSS_FUNCTIONS):</span><br><span class="line">            raise ValueError(&quot;Loss &apos;&#123;0:s&#125;&apos; not supported. &quot;.format(self.loss))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>XGBoost 借鉴了随机森林的做法，<strong>支持列采样</strong>，不仅能降低过拟合，还能减少计算量，这也是 XGBoost 异于传统 GBDT 的一个特性</p>
+<ul>
+<li>列采样: 这借鉴于随机森林中的做法,每棵树不使用所有特征,而是部分特征参与训练</li>
+<li>可以减少计算量,同时还能降低过拟合,简直优秀</li>
+</ul>
+</li>
+<li><p>XGBoost 有<strong>缺失值自动处理</strong>, 在计算分裂增益时不会考虑带有缺失值的样本，这样就减少了时间开销,在分裂点确定了之后，将带有缺失值的样本分别放在左子树和右子树，比较两者分裂增益，选择增益较大的那一边作为默认分裂方向</p>
+<ul>
+<li>进一步理解稀疏数据的支持: [待更新]</li>
+</ul>
+</li>
+<li><p><strong>并行化处理</strong>：由于 Boosting 本身的特性，传统 GBDT 无法像随机森林那样树与树之间的并行化</p>
+<ul>
+<li>XGBoost 的并行主要体现在特征粒度上，在对结点进行分裂时，由于已预先对特征排序并保存为block 结构，每个特征的增益计算就可以开多线程进行，极大提升了训练速度</li>
+</ul>
+</li>
+<li><p><strong>剪枝策略</strong>不同</p>
+<ul>
+<li>传统 GBDT 在损失不再减少时会停止分裂，这是一种预剪枝的贪心策略，容易欠拟合</li>
+<li>XGBoost采用的是后剪枝的策略，先分裂到指定的最大深度 (max_depth) 再进行剪枝<ul>
+<li>而且和一般的后剪枝不同， XGBoost 的后剪枝是不需要验证集的[待更新:XGBoost剪枝的策略是怎样的?只依赖信息增益指标吗?]</li>
+<li>和<a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">博客</a>作者指出的一样,我这里并不是”纯粹的”后剪枝,因为提前设定了最大深度</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>基分类器的选择不同:</p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li><strong>XGBoost</strong>后面的各种损失计算等都包含着树模型的复杂度,叶子节点分类等,所以是<strong>只能用CART,不能使用逻辑回归</strong>的</li>
+<li>(从函数空间定义和后面的公式推导来看)<strong>XGBoost中基函数只使用CART回归树，不能使用逻辑回归</strong></li>
+<li>但是事实上XGBoost的实现中是支持线性分类器作为基分类器的, 参数<code>booster[default=&#39;gbtree&#39;]</code>,可选为<code>booster=gblinear</code><ul>
+<li>使用<strong>线性分类器作为基分类器</strong>时, XGBoost相当于带有L1正则化和L2正则化的:<ul>
+<li>Logistic回归(分类问题)</li>
+<li>线性回归(回归问题)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>分桶策略</strong>算法不同</p>
+<ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-vs-传统GBDT/split_point_method_weighted_in_xgboost.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost的缺点"><a href="#XGBoost的缺点" class="headerlink" title="XGBoost的缺点"></a>XGBoost的缺点</h3><p><em>注意这里是</em></p>
+<ul>
+<li><strong>空间消耗大</strong><ul>
+<li>因为要在训练之前先对<strong>每个特征</strong>进行<strong>预排序</strong>并将结果存储起来，所以空间消耗较大</li>
+<li>GBDT无需预排序,但是每次重新排序很耗时间</li>
+</ul>
+</li>
+<li>速度慢<ul>
+<li>虽然XGBoost速度比传统 GBDT 快了不少, 但是不如 LightGBM 快, 且 LightGBM 占用内存更低</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="XGBoost为什么能够并行"><a href="#XGBoost为什么能够并行" class="headerlink" title="XGBoost为什么能够并行?"></a>XGBoost为什么能够并行?</h3><p><em>而GBDT是不能并行的，原因是：<a href="https://www.136.la/shida/show-187480.html" target="_blank" rel="noopener">https://www.136.la/shida/show-187480.html</a></em></p>
+<ul>
+<li>GBDT不能并行的原因是没有预排序（XGB的预排序结果会存储到block结构）等，在有了预排序结果后，同一个特征的切割方式可以并行尝试计算增益</li>
+<li>决策树最耗时间(包括GBDT)的步骤是对特征值的排序<ul>
+<li>用于确定最佳分割点</li>
+</ul>
+</li>
+<li>XGBoost训练前,预先对数据进行了排序,称为预排序<ul>
+<li>将预先排序的结果保存为block结构, 后面迭代的时候重复使用这个结构,从而实现一次排序,多次使用,大大减少计算量</li>
+</ul>
+</li>
+<li>这个结构减少计算量的同时还为并行化提供了可能([待更新]实际上不用预排序也能并行的吧?只是每次需要先使用一个单一线程排序,然后再多个线程并行?只是不够并行)<ul>
+<li>进行结点的分裂时,需要计算每个特征的增益,然后选择增益最大的那个特征分裂</li>
+<li>这里我们可以同时使用多个线程计算不同特征的增益, 从而实现并行化</li>
+</ul>
+</li>
+<li>总结为三方面的并行, ([待更新]但是具体实现了哪些并行不确定)<ul>
+<li>同一层级的结点间每个结点的分裂可以并行</li>
+<li>同一个结点内部不同特征增益的计算可以并行</li>
+<li>同一个结点同一个特征的不同分裂点的增益计算可以并行</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GBDT为什么不能自定义损失函数"><a href="#GBDT为什么不能自定义损失函数" class="headerlink" title="GBDT为什么不能自定义损失函数?"></a>GBDT为什么不能自定义损失函数?</h3><p><em>GBDT为什么不能像XGBoost一样自定义损失函数?</em></p>
+<ul>
+<li>查看<code>sklearn.ensemble.GradientBoostingClassifier</code>的源码发现, 确实不支持自定义的损失函数</li>
+<li>[待更新],因为涉及到后面的参数更新方式?</li>
+</ul>
+<hr>
+<h3 id="XGBoost如何使用自定义的损失函数"><a href="#XGBoost如何使用自定义的损失函数" class="headerlink" title="XGBoost如何使用自定义的损失函数?"></a>XGBoost如何使用自定义的损失函数?</h3><p><em>模型直接调用<code>fit</code>函数无法传入自定义的损失函数, 需要在模型开始定义的时候传入或者使用<code>xgb.train</code>函数调用</em></p>
+<ul>
+<li><p>使用方法1:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier(objective=MyLossFunction)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用方法2:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br><span class="line">from xgboost import XGBClassifier</span><br><span class="line"></span><br><span class="line">clf = XGBClassifier()</span><br><span class="line">xgb.train(xgb_model=clf, obj=MyLossFunction)</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ML/" rel="tag"># ML</a>
+          
+            <a href="/tags/GBDT/" rel="tag"># GBDT</a>
+          
+            <a href="/tags/XGBoost/" rel="tag"># XGBoost</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/Others/Algorithm——AVL树和红黑树等各种树结构总结.html" rel="next" title="Algorithm——AVL树和红黑树等各种树结构总结">
+                <i class="fa fa-chevron-left"></i> Algorithm——AVL树和红黑树等各种树结构总结
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/ML/Models/ML——LR-逻辑回归.html" rel="prev" title="ML——LR-逻辑回归">
+                ML——LR-逻辑回归 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#XGBoost的优点"><span class="nav-number">1.</span> <span class="nav-text">XGBoost的优点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XGBoost的缺点"><span class="nav-number">2.</span> <span class="nav-text">XGBoost的缺点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XGBoost为什么能够并行"><span class="nav-number">3.</span> <span class="nav-text">XGBoost为什么能够并行?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GBDT为什么不能自定义损失函数"><span class="nav-number">4.</span> <span class="nav-text">GBDT为什么不能自定义损失函数?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XGBoost如何使用自定义的损失函数"><span class="nav-number">5.</span> <span class="nav-text">XGBoost如何使用自定义的损失函数?</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

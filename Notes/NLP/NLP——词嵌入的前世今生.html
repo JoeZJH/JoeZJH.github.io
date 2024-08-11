@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="NLP,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="词嵌入的发展,NNLM,CBOW,skip-gram词嵌入(Word Embedding)也称为词向量(Word2Vec): 指的是将词转换成向量的形式    基本问题 用语言模型做预训练 语言模型: 如何计算一段文本序列在某种语言下出现的概率?   如何表示文本中的一个词?   文本表示模型词袋模型 One-Hot: 向量维度与词的数量相同,某个维度为1,其他都为0 TF-IDF: 计算词对文档">
+<meta name="keywords" content="NLP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NLP——词嵌入的前世今生">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/NLP/NLP——词嵌入的前世今生.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="词嵌入的发展,NNLM,CBOW,skip-gram词嵌入(Word Embedding)也称为词向量(Word2Vec): 指的是将词转换成向量的形式    基本问题 用语言模型做预训练 语言模型: 如何计算一段文本序列在某种语言下出现的概率?   如何表示文本中的一个词?   文本表示模型词袋模型 One-Hot: 向量维度与词的数量相同,某个维度为1,其他都为0 TF-IDF: 计算词对文档">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/NLP/NLP——词嵌入的前世今生/NNLM_Overview.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/NLP/NLP——词嵌入的前世今生/hierarchical_overview.jpg">
+<meta property="og:updated_time" content="2024-08-02T14:57:40.623Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="NLP——词嵌入的前世今生">
+<meta name="twitter:description" content="词嵌入的发展,NNLM,CBOW,skip-gram词嵌入(Word Embedding)也称为词向量(Word2Vec): 指的是将词转换成向量的形式    基本问题 用语言模型做预训练 语言模型: 如何计算一段文本序列在某种语言下出现的概率?   如何表示文本中的一个词?   文本表示模型词袋模型 One-Hot: 向量维度与词的数量相同,某个维度为1,其他都为0 TF-IDF: 计算词对文档">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/NLP/NLP——词嵌入的前世今生/NNLM_Overview.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/NLP/NLP——词嵌入的前世今生.html">
+
+
+
+
+
+  <title>NLP——词嵌入的前世今生 | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——词嵌入的前世今生.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">NLP——词嵌入的前世今生</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><em>词嵌入的发展,NNLM,CBOW,skip-gram</em><br><em>词嵌入(Word Embedding)也称为词向量(Word2Vec): 指的是将词转换成向量的形式</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="基本问题"><a href="#基本问题" class="headerlink" title="基本问题"></a>基本问题</h3><ul>
+<li>用语言模型做预训练<ul>
+<li>语言模型: 如何计算一段文本序列在某种语言下出现的概率?</li>
+</ul>
+</li>
+<li>如何表示文本中的一个词?</li>
+</ul>
+<hr>
+<h3 id="文本表示模型"><a href="#文本表示模型" class="headerlink" title="文本表示模型"></a>文本表示模型</h3><h4 id="词袋模型"><a href="#词袋模型" class="headerlink" title="词袋模型"></a>词袋模型</h4><ul>
+<li>One-Hot: 向量维度与词的数量相同,某个维度为1,其他都为0</li>
+<li>TF-IDF: 计算词对文档的贡献(权重)</li>
+<li>TextRank: 类似于PageRank的思想<ul>
+<li>如果一个单词出现在很多单词后面的话，那么说明这个单词比较重要</li>
+<li>一个TextRank值很高的单词后面跟着的一个单词，那么这个单词的TextRank值会相应地因此而提高</li>
+</ul>
+</li>
+</ul>
+<h5 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>OneHot:<ul>
+<li>维度灾难</li>
+<li>语义鸿沟</li>
+</ul>
+</li>
+<li>TF-IDF和TextRank<ul>
+<li>[个人理解]也无法表示语义,所以存在语义鸿沟</li>
+</ul>
+</li>
+</ul>
+<h4 id="主题模型"><a href="#主题模型" class="headerlink" title="主题模型"></a>主题模型</h4><ul>
+<li>LSA: 矩阵分解(SVD)的方式,又名 Latent Semantic Indexing</li>
+<li>pLSA: 简单的概率隐式语义模型</li>
+<li>LDA: 无监督聚类常用的模型,有Gibbs Sampling和变分推断等实现,网上有很多资料,也有很多实现</li>
+<li>L-LDA: LDA的有监督版本,核心思想就是在LDA吉布斯实现的版本基础上加上采样限制,使得每次采样只能控制在对应主题上,效果比较好,网上没有官方的实现,大部分实现不完全,感兴趣可以试试我的实现<a href="https://github.com/JoeZJH/Labeled-LDA-Python" target="_blank" rel="noopener">Labeled-LDA-Python</a><ul>
+<li>L-LDA理论上可以得到比LDA质量更高,效果更好的词向量</li>
+</ul>
+</li>
+</ul>
+<h5 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点:"></a>优缺点:</h5><ul>
+<li>LSA:<ul>
+<li>利用全局语料特征</li>
+<li>但SVD求解计算复杂度大</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于词向量的固定表征"><a href="#基于词向量的固定表征" class="headerlink" title="基于词向量的固定表征"></a>基于词向量的固定表征</h4><ul>
+<li>Word2vec: 基于上下文训练, 拥有相同上下文的词相近,基于分布式假设(相同上下文语境的词有似含义)</li>
+<li>FastText: 通过对”词-词”共现矩阵进行分解从而得到词表示的方法,基于分布式假设(相同上下文语境的词有似含义)</li>
+<li>GloVe: 基于全局预料，结合了LSA和word2vec的优点, 论文: <a href="https://www.aclweb.org/anthology/D14-1162" target="_blank" rel="noopener">GloVe: Global Vectors for Word Representation</a></li>
+</ul>
+<h5 id="优缺点-2"><a href="#优缺点-2" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>目前提到的以上所有都是静态词向量,无法解决一次多义等问题</li>
+<li>Word2vec和FastText: <ul>
+<li>优化效率高，但是基于局部语料</li>
+<li>本质上二者也都是语言模型</li>
+</ul>
+</li>
+<li>GloVe: <ul>
+<li>基于全局语料库、并结合上下文语境构建词向量, 结合了LSA和word2vec的优点</li>
+<li>可以看作是更换了目标函数和权重函数的全局word2vec</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于词向量的动态表征"><a href="#基于词向量的动态表征" class="headerlink" title="基于词向量的动态表征"></a>基于词向量的动态表征</h4><ul>
+<li>ELMo: <ul>
+<li>采样LSTM提取特征</li>
+<li>采用双向语言模型</li>
+<li>实际上是两个单向语言模型（方向相反）的拼接，这种融合特征的能力比BERT一体化融合特征方式弱</li>
+</ul>
+</li>
+<li>GPT: <ul>
+<li>采样Transformer进行特征提取</li>
+<li>采用单向语言模型</li>
+</ul>
+</li>
+<li>BERT: <ul>
+<li>采用Transformer进行特征提取</li>
+<li>采用双向语言模型</li>
+</ul>
+</li>
+</ul>
+<h5 id="优缺点-3"><a href="#优缺点-3" class="headerlink" title="优缺点"></a>优缺点</h5><ul>
+<li>三者都是基于语言模型的动态词向量,能解决一次多义问题</li>
+<li>ELMo: <ul>
+<li>采用1层静态向量+2层LSTM，多层提取能力有限</li>
+</ul>
+</li>
+<li>GPT和BERT: <ul>
+<li>Transformer可采用多层，并行计算能力强</li>
+</ul>
+</li>
+<li>很多任务表明: <ul>
+<li>Transformer特征提取能力强于LSTM</li>
+</ul>
+</li>
+<li>GPT和BERT都采用Transformer，Transformer是encoder-decoder结构，GPT的单向语言模型采用decoder部分，decoder的部分见到的都是不完整的句子；BERT的双向语言模型则采用encoder部分，采用了完整句子</li>
+</ul>
+<h4 id="NNLM-RNNLM"><a href="#NNLM-RNNLM" class="headerlink" title="NNLM/RNNLM"></a>NNLM/RNNLM</h4><ul>
+<li>词向量为副产物，存在效率不高等问题；</li>
+</ul>
+<hr>
+<h3 id="不同模型的对比"><a href="#不同模型的对比" class="headerlink" title="不同模型的对比"></a>不同模型的对比</h3><h4 id="word2vec-vs-NNLM"><a href="#word2vec-vs-NNLM" class="headerlink" title="word2vec vs NNLM"></a>word2vec vs NNLM</h4><ul>
+<li>本质上都可以看做是语言模型</li>
+<li>对NNLM来说,目不是词向量,是语言模型</li>
+<li>word2vec虽然本质上也是语言模型,但是更关注词向量本身,因此做了很多优化来提高计算效率<ul>
+<li>与NNLM相比,词向量直接sum(CBOW),而不是拼接,并取消隐藏层</li>
+<li>考虑到Softmax需要遍历整个词汇表,采用 Hierarcal Softmax和 Negative Sampling进行优化</li>
+<li>word2vec所做的一切都是为了一切为了快速生成词向量</li>
+</ul>
+</li>
+</ul>
+<h4 id="word2vec-vs-fastText"><a href="#word2vec-vs-fastText" class="headerlink" title="word2vec vs fastText"></a>word2vec vs fastText</h4><ul>
+<li>都可以进行无监督学习, fastText训练词向量时会考虑subword(子词)<ul>
+<li>在fastText中，每个中心词被表示成子词的集合。下面我们用单词<code>“where”</code>作为例子来了解子词是如何产生的。首先，我们在单词的首尾分别添加特殊字符<code>“&lt;”</code>和<code>“&gt;”</code>以区分作为前后缀的子词。然后，将单词当成一个由字符构成的序列来提取n元语法。例如，当n=3时，我们得到所有长度为3的子词：<code>“&lt;wh&gt;”</code> <code>“whe”</code> <code>“her”</code> <code>“ere”</code> <code>“&lt;re&gt;”</code>以及特殊子词<code>“&lt;where&gt;”</code>。</li>
+</ul>
+</li>
+<li>fastText还可以进行有监督学习进行文本分类:<ul>
+<li>结构与CBOW类似，但学习目标是人工标注的分类结果, 而不是中心词 \(w\)</li>
+<li>采用hierarchical softmax对输出的分类标签建立哈夫曼树，样本中标签多的类别被分配短的搜寻路径；</li>
+<li>引入N-gram，考虑词序特征；</li>
+<li><strong>引入subword(子词)来处理长词，处理未登陆词问题</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="word2vec-vs-GloVe-vs-LSA"><a href="#word2vec-vs-GloVe-vs-LSA" class="headerlink" title="word2vec vs GloVe vs LSA"></a>word2vec vs GloVe vs LSA</h4><ul>
+<li>word2vec vs GloVe <ul>
+<li>语料库:<ul>
+<li>word2vec是局部语料库训练的,特征提取基于滑动窗口,可以在线学习</li>
+<li>GloVe的滑动窗口是为了建立”词-词”共现矩阵,需要统计共现概率,不能在线学习</li>
+</ul>
+</li>
+<li>无监督学习:<ul>
+<li>word2vec是无监督学习</li>
+<li>GloVe通常被认为是无监督学习(无需标注)，但实际上GloVe还是有label的，即共现次数 \(log(X_{ij})\)</li>
+</ul>
+</li>
+<li>损失函数:<ul>
+<li>word2vec损失函数实质上是带权重的交叉熵，权重固定；</li>
+<li>GloVe的损失函数是最小平方损失函数，权重可以做映射变换</li>
+</ul>
+</li>
+<li>总结:<ul>
+<li>word2vec的损失函数是<strong>带权重的交叉熵</strong>, <strong>权重是固定</strong>的</li>
+<li>GloVe可以看作是<strong>目标函数为MSE</strong>,<strong>权重函数可变</strong>的全局word2vec</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>GloVe vs LSA<ul>
+<li>LSA（Latent Semantic Analysis）可以基于co-occurance matrix构建词向量，实质上是基于全局语料采用SVD进行矩阵分解，然而SVD计算复杂度高；</li>
+<li>GloVe可看作是对LSA一种优化的高效矩阵分解算法，采用Adagrad对最小平方损失进行优化；</li>
+</ul>
+</li>
+</ul>
+<h4 id="ELMo、GPT、BERT"><a href="#ELMo、GPT、BERT" class="headerlink" title="ELMo、GPT、BERT"></a>ELMo、GPT、BERT</h4><ul>
+<li>三者使用了两种不同的NN组件提取特征<ul>
+<li>ELMo: LSTM</li>
+<li>GPT, BERT: Transformer</li>
+</ul>
+</li>
+<li>三者使用了两种不同的语言模型:<ul>
+<li>GPT: 单向语言模型</li>
+<li>ELMo, BERT: 双向语言模型</li>
+<li>ELMo实际上是两个方向相反的单向语言模型的拼接, 融合特征的能力比BERT那种一体化的融合特征方式弱</li>
+<li>GPT和BERT都采用Transformer,Transformer是 Encoder-Decoder结构<ul>
+<li>GPT为单向语言模型,采用的是Decoder部分, Decoder部分见到的都是不完整的句子</li>
+<li>BERT为双向语言模型,采用的是Encoder部分,采用了完整的句子</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<p><strong><em>下面是一些模型的详细介绍</em></strong></p>
+<hr>
+<h3 id="NNLM"><a href="#NNLM" class="headerlink" title="NNLM"></a>NNLM</h3><h4 id="模型目标"><a href="#模型目标" class="headerlink" title="模型目标"></a>模型目标</h4><ul>
+<li>给定一段长度为m的序列时,预测下一个词(第m+1)个词出现的概率</li>
+<li>参考博客<a href="/Notes/DL/DL%E2%80%94%E2%80%94NNLM.html">DL——NNLM</a><img src="/Notes/NLP/NLP——词嵌入的前世今生/NNLM_Overview.png">
+
+</li>
+</ul>
+<hr>
+<h3 id="word2vec"><a href="#word2vec" class="headerlink" title="word2vec"></a>word2vec</h3><ul>
+<li>此处只做简单介绍,更详细的讲解请参考博客<a href="http://xtf615.com/2018/10/05/word2vec/" target="_blank" rel="noopener">word2vec学习笔记</a></li>
+<li>损失函数: 带权重的交叉熵损失函数(权重固定)</li>
+</ul>
+<h4 id="两类实现"><a href="#两类实现" class="headerlink" title="两类实现"></a>两类实现</h4><ul>
+<li>一般实现: 每次训练一个样本 \((w_{in}, w_{out})\), 需要计算所有词和当前词一起对应的 softmax, 很耗时间,需要 \(O(V)\)复杂度的时间</li>
+<li>优化实现: Hierarcal Softmax 和 Negative Sampling 两种方式<ul>
+<li>Hierarcal Softmax: 每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新平均 \(O(log V)\) 个非叶子节点(每个非叶子结点就是一个词向量)即可</li>
+<li>Negative Sampling: 每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新 \({w_j|w_j\in {w_O}\bigcup W_{neg}}\)个词向量, 通常负样本的集合大小取 \(log(V)\) 量级甚至更小</li>
+</ul>
+</li>
+</ul>
+<h5 id="层次Softmax模型框架"><a href="#层次Softmax模型框架" class="headerlink" title="层次Softmax模型框架"></a>层次Softmax模型框架</h5><p><em>层次Softmax Hierarchical Softmax模型</em></p>
+<ul>
+<li>核心思想: 输出层由语料库中<strong>词出现的频数当作权值</strong>构造出的<strong>哈夫曼树</strong>作为输出</li>
+<li>引入<strong>哈夫曼树</strong>, Hierarcal Softmax是一种有效计算Softmax的方式,使用二叉树来表示</li>
+<li>其中Hierarchical Softmax模型的输出层由语料库中<strong>词出现的频数当作权值</strong>构造出的<strong>哈夫曼树</strong>作为输出<img src="/Notes/NLP/NLP——词嵌入的前世今生/hierarchical_overview.jpg"></li>
+<li>CBOW<ul>
+<li>输入层: 2c个词向量</li>
+<li>投影层: 2c个词向量的累加</li>
+<li>输出层: 哈夫曼树(重点是词w所在的叶子节点, 以及w到根节点的路径)<ul>
+<li>所有单词没有输出向量表示形式,每个内部结点有一个输出向量 \(v\)</li>
+<li>输出层共有 \(V - 1\) 个非叶节点, 也就是要学习 \(V - 1\) 个输出向量</li>
+<li>看起来并没有什么优化,但是每次迭代训练一个样本\(w_{in}, w_{out}\) 时,我们只需要优化从根节点到输出单词 \(w_{out}\) 的路径上的输出向量即可, 平均共 \(O(log V)\) 个向量</li>
+<li>每个单词的概率计算需要考虑叶子节点来求出[待更新]</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Skip-gram<ul>
+<li>输入层：词w的向量</li>
+<li>投影层：依旧是词w的向量</li>
+<li>输出层：哈夫曼树（重点是词w的上下文窗内2c个词所在的叶子节点，以及各自到根节点的路径）</li>
+</ul>
+</li>
+</ul>
+<h5 id="Negative-Sampling模型框架"><a href="#Negative-Sampling模型框架" class="headerlink" title="Negative Sampling模型框架"></a>Negative Sampling模型框架</h5><ul>
+<li>实际上就是简单的对每一个样本中每一个词都进行负例采样(本质上就是用负采样代替了层次softmax的哈弗曼树)</li>
+<li>负采样是噪声对比估计的一个简化版本,目的是提高训练速度并改善所得词向量的质量</li>
+<li>核心思想: 在每次迭代过程中, 有大量的输出向量需要更新,为了解决这一困难, Negative Sampling的做法是只更新其中一部分输出向量</li>
+<li>利用不同词在语料中出现的频次多少来决定被采样到的概率(单词出现的频次越大,越可能被选做负样本)</li>
+<li>负采样: 利用不同词在语料库中出现的频次多少来决定该词被采样到的概率</li>
+<li>每次训练一个样本 \((w_{in}, w_{out})\), 只需要更新 \({w_j|w_j\in {w_O}\bigcup W_{neg}}\)个词向量, 通常负样本的集合大小取 \(log(V)\) 量级甚至更小</li>
+<li>CBOW<ul>
+<li>输入层： 2c个词向量</li>
+<li>投影层：2c个词向量的累加</li>
+<li>输出层：负采样词集(重点是词w的负词词集的参数 \(\theta\) ，负词的概率永远是1-Sigmoid函数值)</li>
+</ul>
+</li>
+<li>Skip-gram模型:<ul>
+<li>输入层：词w的向量</li>
+<li>投影层：依旧是词w的向量</li>
+<li>输出层：每个上下文词u的负采样(重点是词w的负词词集的参数 \(\theta\) ，负词的概率永远是1-Sigmoid函数值)</li>
+</ul>
+</li>
+</ul>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><ul>
+<li>层次Softmax模型:<ul>
+<li>CBOW模型的一次更新是：<ul>
+<li>输入2c个词向量的累加(简单的<code>sum</code>,而不是拼接)</li>
+<li>对中心词 \(w\) 上的路径节点系数进行更新(输出层)</li>
+<li>对所有的上下文词的词向量进行整体一致更新(输入层到隐藏层的参数, 修改多个词向量)</li>
+</ul>
+</li>
+<li>Skip-gram模型的一次更新是：<ul>
+<li>输入中心词 \(w\) 的词向量(直接输入,无其他操作)</li>
+<li>对每个上下文词 \(u(i)\) 所在的路径上的节点系数进行更新(输出层,修改多个上下文的结点)</li>
+<li>对词w的词向量进行单独更新(输入层到隐藏层的参数,只修改一个词向量)</li>
+</ul>
+</li>
+<li>CBOW一次训练更新计算量小,Skip-gram一次训练计算量大(更新的系数更多?)</li>
+</ul>
+</li>
+<li>CBOW看起来更新的更平滑，适合小量文本集上的词向量构建，Skip-gram每次更新都更加有针对性，所以对于大文本集上表现更好</li>
+</ul>
+<h4 id="word2vec的缺陷"><a href="#word2vec的缺陷" class="headerlink" title="word2vec的缺陷"></a>word2vec的缺陷</h4><ul>
+<li>不能解决多义词问题(只能把几种意思同时编码进向量里)<ul>
+<li>这是所有固定词向量的通病</li>
+<li>解决方案是动态词向量(允许不同上下文使用不同词向量表达同一个词),包括ELMo, GPT, BERT</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/NLP/" rel="tag"># NLP</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/Others/GitHub——主题推荐算法.html" rel="next" title="GitHub——主题推荐算法">
+                <i class="fa fa-chevron-left"></i> GitHub——主题推荐算法
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/Others/Shadowsocks——混淆设置.html" rel="prev" title="Shadowsocks——混淆设置">
+                Shadowsocks——混淆设置 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基本问题"><span class="nav-number">1.</span> <span class="nav-text">基本问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文本表示模型"><span class="nav-number">2.</span> <span class="nav-text">文本表示模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#词袋模型"><span class="nav-number">2.1.</span> <span class="nav-text">词袋模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#优缺点"><span class="nav-number">2.1.1.</span> <span class="nav-text">优缺点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#主题模型"><span class="nav-number">2.2.</span> <span class="nav-text">主题模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#优缺点-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">优缺点:</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于词向量的固定表征"><span class="nav-number">2.3.</span> <span class="nav-text">基于词向量的固定表征</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#优缺点-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">优缺点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于词向量的动态表征"><span class="nav-number">2.4.</span> <span class="nav-text">基于词向量的动态表征</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#优缺点-3"><span class="nav-number">2.4.1.</span> <span class="nav-text">优缺点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#NNLM-RNNLM"><span class="nav-number">2.5.</span> <span class="nav-text">NNLM/RNNLM</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不同模型的对比"><span class="nav-number">3.</span> <span class="nav-text">不同模型的对比</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#word2vec-vs-NNLM"><span class="nav-number">3.1.</span> <span class="nav-text">word2vec vs NNLM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#word2vec-vs-fastText"><span class="nav-number">3.2.</span> <span class="nav-text">word2vec vs fastText</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#word2vec-vs-GloVe-vs-LSA"><span class="nav-number">3.3.</span> <span class="nav-text">word2vec vs GloVe vs LSA</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ELMo、GPT、BERT"><span class="nav-number">3.4.</span> <span class="nav-text">ELMo、GPT、BERT</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NNLM"><span class="nav-number">4.</span> <span class="nav-text">NNLM</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模型目标"><span class="nav-number">4.1.</span> <span class="nav-text">模型目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#word2vec"><span class="nav-number">5.</span> <span class="nav-text">word2vec</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#两类实现"><span class="nav-number">5.1.</span> <span class="nav-text">两类实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#层次Softmax模型框架"><span class="nav-number">5.1.1.</span> <span class="nav-text">层次Softmax模型框架</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Negative-Sampling模型框架"><span class="nav-number">5.1.2.</span> <span class="nav-text">Negative Sampling模型框架</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#总结"><span class="nav-number">5.1.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#word2vec的缺陷"><span class="nav-number">5.2.</span> <span class="nav-text">word2vec的缺陷</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

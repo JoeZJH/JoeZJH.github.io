@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Others,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Topic Suggestions for Millions of Repositories Github官网原文  总体流程图    分为七个步骤： Readme 预处理与清除(Readme preprocessing and cleanup)  移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和image链接等   文">
+<meta name="keywords" content="Others">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GitHub——主题推荐算法">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="Topic Suggestions for Millions of Repositories Github官网原文  总体流程图    分为七个步骤： Readme 预处理与清除(Readme preprocessing and cleanup)  移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和image链接等   文">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/Others/GitHub——主题推荐算法/tf-idf.png">
+<meta property="og:updated_time" content="2024-08-02T14:57:40.627Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="GitHub——主题推荐算法">
+<meta name="twitter:description" content="Topic Suggestions for Millions of Repositories Github官网原文  总体流程图    分为七个步骤： Readme 预处理与清除(Readme preprocessing and cleanup)  移除不要的文本块(Remove unwanted blocks) 去除没用文本：一些块是没用的，比如code, table 和image链接等   文">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
+
+
+
+
+
+  <title>GitHub——主题推荐算法 | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">GitHub——主题推荐算法</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><em>Topic Suggestions for Millions of Repositories</em></p>
+<p><a href="https://githubengineering.com/topics/" title="https://githubengineering.com/topics/" target="_blank" rel="noopener">Github官网原文</a></p>
+<hr>
+<h3 id="总体流程图"><a href="#总体流程图" class="headerlink" title="总体流程图"></a>总体流程图</h3><!-- ![process-flow](Github-topics-method/Github-topics-process-flow.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png" title="process-flow">
+
+
+<h3 id="分为七个步骤："><a href="#分为七个步骤：" class="headerlink" title="分为七个步骤："></a>分为七个步骤：</h3><hr>
+<h4 id="Readme-预处理与清除"><a href="#Readme-预处理与清除" class="headerlink" title="Readme 预处理与清除"></a>Readme 预处理与清除</h4><p><em>(Readme preprocessing and cleanup)</em></p>
+<ul>
+<li>移除不要的文本块(Remove unwanted blocks)<ul>
+<li>去除没用文本：一些块是没用的，比如code, table 和image链接等</li>
+</ul>
+</li>
+<li>文本划分(Text segmentation)<ul>
+<li>提取有用的文本：一个启发式的README tagger，借助格式分析：分析缩进(indentation)，空格(spacing)，和反撇号( `, backtick)等决定是否是有用信息【说明：这里语法分析是没必要的，我们只关心有用的文本，其他的都是为噪音(noise)】</li>
+<li>提取到有用文本后，删除拓展部分：HTML标签，路径和其他处理出来的部分等</li>
+<li>最后将剩下的文本进行粗粒度分割【用标点符号(punctuation marks)和README中的一些符号，比如临近哈希符号(contiguous hash symbols)】</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="生成候选主题"><a href="#生成候选主题" class="headerlink" title="生成候选主题"></a>生成候选主题</h4><p><em>(Generate candidate topics)</em></p>
+<ul>
+<li>用自定义的停用词去将词单元划分出来(Use custom stop words to break text into word units)<ul>
+<li>停用词去除</li>
+<li>n-gram分段小于等于4(测试发现小于4的比较好，太长的主题过于具体了，不合适)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除噪音主题"><a href="#移除噪音主题" class="headerlink" title="移除噪音主题"></a>移除噪音主题</h4><p><em>(Eliminate noisy topics)</em></p>
+<ul>
+<li>用逻辑回归模型删减“bad”主题(Use a logistic regression model to prune “bad” topics)<ul>
+<li>监督逻辑回归模型(supervised logistic regression model)主要针对除了频数比较小的外，一些不好的，比如”great”, “cool”等，<strong>这里的模型是一个分类模型，分为两类(good[positive] and bad(negative))</strong>, 我们称之为关键词过滤模型<ul>
+<li>手动收集大约300个数据集作为训练集</li>
+<li>单个动词一般都是Bad类<code>请教师兄</code></li>
+<li>其他的(<code>Other features we used were occurrence of user names, n-gram size of a phrase, length of a phrase, and numeric content within a phrase.</code>)</li>
+<li>以后打算加入回馈机制(来自用户的)去更新这个关键词过滤模型：接受度高的词作为positive的，接受度低的作为停用词或者negative的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>移除不满足最小频数的主题(Eliminate topics not satisfying minimum frequency count)</li>
+</ul>
+<hr>
+<h4 id="给主题评分"><a href="#给主题评分" class="headerlink" title="给主题评分"></a>给主题评分</h4><p><em>(Score Topics)</em></p>
+<ul>
+<li>用混合tf-idf分数，以主题频率和n元词作为打分标准(Use combination of tf-idf scores, topic frequency and n-gram size for scoring)<ul>
+<li>评估多种指标后，选择了点互信息指标(PMI)： <a href="https://blog.csdn.net/luo123n/article/details/48574123" title="https://blog.csdn.net/luo123n/article/details/48574123" target="_blank" rel="noopener">Pointwise Mutual Information</a></li>
+<li>考虑另一种指标tf-idf：参考论文<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&rep=rep1&type=pdf" title="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" target="_blank" rel="noopener">Using TF-IDF to Determine Word Relevance in Document Queries.pdf</a>或者<a href="https://blog.csdn.net/baimafujinji/article/details/51476117" title="https://blog.csdn.net/baimafujinji/article/details/51476117" target="_blank" rel="noopener">Python的实现</a></li>
+<li><code>The second approach we tried uses the average tf-idf scores of individual words in a phrase weighted by the phrase frequency (if it’s more than one word long) and n-gram size.</code></li>
+<li>两种方法比较：<ul>
+<li>PMI： 强调独特性，越特殊的短语评分越高，但有些可能只是拼写错误(Typo)或者是没有被删除的代码片段</li>
+<li>tf-idf： 不强调独特性，最终选择是tf-idf,原因是这个指标较好的平衡了独特性和主题与仓库(repository)的相关程度</li>
+</ul>
+</li>
+<li>在tf-idf的基础上还添加了一下其他的比如boosting scores等方法</li>
+<li><em>下面是TF-IDF的说明*</em><!-- ![tf-idf](Github-topics-method/tf-idf.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/tf-idf.png" title="tf-idf">
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="规范化主题"><a href="#规范化主题" class="headerlink" title="规范化主题"></a>规范化主题</h4><p><em>(Canonicalize topics)</em></p>
+<ul>
+<li><p>使用内部词典规范主题形式(Use an in-house dictionary to suggest canonical form of topics)</p>
+<ul>
+<li><p>解决文字层面的差别和变化等,比如下面四个主题</p>
+<blockquote>
+<p>neural-network<br>neural-networks<br>neuralnetwork<br>neuralnetworks</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除相似的主题"><a href="#移除相似的主题" class="headerlink" title="移除相似的主题"></a>移除相似的主题</h4><p><em>(Eliminate near similar topics)</em></p>
+<ul>
+<li><p>用基于Jaccard相似性评分的贪心算法(Greedy approach using Jaccard similarity scoring)</p>
+<ul>
+<li><p>motivation：在得到Top-N的主题后，有些主题其实很相似，虽然都有用，但是他们只是在不同粒度描述了同一个主题而已，因此我们需要删除一些重复的，比如下面的例子</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>general-purpose machine learning<br>machine learning library<br>machine learning algorithms<br>distributed machine learning<br>machine learning framework<br>deep learning library<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+<li><p>method： 两个短语的相似性计算使用的是基于词的Jaccard相似性(两个短语的差集与并集的比值，因为它对较短的短语很有效，而且分数是[0-1]的，很方便设置阈值(thresholds))，用贪心算法，如果两个主题相似，去除分数较低的那一个，上面的例子去除相似主题后的结果是：</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="返回Top-K主题作为最终结果"><a href="#返回Top-K主题作为最终结果" class="headerlink" title="返回Top-K主题作为最终结果"></a>返回Top-K主题作为最终结果</h4>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Others/" rel="tag"># Others</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/Go/Go语言——String与Slice深度解析.html" rel="next" title="Go语言——String与Slice深度解析">
+                <i class="fa fa-chevron-left"></i> Go语言——String与Slice深度解析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/NLP/NLP——词嵌入的前世今生.html" rel="prev" title="NLP——词嵌入的前世今生">
+                NLP——词嵌入的前世今生 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#总体流程图"><span class="nav-number">1.</span> <span class="nav-text">总体流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分为七个步骤："><span class="nav-number">2.</span> <span class="nav-text">分为七个步骤：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Readme-预处理与清除"><span class="nav-number">2.1.</span> <span class="nav-text">Readme 预处理与清除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#生成候选主题"><span class="nav-number">2.2.</span> <span class="nav-text">生成候选主题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除噪音主题"><span class="nav-number">2.3.</span> <span class="nav-text">移除噪音主题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#给主题评分"><span class="nav-number">2.4.</span> <span class="nav-text">给主题评分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#规范化主题"><span class="nav-number">2.5.</span> <span class="nav-text">规范化主题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除相似的主题"><span class="nav-number">2.6.</span> <span class="nav-text">移除相似的主题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#返回Top-K主题作为最终结果"><span class="nav-number">2.7.</span> <span class="nav-text">返回Top-K主题作为最终结果</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

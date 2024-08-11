@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="CA,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="参考文献：Google KDD 2013，Ad Click Prediction: a View from the Trenches(引用量500+) 介绍了截止到2013年之前的点击率预估常用算法，FTRL是Google三年的结晶（2010-2013） 在线学习优化算法的发展历程：SGD-&amp;gt;TG-&amp;gt;FOBOS-&amp;gt;RDA-&amp;gt;FTRL-Proximal  核心贡献 基">
+<meta name="keywords" content="CA">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CA——Google-Ad-Click-Prediction">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="参考文献：Google KDD 2013，Ad Click Prediction: a View from the Trenches(引用量500+) 介绍了截止到2013年之前的点击率预估常用算法，FTRL是Google三年的结晶（2010-2013） 在线学习优化算法的发展历程：SGD-&amp;gt;TG-&amp;gt;FOBOS-&amp;gt;RDA-&amp;gt;FTRL-Proximal  核心贡献 基">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction/inclusion_methods.png">
+<meta property="og:updated_time" content="2024-08-10T18:37:49.518Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CA——Google-Ad-Click-Prediction">
+<meta name="twitter:description" content="参考文献：Google KDD 2013，Ad Click Prediction: a View from the Trenches(引用量500+) 介绍了截止到2013年之前的点击率预估常用算法，FTRL是Google三年的结晶（2010-2013） 在线学习优化算法的发展历程：SGD-&amp;gt;TG-&amp;gt;FOBOS-&amp;gt;RDA-&amp;gt;FTRL-Proximal  核心贡献 基">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction/inclusion_methods.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html">
+
+
+
+
+
+  <title>CA——Google-Ad-Click-Prediction | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CA——Google-Ad-Click-Prediction</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>参考文献：<a href="https://dl.acm.org/doi/pdf/10.1145/2487575.2488200?download=true" target="_blank" rel="noopener">Google KDD 2013，Ad Click Prediction: a View from the Trenches</a>(引用量500+)</li>
+<li>介绍了截止到2013年之前的点击率预估常用算法，FTRL是Google三年的结晶（2010-2013）</li>
+<li><strong>在线学习</strong>优化算法的发展历程：SGD-&gt;TG-&gt;FOBOS-&gt;RDA-&gt;FTRL-Proximal</li>
+</ul>
+<h3 id="核心贡献"><a href="#核心贡献" class="headerlink" title="核心贡献"></a>核心贡献</h3><ul>
+<li>基于传统的逻辑回归算法(Regularized Logistic Regression，正则化的逻辑回归)在点击率预估时的不足，提出一种<strong>在线逻辑回归</strong>算法，FTRL(Follow The Regularized Leader)</li>
+<li>per-coordinate learning rate</li>
+</ul>
+<h3 id="一些模型的比较和介绍"><a href="#一些模型的比较和介绍" class="headerlink" title="一些模型的比较和介绍"></a>一些模型的比较和介绍</h3><ul>
+<li>传统逻辑回归算法中使用OGD(Online Gradient Descent)是非常高效的，使用很小的计算资源就能得到较好的精确度.</li>
+<li>但是OGD在生成<strong>稀疏</strong>模型方面表现不好(OGD + L1)</li>
+<li>其他在稀疏性方面表现良好的方法有FOBOS, 截断梯度（Truncated Gradient）和 RDA（Regularized Dual Averaging)<ul>
+<li>RDA在精确度和稀疏性方面做tradeoff， 效果好于FOBOS</li>
+</ul>
+</li>
+<li>FTRL-Proximal号称可以同时获得RDA的稀疏性和OGD的精确度</li>
+<li>RDA模型是微软提出的一种在线优化算法，与OGD完全不同，能得到更加稀疏的模型，但是精确度不如OGD</li>
+</ul>
+<h3 id="FTRL-Proximal-Learning-Online-Learning-And-Sparsity"><a href="#FTRL-Proximal-Learning-Online-Learning-And-Sparsity" class="headerlink" title="FTRL-Proximal Learning (Online Learning And Sparsity)"></a>FTRL-Proximal Learning (Online Learning And Sparsity)</h3><ul>
+<li>也是通过L1正则化控制模型的稀疏度</li>
+</ul>
+<h4 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h4><h5 id="FTL-Follow-The-Leader-的介绍"><a href="#FTL-Follow-The-Leader-的介绍" class="headerlink" title="FTL(Follow The Leader)的介绍"></a>FTL(Follow The Leader)的介绍</h5><h5 id="OGD的更新方式"><a href="#OGD的更新方式" class="headerlink" title="OGD的更新方式"></a>OGD的更新方式</h5><ul>
+<li>更新规则：<br>$$<br>\begin{align}<br>\mathbf{w}_{t+1} &amp;= \mathbf{w}_t-\eta_t\mathbf{g}_t<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="FTLR-Follow-The-Regularized-Leader"><a href="#FTLR-Follow-The-Regularized-Leader" class="headerlink" title="FTLR(Follow The Regularized Leader)"></a>FTLR(Follow The Regularized Leader)</h5><p><em>加上正则项的FTL</em></p>
+<ul>
+<li>更新规则：<br>$$<br>\begin{align}<br>\mathbf{w}_{t+1} &amp;= \arg\min_{\mathbf{w}}\left ( \mathbf{g}_{1:t}\cdot \mathbf{w} + \frac{1}{2}\sum_{s=1}^t \sigma_s || \mathbf{w} - \mathbf{w}_s||_2^2 + \lambda_1||\mathbf{w}||_1 \right ) \\<br>\mathbf{g}_{1:t} &amp;= \sum_{i=1}^t\mathbf{g}_i<br>\end{align}<br>$$<ul>
+<li>第一项是对损失函数梯度的贡献的一个估计</li>
+<li>第二项是控制参数\(\mathbf{w}\)在每次迭代中变化不要太大</li>
+<li>第三项是L1正则化，用于使模型变得稀疏（除了L1正则化项以外，也可以再加上L2正则化）</li>
+<li>去掉正则化项就是FTL（Follow The Leader）</li>
+<li>\(\sigma_s\)是学习速率</li>
+<li>这个学习速率可以用Per-Coordinate Learning Rate:<br>$$<br>\begin{align}<br>\eta_{t, i} &amp;= \frac{\alpha}{\beta + \sqrt{\sum_{s=1}^t g_{s,i}^2}} \\<br>\mathbf{g}_s &amp;= \nabla l_s(\mathbf{w})<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+<h3 id="Per-Coordinate-Learning-Rates"><a href="#Per-Coordinate-Learning-Rates" class="headerlink" title="Per-Coordinate Learning Rates"></a>Per-Coordinate Learning Rates</h3><ul>
+<li>对参数的每一维度分开训练，每个维度有自己的学习率</li>
+<li>某个特征出现的次数越多，说明当前该特征对应的参数值越可信，学习率就应该越小</li>
+<li>考虑了数据在每个特征上的分布不均匀性<ul>
+<li>参数某个维度上的样本数越少，这些样本就会得到越大的利用(具体表现就是该特征的学习率会比较大)</li>
+</ul>
+</li>
+</ul>
+<h3 id="一个思考"><a href="#一个思考" class="headerlink" title="一个思考"></a>一个思考</h3><ul>
+<li>问题：为什么机器学习中的学习率都是越来越小？</li>
+<li>答案：因为刚开始训练时，参数的值不太可信（也就是说最终参数与当前参数的置信度比较低），所以更新时应该更新的步骤大一些，让当前的参数变化大一些，训练到后来，随着参数的值越来越可信（当前参数的置信度比较高），更新的步骤就应该小一些，让当前的变化小一些</li>
+</ul>
+<h3 id="一些工程上的Trick"><a href="#一些工程上的Trick" class="headerlink" title="一些工程上的Trick"></a>一些工程上的Trick</h3><h4 id="Saving-Memory-at-Massive-Scale"><a href="#Saving-Memory-at-Massive-Scale" class="headerlink" title="Saving Memory at Massive Scale"></a>Saving Memory at Massive Scale</h4><h5 id="Probabilistic-Feature-Inclusion"><a href="#Probabilistic-Feature-Inclusion" class="headerlink" title="Probabilistic Feature Inclusion"></a>Probabilistic Feature Inclusion</h5><ul>
+<li>在高维数据中，大量的特征是出现频率非常低的(rare)，半数的唯一特征甚至只出现一次</li>
+<li>统计这些特征的代价是非常昂贵的，有些特征可能永远不会被实际使用(这里如何理解昂贵？也就是说训练了也没用？)</li>
+<li>额外的读写数据是昂贵的，如果能丢弃一部分出现评论特别低的特征(比如出现频率低于k次)</li>
+<li>实现稀疏可以使用L1正则化，也可以使用Probabilistic Feature Inclusion</li>
+<li>关于Probabilistic Feature Inclusion的做法<ul>
+<li>当一个特征第一次出现时，以一定的概率接受这个新特征</li>
+<li>效果作用于数据预处理阶段，但是可以在在线执行中设置</li>
+</ul>
+</li>
+</ul>
+<h6 id="Possion-Inclusion"><a href="#Possion-Inclusion" class="headerlink" title="Possion Inclusion"></a>Possion Inclusion</h6><ul>
+<li>对于新的特征，以概率p添加入模型</li>
+<li>对于已经存在模型中的特征，正常更新其系数</li>
+</ul>
+<h6 id="Bloom-Filter-Inclusion"><a href="#Bloom-Filter-Inclusion" class="headerlink" title="Bloom Filter Inclusion"></a>Bloom Filter Inclusion</h6><ul>
+<li>用布隆过滤器仅仅保留出现次数在n次以上的特征</li>
+</ul>
+<img src="/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction/inclusion_methods.png">
+
+<h5 id="Encoding-Values-with-Fewer-Bits"><a href="#Encoding-Values-with-Fewer-Bits" class="headerlink" title="Encoding Values with Fewer Bits"></a>Encoding Values with Fewer Bits</h5><ul>
+<li>常用的OGD使用32或者64位浮点数编码来存储模型的系数</li>
+<li>Google提出可以使用16位浮点数来存储系数，同时加上一些策略</li>
+<li>实验结果：将64位的浮点值换为为系数存储节省了75%的RAM内存空间(这还用实验？直接计算就得到了啊)</li>
+</ul>
+<h5 id="Training-Many-Similar-Models"><a href="#Training-Many-Similar-Models" class="headerlink" title="Training Many Similar Models"></a>Training Many Similar Models</h5><ul>
+<li>同时训练多个模型是超参数选择常用的方法</li>
+<li>将可以共享的东西共享</li>
+<li>在节省内存的同时，还可以节约网络带宽(存储一份Per-coordinate学习率，节省内存和带宽等)，CPU(用同一个hash表检索特征，节省CPU)和硬盘空间</li>
+</ul>
+<h5 id="A-Single-Value-Structure"><a href="#A-Single-Value-Structure" class="headerlink" title="A Single Value Structure"></a>A Single Value Structure</h5><ul>
+<li>有时候我们希望评估大量的模型在只有少量的特征组(groups of features)添加或者删除时的变化</li>
+<li>对于每一维度(coordinate),仅仅存储一个系数值而不是多个(正常应该为每个模型存储一个)</li>
+<li>存储该维度对应特征组的模型共享该系数</li>
+<li>对每个特征，训练时每个模型都会计算自己的值，然后所有模型的取平均作为所有包含该维度特征模型的共享</li>
+</ul>
+<h5 id="Computing-Learning-Rates-with-Counts"><a href="#Computing-Learning-Rates-with-Counts" class="headerlink" title="Computing Learning Rates with Counts"></a>Computing Learning Rates with Counts</h5><ul>
+<li>对于每个特征来说，<strong>梯度和</strong>以及<strong>梯度平方和</strong>是必须计算的</li>
+<li>梯度的计算必须准确，但是计算学习率却是可以粗糙计算的</li>
+<li>仅仅统计样本出现次数(Counts)就能大概计算学习率</li>
+</ul>
+<h6 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h6><ul>
+<li>假设包含一个给定特征的所有事件(events)具有有相同的概率(一般来说，这个近似是不可能的，但是在这个目标里面是可行的)<ul>
+<li>如何理解这个假设的意义呢？<strong>对于具有某个特征的所有样本，其取值为(正负例)是的概率是相等的，正例(click)概率都为\(p\)</strong></li>
+</ul>
+</li>
+<li>进一步假设模型已经精确地学习到了概率</li>
+<li>如果有分别有\(P，N\)个正负样本(events),则有\(p=\frac{P}{N+P}\)</li>
+<li>则有对于逻辑回归(\(p(1-p)\))来说，正例的梯度为\(p-1\),负例的梯度为\(p\)<br>$$<br>\begin{align}<br>\sum g_{t,i}^2 &amp;= \sum_{positive \ events}(1-p_t)^2 + \sum_{negative \ events}p_t^2 \\<br>&amp;\approx P(1-\frac{P}{N+P})^2 + N(\frac{P}{N+P})^2 \\<br>&amp;= \frac{PN}{N+P}<br>\end{align}<br>$$</li>
+<li>也就是说，为了近似计算\(\sum g_{t,i}^2\)，我们仅需要记录\(P，N\)即可</li>
+</ul>
+<h5 id="Subsampling-Traning-Data"><a href="#Subsampling-Traning-Data" class="headerlink" title="Subsampling Traning Data"></a>Subsampling Traning Data</h5><ul>
+<li>典型的CTRs是远远低于50%，数据偏差很大，正例(点击)的样本很稀疏</li>
+<li>在模型训练中正例样本相对而言更有价值</li>
+<li>使用下采样：很大程度上降低数据量，同时保证对精度最小程度的影响</li>
+</ul>
+<h6 id="采样方法："><a href="#采样方法：" class="headerlink" title="采样方法："></a>采样方法：</h6><ul>
+<li>保留所有至少被点击过一次的请求(Query，也就是样本)</li>
+<li>以一定比例\(r\in(0, 1]\)采样没有被点击过的请求</li>
+<li>因为包含通用的特征(Feature Phase)计算，所以这种方法是合理的，但是需要纠偏(直接用采样后的样本训练会造成预测偏差)</li>
+<li>加入一个重要性权重\(w_t\)<ul>
+<li>\(w_t = 1\) for clicked queries</li>
+<li>\(w_t = \frac{1}{r}\) for queries with no clicks</li>
+<li>本质上可以理解为这里是将采样时造成的负例比例偏差补齐</li>
+</ul>
+</li>
+</ul>
+<h3 id="模型性能评估"><a href="#模型性能评估" class="headerlink" title="模型性能评估"></a>模型性能评估</h3><h4 id="Progressive-Validation"><a href="#Progressive-Validation" class="headerlink" title="Progressive Validation"></a>Progressive Validation</h4><ul>
+<li>Progressive验证又称为在线损失(online loss)</li>
+<li>与交叉验证(cross-validation)或留出法(hold out)验证是不同的</li>
+<li>在服务查询中，在线损失能很好的代表我们的精度，因为在训练模型前，它仅仅在最新数据上评估其性能(因为这准确的模拟了当模型进行服务查询时发生了什么)</li>
+<li>由于用了100%的数据作为训练和测试，在线损失比留出法验证有更好的统计数据</li>
+<li>绝对指标往往会带来误导<ul>
+<li>即使预测是完美的，对数损失和其他指标的差异也依赖着问题的困难程度</li>
+<li>不同的国家，不同请求的点击率不同(同为对数损失的最佳实践，50%的点击率会好于2%的点击率)</li>
+</ul>
+</li>
+<li>所以使用相对变化，看指标相对于base line改变了多少</li>
+<li>从经验来看，相对指标在整个时间段内都很稳定</li>
+<li>相同的指标计算应该对应在完全相同的数据(比如不同时段的损失比较是没有意义的)</li>
+</ul>
+<h3 id="置信度评估-Confidence-Estimates"><a href="#置信度评估-Confidence-Estimates" class="headerlink" title="置信度评估(Confidence Estimates)"></a>置信度评估(Confidence Estimates)</h3><ul>
+<li>对很多应用来说，除了评估广告的CTR，还要量化预测的期望精确度(the expected accuracy of the prediction)</li>
+</ul>
+<h3 id="校正预测-Calibrating-Predictions"><a href="#校正预测-Calibrating-Predictions" class="headerlink" title="校正预测(Calibrating Predictions)"></a>校正预测(Calibrating Predictions)</h3><ul>
+<li>系统偏差(Systematic Bias)指平均预测CTR(Average Predicted CTR)和观测CTR(Observed CTR)的差异</li>
+<li>造成系统偏差的原因包括：<ul>
+<li>不精确的模型假设</li>
+<li>学习算法的缺陷</li>
+<li>在训练或者服务(预测)时不可用的隐藏特征</li>
+</ul>
+</li>
+<li>解决方案：<ul>
+<li>添加一个校正层将预测CTRs与观测CTR做匹配(match predicted CTRSs to observed click-through rates)</li>
+<li>暂时不能提供有效的保证，保证校正影响的有效</li>
+<li>校正的本质是找到(拟合)一个函数映射\(g\),使得模型输出值与真实概率值一一对应</li>
+<li>逻辑回归中的sigmoid函数可以看做是一个校正预测的函数吗？</li>
+</ul>
+</li>
+<li>更多参考<ul>
+<li><a href="https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">风险模型 - 概率校准</a></li>
+<li><a href="https://www.cnblogs.com/lc1217/p/7069000.html" target="_blank" rel="noopener">机器学习：概率校准</a>, 文中有代码示例</li>
+<li><a href="https://blog.csdn.net/fjsd155/article/details/84382838?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">概率校准 Probability Calibration</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="一些说明"><a href="#一些说明" class="headerlink" title="一些说明"></a>一些说明</h4><p><em>参考博客：<a href="https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task</a></em></p>
+<ul>
+<li>概率模型的搭建过程中，由于抽样与正则化等原因，导致模型的输出概率值明显偏离真实概率值<ul>
+<li>[待更新：为什么抽样和正则化会影响模型的输出概率发生变化？]</li>
+</ul>
+</li>
+<li>此时的模型输出概率值仅仅有排序的意义，其绝对值没有意义(定序值，而非定距数值)</li>
+<li>校正预测的过程就是把模型输出概率值的校正成真实的概率的过程，使得校正后的概率有绝对值意义</li>
+</ul>
+<h3 id="自动特征管理-Automated-Feature-Management"><a href="#自动特征管理-Automated-Feature-Management" class="headerlink" title="自动特征管理(Automated Feature Management)"></a>自动特征管理(Automated Feature Management)</h3><ul>
+<li>将特征空间描绘成上下文和语义信号，每个信号都可以被翻译成一个在学习时有真实值的特征集合</li>
+<li>[待更新]</li>
+</ul>
+<h3 id="一些不成功的实验记录-Unsuccessful-Experiments"><a href="#一些不成功的实验记录-Unsuccessful-Experiments" class="headerlink" title="一些不成功的实验记录(Unsuccessful Experiments)"></a>一些不成功的实验记录(Unsuccessful Experiments)</h3><p><em>本节记录google的一些失败的尝试方向(有些可能会让人很惊讶)，这些方向模型没有明显收益</em></p>
+<h4 id="Aggressive-Feature-Hashing"><a href="#Aggressive-Feature-Hashing" class="headerlink" title="Aggressive Feature Hashing"></a>Aggressive Feature Hashing</h4><p><em>关于特征哈希(Feature Hashing)的相关知识可参考<a href="/Notes/ComputationalAdvertising/CA%E2%80%94%E2%80%94Feature-Hashing.html">Feature-Hashing</a></em></p>
+<ul>
+<li><a href="http://alex.smola.org/papers/2009/Weinbergeretal09.pdf" target="_blank" rel="noopener">Feature Hashing for Large Scale Multitask Learning</a>论文指出，Feature Hashing方法效果显著<ul>
+<li>报告显示使用特征hashing技巧，可以能将学习一个垃圾邮件过滤模型的特征空间映射成包含\(2^24\)个特征的特征空间(疑问：这里的特征原来不止\(2^24\)个吗？)</li>
+</ul>
+</li>
+<li>但是实验证明，使用 Feature Hashing 方法并不能提升我们的方法，所以建议保留 interpretable(non-hashed)的特征向量</li>
+</ul>
+<h4 id="Dropout"><a href="#Dropout" class="headerlink" title="Dropout"></a>Dropout</h4><ul>
+<li>Google用网格搜索的方法测试了从0.1到0.5的Dropout特征丢弃概率</li>
+<li>所有情况均没有带来任何收益(包括精度指标和泛化能力)，还往往给模型带来损害(detriment)</li>
+<li>Google给出的一个解释是：Dropout在图像领域取得较好收益的原因是因为图像领域的数据特征分布与计算广告领域不同<ul>
+<li>图像领域：稠密特征，此时Dropout把结果(effect)从强相关的特征中分离开来，从而得到泛化效果更好的分类器</li>
+<li>计算广告：稀疏特征，且有噪音</li>
+</ul>
+</li>
+</ul>
+<h4 id="Feature-Bagging"><a href="#Feature-Bagging" class="headerlink" title="Feature Bagging"></a>Feature Bagging</h4><ul>
+<li>对特征进行overlapping采样(注意，样本Bagging和特征Bagging不同)，然后训练多个独立的模型，最后取平均值</li>
+<li>实验证明模型的的AucLoss降低了0.1%-0.6%</li>
+</ul>
+<h4 id="Feature-Vector-Normalization"><a href="#Feature-Vector-Normalization" class="headerlink" title="Feature Vector Normalization"></a>Feature Vector Normalization</h4><ul>
+<li>\(\mathbf{x} = \frac{\mathbf{x}}{||\mathbf{x}||}\)</li>
+<li>开始有一点精度上的收益，但是后面也出现了一定程度的detriment</li>
+<li>Google的解释是可能是由于per-coordinate learning rates和正则化的影响</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CA/" rel="tag"># CA</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/Hexo/Hexo——Next主题搜索窗口无法弹出.html" rel="next" title="Hexo——Next主题搜索窗口无法弹出">
+                <i class="fa fa-chevron-left"></i> Hexo——Next主题搜索窗口无法弹出
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/ComputationalAdvertising/CA——多任务学习总结.html" rel="prev" title="CA——多任务学习总结">
+                CA——多任务学习总结 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#核心贡献"><span class="nav-number">1.</span> <span class="nav-text">核心贡献</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些模型的比较和介绍"><span class="nav-number">2.</span> <span class="nav-text">一些模型的比较和介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FTRL-Proximal-Learning-Online-Learning-And-Sparsity"><span class="nav-number">3.</span> <span class="nav-text">FTRL-Proximal Learning (Online Learning And Sparsity)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#推导过程"><span class="nav-number">3.1.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#FTL-Follow-The-Leader-的介绍"><span class="nav-number">3.1.1.</span> <span class="nav-text">FTL(Follow The Leader)的介绍</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#OGD的更新方式"><span class="nav-number">3.1.2.</span> <span class="nav-text">OGD的更新方式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#FTLR-Follow-The-Regularized-Leader"><span class="nav-number">3.1.3.</span> <span class="nav-text">FTLR(Follow The Regularized Leader)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Per-Coordinate-Learning-Rates"><span class="nav-number">4.</span> <span class="nav-text">Per-Coordinate Learning Rates</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一个思考"><span class="nav-number">5.</span> <span class="nav-text">一个思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些工程上的Trick"><span class="nav-number">6.</span> <span class="nav-text">一些工程上的Trick</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Saving-Memory-at-Massive-Scale"><span class="nav-number">6.1.</span> <span class="nav-text">Saving Memory at Massive Scale</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Probabilistic-Feature-Inclusion"><span class="nav-number">6.1.1.</span> <span class="nav-text">Probabilistic Feature Inclusion</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#Possion-Inclusion"><span class="nav-number">6.1.1.1.</span> <span class="nav-text">Possion Inclusion</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#Bloom-Filter-Inclusion"><span class="nav-number">6.1.1.2.</span> <span class="nav-text">Bloom Filter Inclusion</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Encoding-Values-with-Fewer-Bits"><span class="nav-number">6.1.2.</span> <span class="nav-text">Encoding Values with Fewer Bits</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Training-Many-Similar-Models"><span class="nav-number">6.1.3.</span> <span class="nav-text">Training Many Similar Models</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#A-Single-Value-Structure"><span class="nav-number">6.1.4.</span> <span class="nav-text">A Single Value Structure</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Computing-Learning-Rates-with-Counts"><span class="nav-number">6.1.5.</span> <span class="nav-text">Computing Learning Rates with Counts</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#推导"><span class="nav-number">6.1.5.1.</span> <span class="nav-text">推导</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Subsampling-Traning-Data"><span class="nav-number">6.1.6.</span> <span class="nav-text">Subsampling Traning Data</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#采样方法："><span class="nav-number">6.1.6.1.</span> <span class="nav-text">采样方法：</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模型性能评估"><span class="nav-number">7.</span> <span class="nav-text">模型性能评估</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Progressive-Validation"><span class="nav-number">7.1.</span> <span class="nav-text">Progressive Validation</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#置信度评估-Confidence-Estimates"><span class="nav-number">8.</span> <span class="nav-text">置信度评估(Confidence Estimates)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#校正预测-Calibrating-Predictions"><span class="nav-number">9.</span> <span class="nav-text">校正预测(Calibrating Predictions)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些说明"><span class="nav-number">9.1.</span> <span class="nav-text">一些说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自动特征管理-Automated-Feature-Management"><span class="nav-number">10.</span> <span class="nav-text">自动特征管理(Automated Feature Management)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些不成功的实验记录-Unsuccessful-Experiments"><span class="nav-number">11.</span> <span class="nav-text">一些不成功的实验记录(Unsuccessful Experiments)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Aggressive-Feature-Hashing"><span class="nav-number">11.1.</span> <span class="nav-text">Aggressive Feature Hashing</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Dropout"><span class="nav-number">11.2.</span> <span class="nav-text">Dropout</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Feature-Bagging"><span class="nav-number">11.3.</span> <span class="nav-text">Feature Bagging</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Feature-Vector-Normalization"><span class="nav-number">11.4.</span> <span class="nav-text">Feature Vector Normalization</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

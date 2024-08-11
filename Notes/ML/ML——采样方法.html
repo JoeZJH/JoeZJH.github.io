@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="En/中">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ML,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="本文介绍几种采样的方法    计算机能做什么样的采样Uniform 本质上来讲,计算机只能实现对均匀分布(Uniform Distribution)的采样  numpy.random模块功能介绍numpy.random是用来实现随机数生成的库  生成随机数random 生成某个随机数的随机样本random_sample 对序列做随机shuffle,choice等  numpy.random模块的采">
+<meta name="keywords" content="ML">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ML——采样方法">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
+<meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="本文介绍几种采样的方法    计算机能做什么样的采样Uniform 本质上来讲,计算机只能实现对均匀分布(Uniform Distribution)的采样  numpy.random模块功能介绍numpy.random是用来实现随机数生成的库  生成随机数random 生成某个随机数的随机样本random_sample 对序列做随机shuffle,choice等  numpy.random模块的采">
+<meta property="og:locale" content="En/中">
+<meta property="og:image" content="https://joezjh.github.io/Notes/ML/ML——采样方法/inverse_transform_sampling.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/ML/ML——采样方法/importance_sampling.jpg">
+<meta property="og:updated_time" content="2024-08-02T14:57:40.578Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ML——采样方法">
+<meta name="twitter:description" content="本文介绍几种采样的方法    计算机能做什么样的采样Uniform 本质上来讲,计算机只能实现对均匀分布(Uniform Distribution)的采样  numpy.random模块功能介绍numpy.random是用来实现随机数生成的库  生成随机数random 生成某个随机数的随机样本random_sample 对序列做随机shuffle,choice等  numpy.random模块的采">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/ML/ML——采样方法/inverse_transform_sampling.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
+
+
+
+
+
+  <title>ML——采样方法 | Jiahong的个人博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="En/中">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Jiahong的个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">凡事预则立，不预则废</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ML——采样方法</h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><em>本文介绍几种采样的方法</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="计算机能做什么样的采样"><a href="#计算机能做什么样的采样" class="headerlink" title="计算机能做什么样的采样"></a>计算机能做什么样的采样</h3><h4 id="Uniform"><a href="#Uniform" class="headerlink" title="Uniform"></a>Uniform</h4><ul>
+<li>本质上来讲,计算机只能实现对<strong>均匀分布</strong>(Uniform Distribution)的采样</li>
+</ul>
+<h4 id="numpy-random模块功能介绍"><a href="#numpy-random模块功能介绍" class="headerlink" title="numpy.random模块功能介绍"></a><code>numpy.random</code>模块功能介绍</h4><p><em><code>numpy.random</code>是用来实现随机数生成的库</em></p>
+<ul>
+<li>生成随机数<code>random</code></li>
+<li>生成某个随机数的随机样本<code>random_sample</code></li>
+<li>对序列做随机<code>shuffle</code>,<code>choice</code>等</li>
+</ul>
+<h4 id="numpy-random模块的采样"><a href="#numpy-random模块的采样" class="headerlink" title="numpy.random模块的采样"></a><code>numpy.random</code>模块的采样</h4><p><em><code>numpy.random</code>模块下实现了很多常见分布的采样函数(他们本质上都是计算机通过多次均匀分布采样实现的)</em></p>
+<h5 id="单变量分布"><a href="#单变量分布" class="headerlink" title="单变量分布"></a>单变量分布</h5><ul>
+<li><code>beta</code>:beta分布</li>
+<li><code>binomial</code>:二项分布</li>
+<li><code>chisquare</code>:卡方分布</li>
+<li><code>exponential</code>:指数分布</li>
+<li>还有更多…</li>
+</ul>
+<h5 id="多变量分布"><a href="#多变量分布" class="headerlink" title="多变量分布"></a>多变量分布</h5><ul>
+<li><code>dirichlet</code> : Multivariate generalization of Beta distribution. 狄利克雷分布</li>
+<li><code>multinomial</code>: Multivariate generalization of the binomial distribution. 多项分布</li>
+<li><code>multivariate_normal</code>: Multivariate generalization of the normal distribution. 多变量正太(高斯)分布</li>
+</ul>
+<h5 id="标准分布"><a href="#标准分布" class="headerlink" title="标准分布"></a>标准分布</h5><ul>
+<li><code>standard_cauchy</code>:      Standard Cauchy-Lorentz distribution.</li>
+<li><code>standard_exponential</code>: Standard exponential distribution.</li>
+<li><code>standard_gamma</code>:       Standard Gamma distribution.</li>
+<li><code>standard_normal</code>:      Standard normal distribution.</li>
+<li><code>standard_t</code>:           Standard Student’s t-distribution.</li>
+</ul>
+<hr>
+<h3 id="复杂分布的采样方式"><a href="#复杂分布的采样方式" class="headerlink" title="复杂分布的采样方式"></a>复杂分布的采样方式</h3><p><em>在实践中,往往有很多复杂的分布,复杂到我们无法直接对他进行采样</em><br><em>有些时候我们甚至不知道目标函数的分布函数</em></p>
+<h4 id="逆变换采样"><a href="#逆变换采样" class="headerlink" title="逆变换采样"></a>逆变换采样</h4><p><em>Inverse Transform Sampling</em></p>
+<ul>
+<li><p>目标函数: \(p(x)\)</p>
+</li>
+<li><p>相关补充: </p>
+<ul>
+<li>求函数的累积分布函数\(\Phi^{-1}(x) = \int_{- \infty}^{x}p(t)d_{t}\)</li>
+<li>求累计分布函数的逆函数(反函数)</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>计算: \(x_{i} = \Phi^{-1}(u_{i})\), 其中\(\Phi^{-1}(\cdot)\)是\(p(x)\)的<strong>累积分布函数(CDF)的逆函数</strong></li>
+<li>\(x_{i}\)服从\(p(x)\)分布</li>
+</ul>
+</li>
+<li><p>优缺点:</p>
+<ul>
+<li>优点:<ul>
+<li>仅需进行一个均匀分布采样即可</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>需要求解累积分布函数的逆函数</li>
+<li>累积分布函数的逆函数不一定容易求解,有些甚至无法求解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>证明:</p>
+<ul>
+<li>示意图如下:  <img src="/Notes/ML/ML——采样方法/inverse_transform_sampling.png"></li>
+<li>图中纵轴就是均匀分布采样的结果,然后丛纵轴对应到的累计分布函数\(\Phi(x)\)的曲线上概率越大的地方实际上也就是累积分布函数的导数(原始分布函数\(p(x)\))最大的地方</li>
+<li>这个对应过程等价于我们将\(x\)轴和\(y\)轴互换,也就是求累积分布函数的逆函数即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="拒绝采样"><a href="#拒绝采样" class="headerlink" title="拒绝采样"></a>拒绝采样</h4><p><em>别名: Accept-Reject Sampling, <strong>接受-拒绝采样</strong></em></p>
+<ul>
+<li><p>目标函数: \(p(x)\)</p>
+</li>
+<li><p>相关补充: </p>
+<ul>
+<li><strong>(参考分布寻找)</strong>: 寻找一个容易采样的分布\(q(x)\),满足\(p(x) \leq M\cdot q(x)\)</li>
+<li>一般选择正太分布等</li>
+<li>\(M &gt; 1\),从后面的证明可以知道, M越小越好</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>参考分布采样:\(x_{i} \sim q(x)\)</li>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u_{i} &lt; \frac{p(x_{i})}{M\cdot q(x_{i})}\),则接受采样,否则拒绝本次采样(丢弃本次采样的\(x_{i}\))</li>
+<li>\(x_{i}\)服从\(p(x)\)分布(不包括被拒绝的样本)</li>
+</ul>
+</li>
+<li><p>证明: </p>
+<ul>
+<li>由采样步骤得到,最终得到的分布服从$$q(x)\cdot \frac{p(x)}{M\cdot q(x)} = \frac{1}{M}p(x)$$</li>
+<li>对上述分布进行归一化即可得到采样的样本服从\(p(x)\)</li>
+<li><em>从\(\frac{1}{M}p(x)\)这里也可以看出来采样的效率由M值的大小决定,M越小,采样效率越高</em></li>
+</ul>
+</li>
+<li><p>优缺点:</p>
+<ul>
+<li>优点:<ul>
+<li>复杂分布变成简单分布采样+一个均匀分布,有时候甚至可以将参考分布也使用均匀分布</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>参考分布\(q(x)\)的选择很难的</li>
+<li>不合适的参考分布可能导致采样效率低下</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>解决\(q(x)\)难以寻找的一种解决方案: <strong>自适应拒绝采样</strong>(Adaptive Rejection Sampling)</p>
+<ul>
+<li>只适用于目标函数为凸函数</li>
+<li>使用分段线性函数来覆盖目标函数</li>
+<li>下面是示意图片(图片来源: <a href="https://www.jianshu.com/p/3fb6f4d39c60" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb6f4d39c60</a>)<img src="/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="重要性采样"><a href="#重要性采样" class="headerlink" title="重要性采样"></a>重要性采样</h4><p><em>Importance Sampling</em></p>
+<ul>
+<li><p>重要性采样与前面两者不同,重要性采样解决的问题是在求一个函数的关于原始分布的期望时</p>
+</li>
+<li><p>目标定义: \(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</p>
+</li>
+<li><p>直接对\(p(x)\)采样可能存在的两个问题:</p>
+<ul>
+<li>\(p(x)\)可能难以采样</li>
+<li>\(p(x)\)采样到的样本大多都在\(f(x)\)比较小的地方,即\(f(x)\)与\(p(x)\)的差别太大导致有限次采样无法正确评估原始期望,采样次数不够大的话偏差可能很大<ul>
+<li>这里一种解决方案是采样足够多的次数,多花点时间保证所有样本量足够,降低偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>解决方案:</p>
+<ul>
+<li><p>引入一个容易采样的参考分布\(q(x)\),满足<br>$$<br>\begin{align}<br>E_{x\sim p(x)}[f(x)] &amp;= \int_{x}f(x)p(x)d_{x} \\<br>&amp;= \int_{x}f(x)\frac{p(x)}{q(x)}q(x)d_{x} \\<br>&amp;= \int_{x}f(x)w(x)q(x)d_{x} \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>其中\(w(x) = \frac{p(x)}{q(x)}\)称为样本\(x\)的重要性权重(Importance Weight),不同样本的重要性权重不同</p>
+</li>
+<li><p>与直接从\(p(x)\)中采样相比,相同采样次数,最终得到期望偏差会更小,因为\(p(x)\)会<strong>增大在\(f(x)\)大但是\(p(x)\)极小处</strong>的样本被采样的概率,然后调低这个样本的权重</p>
+</li>
+<li><p>示意图片:</p>
+<img src="/Notes/ML/ML——采样方法/importance_sampling.jpg">
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>逆采样和拒绝采样</strong>都是在通过简单分布采样来采样原始分布的样本,最终的样本就是服从原始分布的样本\(x_{i}\sim p(x)\)</li>
+<li><strong>重要性采样</strong>本质上是通过简单分布来采样和重要性权重来估计某个函数在原始分布上的期望\(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC),MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法,关于MCMC详情可参考我的博客<a href="/Notes/ML/ML%E2%80%94%E2%80%94MCMC%E9%87%87%E6%A0%B7.html">ML——MCMC采样</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ML/" rel="tag"># ML</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" rel="next" title="RS——FM-因子分解机">
+                <i class="fa fa-chevron-left"></i> RS——FM-因子分解机
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Notes/ML/ML——训练集-验证集-测试集.html" rel="prev" title="ML——训练集-验证集-测试集">
+                ML——训练集-验证集-测试集 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/jiahong-head.png" alt="Joe Zhou">
+            
+              <p class="site-author-name" itemprop="name">Joe Zhou</p>
+              <p class="site-description motion-element" itemprop="description">本博客主要用于记录个人学习笔记</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">268</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/JoeZJH" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="JoeZJiahong@Foxmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#计算机能做什么样的采样"><span class="nav-number">1.</span> <span class="nav-text">计算机能做什么样的采样</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Uniform"><span class="nav-number">1.1.</span> <span class="nav-text">Uniform</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#numpy-random模块功能介绍"><span class="nav-number">1.2.</span> <span class="nav-text">numpy.random模块功能介绍</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#numpy-random模块的采样"><span class="nav-number">1.3.</span> <span class="nav-text">numpy.random模块的采样</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#单变量分布"><span class="nav-number">1.3.1.</span> <span class="nav-text">单变量分布</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#多变量分布"><span class="nav-number">1.3.2.</span> <span class="nav-text">多变量分布</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#标准分布"><span class="nav-number">1.3.3.</span> <span class="nav-text">标准分布</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#复杂分布的采样方式"><span class="nav-number">2.</span> <span class="nav-text">复杂分布的采样方式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#逆变换采样"><span class="nav-number">2.1.</span> <span class="nav-text">逆变换采样</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#拒绝采样"><span class="nav-number">2.2.</span> <span class="nav-text">拒绝采样</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#重要性采样"><span class="nav-number">2.3.</span> <span class="nav-text">重要性采样</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joe Zhou</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>
