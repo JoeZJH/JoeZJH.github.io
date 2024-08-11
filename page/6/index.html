@@ -764,186 +764,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>以Centos7为例, Ubuntu相似</em></p>
-<hr>
-<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>配置exports文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
-<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
-</ul>
-</li>
-<li><p>使exports的配置生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>-r生效</li>
-<li>-v显示结果</li>
-</ul>
-</li>
-<li><p>查看是否生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看服务器哪些目录可以共享</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>新建文件夹以作为mount目标</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>挂载操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看挂载情况</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解除挂载</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
-<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
-<ul>
-<li>mount.nfs: No route to host</li>
-<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
-<ul>
-<li>mount.nfs: Stale file handle</li>
-<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——硬盘操作-分区和挂载.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1147,6 +967,186 @@
 <li><p>重新启动机器</p>
 <ul>
 <li>如果配置有错机器可能无法正常进入系统,但是会进入Emergency模式,我们可以在Emergency模式下修改<code>/etc/fstab</code>然后重新启动来修复问题</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>以Centos7为例, Ubuntu相似</em></p>
+<hr>
+<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
+<li><p>安装nfs所需的所有组件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动nfs和rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动nfs和rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>配置exports文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
+<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
+</ul>
+</li>
+<li><p>使exports的配置生效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>-r生效</li>
+<li>-v显示结果</li>
+</ul>
+</li>
+<li><p>查看是否生效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
+<li><p>安装nfs所需的所有组件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看服务器哪些目录可以共享</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>新建文件夹以作为mount目标</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>挂载操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看挂载情况</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解除挂载</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
+<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
+<ul>
+<li>mount.nfs: No route to host</li>
+<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
+<ul>
+<li>mount.nfs: Stale file handle</li>
+<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
 </ul>

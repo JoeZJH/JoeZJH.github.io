@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——VAE.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Transformer.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——VAE.html" itemprop="url">DL——VAE</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——Transformer.html" itemprop="url">DL——Transformer</a></h1>
         
 
         <div class="post-meta">
@@ -330,42 +330,298 @@
       
         
           
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>本文主要介绍Transformer和Attention相关内容</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-
-
-
-<hr>
-<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><ul>
-<li>网络输出对数方差，事实使用\(e^\sigma\)，能保证方差非负<img src="/Notes/DL/DL——VAE/A-VAE.png">
-
-
-</li>
-</ul>
-<hr>
-<h3 id="李宏毅公式推导"><a href="#李宏毅公式推导" class="headerlink" title="李宏毅公式推导"></a>李宏毅公式推导</h3><ul>
-<li>目标是让似然函数最大化，也就是最大化\(\sum_x \log P(x)\)，推导可得相当于最大化变分下界(Evidence Lower Bound，\(ELBO(q)\))<img src="/Notes/DL/DL——VAE/B-VAE-formula-lihongyi.png"></li>
-<li>为什么要通过求解\(q\)来实现似然函数最大化/ELBO最大化呢？因为优化\(q\)时，与\(P(x)\)无关，相当于最小化KL散度<img src="/Notes/DL/DL——VAE/C-VAE-formula-lihongyi-why-q.png"></li>
-<li>进一步拆解变分下界<img src="/Notes/DL/DL——VAE/D-VAE-formula-lihongyi.png"></li>
-<li>变分下界的两个部分分别可用在网络中建模，两个损失函数同时优化就是VAE<img src="/Notes/DL/DL——VAE/E-VAE-formula-lihongyi.png">
 <ul>
-<li>期望部分：通过带采样的Auto-Encoder实现，损失函数为Auto-Encoder的损失函数</li>
-<li>KL散度部分【TODO：有时间手动推导一下】：使用一个关于均值和方差的损失函数可以实现，详情看原始论文可推导<a href="https://arxiv.org/pdf/1312.6114.pdf?source=post_page---------------------------" target="_blank" rel="noopener">Auto-Encoding Variational Bayes</a><img src="/Notes/DL/DL——VAE/original-paper-VAE-loss1-proof.png">
+<li>由于LaTex中矩阵的黑体表示过于复杂，在不会引起混淆的情况下，本文中有些地方会被简写为非黑体</li>
+</ul>
+<hr>
+<h3 id="相关论文介绍"><a href="#相关论文介绍" class="headerlink" title="相关论文介绍"></a>相关论文介绍</h3><ul>
+<li>Transformer原始文章: <ul>
+<li><a href="https://arxiv.org/pdf/1706.03762.pdf" target="_blank" rel="noopener">Google Brain, NIPS 2017: Attention Is All You Need</a></li>
+<li>文章中介绍了一种应用Attention机制的新型特征提取器,命名为Transformer, 实验证明Transformer优于RNN(LSTM),CNN等常规的特征提取器</li>
+</ul>
+</li>
+<li>Transformer的使用: <ul>
+<li>GPT: <a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf" target="_blank" rel="noopener">Improving Language Understanding by Generative Pre-Training</a></li>
+<li>BERT: <a href="https://arxiv.org/pdf/1810.04805.pdf" target="_blank" rel="noopener">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</a></li>
+<li>以上两个工作都使用了Transformer作为特征提取器, 使用两阶段训练的方式实现迁移学习(Pre-Training and Fine-Training)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="相关博客介绍"><a href="#相关博客介绍" class="headerlink" title="相关博客介绍"></a>相关博客介绍</h3><ul>
+<li>强烈推荐看看jalammar的博客: <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">illustrated-transformer</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>一篇很多个人理解的博客 <a href="https://kexue.fm/archives/4765" target="_blank" rel="noopener">《Attention is All You Need》浅读</a></li>
+</ul>
+<hr>
+<h3 id="Transformer讲解"><a href="#Transformer讲解" class="headerlink" title="Transformer讲解"></a>Transformer讲解</h3><ul>
+<li>最直观的动态图理解<img src="/Notes/DL/DL——Transformer/transform_dynamic.gif"></li>
+<li>本文讲解主要按照<a href="https://arxiv.org/pdf/1706.03762.pdf" target="_blank" rel="noopener">Google Brain, NIPS 2017: Attention Is All You Need</a>的思路走,该论文的亮点在于:<ul>
+<li>不同于以往主流机器翻译使用基于 RNN 的 Seq2Seq 模型框架，该论文用 <strong>Attention 机制代替了 RNN</strong> 搭建了整个模型框架, 这是一个从换自行车零件到把自行车换成汽车的突破</li>
+<li>提出了<strong>多头注意力</strong>(Multi-Head Attention)机制方法，在编码器和解码器中大量的使用了多头自注意力机制(Multi-Head self-attention)</li>
+<li>在WMT2014语料库的英德和英法语言翻译任务上取得了先进结果</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Transformer是什么"><a href="#Transformer是什么" class="headerlink" title="Transformer是什么?"></a>Transformer是什么?</h3><ul>
+<li>本质上是个序列转换器 <img src="/Notes/DL/DL——Transformer/the_transformer_high_level.png"></li>
+<li>进一步讲,是个 Encoder-Decoder 模型的序列转换器<img src="/Notes/DL/DL——Transformer/The_transformer_encoders_decoders.png"></li>
+<li>更进一步的讲,是个 6层Encoder + 6层Decoder 结构的序列转换器<img src="/Notes/DL/DL——Transformer/The_transformer_encoder_decoder_stack.png"></li>
+<li>上面的图中,每个 Encoder 是<img src="/Notes/DL/DL——Transformer/Transformer_encoder.png"></li>
+<li>详细的讲, 每个Encoder是<img src="/Notes/DL/DL——Transformer/encoder_with_tensors.png"></li>
+<li>展开看里面 Encoder 中的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm.png"></li>
+<li>更进一步的展开看 Encoder 中的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm_2.png"></li>
+<li>两层 Encoder + 两层Decoder (其中一个Decoder没有完全画出来) 的数据流向<img src="/Notes/DL/DL——Transformer/transformer_resideual_layer_norm_3.png"></li>
+<li>带细节动图查看数据流向<img src="/Notes/DL/DL——Transformer/transformer_decoding_1.gif">
+</li>
+<li>最后,我们给出Transformer的结构图(来自原文中)<img src="/Notes/DL/DL——Transformer/Transfomer_Architecture.png">
+
+
+</li>
+</ul>
+<hr>
+<h3 id="Transformer中的Attention"><a href="#Transformer中的Attention" class="headerlink" title="Transformer中的Attention"></a>Transformer中的Attention</h3><p><em>Transformer中使用了 Multi-Head Attention, 同时也是一种 Self Attention</em></p>
 <ul>
-<li>假设了\(p_\theta(z)\)是均值为0方差为1的标准正太分布\(N(0,I)\)，所以这里本质是尽量保证分布\(q(z|x)\)尽可能接近标准正太分布</li>
+<li>由于Transformer的Multi_Head Attention中 <strong>Query == Key == Query</strong>, 所以也是一种 <strong>Self Attention</strong><ul>
+<li>即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
 </ul>
 </li>
-<li>KL散度部分的<a href="https://spaces.ac.cn/archives/5253" target="_blank" rel="noopener">其他证明</a>：<img src="/Notes/DL/DL——VAE/spaces-VAE-formula.png">
-</li>
+<li>更多关于广义Attention的理解请参考: <a href="/Notes/DL/DL%E2%80%94%E2%80%94Attention.html">DL——Attention</a></li>
+</ul>
+<h4 id="Multi-Head-Attention"><a href="#Multi-Head-Attention" class="headerlink" title="Multi-Head Attention"></a>Multi-Head Attention</h4><ul>
+<li>Muti-Head Attention，也称为多头Attention，由 \(h\) 个 Scaled Dot-Product Attention和其他线性层和Concat操作等组成<img src="/Notes/DL/DL——Transformer/Scaled_dot_product_attention_and_Multi_head_attention.png">
+<ul>
+<li>Scaled Dot Product Attention中Mask操作是可选的</li>
+<li>Scaled Dot Product Attention数学定义为(没有Mask操作)<br>$$<br>\begin{align}<br>Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = softmax\left(\frac{\boldsymbol{Q}\boldsymbol{K}^{\top}}{\sqrt{d_k}}\right)\boldsymbol{V}<br>\end{align}<br>$$<ul>
+<li>Softmax前除以\(\sqrt{d_k}\)的原因是防止梯度消失问题，基本思想是（原始论文脚注中有提到）：假设\(\boldsymbol{Q},\boldsymbol{K}\)中每个元素是服从均值为0，方差为1的正太分布（\(\sim N(0,1)\)），那么他们任意取两个列向量\(\boldsymbol{q}_i,\boldsymbol{k}_i\)的内积服从均值为0，方差为\(d_k\)的正太分布（\(\sim N(0,d_k)\)），具体证明可参考<a href="https://zhuanlan.zhihu.com/p/584569220" target="_blank" rel="noopener">没有比这更详细的推导 attention为什么除以根号dk——深入理解Bert系列文章</a>，过大的方差会导致softmax后梯度消失</li>
 </ul>
 </li>
+<li>Multi-Head Attention的某个输出的数学定义为<br>$$<br>\begin{align}<br>MultiHead(\boldsymbol{Q}, \boldsymbol{K}, \boldsymbol{V}) &amp;= Concat(head_1,\dots,head_h)\boldsymbol{W}^{O} \\<br>where \quad head_i &amp;= Attention(\boldsymbol{Q}\boldsymbol{W}_i^Q,\boldsymbol{K}\boldsymbol{W}_i^K,\boldsymbol{V}\boldsymbol{W}_i^V)<br>\end{align}<br>$$</li>
+<li>注意，在一般的Attention中，没有\(\boldsymbol{W}^{O}\)这个参数，这个是用于多头Attention中，将多头的输出Concat后映射一下再输出</li>
+<li>一般来说，\(head_i\)的维度是\(\frac{d_{model}}{N_{head}}=\frac{d_{model}}{h}=d_v = d_k\)，所以Multi-Head Attention的参数数量与head的数量无关，且无论多少个头，其的输出结果还是\(d_{model} = d_v * h\)维</li>
+<li>原始论文中常用\(d_{model} = h * d_k = h * d_v\)，且base模型的参数设置为\(512 = 8 * 64\)</li>
+</ul>
+</li>
+</ul>
+<h5 id="有关Multi-Head-Attention的理解"><a href="#有关Multi-Head-Attention的理解" class="headerlink" title="有关Multi-Head Attention的理解"></a>有关Multi-Head Attention的理解</h5><ul>
+<li>原论文的描述:</li>
+</ul>
+<blockquote>
+<p>Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions, </p>
+</blockquote>
+<ul>
+<li>理解:<ul>
+<li>所谓多头,就是多做几次(\(h\)次)同样的事情(参数\((W_i^Q, W_i^K, W_i^V)\)不共享, 即当 \(i \neq j \) 时, \((W_i^Q, W_i^K, W_i^V) \neq (W_j^Q, W_j^K, W_j^V)\)),然后把结果拼接</li>
+<li>Multi-Head Attention中, 每个头(Scaled Dot-Product Attention)负责不同的子空间(subspaces at differect positions)</li>
+<li>每个头权重不同, 所以他们的关注点也会不同,注意, 初始化时他们的参数不能相同, 否则会造成他们的参数永远相同, 因为他们是同构的</li>
+<li>个人理解: 多头的作用可以类比于CNN中的卷积层, 负责从不同的角度提取原始数据的特征</li>
+</ul>
+</li>
+</ul>
+<h4 id="Self-Attention"><a href="#Self-Attention" class="headerlink" title="Self Attention"></a>Self Attention</h4><ul>
+<li>Self Attention是只 Key和Query相同的 Attention, 这里因为 Key 和 Value 也相同,所以有 <strong>Query == Key == Query</strong></li>
+<li>即$$ \boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+<h4 id="Transformer中的Attention-1"><a href="#Transformer中的Attention-1" class="headerlink" title="Transformer中的Attention"></a>Transformer中的Attention</h4><ul>
+<li>既是Multi-Head Attention, 也是 Self Attention</li>
+<li>所以有$$\boldsymbol{Y_{AttentionOutput}} = MultiHead(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+<h4 id="Masked-Multi-Head-Attetion"><a href="#Masked-Multi-Head-Attetion" class="headerlink" title="Masked Multi-Head Attetion"></a>Masked Multi-Head Attetion</h4><ul>
+<li>MaskedMHA，掩码多头Attention，用于Decoder中防止前面的token看到后面的token，Encoder中不需要MaskedMHA</li>
+<li>一般性的，Masked Self-Attention是更一般的实现，不一定非要和Multi-Head绑定</li>
+<li>代码实现时，主要是在计算Softmax前，按照掩码将看不到的token对应的q,k内积替换为一个大负数，比如\(-1e9\)</li>
+</ul>
+<h4 id="Cross-Multi-Head-Attention"><a href="#Cross-Multi-Head-Attention" class="headerlink" title="Cross Multi-Head Attention"></a>Cross Multi-Head Attention</h4><ul>
+<li>CrossMHA不是Self-Attention，CrossMHA的Q,K是Encoder的输出，V来自Decoder</li>
 </ul>
 <hr>
-<h3 id="其他公式推导"><a href="#其他公式推导" class="headerlink" title="其他公式推导"></a>其他公式推导</h3><img src="/Notes/DL/DL——VAE/other-VAE-formula.png">
+<h3 id="Transformer-输入层"><a href="#Transformer-输入层" class="headerlink" title="Transformer 输入层"></a>Transformer 输入层</h3><ul>
+<li>Transformer的输入层使用了 Word Embedding + Position Embedding</li>
+<li>由于Transformer去除RNN的Attention机制完全不考虑词的顺序, 也就是说, 随机打乱句子中词的顺序 (也就是将键值对\((\boldsymbol{K}, \boldsymbol{V})\)对随机打乱), Transformer中Attention的结果不变</li>
+<li>实际上, <strong>目前为止, Transformer中的Attention模型顶多是个非常精妙的”词袋模型”</strong> (这句话来自博客:<a href="https://kexue.fm/archives/4765" target="_blank" rel="noopener">https://kexue.fm/archives/4765</a>)</li>
+</ul>
+<h4 id="Word-Embedding"><a href="#Word-Embedding" class="headerlink" title="Word Embedding"></a>Word Embedding</h4><ul>
+<li>和之前的词嵌入一样, 将One-Hot值映射成词向量嵌入模型中</li>
+</ul>
+<h4 id="Position-Embedding"><a href="#Position-Embedding" class="headerlink" title="Position Embedding"></a>Position Embedding</h4><p><em>FaceBook的《Convolutional Sequence to Sequence Learning》中曾经用过Position Embedding</em></p>
+<ul>
+<li>在不使用RNN的情况下建模词的顺序, 弥补”词袋模型”的不足</li>
+<li>用 Position Embedding来为每个位置一个向量化表示<ul>
+<li>将每个位置编号，然后每个编号对应一个向量</li>
+<li>通过结合位置向量和词向量，就给每个词都引入了一定的位置信息，这样Attention就可以分辨出不同位置的词了</li>
+</ul>
+</li>
+<li>原始论文中, 作者提出了一种周期性位置编码的表示, 数学公式如下:<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin(pos/10000^{2i/d_{\text{model}}}) \\<br>  PE(pos, 2i+1) &amp;= cos(pos/10000^{2i/d_{\text{model}}})<br>  \end{align}<br>  $$</li>
+<li>我觉得上述公式太丑了,转换一下写法可能更容易理解<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right) \\<br>  PE(pos, 2i+1) &amp;= cos\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right)<br>  \end{align}<br>  $$<ul>
+<li>\(pos\) 是位置编号</li>
+<li>\(i\) 表示位置向量的第 \(i\) 维</li>
+<li>从公式来看，为什么选择\(10000^{\frac{2i}{d_{\text{model}}}}\)? <ul>
+<li>\(i\)表示频率随模型embedding维度变动（模型embedding不同维度频率不同，低维度高频，高维度低频）</li>
+<li>\(pos\) 表示周期，随着位置变化，每个维度的值呈现周期变化，但是不同维度的变化周期（频率）不同</li>
+<li>10000是一个放缩因子，理论上可以换，在transformer原始论文实现中用了这个，且效果不错</li>
+</ul>
+</li>
+<li>选择正弦函数的原因是假设这将允许模型学到相对位置信息<ul>
+<li>因为对于固定的 \(k\), \(PE_{pos+k} = LinearFuction(PE_{pos})\), 所以这给模型提供了表达相对位置的可能性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="与之前的Position-Embedding的区别"><a href="#与之前的Position-Embedding的区别" class="headerlink" title="与之前的Position Embedding的区别"></a>与之前的Position Embedding的区别</h5><ul>
+<li>Position Embedding对模型的意义不同:<ul>
+<li>以前在RNN、CNN模型中Position Embedding是锦上添花的辅助手段，也就是“有它会更好、没它也就差一点点”的情况，因为RNN、CNN本身就能捕捉到位置信息</li>
+<li>在Transformer这个纯Attention模型中，Position Embedding是位置信息的唯一来源，因此它是模型的核心成分之一，并非仅仅是简单的辅助手段</li>
+</ul>
+</li>
+<li>Position Embedding的向量构造方式不同<ul>
+<li>在以往的Position Embedding中，基本都是根据任务训练出来的向量</li>
+<li>而Google直接给出了一个构造Position Embedding的公式:<br>  $$<br>  \begin{align}<br>  PE(pos,2i) &amp;= sin\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right) \\<br>  PE(pos, 2i+1) &amp;= cos\left (\frac{pos}{10000^{\frac{2i}{d_{\text{model}}}}}\right)<br>  \end{align}<br>  $$</li>
+<li>Google经过实验, 学到的位置嵌入和这种计算得到的位置嵌入结果很相近</li>
+<li>Google选用这种嵌入方式的原因是这种方式允许模型以后可以<strong>扩展到比训练时遇到的序列长度更长的句子</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="输入层的输出-Attention的输入"><a href="#输入层的输出-Attention的输入" class="headerlink" title="输入层的输出(Attention的输入)"></a>输入层的输出(Attention的输入)</h4><ul>
+<li>综合词嵌入和位置嵌入信息,我们可以得到下面的公式<br>$$<br>\begin{align}<br>\boldsymbol{x} = \boldsymbol{x}_{WE} + \boldsymbol{x}_{PE}<br>\end{align}<br>$$<ul>
+<li>\(\boldsymbol{x}\) 为输入层经过词嵌入和位置嵌入后的 输出, 也就是Attention的输入</li>
+<li>\(\boldsymbol{x}_{WE}\) 指词嵌入的结果</li>
+<li>\(\boldsymbol{x}_{PE}\) 指位置嵌入的结果</li>
+</ul>
+</li>
+</ul>
+<h3 id="FFN"><a href="#FFN" class="headerlink" title="FFN"></a>FFN</h3><ul>
+<li>FFN，Feed Forward Network，前馈网络层<br>$$<br>FFN(\mathbf{X}) = ReLU(\mathbf{X}\mathbf{W}^U + \mathbf{b}_1)\mathbf{W}^D + \mathbf{b}_2<br>$$</li>
+<li>原始Transformer使用的是ReLU作为激活函数，现在很多时候也会选用sigmoid</li>
+<li>可以看到前馈神经网络包含了两层 </li>
+</ul>
+<h3 id="Layer-Normaliztion"><a href="#Layer-Normaliztion" class="headerlink" title="Layer Normaliztion"></a>Layer Normaliztion</h3><ul>
+<li>层归一化，是Transformer特有的一种归一化方法</li>
+<li>Batch Normalization(BN)不适用与Transformer中，至少有以下原因：<ul>
+<li>Transformer训练样本通常（特别是模型很大时）可能会比较小，在Batch较小时BN不再适用</li>
+<li>BN是按照token维度（特征维度）来归一化的，不利于处理变长输入序列</li>
+</ul>
+</li>
+</ul>
+<p>$$<br>LayerNorm(\mathbf{x}) = \frac{\mathbf{x}-\mathbf{\mu}}{\mathbf{\sigma}}\cdot \mathbf{\gamma} + \mathbf{\beta} \\<br>\mathbf{\mu} = \frac{1}{H}\sum_{i=1}^H x_i, \quad \mathbf{\sigma} = \sqrt{\frac{1}{H}\sum_{i=1}^H(x_i-\mathbf{\mu})^2} \\<br>$$</p>
+<ul>
+<li>代码实现是会在分母的更号内增加一个极小量 \(\epsilon\)，防止出现除0的情况</li>
+</ul>
+<h4 id="LN是token维度的"><a href="#LN是token维度的" class="headerlink" title="LN是token维度的"></a>LN是token维度的</h4><ul>
+<li><p>按照Transformer源码实现来看，LayerNorm是Token维度的，不是Seq维度，也就是说，token向量LayerNorm的结果只与token向量自身相关，与所在序列的其他token无关</p>
+<ul>
+<li>这一点是Decoder可以增量解码的关键，这一点保证了Decoder的前序词不会受到后续词的影响</li>
+<li>增量解码是指：Decoder中输出下一个词时，可以使用前序词的缓存结果，由于前面的词看不到后面的词，所以增加词前后Transformer-Decoder中前序每个词的输出在每一层都不会受到影响</li>
+</ul>
+</li>
+<li><p>一个LayerNorm的示例如下，Transformer源码中实现与这个类似</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">import torch.nn as nn</span><br><span class="line">import torch</span><br><span class="line"></span><br><span class="line"># 假设d_model=4，d_model在有些实现中为hidden_size</span><br><span class="line">layer_norm = nn.LayerNorm(4) # 这里使用LayerNorm，也可以使用RMSNorm，两者作用维度相同，只是公式不同</span><br><span class="line"># test case 1:</span><br><span class="line">input_tensor = torch.Tensor([[[1, 2, 3, 4],</span><br><span class="line">                              [2, 3, 4, 5]]])</span><br><span class="line">output_tensor = layer_norm(input_tensor)</span><br><span class="line">print(output_tensor)</span><br><span class="line"># output:</span><br><span class="line"># tensor([[[-1.3416, -0.4472,  0.4472,  1.3416],</span><br><span class="line">#          [-1.3416, -0.4472,  0.4472,  1.3416]]],</span><br><span class="line">#        grad_fn=&lt;NativeLayerNormBackward0&gt;)</span><br><span class="line"></span><br><span class="line"># test case 2:</span><br><span class="line">input_tensor = torch.Tensor([[[1, 2, 3, 4],</span><br><span class="line">                              [200, 3, 4, 5]]])</span><br><span class="line">output_tensor = layer_norm(input_tensor)</span><br><span class="line">print(output_tensor)</span><br><span class="line"></span><br><span class="line"># tensor([[[-1.3416, -0.4472,  0.4472,  1.3416],</span><br><span class="line">#          [ 1.7320, -0.5891, -0.5773, -0.5655]]],</span><br><span class="line">#        grad_fn=&lt;NativeLayerNormBackward0&gt;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>从示例中可以看出：</p>
+<ul>
+<li>修改第二个token的某个元素值，只影响第二个token的LN输出，不影响第一个token</li>
+</ul>
+</li>
+</ul>
+<h3 id="Transformer改进-LN"><a href="#Transformer改进-LN" class="headerlink" title="Transformer改进-LN"></a>Transformer改进-LN</h3><p><em>原始LN参见本文之前的内容</em></p>
+<h4 id="LN的改进——RMSNorm"><a href="#LN的改进——RMSNorm" class="headerlink" title="LN的改进——RMSNorm"></a>LN的改进——RMSNorm</h4><p>$$<br>\begin{align}<br>RMSNorm(\mathbf{x}) &amp;= \frac{\mathbf{x}-\mathbf{\mu}}{RMS(\mathbf{x})}\cdot \mathbf{\gamma} \\<br>  RMS(\mathbf{x}) &amp;= \sqrt{\frac{1}{H}\sum_{i=1}^H x_i^2} \\<br>\end{align}<br>$$</p>
+<ul>
+<li>代码实现是会在分母的更号内增加一个极小量 \(\epsilon\)，防止出现除0的情况</li>
+</ul>
+<h4 id="LN的改进——DeepNorm"><a href="#LN的改进——DeepNorm" class="headerlink" title="LN的改进——DeepNorm"></a>LN的改进——DeepNorm</h4><p>$$<br>DeepNorm(\mathbf{x}) = LayerNorm(\alpha\cdot \mathbf{x} + Sublayer(\mathbf{x})) \\<br>$$</p>
+<ul>
+<li>这里的\(Sublayer(\mathbf{x})\)是指Transformer中的前馈神经网络层或自注意力模块（两者都会作为LN的输入）</li>
+<li>实际上，原始的Transformer中，每次LN的内容都是加上残差的，这里根据归一化位置的不同还有会有不同的实现</li>
+<li>原始的Transformer中，相当于\(\alpha=1\)的DeepNorm</li>
+<li>这里叫做<strong>DeepNorm</strong>的原因是因为缩放残差\(\mathbf{x}\)可以扩展Transformer的深度，有论文提到利用该方法可将深度提升到1000层（<a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10496231" target="_blank" rel="noopener">DeepNet: Scaling Transformers to 1,000 Layers</a>）</li>
+</ul>
+<h4 id="归一化的位置"><a href="#归一化的位置" class="headerlink" title="归一化的位置"></a>归一化的位置</h4><ul>
+<li>归一化的位置包括Post-Norm、Pre-Norm和Sandwich-Norm等</li>
+<li>Post-Norm<ul>
+<li>原始Transformer使用的方法</li>
+<li>将归一化模块使用到加法（需要把残差加到FFN/MHA的输出上）之后，详细公式是：<br>$$<br>\text{Post-Norm}(\mathbf{x}) = Norm(\mathbf{x} + Sublayer(\mathbf{x}))<br>$$</li>
+</ul>
+</li>
+<li>Pre-Norm<ul>
+<li>归一化模块放到FFN/MHA之前，详细公式是：<br>$$<br>\text{Pre-Norm}(\mathbf{x}) = \mathbf{x} + Sublayer(Norm(\mathbf{x}))<br>$$</li>
+</ul>
+</li>
+<li>Sandwich_Norm<ul>
+<li>三明治归一化，从字面意思可以知道，是两个Norm将某个层夹起来，实际上，该层是前馈神经网络层或自注意力模块<br>$$<br>\text{Sandwish-Norm}(\mathbf{x}) = \mathbf{x} + Norm(Sublayer(Norm(\mathbf{x})))<br>$$</li>
+</ul>
+</li>
+</ul>
+<h4 id="归一化位置的比较"><a href="#归一化位置的比较" class="headerlink" title="归一化位置的比较"></a>归一化位置的比较</h4><p><em><a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10496231" target="_blank" rel="noopener">DeepNet: Scaling Transformers to 1,000 Layers</a>中也有有关Pre-Norm和Post-Norm的探讨</em></p>
+<ul>
+<li>一般来说，使用Post-Norm比较多，效果也更好</li>
+<li>Pre-Norm在深层Transformer中容易训练（容易训练不代表效果好，Pre-Norm的拟合能力一般不如Post-Norm）<ul>
+<li>所以有些模型还是会使用Pre-Norm，因为它更稳定</li>
+</ul>
+</li>
+<li>浅层中建议使用Post-Norm</li>
+<li>详情参考苏神的回答<a href="https://zhuanlan.zhihu.com/p/494661681" target="_blank" rel="noopener">为什么Pre Norm的效果不如Post Norm？</a></li>
+</ul>
+<h3 id="Transformer改进-激活函数"><a href="#Transformer改进-激活函数" class="headerlink" title="Transformer改进-激活函数"></a>Transformer改进-激活函数</h3><p><em>原始激活函数是ReLU(Rectified Linear Unit)</em></p>
+<h4 id="Swish"><a href="#Swish" class="headerlink" title="Swish"></a>Swish</h4><ul>
+<li>Swish, Sigmoid-weighted Linear Unit<ul>
+<li><em>Swish 的全称为 “Scaled Exponential Linear Unit with Squishing Hyperbolic Tangent”,直译为“带有压缩的缩放指数线性单元”</em><br>$$<br>\text{Swish}_\beta(x) = x \cdot sigmoid(\beta x)<br>$$</li>
+</ul>
+</li>
+<li>许多实现中常常设置\(\beta=1\)</li>
+</ul>
+<h4 id="GELU"><a href="#GELU" class="headerlink" title="GELU"></a>GELU</h4><ul>
+<li>GELU, Gaussion Error Linear Unit，有时候也写作GeLU<br>$$<br>\text{GELU}(x) = 0.5x \cdot [1+erf(\frac{x}{\sqrt{2}})], \quad erf(x) = \frac{2}{\sqrt{\pi}}\int_1^x e^{-t^2} dt<br>$$</li>
+<li>从公式可以看出GELU的本质是对一个正太分布的概率密度函数进行积分，实际上就是累积分布函数</li>
+<li>GELU和ReLU的比较如下（图片来自<a href="https://zhuanlan.zhihu.com/p/662042707" target="_blank" rel="noopener">简单理解GELU 激活函数</a>）：<img src="/Notes/DL/DL——Transformer/GELU-ReLU.webp">
 
-<hr>
-<h3 id="AE-VAE-CVAE"><a href="#AE-VAE-CVAE" class="headerlink" title="AE-VAE-CVAE"></a>AE-VAE-CVAE</h3><img src="/Notes/DL/DL——VAE/other-AE-VAE-CVAE.png">
-
+</li>
+</ul>
+<h4 id="补充：GLU及其变换"><a href="#补充：GLU及其变换" class="headerlink" title="补充：GLU及其变换"></a>补充：GLU及其变换</h4><ul>
+<li>GLU，Gated Linear Units，是一种利用门的思想实现的激活函数，该激活函数可以理解为对输入进行门控选择，一些维度的值可以通过门，一些则不可以，门一般是一个基础的非线性激活函数</li>
+<li>原始GLU形式如下：<br>$$<br>GLU = \sigma(\mathbf{W}_1\mathbf{x} + \mathbf{b}_1) \odot (\mathbf{W}_2\mathbf{x} + \mathbf{b}_2)<br>$$</li>
+<li>\(\sigma\)可以替换成其他非线性激活函数<ul>
+<li>注意整个公式中始终只有一个非线性激活函数，其他部分都是线性映射（线性激活函数）</li>
+</ul>
+</li>
+<li>\(\odot\)表示矩阵按照元素相乘，\(W_1,W_2,b_1,b_2\)是可学习的参数</li>
+<li>该激活函数非常特殊，首先使用两个权重矩阵对输入数据进行线性变换，然后通过sigmoid激活函数进行非线性变换。这种设计使得GLU在前馈传播过程中能够更好地捕捉输入数据的非线性特征，从而提高模型的表达能力和泛化能力</li>
+<li>原始论文<a href="https://arxiv.org/pdf/2002.05202" target="_blank" rel="noopener">GLU Variants Improve Transformer</a>中也写作下面的形式(其中\(W,V,b,c\)是可学习的参数)：<br>$$<br>GLU(\mathbf{x,W,V,b,c}) = \sigma(\mathbf{W}\mathbf{x} + \mathbf{b}) \odot (\mathbf{V}\mathbf{x} + \mathbf{c})<br>$$</li>
+<li>去掉激活函数的版本也叫作Bilinear，写作<br>$$<br>Bilinear(\mathbf{x,W,V,b,c}) = (\mathbf{W}\mathbf{x} + \mathbf{b}) \odot (\mathbf{V}\mathbf{x} + \mathbf{c})<br>$$</li>
+<li>其他相关形式<br>$$<br>ReGLU(x, W, V, b, c) = max(0, xW + b) \odot (xV + c) \\<br>GEGLU(x, W, V, b, c) = GELU(xW + b) \odot (xV + c) \\<br>SwiGLU(x, W, V, b, c, \beta) = Swish_\beta(xW + b) \odot (xV + c) \\<br>$$</li>
+</ul>
+<h4 id="补充：FFN激活函数形式"><a href="#补充：FFN激活函数形式" class="headerlink" title="补充：FFN激活函数形式"></a>补充：FFN激活函数形式</h4><ul>
+<li>FFN的ReLU激活函数形式<br>$$<br>FFN(x, W_1, W_2, b_1, b_2) = max(0, xW_1 + b_1)W_2 + b_2<br>$$</li>
+<li>为了表示方便，也因为在一些文章中使用了简化，后续该形式会被简化成没有偏置项(bias)的形式：<br>$$<br>FFNReLU(x, W_1, W_2) = max(xW_1, 0)W_2<br>$$</li>
+</ul>
+<h4 id="FFN各种激活函数形式"><a href="#FFN各种激活函数形式" class="headerlink" title="FFN各种激活函数形式"></a>FFN各种激活函数形式</h4><ul>
+<li>常用FFN的激活函数改进有，GLU,Bilinear,ReGLU,GEGLU(GeGLU),SwiGLU等<br>$$<br>\begin{align}<br>FFN_{GLU}(x, W, V, W_2) &amp;= (\sigma(xW) \odot xV )W_2 \\<br>FFN_{Bilinear}(x, W, V, W_2) &amp;= (xW \odot xV )W_2 \\<br>FFN_{ReGLU}(x, W, V, W_2) &amp;= (max(0, xW) \odot xV )W_2 \\<br>FFN_{GEGLU}(x, W, V, W_2) &amp;= (GELU(xW) \odot xV )W_2 \\<br>FFN_{SwiGLU}(x, W, V, W_2) &amp;= (Swish_1(xW) \odot xV )W_2 \\<br>\end{align}<br>$$</li>
+<li>可以理解为\(\mathbf{W}^G,\mathbf{W}^U\)中包含了偏置项\(\mathbf{b}\)，有些文章/模型中则会将偏置项\(\mathbf{b}\)去掉</li>
+<li>最常用的是SwiGLU</li>
+<li>从形式上看，可以知道相对原始FFN激活函数形式，SwiGLU等改进增加了一个参数矩阵，为了保证原始参数数量不变，原始论文<a href="https://arxiv.org/pdf/2002.05202" target="_blank" rel="noopener">GLU Variants Improve Transformer</a>中提出了一种方法，通过将矩阵设置为如下的大小来保证参数数量相等<ul>
+<li>原始FFN层参数为(下面\(d = d_{model}\)是模型的隐藏层大小，注意，同一层的不同token是共享FFN的):<br>$$<br>W_1^{d\times d} + W_2^{d\times d}<br>$$</li>
+<li>使用SwiGLU且对齐参数数量后<br>$$<br>W^{r\times d} + V^{d\times r} + W_{2}^{r\times d}<br>$$</li>
+<li>显然，当 \(r=\frac{2}{3}d\) 时，使用 SwiGLU 前后FFN层参数数量相同，都等于 \(2d^2\)</li>
+</ul>
+</li>
+<li>一个疑问：原始的SwiGLU函数会引入两个参数矩阵 \(W,V\)，原始的FFN包含两个参数矩阵 \(W_1, W_2\)，为什么两者结合以后只剩下 \(FFN_{SwiGLU}\) 只剩三个参数\(W,V,W_2\)呢？<ul>
+<li>回答：因为两个线性矩阵相乘，可以合并为 \(W = WV\)，虽然还叫做\(W\)，但实际上是多了一个矩阵乘进去的，线上训练时也只需要训练这一个矩阵即可</li>
+</ul>
+</li>
+</ul>
+<h3 id="Transformer总结"><a href="#Transformer总结" class="headerlink" title="Transformer总结"></a>Transformer总结</h3><ul>
+<li>Transformer是一个特征提取能力非常强(超越LSTM)的特征提取器</li>
+<li>一些讨论<ul>
+<li>Transformer与CNN没关系,但是Transformer中使用多个 Scaled Dot-Product Attention 来最后拼接的方法(Multi-Head Attention), 就是CNN的多个卷积核的思想</li>
+<li>Transformer论文原文中提到的残差结构也来源于CNN</li>
+<li>无法对位置信息进行很好地建模，这是硬伤。尽管可以引入Position Embedding，但我认为这只是一个缓解方案，并没有根本解决问题。举个例子，用这种纯Attention机制训练一个文本分类模型或者是机器翻译模型，效果应该都还不错，但是用来训练一个序列标注模型（分词、实体识别等），效果就不怎么好了。那为什么在机器翻译任务上好？我觉得原因是机器翻译这个任务并不特别强调语序，因此Position Embedding 所带来的位置信息已经足够了，此外翻译任务的评测指标BLEU也并不特别强调语序</li>
+<li>Attention如果作为一个和CNN,RNN平级的组件来使用,可能会集成到各自的优点, 而不是”口气”很大的 “Attention is All You Need”</li>
+</ul>
+</li>
+</ul>
 
           
         
@@ -1015,6 +1271,136 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——关于英文单词的处理总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/NLP/NLP——关于英文单词的处理总结.html" itemprop="url">NLP——关于英文单词的处理总结</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="保留词根"><a href="#保留词根" class="headerlink" title="保留词根"></a>保留词根</h3><ul>
+<li><p>安装相关库:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pattern</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导入和使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from pattern.text.en import lemma</span><br><span class="line">lemma(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describe</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>需要nltk中的几个语料库包, 如果没有以下包,导入时会报出zip文件相关的错,按装这几个语料库包直接使用nltk.download(“wordent”)等语句就行<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;wordnet&quot;, &quot;wordnet_ic&quot;, &quot;sentiwordnet&quot;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="保留词干"><a href="#保留词干" class="headerlink" title="保留词干"></a>保留词干</h3><ul>
+<li><p>安装相关库:</p>
+<ul>
+<li>安装nltk即可</li>
+</ul>
+</li>
+<li><p>导入和使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">from nltk.stem.porter import PorterStemmer</span><br><span class="line"></span><br><span class="line">stemmer = PorterStemmer()</span><br><span class="line">stemmer.stem(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describ</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——LLDA的Gibbs采样实现.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1341,136 +1727,6 @@
 <li>没找到合适的神经网络模型,比如可以考虑使用一些权重共享的思想,降低由于数据太少引起的过拟合</li>
 <li>在未来的想法: 如果可以增加数据量, 或者能够使用一些新的有效模型或者词嵌入的数据集, 可以重新尝试使用神经网络模型</li>
 </ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——关于英文单词的处理总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/NLP/NLP——关于英文单词的处理总结.html" itemprop="url">NLP——关于英文单词的处理总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="保留词根"><a href="#保留词根" class="headerlink" title="保留词根"></a>保留词根</h3><ul>
-<li><p>安装相关库:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pattern</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导入和使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from pattern.text.en import lemma</span><br><span class="line">lemma(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describe</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>需要nltk中的几个语料库包, 如果没有以下包,导入时会报出zip文件相关的错,按装这几个语料库包直接使用nltk.download(“wordent”)等语句就行<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;wordnet&quot;, &quot;wordnet_ic&quot;, &quot;sentiwordnet&quot;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="保留词干"><a href="#保留词干" class="headerlink" title="保留词干"></a>保留词干</h3><ul>
-<li><p>安装相关库:</p>
-<ul>
-<li>安装nltk即可</li>
-</ul>
-</li>
-<li><p>导入和使用:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">from nltk.stem.porter import PorterStemmer</span><br><span class="line"></span><br><span class="line">stemmer = PorterStemmer()</span><br><span class="line">stemmer.stem(&quot;describing&quot;)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line"># describ</span><br></pre></td></tr></table></figure>
-
 </li>
 </ul>
 
