@@ -437,6 +437,115 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——SAC.html" itemprop="url">RL——SAC</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -568,7 +677,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -587,7 +696,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——SAC.html" itemprop="url">RL——SAC</a></h1>
+                <a class="post-title-link" href="/Notes/RL/RL——策略梯度法.html" itemprop="url">RL——策略梯度法</a></h1>
         
 
         <div class="post-meta">
@@ -623,9 +732,81 @@
       
         
           
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a></li>
+            <p><em>策略梯度法(Policy Gradient)总结，REINFORCE算法的说明</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<h3 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h3><ul>
+<li><strong>策略</strong> \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。</li>
+<li><strong>整个轨迹的累计回报</strong> \(R_(\tau)\)是轨迹\(\tau\)对应的回报：<br>$$<br>R(\tau) = \sum_{k=0}^{\infty} r_{k}<br>$$<ul>
+<li>注意：这里没有折扣因子</li>
+</ul>
+</li>
+<li><strong>时间t步开始的回报</strong> \(G_t\) 是从时间步 \(t\) 开始到结束的所有奖励的总和，通常定义为折扣累积奖励：<br>$$<br>G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>$$<br>其中 \(\gamma\) 是折扣因子，\(r_{k}\) 是在时间步 \(k\) 收到的即时奖励。</li>
+<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = E[G_t]\)。</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><h4 id="优化目标："><a href="#优化目标：" class="headerlink" title="优化目标："></a>优化目标：</h4><ul>
+<li><strong>目标函数</strong> \(J(\theta)\) 定义为从初始分布开始，遵循策略 \(\pi_\theta\) 时的平均回报：<br> $$<br> J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]<br> $$</li>
+<li>其中 \(\tau = (s_0, a_0, r_1, s_1, a_1, \dots)\) 表示一个轨迹，\(p_\theta(\tau)\) 是在策略 \(\pi_\theta\) 下产生轨迹 \(\tau\) 的概率。</li>
+</ul>
+<h4 id="梯度估计："><a href="#梯度估计：" class="headerlink" title="梯度估计："></a>梯度估计：</h4><ul>
+<li><p>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</p>
+</li>
+<li><p>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</p>
+</li>
+<li><p>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$</p>
+<ul>
+<li>上式是对原始梯度的无偏估计<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4></li>
+</ul>
+</li>
+<li><p>轨迹展开后，有 \(p_\theta(\tau) = p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)\)，其中 \(p(s_0)\) 是初始状态的分布，\(p(s_{t+1}|s_t, a_t)\) 是环境的转移概率。<br>  $$<br>  \begin{align}<br>  p_\theta(\tau) &amp;= p_{\pi_\theta}(s_0, a_0, s_1, a_1,\cdots) \\<br>  &amp;= p(s_0)\pi_\theta(a_0|s_0)p(s_1|s_0,a_0)\cdots \\<br>  &amp;= p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>由于环境的输出与策略无关，即\(\nabla_\theta p(s_1|s_0,a_0) = 0\)，于是有：<br>  $$<br>  \begin{align}<br>  \nabla_\theta \log p_\theta(\tau) &amp;= \nabla_\theta p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \log p(s_0) + \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) + \nabla_\theta  \sum_t  \log p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) \\<br>  &amp;=  \sum_t \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>所以我们可以进一步简化梯度表达式为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) R(\tau^n)  \right] \\<br> &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n) = \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</p>
+<ul>
+<li>此时，上式依然是对原始梯度的无偏估计</li>
+</ul>
+</li>
+<li><p>核心理解：</p>
+<ul>
+<li>\(R(\tau^n)\)表示采样得到的轨迹\(\tau^n\)对应的Reward，上述公式假设一共有N个轨迹</li>
+<li>对于任意给定的轨迹\(\tau^n\)，其上面的任意样本对\((s_t,a_t)\)，均使用固定的\(R(\tau^n)\)对 \(\nabla_\theta \log \pi_\theta(a_t|s_t)\)进行加权（实际上在使用中，不会直接使用\(R(\tau^n)\)，因为轨迹中过去的Reward与当前动作无关，所以，我们仅考虑后续的轨迹上的收益即可）</li>
+</ul>
+</li>
+</ul>
+<h4 id="REINFORCE算法："><a href="#REINFORCE算法：" class="headerlink" title="REINFORCE算法："></a>REINFORCE算法：</h4><ul>
+<li>考虑到轨迹中过去的Reward与当前动作无关，且后续轨迹上的收益与当前动作的关系越来越小，所以我们使用\(G_t\)来替换\(R(\tau)\)<br>  $$<br>  R(\tau) = \sum_{k=0}^{\infty} r_{k} \quad \rightarrow \quad G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>  $$</li>
+<li>此时梯度进一步近似为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t) \\<br> &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} G_t^n \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</li>
+<li>REINFORCE算法利用上述梯度估计来更新策略参数。具体地，对于轨迹\(R(\tau^n)\)上的状态动作样本对\((s_t,a_t)\)，参数更新规则如下：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) G_t^n<br> $$<ul>
+<li>其中 \(\alpha\) 是学习率</li>
+<li>因为是累加操作，所以可以展开对每一个状态动作样本对\((s_t,a_t)\)进行累加</li>
+<li>\(\frac{1}{N}\)可以不需要了，有了学习率了，可以调节到学习率中</li>
+</ul>
+</li>
+<li>补充REINFORCE算法伪代码：<img src="/Notes/RL/RL——策略梯度法/PG-1.png">
+<img src="/Notes/RL/RL——策略梯度法/PG-2.png">
+
+</li>
+</ul>
+<h4 id="减小方差："><a href="#减小方差：" class="headerlink" title="减小方差："></a>减小方差：</h4><ul>
+<li><p>为了减少方差，可以在梯度估计中引入一个baseline \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
+<ul>
+<li>常见的选择是使用价值函数 \(V(s_t)\) 作为基线，这有助于稳定学习过程。</li>
+<li>可以证明，增加 \(b(s_t)\) 后，梯度不会发生改变，上式对梯度的估计依然是无偏的</li>
+</ul>
+</li>
+<li><p>性质一：<strong>减去一个baseline以后，依然是原始梯度的无偏估计</strong>，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta)<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} (R(\tau) - b) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b E_{\tau \sim p_{\theta}(\tau)} \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau p_{\theta}(\tau) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau \nabla_\theta p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta \sum_\tau  p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta 1 \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  \\<br>  \end{align}<br>  $$</p>
+<ul>
+<li>第三行到第四行用到了对数概率技巧：\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)</li>
+<li>第四行到第五行使用了求梯度和加法交换顺序的法则</li>
+</ul>
+</li>
+<li><p>性质二：<strong>减去一个合适的baseline以后，方差会变小</strong>，证明如下：</p>
+<ul>
+<li>方差展开<br>  $$<br>  \begin{align}<br>  &amp;\ Var_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] ]^2 \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [R(\tau)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau)] ]^2 - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)] \\<br>  &amp;= Var_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau) ] - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]<br>  \end{align}<br>  $$</li>
+<li>进一步解的，使得上式取小值的最优\(b\)为：<br>  $$<br>  b = \frac{E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] }{E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]}<br>  $$</li>
+<li>实际应用中，为了方便计算，通常会使用：<br>  $$<br>  \hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)<br>  $$ </li>
 </ul>
 </li>
 </ul>
@@ -1377,120 +1558,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——REM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——REM.html" itemprop="url">RL——REM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/137001028" target="_blank" rel="noopener">【强化学习 120】SimpleBatchRL (REM)</a></li>
-<li>单纯形(Simplex)介绍：<a href="https://blog.csdn.net/zhaoyin214/article/details/99090386" target="_blank" rel="noopener">学习笔记 - 单纯形</a><ul>
-<li><img src="/Notes/RL/RL——REM/N_Dim_Simplex.png"></li>
-</ul>
-</li>
-<li>概率单纯形（概率单纯形）介绍：<a href="https://zhuanlan.zhihu.com/p/479892005" target="_blank" rel="noopener"></a><ul>
-<li><img src="/Notes/RL/RL——REM/Probability_Simplex.png"></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1543,7 +1610,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">272</span>
+                  <span class="site-state-item-count">273</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

@@ -275,6 +275,168 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——样本不均衡问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——样本不均衡问题.html" itemprop="url">ML——样本不均衡问题</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="关于样本不均衡的解决"><a href="#关于样本不均衡的解决" class="headerlink" title="关于样本不均衡的解决"></a>关于样本不均衡的解决</h3><ul>
+<li>相关实践: 某次比赛中, 训练集中正负样本数量分别为20663和569877,占比分别为3.499%和96.501%, 差别很大</li>
+</ul>
+<h4 id="基于数据的解决方案"><a href="#基于数据的解决方案" class="headerlink" title="基于数据的解决方案"></a>基于数据的解决方案</h4><h5 id="过采样"><a href="#过采样" class="headerlink" title="过采样"></a>过采样</h5><ul>
+<li>增加负样本的数量<ul>
+<li>简单复制样本多次: 容易过拟合,模型变得复杂</li>
+<li>使用<strong>SMOTE</strong>算法采样: 对少数样本集\(S_{min}\)中的每一个样本 \(x\),从他的K近邻中随机选取一个样本\(y\), 然后在 \(x, y\) 之间随机选取一个新的点作为新合成的样本<ul>
+<li>能降低过拟合风险</li>
+<li>需要一个样本间距离定义的函数,且对于少数样本多时选取最近邻的复杂度太大</li>
+<li>由于为每个样本都采样了,所以可能会增大类间重叠度(生成的样本可能是符合多数样本类别的,很容易造成生成没有意义甚至是噪声)</li>
+</ul>
+</li>
+<li>使用<strong>Borderline-SMOTE</strong>算法优化<strong>SMOTE</strong>算法: <ul>
+<li>只在分类边界上的少数样本进行采样</li>
+</ul>
+</li>
+<li>使用<strong>ADASYN</strong>算法优化<strong>SMOTE</strong>算法:<ul>
+<li>给不同的少数类样本合成不同个数的新样本</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="负采样"><a href="#负采样" class="headerlink" title="负采样"></a>负采样</h5><ul>
+<li>减少正样本数量,让分类器更重视负样本<ul>
+<li>Easy Ensemble算法: 每次从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\), 最后融合多个分类模型的结果<ul>
+<li>融合模型时简单的可以对模型输出做均值(评估方式为AUC分数)或者投票(评估方式为分类精度)</li>
+</ul>
+</li>
+<li>Balance Cascade算法: 级联结构, 在每一级中从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\) 训练当前级的分类其,然后将 \(S_{maj}\) 能正确被当前分类器正确分类的样本剔除, 剩下不能正确分类的样本进行下一级操作,重复若干次后得到级联结构,最终的输出结果是各级分类器结果的融合<ul>
+<li>这里有点像是Boosting方法,对样本权重进行修改,使得模型更重视上次分类错误的样本</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于算法的解决方案"><a href="#基于算法的解决方案" class="headerlink" title="基于算法的解决方案"></a>基于算法的解决方案</h4><ul>
+<li>修改模型的训练<strong>目标函数</strong><ul>
+<li>比如使用 AUC_ROC 的负数作为损失函数</li>
+<li>深度学习中可以使用Focal Loss代替传统的SGD</li>
+</ul>
+</li>
+<li>也可以将问题转化为<strong>基于单类学习的异常检测</strong>问题</li>
+<li><strong>单类学习</strong>(One Class Learning), <strong>异常检测</strong>(Anomaly Detection) *<ul>
+<li><strong>单类学习</strong>(One Class Learning): 训练数据只有一个类别,学习一个能够远离这个类别样本的Boundary,比如<ul>
+<li>单类别SVM(One Class SVM)</li>
+<li>K近邻非参数方法</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="一个重要的特殊说明"><a href="#一个重要的特殊说明" class="headerlink" title="一个重要的特殊说明"></a>一个重要的特殊说明</h3><ul>
+<li>在深度神经网络中,如果样本类别不平衡,不要使用BN, 否则会出现问题</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——图嵌入综述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -406,132 +568,6 @@
 </li>
 </ul>
 </li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html" itemprop="url">Bash——Shell中的环境变量高级解析方法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>参考链接：<a href="https://www.cnblogs.com/flintlovesam/p/6677037.html" target="_blank" rel="noopener">https://www.cnblogs.com/flintlovesam/p/6677037.html</a></em></p>
-<h3 id="Shell中的-、-和-使用范例"><a href="#Shell中的-、-和-使用范例" class="headerlink" title="Shell中的${}、##和%%使用范例"></a>Shell中的${}、##和%%使用范例</h3><ul>
-<li><p>假设我们定义了一个变量为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file=/dir1/dir2/dir3/my.file.txt</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>可以用${ }分别替换得到不同的值：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file#*/&#125;：删掉第一个 / 及其左边的字符串：dir1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file##*/&#125;：删掉最后一个 /  及其左边的字符串：my.file.txt</span><br><span class="line">$&#123;file#*.&#125;：删掉第一个 .  及其左边的字符串：file.txt</span><br><span class="line">$&#123;file##*.&#125;：删掉最后一个 .  及其左边的字符串：txt</span><br><span class="line">$&#123;file%/*&#125;：删掉最后一个  /  及其右边的字符串：/dir1/dir2/dir3</span><br><span class="line">$&#123;file%%/*&#125;：删掉第一个 /  及其右边的字符串：(空值)</span><br><span class="line">$&#123;file%.*&#125;：删掉最后一个  .  及其右边的字符串：/dir1/dir2/dir3/my.file</span><br><span class="line">$&#123;file%%.*&#125;：删掉第一个  .   及其右边的字符串：/dir1/dir2/dir3/my</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>记忆的方法为：</p>
-<ul>
-<li><code>%</code>和<code>#</code>分别在<code>$</code>的右边和左边</li>
-<li><code>#</code>是去掉左边（键盘上<code>#</code>在 <code>$</code> 的左边）</li>
-<li><code>%</code>是去掉右边（键盘上<code>%</code> 在<code>$</code> 的右边）</li>
-<li>单一符号是最小匹配；两个符号是最大匹配<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file:0:5&#125;：提取最左边的 5 个字节：/dir1</span><br><span class="line">$&#123;file:5:5&#125;：提取第 5 个字节右边的连续5个字节：/dir2</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>也可以对变量值里的字符串作替换：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file/dir/path&#125;：将第一个dir 替换为path：/path1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file//dir/path&#125;：将全部dir 替换为 path：/path1/path2/path3/my.file.txt</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>利用 ${ } 还可针对不同的变数状态赋值(沒设定、空值、非空值)：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file-my.file.txt&#125; ：假如 $file 沒有设定，則使用 my.file.txt 作传回值。(空值及非空值時不作处理)</span><br><span class="line">$&#123;file:-my.file.txt&#125; ：假如 $file 沒有設定或為空值，則使用 my.file.txt 作傳回值。 (非空值時不作处理)</span><br><span class="line">$&#123;file+my.file.txt&#125; ：假如 $file 設為空值或非空值，均使用 my.file.txt 作傳回值。(沒設定時不作处理)</span><br><span class="line">$&#123;file:+my.file.txt&#125; ：若 $file 為非空值，則使用 my.file.txt 作傳回值。 (沒設定及空值時不作处理)</span><br><span class="line">$&#123;file=my.file.txt&#125; ：若 $file 沒設定，則使用 my.file.txt 作傳回值，同時將 $file 賦值為 my.file.txt 。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:=my.file.txt&#125; ：若 $file 沒設定或為空值，則使用 my.file.txt 作傳回值，同時將 $file 賦值為my.file.txt 。 (非空值時不作处理)</span><br><span class="line">$&#123;file?my.file.txt&#125; ：若 $file 沒設定，則將 my.file.txt 輸出至 STDERR。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:?my.file.txt&#125; ：若 $file 没设定或为空值，则将 my.file.txt 输出至 STDERR。 (非空值時不作处理)</span><br><span class="line">$&#123;#var&#125; 可计算出变量值的长度：</span><br><span class="line">$&#123;#file&#125; 可得到 27 ，因为/dir1/dir2/dir3/my.file.txt 是27个字节</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -1001,6 +1037,132 @@
 </li>
 <li><p>实验表明：后面一句比前一句速度快很多</p>
 </li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html" itemprop="url">Bash——Shell中的环境变量高级解析方法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>参考链接：<a href="https://www.cnblogs.com/flintlovesam/p/6677037.html" target="_blank" rel="noopener">https://www.cnblogs.com/flintlovesam/p/6677037.html</a></em></p>
+<h3 id="Shell中的-、-和-使用范例"><a href="#Shell中的-、-和-使用范例" class="headerlink" title="Shell中的${}、##和%%使用范例"></a>Shell中的${}、##和%%使用范例</h3><ul>
+<li><p>假设我们定义了一个变量为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file=/dir1/dir2/dir3/my.file.txt</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>可以用${ }分别替换得到不同的值：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file#*/&#125;：删掉第一个 / 及其左边的字符串：dir1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file##*/&#125;：删掉最后一个 /  及其左边的字符串：my.file.txt</span><br><span class="line">$&#123;file#*.&#125;：删掉第一个 .  及其左边的字符串：file.txt</span><br><span class="line">$&#123;file##*.&#125;：删掉最后一个 .  及其左边的字符串：txt</span><br><span class="line">$&#123;file%/*&#125;：删掉最后一个  /  及其右边的字符串：/dir1/dir2/dir3</span><br><span class="line">$&#123;file%%/*&#125;：删掉第一个 /  及其右边的字符串：(空值)</span><br><span class="line">$&#123;file%.*&#125;：删掉最后一个  .  及其右边的字符串：/dir1/dir2/dir3/my.file</span><br><span class="line">$&#123;file%%.*&#125;：删掉第一个  .   及其右边的字符串：/dir1/dir2/dir3/my</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>记忆的方法为：</p>
+<ul>
+<li><code>%</code>和<code>#</code>分别在<code>$</code>的右边和左边</li>
+<li><code>#</code>是去掉左边（键盘上<code>#</code>在 <code>$</code> 的左边）</li>
+<li><code>%</code>是去掉右边（键盘上<code>%</code> 在<code>$</code> 的右边）</li>
+<li>单一符号是最小匹配；两个符号是最大匹配<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file:0:5&#125;：提取最左边的 5 个字节：/dir1</span><br><span class="line">$&#123;file:5:5&#125;：提取第 5 个字节右边的连续5个字节：/dir2</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>也可以对变量值里的字符串作替换：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file/dir/path&#125;：将第一个dir 替换为path：/path1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file//dir/path&#125;：将全部dir 替换为 path：/path1/path2/path3/my.file.txt</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>利用 ${ } 还可针对不同的变数状态赋值(沒设定、空值、非空值)：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file-my.file.txt&#125; ：假如 $file 沒有设定，則使用 my.file.txt 作传回值。(空值及非空值時不作处理)</span><br><span class="line">$&#123;file:-my.file.txt&#125; ：假如 $file 沒有設定或為空值，則使用 my.file.txt 作傳回值。 (非空值時不作处理)</span><br><span class="line">$&#123;file+my.file.txt&#125; ：假如 $file 設為空值或非空值，均使用 my.file.txt 作傳回值。(沒設定時不作处理)</span><br><span class="line">$&#123;file:+my.file.txt&#125; ：若 $file 為非空值，則使用 my.file.txt 作傳回值。 (沒設定及空值時不作处理)</span><br><span class="line">$&#123;file=my.file.txt&#125; ：若 $file 沒設定，則使用 my.file.txt 作傳回值，同時將 $file 賦值為 my.file.txt 。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:=my.file.txt&#125; ：若 $file 沒設定或為空值，則使用 my.file.txt 作傳回值，同時將 $file 賦值為my.file.txt 。 (非空值時不作处理)</span><br><span class="line">$&#123;file?my.file.txt&#125; ：若 $file 沒設定，則將 my.file.txt 輸出至 STDERR。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:?my.file.txt&#125; ：若 $file 没设定或为空值，则将 my.file.txt 输出至 STDERR。 (非空值時不作处理)</span><br><span class="line">$&#123;#var&#125; 可计算出变量值的长度：</span><br><span class="line">$&#123;#file&#125; 可得到 27 ，因为/dir1/dir2/dir3/my.file.txt 是27个字节</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -1976,136 +2138,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——学习笔记.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——学习笔记.html" itemprop="url">RL——学习笔记</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="为什么Off-Policy在于不与环境交互时效果不好？"><a href="#为什么Off-Policy在于不与环境交互时效果不好？" class="headerlink" title="为什么Off-Policy在于不与环境交互时效果不好？"></a>为什么Off-Policy在于不与环境交互时效果不好？</h3><ul>
-<li><strong>Training Mismatch: 网络更新用的期望梯度与数据集中的观测不一致</strong><ul>
-<li><strong>与环境交互时能成功的原因</strong>：在使用off-policy方法（包括DQN和A3C等）进行Policy-Network更新或Q-Network更新时，梯度更新本质上都需要根据下一时刻的奖励期望/价值函数/Q函数的期望（期望应该与状态无关）来进行，但是为了方便，我们一般都是用了当前观测状态等进行梯度更新，这里能够成功的本质原因与SGD类似，因为状态是从当前策略的分布中采样出来的，所以经过多次尝试可以逼近期望梯度，换句话说，当前的观测是从当前策略分布中采样来的，也就是对当前策略的一种无偏估计</li>
-<li><strong>不交互时失败的原因</strong>：在固定数据集中使用off-policy方法时，则该数据集与off-policy方案对应的数据是无法对齐的，也就是说数据集中的期望与策略对应的期望不同，也就不能简单的使用该期望对应的梯度更新网络！</li>
-</ul>
-</li>
-<li><strong>Absent Data: 数据集中可能存在某些状态是从来没有出现过的？</strong><ul>
-<li>某些state-action对的缺失？</li>
-<li>缺失会导致在该状态和动作上的错误估计</li>
-</ul>
-</li>
-<li><strong>Model Bias: 数据集本身可能分布与MDP分布不一致</strong><ul>
-<li>比如某个状态转移概率在MDP中是1/10,但在Model Bias中可能为1/5，这样就导致了模型错误估计了环境的转态转移概率</li>
-</ul>
-</li>
-</ul>
-<h3 id="为什么online-RL中不能使用BN？"><a href="#为什么online-RL中不能使用BN？" class="headerlink" title="为什么online RL中不能使用BN？"></a>为什么online RL中不能使用BN？</h3><ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a></li>
-<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a></li>
-</ul>
-</li>
-<li>BN能work的主要原因是，每个Batch的数据是从整体数据中随机采样得到的，每个Batch的均值和方差不会差别太大</li>
-<li>在online RL中，随着Agent的探索，数据分布一直在变化，进入模型的不同Batch无法保证能代表整体样本，随着Agent的迭代数据分布逐步变化，模型来不及学到固定的均值和方差，导致无法收敛</li>
-<li>offline RL中，数据是提前固定的，则没有这个问题，所以offline RL中，可以使用BN</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2158,7 +2190,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">272</span>
+                  <span class="site-state-item-count">273</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

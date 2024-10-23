@@ -275,6 +275,147 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——Ubuntu18.04安装和配置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/MySQL/MySQL——Ubuntu18.04安装和配置.html" itemprop="url">MySQL——Ubuntu18.04安装及配置</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>解决Ubuntu18.04安装Ubuntu后普通用户没有权限登录问题</em></p>
+<hr>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 安装mysql服务</span><br><span class="line">sudo apt-get install mysql-server</span><br><span class="line"># 安装客户端</span><br><span class="line">sudo apt install mysql-client</span><br><span class="line"># 安装依赖</span><br><span class="line">sudo apt install libmysqlclient-dev</span><br><span class="line"># 检查状态</span><br><span class="line">sudo netstat -tap | grep mysql</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="远程链接设置"><a href="#远程链接设置" class="headerlink" title="远程链接设置"></a>远程链接设置</h3><h4 id="默认远程链接问题"><a href="#默认远程链接问题" class="headerlink" title="默认远程链接问题"></a>默认远程链接问题</h4><p><em>Ubuntu18.04 安装mysql后，普通用户没有连接mysql数据库权限(local或者remote均没有权限)</em></p>
+<ul>
+<li><code>mysql -u root</code>或者直接用使用MySQL Workbench连接均失败，显示如下错误<blockquote>
+<p>ERROR 1045: Access denied for user: ‘root@localhost’ (Using password: YES)</p>
+</blockquote>
+</li>
+<li>使用<code>sudo mysql -u root</code>能正确连接</li>
+</ul>
+<h4 id="打开远程链接数据"><a href="#打开远程链接数据" class="headerlink" title="打开远程链接数据"></a>打开远程链接数据</h4><p><em>(删除之前的root并重新创建账户)</em></p>
+<ul>
+<li><p>登录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo mysql -u root</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后查看当前用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">select User,Host from mysql.user;</span><br><span class="line"># Output:</span><br><span class="line">+------------------+-----------+</span><br><span class="line">| User       | Host   |</span><br><span class="line">+------------------+-----------+</span><br><span class="line">| admin      | localhost |</span><br><span class="line">| debian-sys-maint | localhost |</span><br><span class="line">| magento_user   | localhost |</span><br><span class="line">| mysql.sys    | localhost |</span><br><span class="line">| root       | localhost |</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>删除root账号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">drop user &apos;root&apos;@&apos;localhost&apos;;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建新的root账号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create user &apos;root&apos;@&apos;%&apos; identified by &apos;123456&apos;;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>为新账号授权</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">grant all privileges on *.* to &apos;root&apos;@&apos;%&apos; with grant option;</span><br><span class="line">flush privileges;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>退出</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exit;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>以普通用户身份登录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -u root -p</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——反编译与字节码.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1994,125 +2135,6 @@ ser.map(func_element)</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——共轭分布.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——共轭分布.html" itemprop="url">概率——共轭分布</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>待更新,共轭分布</em><br><em>参考:LDA数学八卦</em></p>
-<hr>
-<h3 id="扩展——关于共轭分布"><a href="#扩展——关于共轭分布" class="headerlink" title="扩展——关于共轭分布"></a>扩展——关于共轭分布</h3><ul>
-<li>高斯分布和高斯分布<ul>
-<li>Gaussion-Gaussion共轭</li>
-</ul>
-</li>
-<li>Beta分布和二项分布<ul>
-<li>Beta-Binomial共轭</li>
-</ul>
-</li>
-<li>Dirichlet分布和多项分布<ul>
-<li>Dirichlet-Multinomial共轭</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2165,7 +2187,7 @@ ser.map(func_element)</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">272</span>
+                  <span class="site-state-item-count">273</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

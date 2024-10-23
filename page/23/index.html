@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
         
 
         <div class="post-meta">
@@ -330,72 +330,148 @@
       
         
           
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
+            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
 <hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
 </ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
+
 <hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
 </ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
+
+<hr>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
 <ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
 </ul>
 
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html" itemprop="url">DL——softmax遇上交叉熵损失时的梯度计算</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="softmax"><a href="#softmax" class="headerlink" title="softmax"></a>softmax</h3><h4 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax_define.png">
+<h4 id="展开定义"><a href="#展开定义" class="headerlink" title="展开定义"></a>展开定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax.png">
+
+<hr>
+<h3 id="softmax求导"><a href="#softmax求导" class="headerlink" title="softmax求导"></a>softmax求导</h3><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/partial_softmax.png">
+
+<hr>
+<h3 id="交叉熵定义"><a href="#交叉熵定义" class="headerlink" title="交叉熵定义"></a>交叉熵定义</h3><p><em>Cross Entropy Loss</em></p>
+<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/cross_entropy_loss.png">
+
+<hr>
+<h3 id="梯度计算"><a href="#梯度计算" class="headerlink" title="梯度计算"></a>梯度计算</h3><h4 id="偏置量的梯度"><a href="#偏置量的梯度" class="headerlink" title="偏置量的梯度"></a>偏置量的梯度</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_b.png">
+
+<h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
+<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
           
         
       
@@ -523,6 +599,174 @@
 <li>不是越深越好</li>
 <li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
 <li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
+</ul>
+<hr>
+<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
+<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
+<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
+<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
+<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
+</ul>
+<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
+<li>在CNN中防止过拟合的效果明显</li>
+<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
+<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
+<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
+<li>下面介绍两个主流的观点</li>
+</ul>
+<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
+<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
+<li>过拟合是很多机器学习的通病</li>
+<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
+<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
+<li><strong>Dropout</strong>能同时解决以上问题:<ul>
+<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
+<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
+</ul>
+</li>
+</ul>
+<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
+<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
+</li>
+<li><p>首先分析一个小故事</p>
+</li>
+</ul>
+<blockquote>
+<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
+</blockquote>
+<ul>
+<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
+</li>
+<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
+</li>
+</ul>
+<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
+<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
+</ul>
+<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
+<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
+<li>dropout由固定值变为一个区间，可以提高效果</li>
+<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
+</ul>
+<hr>
+<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
+<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
+<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
 </ul>
 
           
@@ -1338,124 +1582,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html" itemprop="url">DL——softmax遇上交叉熵损失时的梯度计算</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="softmax"><a href="#softmax" class="headerlink" title="softmax"></a>softmax</h3><h4 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax_define.png">
-<h4 id="展开定义"><a href="#展开定义" class="headerlink" title="展开定义"></a>展开定义</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/softmax.png">
-
-<hr>
-<h3 id="softmax求导"><a href="#softmax求导" class="headerlink" title="softmax求导"></a>softmax求导</h3><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/partial_softmax.png">
-
-<hr>
-<h3 id="交叉熵定义"><a href="#交叉熵定义" class="headerlink" title="交叉熵定义"></a>交叉熵定义</h3><p><em>Cross Entropy Loss</em></p>
-<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/cross_entropy_loss.png">
-
-<hr>
-<h3 id="梯度计算"><a href="#梯度计算" class="headerlink" title="梯度计算"></a>梯度计算</h3><h4 id="偏置量的梯度"><a href="#偏置量的梯度" class="headerlink" title="偏置量的梯度"></a>偏置量的梯度</h4><img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_b.png">
-
-<h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
-<img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习-元学习-联邦学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1526,6 +1652,176 @@
 </ul>
 <h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
 <li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
+<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
+<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
+</ul>
+<hr>
+<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
+<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
+<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
+<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
+<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
+<li><p>结构图如下所示</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
+<li><p>上面图的代码构建如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>从图中的推导可知,梯度符合预期</li>
+<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
+<li><p>修改上面的构建为</p>
+<ul>
+<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
+</ul>
+</li>
+<li><p>结构图如下:</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
+<li><p>代码如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>显然推导结果符合代码输出预期</li>
+<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
+<li><p>还以上面的结构图为例</p>
+</li>
+<li><p>直接求中间节点 \(z\) 关于自变量的梯度</p>
+</li>
+<li><p>代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
+<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
+</ul>
+<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
 </ul>
 
           
@@ -1789,321 +2085,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——各种常用函数总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——各种常用函数总结.html" itemprop="url">PyTorch——各种常用函数总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>PyTorch封装了很多有用的函数,本文主要介绍介绍其中常用的函数</em></p>
-<hr>
-<h3 id="torch-max"><a href="#torch-max" class="headerlink" title="torch.max"></a>torch.max</h3><p><em><code>torch.min</code>与<code>torch.max</code>完全类似</em></p>
-<h4 id="单参数"><a href="#单参数" class="headerlink" title="单参数"></a>单参数</h4><ul>
-<li><p>用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input) -&gt; Tensor</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
-<li>return: 返回<code>input</code>变量中的最大值</li>
-</ul>
-</li>
-</ul>
-<h4 id="多参数"><a href="#多参数" class="headerlink" title="多参数"></a>多参数</h4><ul>
-<li><p>用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.max(input, dim, keepdim=False, out=None) -&gt; tuple[Tensor, Tensor]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>input</code>: 一个<code>Tensor</code>的对象</li>
-<li><code>dim</code>: 指明维度<ul>
-<li><code>dim=0</code>: 生成的结果是第一维的数据为1, 对每个元素, 当前数据是遍历第一维的数据后的最大值<ul>
-<li>如果数据为2维, 则搜索每一列中最大的那个元素, 且返回最大元素的行索引(实际上相当于对每个列我们要求出来一个数,这个数是遍历第一维(行)得到的), 每列返回一个行索引(该索引就是当前列中数字最大的行)</li>
-<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(1,3)</code></li>
-</ul>
-</li>
-<li><code>dim=1</code>: <ul>
-<li>如果数据为2维, 则搜索每一行中最大的那个元素, 且返回最大元素的列索引(实际上相当于对每个行我们要求出来一个数,这个数是遍历第2维(列)得到的), 每列返回一个列索引(该索引就是当前行中数字最大的列)</li>
-<li><code>input</code> 为 <code>(2,3)</code>, 则返回 <code>(2,1)</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><code>keepdim</code>: 指明是否</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——计算机视觉torchvision.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——计算机视觉torchvision.html" itemprop="url">PyTorch——计算机视觉torchvision</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>PyTorch中有个torchvision包,里面包含着很多计算机视觉相关的数据集(datasets),模型(models)和图像处理的库(transforms)等</em><br><em>本文主要介绍数据集中(ImageFolder)类和图像处理库(transforms)的用法</em></p>
-<hr>
-<h3 id="PyTorch预先实现的Dataset"><a href="#PyTorch预先实现的Dataset" class="headerlink" title="PyTorch预先实现的Dataset"></a>PyTorch预先实现的Dataset</h3><ul>
-<li><p>ImageFolder</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import ImageFolder</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>COCO</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import coco</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>MNIST</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import mnist</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>LSUN</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import lsun</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>CIFAR10</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.datasets import CIFAR10</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="ImageFolder"><a href="#ImageFolder" class="headerlink" title="ImageFolder"></a>ImageFolder</h3><ul>
-<li><p><code>ImageFolder</code>假设所有的文件按照文件夹保存,每个文件夹下面存储统一类别的文件,文件夹名字为类名</p>
-</li>
-<li><p>构造函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ImageFolder(root, transform=None, target_transform=None, loader=default_loader)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>root：在root指定的路径下寻找图片,root下面的每个子文件夹就是一个类别,每个子文件夹下面的所有文件作为当前类别的数据</li>
-<li>transform：对PIL Image进行的转换操作，transform的输入是使用loader读取图片的返回对象    <ul>
-<li>PIL是 Python Imaging Library 的简称,是Python平台上图像处理的标准库</li>
-</ul>
-</li>
-<li>target_transform：对label的转换, 默认会自动编码<ul>
-<li>默认编码为从0开始的数字,如果我们自己将文件夹命名为从0开头的数字,那么将按照我们的意愿命名,否则命名顺序不确定</li>
-<li>测试证明,如果文件夹下面是<code>root/cat/</code>, <code>root/dog/</code>两个文件夹,则自动编码为{‘cat’: 0, ‘dog’: 1}</li>
-<li><code>class_to_idx</code>属性存储着文件夹名字和类别编码的映射关系,<code>dict</code></li>
-<li><code>classes</code>属性存储着所有类别,<code>list</code></li>
-</ul>
-</li>
-<li>loader：从硬盘读取图片的函数<ul>
-<li>不同的图像读取应该用不同的loader</li>
-<li>默认读取为RGB格式的PIL Image对象</li>
-<li>下面是默认的<code>loader</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def default_loader(path):</span><br><span class="line">    from torchvision import get_image_backend</span><br><span class="line">    if get_image_backend() == &apos;accimage&apos;:</span><br><span class="line">        return accimage_loader(path)</span><br><span class="line">    else:</span><br><span class="line">        return pil_loader(path)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="transfroms详解"><a href="#transfroms详解" class="headerlink" title="transfroms详解"></a><code>transfroms</code>详解</h4><ul>
-<li><p>包导入</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import transforms</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>transforms</code>包中包含着很多封装好的<code>transform</code>操作</p>
-<ul>
-<li><code>transforms.Scale(size)</code>:将数据变成制定的维度</li>
-<li><code>transforms.ToTensor()</code>:将数据封装成PyTorch的<code>Tensor</code>类</li>
-<li><code>transforms.Normalize(mean, std)</code>: 将数据标准话,具体标准化的参数可指定</li>
-</ul>
-</li>
-<li><p>可将多个操作组合到一起,同时传入 <code>ImageFolder</code> 等对数据进行同时操作,每个操作被封装成一个类</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">simple_transform = transforms.Compose([transforms.Resize((224,224))</span><br><span class="line">                                       ,transforms.ToTensor()</span><br><span class="line">                                       ,transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])</span><br><span class="line">train = ImageFolder(&apos;dogsandcats/train/&apos;,simple_transform)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>torchvision.transforms.transforms</code>包下的操作类都是基于<code>torchvision.transforms.functional</code>下的函数实现的</p>
-<ul>
-<li>导入<code>torchvision.transforms.functional</code>的方式<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from torchvision.transforms import functional</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2156,7 +2137,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">272</span>
+                  <span class="site-state-item-count">273</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

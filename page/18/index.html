@@ -275,6 +275,206 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/GitHub——主题推荐算法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/GitHub——主题推荐算法.html" itemprop="url">GitHub——主题推荐算法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Topic Suggestions for Millions of Repositories</em></p>
+<p><a href="https://githubengineering.com/topics/" title="https://githubengineering.com/topics/" target="_blank" rel="noopener">Github官网原文</a></p>
+<hr>
+<h3 id="总体流程图"><a href="#总体流程图" class="headerlink" title="总体流程图"></a>总体流程图</h3><!-- ![process-flow](Github-topics-method/Github-topics-process-flow.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/Github-topics-process-flow.png" title="process-flow">
+
+
+<h3 id="分为七个步骤："><a href="#分为七个步骤：" class="headerlink" title="分为七个步骤："></a>分为七个步骤：</h3><hr>
+<h4 id="Readme-预处理与清除"><a href="#Readme-预处理与清除" class="headerlink" title="Readme 预处理与清除"></a>Readme 预处理与清除</h4><p><em>(Readme preprocessing and cleanup)</em></p>
+<ul>
+<li>移除不要的文本块(Remove unwanted blocks)<ul>
+<li>去除没用文本：一些块是没用的，比如code, table 和image链接等</li>
+</ul>
+</li>
+<li>文本划分(Text segmentation)<ul>
+<li>提取有用的文本：一个启发式的README tagger，借助格式分析：分析缩进(indentation)，空格(spacing)，和反撇号( `, backtick)等决定是否是有用信息【说明：这里语法分析是没必要的，我们只关心有用的文本，其他的都是为噪音(noise)】</li>
+<li>提取到有用文本后，删除拓展部分：HTML标签，路径和其他处理出来的部分等</li>
+<li>最后将剩下的文本进行粗粒度分割【用标点符号(punctuation marks)和README中的一些符号，比如临近哈希符号(contiguous hash symbols)】</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="生成候选主题"><a href="#生成候选主题" class="headerlink" title="生成候选主题"></a>生成候选主题</h4><p><em>(Generate candidate topics)</em></p>
+<ul>
+<li>用自定义的停用词去将词单元划分出来(Use custom stop words to break text into word units)<ul>
+<li>停用词去除</li>
+<li>n-gram分段小于等于4(测试发现小于4的比较好，太长的主题过于具体了，不合适)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除噪音主题"><a href="#移除噪音主题" class="headerlink" title="移除噪音主题"></a>移除噪音主题</h4><p><em>(Eliminate noisy topics)</em></p>
+<ul>
+<li>用逻辑回归模型删减“bad”主题(Use a logistic regression model to prune “bad” topics)<ul>
+<li>监督逻辑回归模型(supervised logistic regression model)主要针对除了频数比较小的外，一些不好的，比如”great”, “cool”等，<strong>这里的模型是一个分类模型，分为两类(good[positive] and bad(negative))</strong>, 我们称之为关键词过滤模型<ul>
+<li>手动收集大约300个数据集作为训练集</li>
+<li>单个动词一般都是Bad类<code>请教师兄</code></li>
+<li>其他的(<code>Other features we used were occurrence of user names, n-gram size of a phrase, length of a phrase, and numeric content within a phrase.</code>)</li>
+<li>以后打算加入回馈机制(来自用户的)去更新这个关键词过滤模型：接受度高的词作为positive的，接受度低的作为停用词或者negative的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>移除不满足最小频数的主题(Eliminate topics not satisfying minimum frequency count)</li>
+</ul>
+<hr>
+<h4 id="给主题评分"><a href="#给主题评分" class="headerlink" title="给主题评分"></a>给主题评分</h4><p><em>(Score Topics)</em></p>
+<ul>
+<li>用混合tf-idf分数，以主题频率和n元词作为打分标准(Use combination of tf-idf scores, topic frequency and n-gram size for scoring)<ul>
+<li>评估多种指标后，选择了点互信息指标(PMI)： <a href="https://blog.csdn.net/luo123n/article/details/48574123" title="https://blog.csdn.net/luo123n/article/details/48574123" target="_blank" rel="noopener">Pointwise Mutual Information</a></li>
+<li>考虑另一种指标tf-idf：参考论文<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&rep=rep1&type=pdf" title="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.121.1424&amp;rep=rep1&amp;type=pdf" target="_blank" rel="noopener">Using TF-IDF to Determine Word Relevance in Document Queries.pdf</a>或者<a href="https://blog.csdn.net/baimafujinji/article/details/51476117" title="https://blog.csdn.net/baimafujinji/article/details/51476117" target="_blank" rel="noopener">Python的实现</a></li>
+<li><code>The second approach we tried uses the average tf-idf scores of individual words in a phrase weighted by the phrase frequency (if it’s more than one word long) and n-gram size.</code></li>
+<li>两种方法比较：<ul>
+<li>PMI： 强调独特性，越特殊的短语评分越高，但有些可能只是拼写错误(Typo)或者是没有被删除的代码片段</li>
+<li>tf-idf： 不强调独特性，最终选择是tf-idf,原因是这个指标较好的平衡了独特性和主题与仓库(repository)的相关程度</li>
+</ul>
+</li>
+<li>在tf-idf的基础上还添加了一下其他的比如boosting scores等方法</li>
+<li><em>下面是TF-IDF的说明*</em><!-- ![tf-idf](Github-topics-method/tf-idf.png) -->
+<img src="/Notes/Others/GitHub——主题推荐算法/tf-idf.png" title="tf-idf">
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="规范化主题"><a href="#规范化主题" class="headerlink" title="规范化主题"></a>规范化主题</h4><p><em>(Canonicalize topics)</em></p>
+<ul>
+<li><p>使用内部词典规范主题形式(Use an in-house dictionary to suggest canonical form of topics)</p>
+<ul>
+<li><p>解决文字层面的差别和变化等,比如下面四个主题</p>
+<blockquote>
+<p>neural-network<br>neural-networks<br>neuralnetwork<br>neuralnetworks</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="移除相似的主题"><a href="#移除相似的主题" class="headerlink" title="移除相似的主题"></a>移除相似的主题</h4><p><em>(Eliminate near similar topics)</em></p>
+<ul>
+<li><p>用基于Jaccard相似性评分的贪心算法(Greedy approach using Jaccard similarity scoring)</p>
+<ul>
+<li><p>motivation：在得到Top-N的主题后，有些主题其实很相似，虽然都有用，但是他们只是在不同粒度描述了同一个主题而已，因此我们需要删除一些重复的，比如下面的例子</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>general-purpose machine learning<br>machine learning library<br>machine learning algorithms<br>distributed machine learning<br>machine learning framework<br>deep learning library<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+<li><p>method： 两个短语的相似性计算使用的是基于词的Jaccard相似性(两个短语的差集与并集的比值，因为它对较短的短语很有效，而且分数是[0-1]的，很方便设置阈值(thresholds))，用贪心算法，如果两个主题相似，去除分数较低的那一个，上面的例子去除相似主题后的结果是：</p>
+<blockquote>
+<p>machine learning<br>deep learning<br>support vector machine<br>linear regression</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="返回Top-K主题作为最终结果"><a href="#返回Top-K主题作为最终结果" class="headerlink" title="返回Top-K主题作为最终结果"></a>返回Top-K主题作为最终结果</h4>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Go/Go语言——String与Slice深度解析.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -422,116 +622,6 @@ func String2Slice(s string) (b []byte) {
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——事务深度理解.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/MySQL/MySQL——事务深度理解.html" itemprop="url">MySQL——事务深度理解</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="autocommit"><a href="#autocommit" class="headerlink" title="@@autocommit"></a>@@autocommit</h3><ul>
-<li>变量 @@autocommit<br>  select @@autocommit;<br>  set @@autocommit = 0;</li>
-<li>@@autocommit 为0时表示不以显示事务开头的语句或者以事务开头(<code>begin;</code> 或者 <code>start transaction;</code>)都会被缓存起来并且在<code>commit;</code>提交前都可以用<code>rollback;</code>回滚</li>
-<li>@@autocommit 为1时表示必须以事务开头的语句才会被缓存，否则一个sql语句将会被当做一个事务提交，将不能使用<code>rollback;</code>语句回滚</li>
-</ul>
-<p><strong>说明：不是所有引擎都支持事务，常用的支持事务的引擎是InnoDB</strong></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——引擎比较说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -612,6 +702,116 @@ func String2Slice(s string) (b []byte) {
 <li>清空整个表时，InnoDB是一行一行的删除，效率非常慢。MyISAM则会重建表</li>
 <li>InnoDB支持行锁（某些情况下还是锁整表，如 update table set a=1 where user like ‘%lee%’</li>
 </ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——事务深度理解.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/MySQL/MySQL——事务深度理解.html" itemprop="url">MySQL——事务深度理解</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="autocommit"><a href="#autocommit" class="headerlink" title="@@autocommit"></a>@@autocommit</h3><ul>
+<li>变量 @@autocommit<br>  select @@autocommit;<br>  set @@autocommit = 0;</li>
+<li>@@autocommit 为0时表示不以显示事务开头的语句或者以事务开头(<code>begin;</code> 或者 <code>start transaction;</code>)都会被缓存起来并且在<code>commit;</code>提交前都可以用<code>rollback;</code>回滚</li>
+<li>@@autocommit 为1时表示必须以事务开头的语句才会被缓存，否则一个sql语句将会被当做一个事务提交，将不能使用<code>rollback;</code>语句回滚</li>
+</ul>
+<p><strong>说明：不是所有引擎都支持事务，常用的支持事务的引擎是InnoDB</strong></p>
 
           
         
@@ -1469,232 +1669,6 @@ func String2Slice(s string) (b []byte) {
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——LR-逻辑回归.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——LR-逻辑回归.html" itemprop="url">ML——LR-逻辑回归</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-<hr>
-<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
-<li>假设有m样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)<ul>
-<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{m}, y_{m}))\)</li>
-</ul>
-</li>
-<li>假设\(w, \theta, x_{i}\)等所有向量都为列向量</li>
-</ul>
-<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
-<li>线性回归模型<br>$$f(x) = w^{T}x + b$$</li>
-<li>令<br>$$<br>\begin{align}<br>\theta &amp;= (w; b) \\<br>x_{i} &amp;= (x_{i}; 1)<br>\end{align}<br>$$</li>
-<li>有<br>$$f(x) = \theta^{T} x$$</li>
-<li>逻辑回归决策函数<strong>在线性回归模型上加一个sigmoid函数</strong><br>$$<br>\begin{align}<br>h_{\theta}(x) &amp;= sigmoid(f(x)) \\<br>&amp;= \frac{1}{1+e^{-f(x)}} \\<br>&amp;= \frac{1}{1+e^{-\theta^{T} x}} \\<br>\end{align}<br>$$</li>
-<li>即<br>$$<br>\begin{align}<br>p(y=1|x) &amp;= h_{\theta}(x) = \frac{1}{1+e^{-\theta^{T} x}} = \frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}\\<br>p(y=0|x) &amp;= 1-h_{\theta}(x) = \frac{e^{-\theta^{T} x}}{1+e^{-\theta^{T} x}} = \frac{1}{1+e^{\theta^{T} x}} \\<br>\end{align}<br>$$</li>
-<li><strong>对数几率(log odds, 也称为logit)</strong>定义为: \(ln \frac{p}{1-p}\) ,在LR中有:<br>$$<br>\begin{align}<br>ln\frac{h_{\theta}(x)}{1-h_{\theta}(x)} = \theta^T x<br>\end{align}<br>$$</li>
-<li>分类超平面不确定,与最终的阈值有关,\(\alpha\)的值与最终阈值相关<br>$$w^{\star}x + b^{\star} = \alpha$$<ul>
-<li>分类超平面由\((w, b)\)和阈值唯一确定,(注意: SVM的分类超平面由\((w, b)\)唯一确定)</li>
-<li>这一点和SVM不同,SVM的分类超平面是确定的,详情参看<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94SVM-%E6%94%AF%E6%8C%81%E5%90%91%E9%87%8F%E6%9C%BA.html">ML——SVM-支持向量机</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><ul>
-<li>LR中使用<strong>极大似然法</strong><br>$$<br>\begin{align}<br>L(\theta) &amp;= p(Y|X;\theta) \\<br>&amp;= \prod_{i=1}^{m}p(y_{i}|x_{i}; \theta) \\<br>&amp;= \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}}<br>\end{align}<br>$$</li>
-<li>上面的式子不易求导优化,我们使用与上面的式子单调性和最优点等价的<strong>对数似然函数</strong>为<br>$$<br>\begin{align}<br>LL(\theta) &amp;= log L(\theta) \\<br>&amp;= log \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}} \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right ) \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right ) \\<br>\end{align}<br>$$<ul>
-<li>上面的式子中：<br>$$\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>加个负号即为为交叉熵损失函数<br>$$-\sum_{i=1}^{m}\left (y_{i}log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>所以交叉熵损失函数与逻辑回归的对数似然损失函数（=逻辑回归对数似然函数的负数）是等价的</li>
-</ul>
-</li>
-<li>由前面的推导有<br>$$<br>\begin{align}<br>log \frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} = log\frac{\frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}}{\frac{1}{1+e^{\theta^{T} x}}} = log e^{\theta^{T} x} = \theta^{T}x\\<br>\end{align}<br>$$<br>$$log(p(y_{i} = 0|x_{i};\theta)) = log(\frac{1}{1+e^{\theta^{T} x}}) = -log(1+e^{\theta^{T} x})$$</li>
-<li>故而有<br>$$<br>\begin{align}<br>LL(\theta) &amp;= \sum_{i=1}^{m}\left (y_{i}log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} + log(p(y_{i} = 0|x_{i};\theta))\right )\\<br>&amp;= \sum_{i=1}^{m}\left ( y_{i}\theta^{T}x -  log(1+e^{\theta^{T}x}) \right)<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h4><ul>
-<li>最大化似然函数等价于最小化似然函数的负数</li>
-<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数</strong><br>$$loss(\theta) = -LL(\theta) = \sum_{i=1}^{m}\left (- y_{i}\theta^{T}x + log(1+e^{\theta^{T}x}) \right)$$</li>
-</ul>
-<h4 id="梯度下降法优化"><a href="#梯度下降法优化" class="headerlink" title="梯度下降法优化"></a>梯度下降法优化</h4><p><em>注意: 这里优化目标也可以用牛顿法</em></p>
-<ul>
-<li>目标,求一个\(\theta^{\star}\)满足似然函数最大化或者损失函数最小化<br>$$\theta^{\star} = \arg\max_{\theta} LL(\theta) = \arg\min_{\theta} -LL(\theta) = \arg\min_{\theta} loss(\theta)$$</li>
-<li>对数似然函数对参数\(\theta\)求导有<br>$$<br>\begin{align}<br>\frac{\partial loss(\theta)}{\partial\theta} &amp;= \sum_{i=1}^{m}\left ( -y_{i}x_{i} + \frac{x_{i}e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + \frac{e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta}(x_{i})\right ) \\<br>\end{align}<br>$$</li>
-<li>LR模型的梯度下降参数迭代公式<br>$$<br>\begin{align}<br>\theta^{t+1} &amp;= \theta^{t} - \alpha\sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta^{t}}(x_{i})\right ) \\<br>&amp;= \theta^{t} + \alpha\sum_{i=1}^{m}x_{i}\left ( y_{i} - h_{\theta^{t}}(x_{i})\right )<br>\end{align}<br>$$<ul>
-<li>其中\(\alpha\)为步长</li>
-</ul>
-</li>
-<li><strong>线性回归</strong>和<strong>LR模型</strong>的梯度下降法参数迭代公式表达式看似相同,但是不同的模型对应的<strong>\(h_{\theta}\)函数并不相同</strong></li>
-</ul>
-<hr>
-<h3 id="其他总结"><a href="#其他总结" class="headerlink" title="其他总结"></a>其他总结</h3><p><em>参考:<a href="https://www.cnblogs.com/ModifyRong/p/7739955.html" target="_blank" rel="noopener">https://www.cnblogs.com/ModifyRong/p/7739955.html</a></em></p>
-<ul>
-<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数(对数损失函数)</strong><ul>
-<li>对数似然损失函数定义为:<br>$$Loss(\theta) = -P(Y|X; \theta)$$</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;P213中定义LR的损失函数为逻辑斯蒂损失函数,在LR模型和最大熵模型中,逻辑斯蒂损失函数本质上与对数似然损失函数等价,可推导得到</li>
-</ul>
-</li>
-<li>一句话概括逻辑回归:<ul>
-<li><strong>逻辑回归是假设数据服从伯努利分布,通过极大似然函数的方法,运用梯度下降法或者牛顿法来求解参数,来达到将数据二分类的目的</strong></li>
-<li>逻辑回归的假设: <strong>数据服从伯努利分布</strong>, \(p(y=1|x) = 1-p(y=0|x)\)</li>
-<li>逻辑回归的损失函数: <strong>对数似然损失函数(交叉熵损失函数)</strong>, 也就是对数似然函数的负数</li>
-<li>逻辑回归的求解方法: <strong>梯度下降法或牛顿法</strong></li>
-<li>逻辑回归的目的: <strong>将数据二分类</strong></li>
-<li>逻辑回归如何分类: <strong>预测结果是连续的[0-1]的数</strong>,我们一般选择0.5作为阈值来分类,但是这个值可能是可以变化的,因为损失函数最小并不意味着0.5时分类精度最高</li>
-</ul>
-</li>
-<li>为什么要用极大似然法?等价于为什么要用对数似然损失函数作为损失函数?<ul>
-<li>损失函数一般有平方损失函数,对数损失函数,合页损失函数,绝对值损失函数等,极大似然函数取对数后等同于对数损失函数,在逻辑回归这个模型中,推导可以得到,对数损失函数训练求解参数的迭代函数只与\(x_{i}, y_{i}\)相关,与sigmoid函数的梯度等无关.这样的参数更新自始至终都比较稳定</li>
-<li>为什么不选平方损失函数的呢？其一是因为如果你使用平方损失函数,你会发现梯度更新的速度和sigmod函数本身的梯度是很相关的,sigmod函数在它在定义域内的梯度都不大于0.25, 这样训练会非常的慢</li>
-</ul>
-</li>
-<li>逻辑回归中,如果某些特征高度相关,甚至某些特征完全相同,会造成什么影响?<ul>
-<li>损失函数收敛后,没有影响,因为特征的相关性并不影响分类器效果,重复特征会分化特征的权重(10个重复特征和单个特征训练结果差别在于前者每个特征的权重是后者的十分之一),本质上最终结果不变的</li>
-<li>但是训练时由于特征重复,参数增多,模型复杂度增加,训练时长,内存等都会增加</li>
-</ul>
-</li>
-<li>为什么需要去掉高度相关的特征?<ul>
-<li>去掉高度相关的特征使得模型可解释性更好</li>
-<li>提高训练时间,节约内存,减少参数数量</li>
-<li>特征的提取本身也需要时间,实际工程项目中可以少提取一个特征往往能节约很多时间</li>
-</ul>
-</li>
-<li><strong>logistic与logit的区别</strong>?<ul>
-<li>logit: 又名 log adds , 指的是”对数几率”, 定义为\(ln\frac{p}{1-p}\)</li>
-<li>logistic: 又叫Sigmoid函数, 指的是”对数几率函数”, 本质上是一种”Sigmoid”函数, 定义为 \(f(x) = \frac{1}{1+e^{-x}}\)</li>
-</ul>
-</li>
-<li>简单介绍LR模型的优缺点:<ul>
-<li>优点:<ul>
-<li>模型简单,可解释性好,(如果对数据特征进行了归一化处理的话)可以从特征的权重看到不同特征对最终结果的影响</li>
-<li>模型效果往往不错(特征工程做得好的话)</li>
-<li>训练速度快, 成熟的SGD优化方法(SGD可以分布式)等</li>
-<li>内存占用小</li>
-<li>输出结果可以作为概率值,然后可以对阈值根据实际进行划分,不一定是确定的0.5,只是一般选择0.5而已</li>
-</ul>
-</li>
-<li>缺点:<ul>
-<li><strong>难以处理非线性数据,本质上是线性分类面</strong></li>
-<li><strong>难以处理数据不平衡问题</strong>, 这里如果正例远远多于负例,那么全都预测为正例,整体损失函数也不会太大</li>
-<li><strong>LR本身无法筛选特征</strong>,有时候会用GBDT和XGBoost来筛选特征,然后再用LR模型</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>扩展:逻辑回归可像SVM一样引入核函数处理非线性分类问题吗?<ul>
-<li>一般来说不可以</li>
-<li><strong>[存疑]</strong>理论上通过对原始样本非线性映射,似乎也可以,如果将\(f(x) = \theta^{T}x\)中的\(f(x)\)看做\(\theta\)看做变量,然后类比SVM的核函数,定义一个关于\(x_{i}\)的非线性映射<ul>
-<li>这里\(x_{i}\)表示第\(i\)个样本, 用\(x_{i}^{j}\)表示第\(i\)个样本的第\(j\)个维度<br>$$x_{i}^{j} = \phi_{j}(x_{i}^{j})$$</li>
-<li>基于上述非线性映射函数的定义,我们对每个样本都进行线性映射,每个维度用不同的映射函数(不同样本相同维度映射函数相同)</li>
-<li>这里的非线性映射与SVM的核函数不同,SVM不使用核函数的话,也可以通过相同的非线性映射的方式实现非线性分类</li>
-<li>使用核技巧后的LR模型将变得很慢,SVM与kernels是相配的,而LR与kernels会十分慢(来源<a href="https://www.cnblogs.com/yan2015/p/5183284.html" target="_blank" rel="noopener">SVM核技巧</a>)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>LR模型训练完成后，输出概率多少的样本应该评估为正样本？【以下分析为个人理解，暂无严格证明】<ul>
-<li><strong>LR模型的损失函数本质上是交叉熵损失函数，交叉熵损失函数本质是最小化预估分布与训练样本分布之间的差距，故而预估均值与真实训练样本均值应该相等</strong>，即LR模型的预估值均值理论上与训练样本标签均值相同（这里LR的预估值是Sigmoid的输出值，训练样本负样本标签为0，正样本标签为1）。【PS，一种辅助理解思考：假设训练集中的样本特征完全相同，但其中30%是正样本，另外70%为负样本，那么优秀的LR模型在预估该训练样本时应该输出约为0.3】</li>
-<li>进一步来说，当预估的平均值大于训练样本的均值时，即可判断为正样本。<ul>
-<li>举例，假设训练样本的均值为0.4，那么预估值大于0.4的样本均可视为正样本（思考：这种判定下模型的准确率\( \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}\)应该是最高的？）</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1747,7 +1721,7 @@ func String2Slice(s string) (b []byte) {
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">272</span>
+                  <span class="site-state-item-count">273</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
