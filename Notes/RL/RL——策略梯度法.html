@@ -89,7 +89,7 @@
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-1.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-2.png">
-<meta property="og:updated_time" content="2024-10-23T17:05:42.277Z">
+<meta property="og:updated_time" content="2024-10-24T17:15:35.439Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——策略梯度法">
 <meta name="twitter:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计回报 \(R_(\tau)\)是轨迹\(\tau\)对应的回报：$$R(">
@@ -340,7 +340,7 @@
 </ul>
 </li>
 <li><strong>时间t步开始的回报</strong> \(G_t\) 是从时间步 \(t\) 开始到结束的所有奖励的总和，通常定义为折扣累积奖励：<br>$$<br>G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>$$<br>其中 \(\gamma\) 是折扣因子，\(r_{k}\) 是在时间步 \(k\) 收到的即时奖励。</li>
-<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = E[G_t]\)。</li>
+<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]\)。</li>
 </ul>
 <h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><h4 id="优化目标："><a href="#优化目标：" class="headerlink" title="优化目标："></a>优化目标：</h4><ul>
 <li><strong>目标函数</strong> \(J(\theta)\) 定义为从初始分布开始，遵循策略 \(\pi_\theta\) 时的平均回报：<br> $$<br> J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]<br> $$</li>
@@ -387,7 +387,7 @@
 </li>
 </ul>
 <h4 id="减小方差："><a href="#减小方差：" class="headerlink" title="减小方差："></a>减小方差：</h4><ul>
-<li><p>为了减少方差，可以在梯度估计中引入一个baseline \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
+<li><p>为了减少方差，可以在梯度估计中引入一个baseline函数 \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
 <ul>
 <li>常见的选择是使用价值函数 \(V(s_t)\) 作为基线，这有助于稳定学习过程。</li>
 <li>可以证明，增加 \(b(s_t)\) 后，梯度不会发生改变，上式对梯度的估计依然是无偏的</li>
@@ -399,11 +399,45 @@
 <li>第四行到第五行使用了求梯度和加法交换顺序的法则</li>
 </ul>
 </li>
-<li><p>性质二：<strong>减去一个合适的baseline以后，方差会变小</strong>，证明如下：</p>
+<li><p>性质二：<strong>减去一个合适的baseline函数以后，方差会变小</strong>，证明如下：</p>
 <ul>
 <li>方差展开<br>  $$<br>  \begin{align}<br>  &amp;\ Var_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] ]^2 \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [R(\tau)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau)] ]^2 - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)] \\<br>  &amp;= Var_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau) ] - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]<br>  \end{align}<br>  $$</li>
 <li>进一步解的，使得上式取小值的最优\(b\)为：<br>  $$<br>  b = \frac{E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] }{E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]}<br>  $$</li>
 <li>实际应用中，为了方便计算，通常会使用：<br>  $$<br>  \hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)<br>  $$ </li>
+<li>那为什么\(\hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)是\(V_{\pi_{\theta}}(s_t)\)呢？因为两者是等价的，证明如下：<ul>
+<li>对于非确定性策略来说，在状态\(s_t\)下可选的动作服从一个分布\(\pi_{\theta}(s_t)\)，按照\(E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)的逻辑，该值是状态\(s_t\)下按照策略\(\pi_{\theta}(s_t)\)执行得到\(R(\tau)\)期望（注意\(a_t\)服从\(\pi_{\theta}\)分布，后续的执行动作也服从\(\pi_{\theta}\)分布），实际上就是\(V_{\pi_{\theta}}(s_t)\)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="实际使用中的-R-tau"><a href="#实际使用中的-R-tau" class="headerlink" title="实际使用中的\(R(\tau)\)"></a>实际使用中的\(R(\tau)\)</h3><h4 id="原始形式"><a href="#原始形式" class="headerlink" title="原始形式"></a>原始形式</h4><p>$$ R(\tau) = \sum_{k=0}^{\infty} r_{k} $$</p>
+<ul>
+<li>上式中实际上是一个固定轨迹的奖励，从第0步开始</li>
+<li>可基于蒙特卡洛采样得到</li>
+</ul>
+<h4 id="REINFORCE方法"><a href="#REINFORCE方法" class="headerlink" title="REINFORCE方法"></a>REINFORCE方法</h4><ul>
+<li>迭代样本\((s_t,a_t)\)时，使用以下形式：<br>$$ G_t = \sum_{k=t}^{\infty} \gamma^k r_{k} $$<ul>
+<li>丢弃掉动作之前的奖励，这些奖励与当前动作无关</li>
+<li>未来越远的动作奖励越小，因为这些奖励受当前动作影响的概率越小</li>
+</ul>
+</li>
+<li>使用baseline函数进行改进<br>$$\sum_{k=t}^{\infty} \gamma^k r_{k} - b(s_t)$$</li>
+</ul>
+<h4 id="用Q值替代"><a href="#用Q值替代" class="headerlink" title="用Q值替代"></a>用Q值替代</h4><ul>
+<li>用\(Q(s,a)\)值代替\(R(\tau)\)</li>
+<li>理由，\(Q(s,a)\)值是状态\(s\)执行\(a\)以后的\(G_t\)的期望值：<br>$$Q^{\pi_\theta}(s_t,a_t) = E_{\pi_\theta} [G_t|s_t, a_t]$$</li>
+<li>使用Q值来替代可以降低方差</li>
+</ul>
+<h4 id="用优势函数替代"><a href="#用优势函数替代" class="headerlink" title="用优势函数替代"></a>用优势函数替代</h4><ul>
+<li>用\(A(s,a) = Q(s,a) - V(s)\)来替代<ul>
+<li>可以减去\(V(s)\)的理由是之前证明过减去一个baseline函数\(V(s)\)可以降低方差，且梯度无偏</li>
+</ul>
+</li>
+<li>实际上使用时可以使用单个V网络+TD-Error实现对优势函数的估计<br>  $$ A(s,a) = r(s,a) + \gamma V(s’) - V(s) $$</li>
+<li>应用场景：<ul>
+<li>常规的Actor Critic方法</li>
+<li>PPO方法的优势函数估计（实际的PPO中常常是GAE方式，是优势函数的一种加权）</li>
 </ul>
 </li>
 </ul>
@@ -447,8 +481,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——SAC.html" rel="prev" title="RL——SAC">
-                RL——SAC <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="prev" title="RL——TD误差和优势函数的区别">
+                RL——TD误差和优势函数的区别 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -590,7 +624,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基础概念"><span class="nav-number">1.</span> <span class="nav-text">基础概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#优化目标："><span class="nav-number">2.1.</span> <span class="nav-text">优化目标：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#梯度估计："><span class="nav-number">2.2.</span> <span class="nav-text">梯度估计：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#轨迹展开："><span class="nav-number">2.3.</span> <span class="nav-text">轨迹展开：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE算法："><span class="nav-number">2.4.</span> <span class="nav-text">REINFORCE算法：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减小方差："><span class="nav-number">2.5.</span> <span class="nav-text">减小方差：</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基础概念"><span class="nav-number">1.</span> <span class="nav-text">基础概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#优化目标："><span class="nav-number">2.1.</span> <span class="nav-text">优化目标：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#梯度估计："><span class="nav-number">2.2.</span> <span class="nav-text">梯度估计：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#轨迹展开："><span class="nav-number">2.3.</span> <span class="nav-text">轨迹展开：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE算法："><span class="nav-number">2.4.</span> <span class="nav-text">REINFORCE算法：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减小方差："><span class="nav-number">2.5.</span> <span class="nav-text">减小方差：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实际使用中的-R-tau"><span class="nav-number">3.</span> <span class="nav-text">实际使用中的\(R(\tau)\)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#原始形式"><span class="nav-number">3.1.</span> <span class="nav-text">原始形式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE方法"><span class="nav-number">3.2.</span> <span class="nav-text">REINFORCE方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用Q值替代"><span class="nav-number">3.3.</span> <span class="nav-text">用Q值替代</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用优势函数替代"><span class="nav-number">3.4.</span> <span class="nav-text">用优势函数替代</span></a></li></ol></li></ol></div>
             
 
           </div>

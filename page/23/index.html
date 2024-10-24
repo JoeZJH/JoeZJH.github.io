@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
         
 
         <div class="post-meta">
@@ -330,28 +330,62 @@
       
         
           
-            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
-<hr>
-<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
-<li>图示如下</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
-
-<hr>
-<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
-
-<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
-<li>动图</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
-
-<hr>
-<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
+            <p><em>文本介绍DeepFM的理论和实现</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 <ul>
-<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
-<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
-<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
+<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
+</ul>
+<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
+<li>FM: (Factorization Machines, FM)因子分解机</li>
+<li>FMM: (Field Factorization Machines, FFM)</li>
+</ul>
+<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
+<li>只能二阶特征组合,无法做到高阶特征组合<ul>
+<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+</ul>
+</li>
+</ul>
+<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>理论上DNN建模高阶组合特征是可行的</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+
+</li>
+</ul>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
+<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
+<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
+<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
+<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
+<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
+<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+
+</li>
+</ul>
+<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
+<li><p>是一种并行化的解决方案</p>
+<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
+</li>
+<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
+</li>
+<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
+</li>
+</ul>
+<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
+<ul>
+<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
+</ul>
+<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
+<ul>
+<li>DNN部分是一个前馈神经网络</li>
+<li>与图像语音的区别:<ul>
+<li>图像语音输入为连续且密集的</li>
+<li>CTR中使用的一般是稀疏的</li>
+</ul>
+</li>
+<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
 </ul>
 
           
@@ -1701,6 +1735,233 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html" itemprop="url">PyTorch——CrossEntopyLoss和NLLLoss的区别</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="NLLLoss"><a href="#NLLLoss" class="headerlink" title="NLLLoss"></a>NLLLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.NLLLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>返回负对数似然损失(The negative log likelihood loss)</li>
+<li>虽然命名是负对数自然损失, 但是实际上本函数不含有<code>log</code>操作,本函数假设<code>log</code>操作在输入前已经完成了</li>
+</ul>
+</li>
+<li><p>常用于分类问题的损失函数</p>
+</li>
+<li><p>一般适用于网络最后一层为<code>log_softmax</code>的时候</p>
+</li>
+</ul>
+<h4 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$loss(x, class) = -x[class]$$</li>
+<li>带有权重的单个样本计算公式:<br>$$loss(x, class) = -weights[class] * x[class]$$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(x_i, class_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(x_i, class_i)$$</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="CrossEntropyLoss"><a href="#CrossEntropyLoss" class="headerlink" title="CrossEntropyLoss"></a>CrossEntropyLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.CrossEntropyLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>等价于 <code>log_softmax</code> + <code>torch.nn.NLLLoss()</code></li>
+<li>先对网络输出做对数似然, 然后再</li>
+</ul>
+</li>
+<li><p>softmax的定义<br>$$softmax(x_{i}) = \frac{e^{x_{i}}}{\sum_{j=1}x_{j}}$$</p>
+</li>
+<li><p>log_softmax的定义<br>$$log(softmax(x_{i}))$$</p>
+<ul>
+<li>注意: 这里的<code>log</code>是以<code>e</code>为底的对数</li>
+</ul>
+</li>
+</ul>
+<h4 id="为什么是这种实现方式"><a href="#为什么是这种实现方式" class="headerlink" title="为什么是这种实现方式?"></a>为什么是这种实现方式?</h4><ul>
+<li>为什么是<code>log_softmax</code> + <code>torch.nn.NLLLoss()</code>的方式而不是普通的计算方式<ul>
+<li>普通的计算方式是直接对每个概率求出log值, 然后相加, 本质上是一样的</li>
+<li><code>CrossEntropyLoss</code>中多了个softmax是为了保证输入都是概率值</li>
+</ul>
+</li>
+<li><code>log(softmax(x))</code>的优化<ul>
+<li>实际上使用的是<code>log_softmax(x)</code></li>
+<li><code>log_softmax(x)</code>的运算速度比单独计算<code>softmax</code> + <code>log</code>的速度快</li>
+<li>同时二者的运算结果相同</li>
+<li>文档中没有提到, 但是一种可能的优化方法是<br>$$<br>\begin{align}<br>log_sofmax(x) &amp;= log \frac{e^{x_{i}}}{\sum_{j=1}x_{j}} \\<br>&amp;= log e^{x_i} - log \sum_{j=1}x_{j} \\<br>&amp;= x_i - log \sum_{j=1}x_{j}<br>\end{align}<br>$$</li>
+<li>上面的式子中,只需要计算一次 \(log \sum_{j=1}x_{j}\)即可(且不同维度可重用该值), 其他的都是加减法运算</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-BCELoss"><a href="#相关损失函数-BCELoss" class="headerlink" title="相关损失函数 BCELoss"></a>相关损失函数 BCELoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.BCELoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>就是实现了书上定义的二分类交叉熵定义</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算公式-1"><a href="#计算公式-1" class="headerlink" title="计算公式:"></a>计算公式:</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_i(t[i] log(o[i])+(1-t[i]) log(1-o[i])) $$</li>
+<li>带有权重的单个样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_iweights[i]\ (t[i]log(o[i])+(1-t[i])* log(1-o[i])) $$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(o_i, t_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(o_i, t_i)$$</li>
+</ul>
+</li>
+</ul>
+<h4 id="BCELoss-vs-CrossEntropyLoss"><a href="#BCELoss-vs-CrossEntropyLoss" class="headerlink" title="BCELoss vs CrossEntropyLoss"></a>BCELoss vs CrossEntropyLoss</h4><ul>
+<li><code>BCELoss</code>对应的网络只有一个输出值</li>
+<li><code>CrossEntropyLoss</code>对应的网络有两个输出值</li>
+<li>可以证明, 二分类时<code>BCELoss</code> 与 <code>CrossEntropyLoss</code>等价<ul>
+<li>证明时, 将每个<code>CrossEntropyLoss</code>的计算公式中的 <code>softmax</code> 函数分子分母同时除以<code>shift</code>, 即可得到为下面的定义, 进一步可得到<code>BCELoss</code>的计算公式<br>$$f_i(x) = \frac{e^{(x_i - shift)}} { \sum^j e^{(x_j - shift)}},shift = max (x_i)$$</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-MultiLabelMarginLoss"><a href="#相关损失函数-MultiLabelMarginLoss" class="headerlink" title="相关损失函数 MultiLabelMarginLoss"></a>相关损失函数 MultiLabelMarginLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.MultiLabelMarginLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用于多标签分类的损失函数</p>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>一般来说直接使用<code>CrossEntropyLoss</code>即可<ul>
+<li>二分类时还可以使用<code>nn.BCELoss</code></li>
+<li>二分类时使用<code>nn.BCELoss</code>的话,输入的<code>input</code>和<code>target</code>维度都为<code>n * 1</code>的维度</li>
+<li>二分类时使用<code>CrossEntropyLoss</code>则输入的<code>input</code>为<code>n * 2</code>的维度</li>
+</ul>
+</li>
+<li>如果使用<code>NLLLoss</code>则一定记得在输出层最后加一层<code>log_softmax</code>层</li>
+<li>注意,<code>log</code>指的是以<code>e</code>为底的对数函数,而不是以<code>10</code>为底的<ul>
+<li>Mac自带的计算器中<code>log</code>是以<code>10</code>为底的,<code>ln</code>才是以<code>e</code>为底的</li>
+</ul>
+</li>
+<li></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1822,117 +2083,6 @@
 <h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
 <li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
 <li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——使用问题记录.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——使用问题记录.html" itemprop="url">PyTorch——使用问题记录</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="PyTorch和torchvision版本不兼容"><a href="#PyTorch和torchvision版本不兼容" class="headerlink" title="PyTorch和torchvision版本不兼容"></a>PyTorch和torchvision版本不兼容</h3><ul>
-<li><p>问题描述：<br><code>RuntimeError: Couldn&#39;t load custom C++ ops. This can happen if your PyTorch and torchvision versions are incompatible, or if you had errors while compiling torchvision from source. For further information on the compatible versions, check https://github.com/pytorch/vision#installation for the compatibility matrix. Please check your PyTorch version with torch.version and your torchvision version with torchvision.version and verify if they are compatible, and if not please reinstall torchvision so that it matches your PyTorch install. </code></p>
-</li>
-<li><p>解决方案：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch torchvision --upgrade</span><br></pre></td></tr></table></figure>
-
-</li>
 </ul>
 
           
