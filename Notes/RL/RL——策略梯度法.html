@@ -89,7 +89,7 @@
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-1.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-2.png">
-<meta property="og:updated_time" content="2024-10-24T17:15:35.439Z">
+<meta property="og:updated_time" content="2024-10-28T16:05:26.786Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——策略梯度法">
 <meta name="twitter:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计回报 \(R_(\tau)\)是轨迹\(\tau\)对应的回报：$$R(">
@@ -347,15 +347,14 @@
 <li>其中 \(\tau = (s_0, a_0, r_1, s_1, a_1, \dots)\) 表示一个轨迹，\(p_\theta(\tau)\) 是在策略 \(\pi_\theta\) 下产生轨迹 \(\tau\) 的概率。</li>
 </ul>
 <h4 id="梯度估计："><a href="#梯度估计：" class="headerlink" title="梯度估计："></a>梯度估计：</h4><ul>
-<li><p>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</p>
-</li>
-<li><p>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</p>
-</li>
-<li><p>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$</p>
-<ul>
-<li>上式是对原始梯度的无偏估计<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4></li>
+<li>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</li>
+<li>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</li>
+<li>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$<ul>
+<li>上式是对原始梯度的无偏估计</li>
 </ul>
 </li>
+</ul>
+<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4><ul>
 <li><p>轨迹展开后，有 \(p_\theta(\tau) = p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)\)，其中 \(p(s_0)\) 是初始状态的分布，\(p(s_{t+1}|s_t, a_t)\) 是环境的转移概率。<br>  $$<br>  \begin{align}<br>  p_\theta(\tau) &amp;= p_{\pi_\theta}(s_0, a_0, s_1, a_1,\cdots) \\<br>  &amp;= p(s_0)\pi_\theta(a_0|s_0)p(s_1|s_0,a_0)\cdots \\<br>  &amp;= p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)<br>  \end{align}<br>  $$</p>
 </li>
 <li><p>由于环境的输出与策略无关，即\(\nabla_\theta p(s_1|s_0,a_0) = 0\)，于是有：<br>  $$<br>  \begin{align}<br>  \nabla_\theta \log p_\theta(\tau) &amp;= \nabla_\theta p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \log p(s_0) + \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) + \nabla_\theta  \sum_t  \log p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) \\<br>  &amp;=  \sum_t \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br>  $$</p>
@@ -562,7 +561,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">273</span>
+                  <span class="site-state-item-count">274</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

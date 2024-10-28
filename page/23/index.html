@@ -275,6 +275,195 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
+<hr>
+<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
+<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
+<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
+</ul>
+<hr>
+<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
+<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
+</ul>
+<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
+<li>NNLM网络结构图如下：</li>
+</ul>
+<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
+
+<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
+<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
+</ul>
+<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
+<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
+<li>将构造的数据集作为训练样本集</li>
+<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
+</ul>
+<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
+<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
+<ul>
+<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
+</ul>
+</li>
+<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
+<ul>
+<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
+</ul>
+</li>
+</ul>
+<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
+<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
+</li>
+<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
+</li>
+<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
+</li>
+<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
+</li>
+<li><p>b:输出层的偏执参数</p>
+</li>
+<li><p>d:隐含层的偏执参数</p>
+</li>
+</ul>
+<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
+<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
+<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>\(R(\theta)\)是正则项</li>
+</ul>
+</li>
+<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T} log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>我们选择优化对数似然函数，原因如下：<ul>
+<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
+<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
+<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
+<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
+</ul>
+</li>
+</ul>
+<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
+<li>最大化对数似然函数(等价于最大化似然函数)</li>
+</ul>
+<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
+<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
+<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
+<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
+</ul>
+</li>
+<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -519,135 +708,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
-<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
-<li>并不会因为参数都为0就导致所有神经元死亡！</li>
-</ul>
-<hr>
-<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
-<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
-</li>
-<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
-</li>
-<li><p>单层隐藏层的神经网络一般这样初始化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>适用于单层隐藏层神经网络的参数</li>
-<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
-<li>不是越深越好</li>
-<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
-<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -767,6 +827,135 @@
 <h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
 <li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
 <li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
+<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
+<li>并不会因为参数都为0就导致所有神经元死亡！</li>
+</ul>
+<hr>
+<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
+<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
+</li>
+<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
+</li>
+<li><p>单层隐藏层的神经网络一般这样初始化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>适用于单层隐藏层神经网络的参数</li>
+<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
+<li>不是越深越好</li>
+<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
+<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 
           
@@ -1701,7 +1890,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——backward函数详细解析.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1720,7 +1909,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——backward函数详细解析.html" itemprop="url">PyTorch——backward函数详细解析</a></h1>
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html" itemprop="url">PyTorch——CrossEntopyLoss和NLLLoss的区别</a></h1>
         
 
         <div class="post-meta">
@@ -1756,183 +1945,129 @@
       
         
           
-            <p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <hr>
-<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
-<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
-<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
+<h3 id="NLLLoss"><a href="#NLLLoss" class="headerlink" title="NLLLoss"></a>NLLLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.NLLLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
+<ul>
+<li>返回负对数似然损失(The negative log likelihood loss)</li>
+<li>虽然命名是负对数自然损失, 但是实际上本函数不含有<code>log</code>操作,本函数假设<code>log</code>操作在输入前已经完成了</li>
+</ul>
+</li>
+<li><p>常用于分类问题的损失函数</p>
+</li>
+<li><p>一般适用于网络最后一层为<code>log_softmax</code>的时候</p>
+</li>
+</ul>
+<h4 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$loss(x, class) = -x[class]$$</li>
+<li>带有权重的单个样本计算公式:<br>$$loss(x, class) = -weights[class] * x[class]$$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(x_i, class_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(x_i, class_i)$$</li>
+</ul>
+</li>
 </ul>
 <hr>
-<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
-<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
-<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
-<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
-<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
-</ul>
+<h3 id="CrossEntropyLoss"><a href="#CrossEntropyLoss" class="headerlink" title="CrossEntropyLoss"></a>CrossEntropyLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.CrossEntropyLoss()</span><br></pre></td></tr></table></figure>
 </li>
-</ul>
-<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
-<li><p>结构图如下所示</p>
-<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
-<li><p>上面图的代码构建如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-
+<li><p>具体操作</p>
 <ul>
-<li>从图中的推导可知,梯度符合预期</li>
-<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
+<li>等价于 <code>log_softmax</code> + <code>torch.nn.NLLLoss()</code></li>
+<li>先对网络输出做对数似然, 然后再</li>
 </ul>
 </li>
-</ul>
-<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
-<li><p>修改上面的构建为</p>
+<li><p>softmax的定义<br>$$softmax(x_{i}) = \frac{e^{x_{i}}}{\sum_{j=1}x_{j}}$$</p>
+</li>
+<li><p>log_softmax的定义<br>$$log(softmax(x_{i}))$$</p>
 <ul>
-<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
+<li>注意: 这里的<code>log</code>是以<code>e</code>为底的对数</li>
 </ul>
 </li>
-<li><p>结构图如下:</p>
-<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
-<li><p>代码如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-
+</ul>
+<h4 id="为什么是这种实现方式"><a href="#为什么是这种实现方式" class="headerlink" title="为什么是这种实现方式?"></a>为什么是这种实现方式?</h4><ul>
+<li>为什么是<code>log_softmax</code> + <code>torch.nn.NLLLoss()</code>的方式而不是普通的计算方式<ul>
+<li>普通的计算方式是直接对每个概率求出log值, 然后相加, 本质上是一样的</li>
+<li><code>CrossEntropyLoss</code>中多了个softmax是为了保证输入都是概率值</li>
+</ul>
+</li>
+<li><code>log(softmax(x))</code>的优化<ul>
+<li>实际上使用的是<code>log_softmax(x)</code></li>
+<li><code>log_softmax(x)</code>的运算速度比单独计算<code>softmax</code> + <code>log</code>的速度快</li>
+<li>同时二者的运算结果相同</li>
+<li>文档中没有提到, 但是一种可能的优化方法是<br>$$<br>\begin{align}<br>log_sofmax(x) &amp;= log \frac{e^{x_{i}}}{\sum_{j=1}x_{j}} \\<br>&amp;= log e^{x_i} - log \sum_{j=1}x_{j} \\<br>&amp;= x_i - log \sum_{j=1}x_{j}<br>\end{align}<br>$$</li>
+<li>上面的式子中,只需要计算一次 \(log \sum_{j=1}x_{j}\)即可(且不同维度可重用该值), 其他的都是加减法运算</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-BCELoss"><a href="#相关损失函数-BCELoss" class="headerlink" title="相关损失函数 BCELoss"></a>相关损失函数 BCELoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.BCELoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>具体操作</p>
 <ul>
-<li>显然推导结果符合代码输出预期</li>
-<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
+<li>就是实现了书上定义的二分类交叉熵定义</li>
 </ul>
 </li>
 </ul>
-<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
-<li><p>还以上面的结构图为例</p>
-</li>
-<li><p>直接求中间节点 \(z\) 关于自变量的梯度</p>
-</li>
-<li><p>代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
+<h4 id="计算公式-1"><a href="#计算公式-1" class="headerlink" title="计算公式:"></a>计算公式:</h4><ul>
+<li>单个样本的计算公式:<ul>
+<li>普通样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_i(t[i] log(o[i])+(1-t[i]) log(1-o[i])) $$</li>
+<li>带有权重的单个样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_iweights[i]\ (t[i]log(o[i])+(1-t[i])* log(1-o[i])) $$</li>
+<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
+<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
 </ul>
 </li>
 </ul>
-<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
-<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
-</ul>
-<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——使用问题记录.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——使用问题记录.html" itemprop="url">PyTorch——使用问题记录</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="PyTorch和torchvision版本不兼容"><a href="#PyTorch和torchvision版本不兼容" class="headerlink" title="PyTorch和torchvision版本不兼容"></a>PyTorch和torchvision版本不兼容</h3><ul>
-<li><p>问题描述：<br><code>RuntimeError: Couldn&#39;t load custom C++ ops. This can happen if your PyTorch and torchvision versions are incompatible, or if you had errors while compiling torchvision from source. For further information on the compatible versions, check https://github.com/pytorch/vision#installation for the compatibility matrix. Please check your PyTorch version with torch.version and your torchvision version with torchvision.version and verify if they are compatible, and if not please reinstall torchvision so that it matches your PyTorch install. </code></p>
 </li>
-<li><p>解决方案：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch torchvision --upgrade</span><br></pre></td></tr></table></figure>
-
+<li>批量样本的计算公式:<ul>
+<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(o_i, t_i)$$</li>
+<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(o_i, t_i)$$</li>
+</ul>
 </li>
+</ul>
+<h4 id="BCELoss-vs-CrossEntropyLoss"><a href="#BCELoss-vs-CrossEntropyLoss" class="headerlink" title="BCELoss vs CrossEntropyLoss"></a>BCELoss vs CrossEntropyLoss</h4><ul>
+<li><code>BCELoss</code>对应的网络只有一个输出值</li>
+<li><code>CrossEntropyLoss</code>对应的网络有两个输出值</li>
+<li>可以证明, 二分类时<code>BCELoss</code> 与 <code>CrossEntropyLoss</code>等价<ul>
+<li>证明时, 将每个<code>CrossEntropyLoss</code>的计算公式中的 <code>softmax</code> 函数分子分母同时除以<code>shift</code>, 即可得到为下面的定义, 进一步可得到<code>BCELoss</code>的计算公式<br>$$f_i(x) = \frac{e^{(x_i - shift)}} { \sum^j e^{(x_j - shift)}},shift = max (x_i)$$</li>
+</ul>
+</li>
+</ul>
+<h3 id="相关损失函数-MultiLabelMarginLoss"><a href="#相关损失函数-MultiLabelMarginLoss" class="headerlink" title="相关损失函数 MultiLabelMarginLoss"></a>相关损失函数 MultiLabelMarginLoss</h3><ul>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.MultiLabelMarginLoss()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用于多标签分类的损失函数</p>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>一般来说直接使用<code>CrossEntropyLoss</code>即可<ul>
+<li>二分类时还可以使用<code>nn.BCELoss</code></li>
+<li>二分类时使用<code>nn.BCELoss</code>的话,输入的<code>input</code>和<code>target</code>维度都为<code>n * 1</code>的维度</li>
+<li>二分类时使用<code>CrossEntropyLoss</code>则输入的<code>input</code>为<code>n * 2</code>的维度</li>
+</ul>
+</li>
+<li>如果使用<code>NLLLoss</code>则一定记得在输出层最后加一层<code>log_softmax</code>层</li>
+<li>注意,<code>log</code>指的是以<code>e</code>为底的对数函数,而不是以<code>10</code>为底的<ul>
+<li>Mac自带的计算器中<code>log</code>是以<code>10</code>为底的,<code>ln</code>才是以<code>e</code>为底的</li>
+</ul>
+</li>
+<li></li>
 </ul>
 
           
@@ -2021,7 +2156,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">273</span>
+                  <span class="site-state-item-count">274</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

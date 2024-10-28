@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——求解无约束最优化问题的优化方法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型性能评估之MAP.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——求解无约束最优化问题的优化方法.html" itemprop="url">ML——求解无约束最优化问题的优化方法</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——模型性能评估之MAP.html" itemprop="url">ML——模型性能评估之MAP</a></h1>
         
 
         <div class="post-meta">
@@ -330,201 +330,9 @@
       
         
           
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p><strong>本文介绍求解无约束最优化问题的优化方法：梯度下降法(Gradient Descent)、牛顿法(Newton’s Method)和拟牛顿法(Quasi-Newton Methods)</strong></p>
+            <p><em>MAP(Mean Average Precision)</em></p>
 <ul>
-<li>共轭梯度法也是一种无约束的参数优化方法，详情见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a></li>
-</ul>
-<hr>
-<h3 id="无约束参数优化方法概览"><a href="#无约束参数优化方法概览" class="headerlink" title="无约束参数优化方法概览"></a>无约束参数优化方法概览</h3><h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><p>$$<br>\begin{align}<br>\theta^{\star} = \arg\max_{\theta}L(\theta)<br>\end{align}<br>$$</p>
-<h4 id="直接法"><a href="#直接法" class="headerlink" title="直接法"></a>直接法</h4><h5 id="使用直接法需要满足两个条件"><a href="#使用直接法需要满足两个条件" class="headerlink" title="使用直接法需要满足两个条件"></a>使用直接法需要满足两个条件</h5><ul>
-<li>\(L(\theta)\)为关于\(\theta\)的凸函数</li>
-<li>\(\nabla L(\theta)=0\)有解析解(又名闭式解，指的是有限个常见运算的组合给出的形式)</li>
-</ul>
-<h5 id="求解"><a href="#求解" class="headerlink" title="求解"></a>求解</h5><ul>
-<li>目标函数直接对参数求导后令目标函数导数为0: $$\nabla L(\theta)=0$$</li>
-</ul>
-<h4 id="迭代法"><a href="#迭代法" class="headerlink" title="迭代法"></a>迭代法</h4><ul>
-<li>包括梯度下降法和牛顿法，牛顿法又可以拓展为拟牛顿法</li>
-</ul>
-<hr>
-<h3 id="梯度下降法"><a href="#梯度下降法" class="headerlink" title="梯度下降法"></a>梯度下降法</h3><p><em>更详细的说明参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E4%B8%8E%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D.html" title="/Notes/ML/ML——最小二乘与梯度下降.html">ML——最小二乘与梯度下降</a>中的介绍</em></p>
-<ul>
-<li>梯度下降法通过每次迭代沿着梯度下降最快的方向(梯度的负方向)前进一个\(\Delta \theta\)长度</li>
-<li>\(\Delta \theta\)为步长\(\alpha\)(参数)乘以梯度的模(变化率)的方法，实现对极大(小)值的一步步逼近</li>
-</ul>
-<hr>
-<h3 id="牛顿法"><a href="#牛顿法" class="headerlink" title="牛顿法"></a>牛顿法</h3><h4 id="数学中的牛顿法"><a href="#数学中的牛顿法" class="headerlink" title="数学中的牛顿法"></a>数学中的牛顿法</h4><ul>
-<li>牛顿法的本质是求函数值\(f(x)\)为零(\(f(x)=0\))时参数(自变量\(x\))的值</li>
-<li>本质上说，牛顿法是用逼近的方法来<strong>解方程</strong>的一种方法</li>
-</ul>
-<h5 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>对于确定的方程\(f(x)=0\)，我们的目标是求解自变量\(x\)的值</li>
-<li>1.初始值定义为\(x=x_{0}\)</li>
-<li>2.牛顿法通过迭代每次从当前点\(x={k}\)沿着斜率\(\frac{\partial f(x)}{\partial x}, x=x_{k}\)出发做一条直线,并求出其表达式</li>
-<li>3.求出该直线与x轴的交点\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)</li>
-<li>4.设置下一次迭代的点为\(x=x_{k+1}\)</li>
-<li>5.重复2到4，直到斜率小于某个阈值\(\epsilon\)时停止迭代</li>
-<li>6.迭代停止时\(x=x_{k+1}\)就是方程的近似解</li>
-<li>迭代过程图示化如下：</li>
-<li>图片引用自博客：<a href="https://www.cnblogs.com/lyr2015/p/9010532.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyr2015/p/9010532.html</a>*
-
-</li>
-</ul>
-<h5 id="迭代公式推导"><a href="#迭代公式推导" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h5><ul>
-<li>上述迭代流程中迭代公式\(x_{k+1}=x_{k}-\frac{f(x_{k})}{f{}’(x_{k})}\)的推导如下：
-
-
-</li>
-</ul>
-<h4 id="最优化方法中的牛顿法"><a href="#最优化方法中的牛顿法" class="headerlink" title="最优化方法中的牛顿法"></a>最优化方法中的牛顿法</h4><ul>
-<li>最优化方法的目标是学习函数\(f(\theta)\)的极小/大值(若\(f(\theta)\)是凸函数，则为最小/大值)</li>
-<li>可以证明，目标函数(凸函数)取最优点(最大/小值)时，目标函数的导数\(\frac{\partial f(\theta)}{\partial \theta}=0, 其中\theta=\theta^{\star}\)</li>
-<li>基于这个事实，在知道目标函数的导数\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)的表达式后，我们可以列出方程\(f{}’(\theta)=0\)<ul>
-<li>此时方程的解\(\theta^{\star}\)就是原始目标函数的最优解</li>
-</ul>
-</li>
-<li>解上述方程\(\frac{\partial f(\theta)}{\partial \theta}=0\)时我们即可使用<strong>数学中的牛顿法</strong></li>
-</ul>
-<h5 id="算法流程-1"><a href="#算法流程-1" class="headerlink" title="算法流程"></a>算法流程</h5><ul>
-<li>具体算法步骤与<strong>数学中的算法流程</strong>小节一致，不同的地方在于此时迭代公式变为\(\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}\)</li>
-<li>在具体的实现中，我们一般会直接推导出每一步的迭代公式，按照公式迭代即可得到最优解</li>
-</ul>
-<h4 id="迭代公式推导-1"><a href="#迭代公式推导-1" class="headerlink" title="迭代公式推导"></a>迭代公式推导</h4><ul>
-<li>根据上述事实，此时我们的目标函数为\(f(\theta)\)，目标方程方程为\(f{}’(\theta)=0\)</li>
-<li>此时迭代公式为$$\theta_{k+1}=\theta_{k}-\frac{f{}’(\theta_{k})}{f{}’{}’(\theta_{k})}$$</li>
-<li>当参数数量不止一个时，\(\theta\)表示一个向量，此时迭代公式为$$\theta_{k+1}=\theta_{k}-H_{k}^{-1}\nabla_{\theta}f(\theta_{k})$$<ul>
-<li>其中\(H_{k}^{-1}\)为海森矩阵\(H_{k}\)的逆, \(H_{k}=H(\theta_{k})\)</li>
-<li>\(H_{k}^{-1}\)和\(\frac{1}{f{}’{}’(\theta_{k})}\)分别是多维和一维参数时目标函数的二阶导</li>
-<li>海森矩阵是目标函数对参数的二阶导数，\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>推导步骤和上面的<strong>数学中的迭代公式</strong>推导一致</li>
-</ul>
-<hr>
-<h3 id="牛顿法与梯度下降法的一种简单推导方法"><a href="#牛顿法与梯度下降法的一种简单推导方法" class="headerlink" title="牛顿法与梯度下降法的一种简单推导方法"></a>牛顿法与梯度下降法的一种简单推导方法</h3><ul>
-<li>用泰勒展开来推导,详情待更新(参考&lt;&lt;百面&gt;&gt;P149)</li>
-</ul>
-<h4 id="迭代法的思想"><a href="#迭代法的思想" class="headerlink" title="迭代法的思想"></a>迭代法的思想</h4><ul>
-<li>最小化目标函数<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>\end{align}<br>$$</li>
-<li>注意,如果这里是max最大化目标函数的话,对应的是梯度上升法,此时后面推导的步骤中加入L2正则项时为了使得\(\left | \delta \right |_{2}^{2}\)的值最小,正则项的权重应该为负数,这样整体目标函数最大时正则项才能取得最小值,最终推导得到的结果也将变成梯度上升的表达式,(\(\alpha &gt; 0\)时对应的参数迭代公式变成加好而不是减号)</li>
-<li>但是实际上最大化目标函数可以价格负号转变为最小化目标函数,所以其实掌握最小化目标函数的优化方法即可</li>
-</ul>
-<h4 id="一阶法——梯度下降法"><a href="#一阶法——梯度下降法" class="headerlink" title="一阶法——梯度下降法"></a>一阶法——梯度下降法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做一阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta \\<br>\end{align}<br>$$</li>
-<li>由于上式在\(\delta\)非常小时才成立，所以我们一般加上加入L2正则项（L2正则项可以保证\(\delta\)的值不会太大),为了保证\(\left | \delta \right |_{2}^{2}\)的值最小,要求\(\alpha &gt; 0\), 才能保证目标函数最小时正则项也对应最小 (梯度提升法中要求\(\alpha &lt; 0\)或者需要在正则项前面的系数加上负号,才能保证目标函数最大时正则项最小)<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2} \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2\alpha}\left | \delta \right |_{2}^{2}) \\<br>&amp;= -\alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \alpha \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="二阶法——牛顿迭代法"><a href="#二阶法——牛顿迭代法" class="headerlink" title="二阶法——牛顿迭代法"></a>二阶法——牛顿迭代法</h4><ul>
-<li>对目标函数在\(L(\theta_{t} + \delta)\)处做二阶泰勒展开<br>$$<br>\begin{align}<br>L(\theta_{t} + \delta) = L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta \\<br>\end{align}<br>$$</li>
-<li>直接对上式求导=0得<br>$$<br>\begin{align}<br>\delta_{t} &amp;= \arg\min_{\delta}L(\theta_{t} + \delta) \\<br>&amp;= \arg\min_{\delta}(L(\theta_{t}) + \nabla L(\theta_{t})^{T}\delta + \frac{1}{2}\delta^{T}\nabla^{2}L(\theta_{t})\delta)  \\<br>&amp;= -\nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t}) \\<br>&amp;= -H(\theta_{t})^{-1}\nabla L(\theta_{t}) \\<br>\end{align}<br>$$</li>
-<li>于是梯度下降法的更新表达式为<br>$$<br>\begin{align}<br>\theta_{t+1} &amp;= \theta_{t} + \delta_{t} \\<br>&amp;= \theta_{t} - \nabla^{2} L(\theta_{t})^{-1} \nabla L(\theta_{t})<br>\end{align}<br>$$</li>
-</ul>
-<hr>
-<h3 id="比较梯度下降法与牛顿法"><a href="#比较梯度下降法与牛顿法" class="headerlink" title="比较梯度下降法与牛顿法"></a>比较梯度下降法与牛顿法</h3><ul>
-<li>一般来说，牛顿法收敛速度快<ul>
-<li>一种解释是梯度下降法用<strong>一次平面去拟合局部区域</strong>牛顿法是用<strong>二次曲面去拟合局部区域</strong>，所以后者能得到更好的拟合效果，迭代的方向也就越精确</li>
-<li>另一种解释是梯度下降只能看到当前目标函数的下降方向，牛顿法可以看到当前当前目标函数的下降方向，同时还能看到一阶导数的变化趋势，所以拟合更快</li>
-</ul>
-</li>
-<li>梯度下降法中有个超参数\(\alpha\)<ul>
-<li>牛顿法中海森矩阵的逆在迭代过程中不断减小，可以起到逐步减小步长的效果(这里的步长与梯度下降中的\(\alpha\)步长不一样,梯度下降中的\(\alpha\)是超参数,表示每次向着负梯度移动的长度,而牛顿法中没有超参数)</li>
-<li>为了防止震荡,这个步长\(\alpha\)也可以随着迭代次数不断减小</li>
-</ul>
-</li>
-<li>梯度下降法可能造成震荡<ul>
-<li>越接近最优值时，步长\(\alpha\)应该不断减小，否则会在最优值附近来回震荡</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第一版附录A中,\(\alpha\)是不断变化的,能保证不会造成震荡</li>
-</ul>
-</li>
-<li>牛顿法在多变量时需要求海森矩阵H的逆,比较复杂,时间和空间上有要求,不如梯度下降法来的容易</li>
-</ul>
-<hr>
-<h3 id="拟牛顿法"><a href="#拟牛顿法" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h3><ul>
-<li>解决牛顿法求取海森矩阵\(H\)的逆\(H^{-1}\)时比较耗时间的难题</li>
-<li>用一个近似矩阵\(B\)代替海森矩阵\(H\)的逆\(H^{-1}\)</li>
-<li>不同算法近似矩阵\(B\)的计算有差异</li>
-<li>常见的拟牛顿法：BFGS,L-BFGS和OWL-QN等<ul>
-<li>&lt;&lt;统计学习方法&gt;&gt;中讲解了三个拟牛顿算法: DFP,BFGS和Broyden类算法</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><em>归纳自&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<h4 id="相同迭代公式"><a href="#相同迭代公式" class="headerlink" title="相同迭代公式"></a>相同迭代公式</h4><ul>
-<li>目标函数为\(f(\theta)\),最优化方法的终极目标是求\(f(\theta)\)的最大值点(或极大值点)</li>
-<li>目标函数的一阶导数<ul>
-<li>参数一维时为:\(f{}’(\theta)=\frac{\partial f(\theta)}{\partial \theta}\)</li>
-<li>参数多维时为:\(\nabla f(\theta)\)</li>
-</ul>
-</li>
-<li>目标函数的二阶导数<ul>
-<li>参数一维时为:\(f{}’{}’(\theta)\)</li>
-<li>参数多维时为:(海森矩阵)\(H(\theta)=\left [ \frac{\partial^{2}f}{\partial \theta^{i}\partial \theta^{j}} \right ]_{n\times n}\)</li>
-</ul>
-</li>
-<li>梯度下降法,牛顿法和拟牛顿法的迭代参数均可表示为下面的迭代形式:<br>$$\theta_{k+1}=\theta_{k}+\lambda_{k}p_{k}$$</li>
-<li>均通过一阶导数\(\left | \nabla f(\theta) \right |&lt;\epsilon\)为<strong>收敛判断条件</strong><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中,梯度下降法还可以通过\(\left | \theta_{k+1}-\theta_{k+} \right |&lt;\epsilon\)或\(\left | f(\theta_{k+1})-f(\theta_{k+}) \right |&lt;\epsilon\)来判断收敛</li>
-</ul>
-</li>
-</ul>
-<h4 id="梯度下降法-1"><a href="#梯度下降法-1" class="headerlink" title="梯度下降法"></a>梯度下降法</h4><ul>
-<li>\(p_{k}=\nabla f(x)\) </li>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h4 id="牛顿法-1"><a href="#牛顿法-1" class="headerlink" title="牛顿法"></a>牛顿法</h4><ul>
-<li>\(p_{k}=-H_{k}^{-1}\nabla f(\theta)\)</li>
-<li>\(\lambda_{k}=1\)是固定长度的,详情见<strong>数学中的牛顿法</strong>的推导,每次迭代到斜率与横轴的交点<br>$$\lambda_{k}=1$$</li>
-</ul>
-<h4 id="拟牛顿法-1"><a href="#拟牛顿法-1" class="headerlink" title="拟牛顿法"></a>拟牛顿法</h4><ul>
-<li>核心思想是找一个容易计算的近似矩阵(可以迭代计算,而不是每次重新计算逆矩阵的矩阵)替代原始牛顿法中的海森矩阵\(H\)(\(B\))或者海森矩阵的逆矩阵\(H^{-1}\)(\(G\))</li>
-</ul>
-<h5 id="DFP算法"><a href="#DFP算法" class="headerlink" title="DFP算法"></a>DFP算法</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>\(p_{k}=-G_{k}\nabla f(\theta)\)<ul>
-<li>关于\(G_{k}\)的计算:<ul>
-<li>初始化\(G(0)\)为正定对称矩阵</li>
-<li>\(G_{k+1}=G_{k}+\frac{\delta_{k}\delta_{k}^{T}}{\delta_{k}^{T}y_{k}}-\frac{G_{k}y_{k}y_{k}^{T}G_{k}}{y_{k}^{T}G_{k}y_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="BFGS算法"><a href="#BFGS算法" class="headerlink" title="BFGS算法"></a>BFGS算法</h5><ul>
-<li>使用\(B_{k}\)逼近海森矩阵\(H_{k}\)</li>
-<li>\(p_{k}=-B_{k}^{-1}\nabla f(\theta)\)<ul>
-<li>关于\(B_{k}\)的计算:<ul>
-<li>初始化\(B(0)\)为正定对称矩阵</li>
-<li>\(B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{T}}{y_{k}^{T}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{T}B_{k}}{\delta_{k}^{T}B_{k}\delta_{k}}\)<ul>
-<li>\(\delta_{k}=\theta_{k+1}-\theta_{k}\)</li>
-<li>\(y_{k}=\nabla f(\theta_{k+1})-\nabla f(\theta_{k})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>\(\lambda_{k}\)是步长,满足<br>$$f(\theta_{k}+\lambda_{k}p_{k})=\min_{\lambda \geq 0}f(\theta_{k}+\lambda p_{k})$$</li>
-</ul>
-<h5 id="Broyden类算法-Broyden’s-algorithm"><a href="#Broyden类算法-Broyden’s-algorithm" class="headerlink" title="Broyden类算法(Broyden’s algorithm)"></a>Broyden类算法(Broyden’s algorithm)</h5><ul>
-<li>使用\(G_{k}\)逼近海森矩阵的逆矩阵\(H^{-1}\)</li>
-<li>在BFGS中取\(G^{BFGS}=B^{-1}\)</li>
-<li>利用DFP和BFGS二者的<strong>线性组合</strong>选择合适的海森矩阵的逆矩阵\(H^{-1}\)的替代矩阵<br>$$G_{k+1}=\alpha G^{DFP}+(1-\alpha)G^{BFGS}$$</li>
-<li>可以证明\(G\)此时是正定的</li>
-<li>\(0\leq \alpha \leq 1\)</li>
-<li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
+<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
 </ul>
 
           
@@ -574,7 +382,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——贝叶斯优化.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型的方差与偏差.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -593,7 +401,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——贝叶斯优化.html" itemprop="url">ML——贝叶斯优化</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——模型的方差与偏差.html" itemprop="url">ML——模型的方差与偏差</a></h1>
         
 
         <div class="post-meta">
@@ -629,67 +437,45 @@
       
         
           
-            <p><em>本文持续更新，主要主要介绍贝叶斯优化</em></p>
+            <p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
 <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/662879942" target="_blank" rel="noopener">一文详解贝叶斯优化（Bayesian Optimization）原理 - 下里巴程序员的文章 - 知乎</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/76269142" target="_blank" rel="noopener">贝叶斯优化/Bayesian Optimization - 代忠祥的文章 - 知乎</a></li>
-</ul>
+
+<hr>
+<h3 id="偏差与方差的定义"><a href="#偏差与方差的定义" class="headerlink" title="偏差与方差的定义"></a>偏差与方差的定义</h3><ul>
+<li>方差：模型的预测值之间的离散程度</li>
+<li>偏差：模型整体的预测值与真实值的偏离程度<img src="/Notes/ML/ML——模型的方差与偏差/Variance&Bias.png">
+
 </li>
 </ul>
 <hr>
-<h3 id="关于贝叶斯优化"><a href="#关于贝叶斯优化" class="headerlink" title="关于贝叶斯优化"></a>关于贝叶斯优化</h3><ul>
-<li>贝叶斯优化（Bayesian Optimization，简称BO）主要用于解决超参数优化问题，目标是找到一组使得目标函数最大或者最小的超参数</li>
-<li>BO的最大优势是可以使用非常少的步骤找到一个还不错的超参数组合，而且不需要知道目标函数（模型）的梯度</li>
-<li>BO使用的场景特点：<ul>
-<li>需要优化的函数（模型）是非常复杂的</li>
-<li>需要优化的函数（模型）对指定的变量（一般指超参数）没有梯度信息（求不出梯度）</li>
+<h3 id="正则化与方差和偏差"><a href="#正则化与方差和偏差" class="headerlink" title="正则化与方差和偏差"></a>正则化与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://www.cnblogs.com/qkloveslife/p/9885500.html" target="_blank" rel="noopener">https://www.cnblogs.com/qkloveslife/p/9885500.html</a></li>
 </ul>
-</li>
-<li>BO不适合使用的场景包括：<ul>
-<li>离散问题，即参数是离散的，则不适合使用BO</li>
-<li>参数太多，即参数维度过高，此时不适合使用BO</li>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>\(\lambda\)为正则化系数</li>
+<li>当\(\lambda\)很小时，模型处于“高方差”状态，“训练误差”很小，“交叉验证误差”较大</li>
+<li>当\(\lambda\)很大时，模型处于“高偏差”状态，“训练误差”和“交叉验证误差”都很大</li>
 </ul>
-</li>
-<li>和BO的适用场景和进化算法（如CEM等）比较相似</li>
+<hr>
+<h3 id="集成学习与方差和偏差"><a href="#集成学习与方差和偏差" class="headerlink" title="集成学习与方差和偏差"></a>集成学习与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://blog.csdn.net/xmu_jupiter/article/details/47314927" target="_blank" rel="noopener">https://blog.csdn.net/xmu_jupiter/article/details/47314927</a></li>
 </ul>
-<h3 id="贝叶斯优化的一般步骤"><a href="#贝叶斯优化的一般步骤" class="headerlink" title="贝叶斯优化的一般步骤"></a>贝叶斯优化的一般步骤</h3><ul>
-<li>贝叶斯优化（Bayesian Optimization）算法是一个序列决策过程（Sequential Decision-making Problem），其核心框架是SMBO (Sequential Model-Based Optimization)，而贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO，SMBO的一般算法思路如下：<ul>
-<li>第一步：初始化采样n组参数\(\{x_1,x_2,…,x_n\}\)</li>
-<li>第二步：针对每组参数，观察目标函数（待优化模型）的值（这一步一般需要训练模型或者模拟环境仿真，是成本比较高的操作），将得到的结果组合生成数据集\(D=\{(x_1,y_1),(x_2,y_2),…,(x_n,y_n)\}\)</li>
-<li>第三步：根据数据集D拟合（训练）一个代理模型（Surrogate Model），该代理模型的功能是通过输入\(x_i\)预测输出\(y_i\)</li>
-<li>第四步：根据采集函数（Acquisition Function，简称AC Function），选择一个最优参数\(x_i\)</li>
-<li>第五步：观察目标函数（待优化模型）在参数\(x_i\)下的输出值\(y_i\)，并将\((x_i,y_i)\)添加到数据集D中</li>
-<li>循环执行第三步到第五步，直到达到指定的迭代次数</li>
-<li>最终：输出数据集D中最优的参数\(x^*\) </li>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><h5 id="集成学习分两类"><a href="#集成学习分两类" class="headerlink" title="集成学习分两类"></a>集成学习分两类</h5><ul>
+<li>平均方法：例如随机森林， Bagging methods。在平均方法中，系统分别去建立多个基分类器，分类器之间没有任何联系。然后在分类或者回归阶段，各个分类器根据测试数据给出自己的答案，然后系统根据各个分类器给出的结果去综合出最后的结果，比如可以使投票的形式。</li>
+<li>提升方法：例如梯度提升决策树GBDT，AdaBoost。在提升方法中，系统模型在训练过程中会先后建立一系列分类器，这些分类器单个可能是弱分类器，但是组合起来就成为一个强分类器。</li>
+<li>Stacking方法：<ul>
+<li>单层Stacking（普通Stacking）：降低方差，类似于bagging（因为类似于集成了多个模型投票，属于平均方法）</li>
+<li>多层Stacking：同时降低方差和偏差，每层上有平均方法，多层之间是提升方法</li>
+<li><a href="https://zhuanlan.zhihu.com/p/441394654" target="_blank" rel="noopener">方差与偏差、Bagging、Boosting、Stacking【实用机器学习5.1-5.4】</a></li>
 </ul>
 </li>
 </ul>
-<h3 id="代理模型"><a href="#代理模型" class="headerlink" title="代理模型"></a>代理模型</h3><ul>
-<li>代理模型一般是非常容易计算的，或者有梯度的，给出任意的\(x_i\)能快速预估\(y_i\)的</li>
-<li>常见的代理模型可以是：高斯过程回归、随机森林等等。其中，贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO。</li>
-<li>高斯过程回归可参考：<ul>
-<li><a href="https://www.zhihu.com/question/46631426/answer/1735470753" target="_blank" rel="noopener">如何通俗易懂地介绍 Gaussian Process？ - 石溪的回答 - 知乎</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/331591492" target="_blank" rel="noopener">快速入门高斯过程（Gaussian process）回归预测 - 摸鱼大王二百五的文章 - 知乎</a></li>
+<h5 id="不同类别的偏差与方差"><a href="#不同类别的偏差与方差" class="headerlink" title="不同类别的偏差与方差"></a>不同类别的偏差与方差</h5><ul>
+<li>平均方法尝试去降低模型的方差<ul>
+<li>所以平均方法通常比其任何一个基分类器效果好</li>
 </ul>
 </li>
-</ul>
-<h3 id="采集函数"><a href="#采集函数" class="headerlink" title="采集函数"></a>采集函数</h3><ul>
-<li>通常做法是设计一个采集函数A，对每个采样点x进行打分，分数越高的点越值得被采样。</li>
-<li>一般来说，采集函数需要满足下面的要求：<ul>
-<li>在已有的采样点处采集函数的值更小，因为这些点已经被探索过，再在这些点处计算函数值对解决问题没有什么用</li>
-<li>探索：在置信区间更宽（方差更大）的点处采集函数的值更大，因为这些点具有更大的不确定性，更值得探索</li>
-<li>利用：对最大（小）化问题，在函数均值更大（小）的点处采集函数的值更大，因为均值是对该点处函数值的估计值，这些点更可能在极值点附近。</li>
-</ul>
-</li>
-<li>常用的AC Function包括下面几种：<ul>
-<li>Probability of Improvement：</li>
-<li>Expected Improvement：</li>
-<li>Entropy Search：</li>
-<li>Upper Confidence Bound：</li>
-</ul>
-</li>
+<li>而提升方法尝试去降低模型的偏差</li>
 </ul>
 
           
@@ -1154,6 +940,311 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——贝叶斯优化.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——贝叶斯优化.html" itemprop="url">ML——贝叶斯优化</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文持续更新，主要主要介绍贝叶斯优化</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/662879942" target="_blank" rel="noopener">一文详解贝叶斯优化（Bayesian Optimization）原理 - 下里巴程序员的文章 - 知乎</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/76269142" target="_blank" rel="noopener">贝叶斯优化/Bayesian Optimization - 代忠祥的文章 - 知乎</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="关于贝叶斯优化"><a href="#关于贝叶斯优化" class="headerlink" title="关于贝叶斯优化"></a>关于贝叶斯优化</h3><ul>
+<li>贝叶斯优化（Bayesian Optimization，简称BO）主要用于解决超参数优化问题，目标是找到一组使得目标函数最大或者最小的超参数</li>
+<li>BO的最大优势是可以使用非常少的步骤找到一个还不错的超参数组合，而且不需要知道目标函数（模型）的梯度</li>
+<li>BO使用的场景特点：<ul>
+<li>需要优化的函数（模型）是非常复杂的</li>
+<li>需要优化的函数（模型）对指定的变量（一般指超参数）没有梯度信息（求不出梯度）</li>
+</ul>
+</li>
+<li>BO不适合使用的场景包括：<ul>
+<li>离散问题，即参数是离散的，则不适合使用BO</li>
+<li>参数太多，即参数维度过高，此时不适合使用BO</li>
+</ul>
+</li>
+<li>和BO的适用场景和进化算法（如CEM等）比较相似</li>
+</ul>
+<h3 id="贝叶斯优化的一般步骤"><a href="#贝叶斯优化的一般步骤" class="headerlink" title="贝叶斯优化的一般步骤"></a>贝叶斯优化的一般步骤</h3><ul>
+<li>贝叶斯优化（Bayesian Optimization）算法是一个序列决策过程（Sequential Decision-making Problem），其核心框架是SMBO (Sequential Model-Based Optimization)，而贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO，SMBO的一般算法思路如下：<ul>
+<li>第一步：初始化采样n组参数\(\{x_1,x_2,…,x_n\}\)</li>
+<li>第二步：针对每组参数，观察目标函数（待优化模型）的值（这一步一般需要训练模型或者模拟环境仿真，是成本比较高的操作），将得到的结果组合生成数据集\(D=\{(x_1,y_1),(x_2,y_2),…,(x_n,y_n)\}\)</li>
+<li>第三步：根据数据集D拟合（训练）一个代理模型（Surrogate Model），该代理模型的功能是通过输入\(x_i\)预测输出\(y_i\)</li>
+<li>第四步：根据采集函数（Acquisition Function，简称AC Function），选择一个最优参数\(x_i\)</li>
+<li>第五步：观察目标函数（待优化模型）在参数\(x_i\)下的输出值\(y_i\)，并将\((x_i,y_i)\)添加到数据集D中</li>
+<li>循环执行第三步到第五步，直到达到指定的迭代次数</li>
+<li>最终：输出数据集D中最优的参数\(x^*\) </li>
+</ul>
+</li>
+</ul>
+<h3 id="代理模型"><a href="#代理模型" class="headerlink" title="代理模型"></a>代理模型</h3><ul>
+<li>代理模型一般是非常容易计算的，或者有梯度的，给出任意的\(x_i\)能快速预估\(y_i\)的</li>
+<li>常见的代理模型可以是：高斯过程回归、随机森林等等。其中，贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO。</li>
+<li>高斯过程回归可参考：<ul>
+<li><a href="https://www.zhihu.com/question/46631426/answer/1735470753" target="_blank" rel="noopener">如何通俗易懂地介绍 Gaussian Process？ - 石溪的回答 - 知乎</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/331591492" target="_blank" rel="noopener">快速入门高斯过程（Gaussian process）回归预测 - 摸鱼大王二百五的文章 - 知乎</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="采集函数"><a href="#采集函数" class="headerlink" title="采集函数"></a>采集函数</h3><ul>
+<li>通常做法是设计一个采集函数A，对每个采样点x进行打分，分数越高的点越值得被采样。</li>
+<li>一般来说，采集函数需要满足下面的要求：<ul>
+<li>在已有的采样点处采集函数的值更小，因为这些点已经被探索过，再在这些点处计算函数值对解决问题没有什么用</li>
+<li>探索：在置信区间更宽（方差更大）的点处采集函数的值更大，因为这些点具有更大的不确定性，更值得探索</li>
+<li>利用：对最大（小）化问题，在函数均值更大（小）的点处采集函数的值更大，因为均值是对该点处函数值的估计值，这些点更可能在极值点附近。</li>
+</ul>
+</li>
+<li>常用的AC Function包括下面几种：<ul>
+<li>Probability of Improvement：</li>
+<li>Expected Improvement：</li>
+<li>Entropy Search：</li>
+<li>Upper Confidence Bound：</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1308,146 +1399,6 @@ $$
 </li>
 <li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
 <li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
-<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
-</ul>
-<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
-<li>FFM把相同性质的特征归于同一个Field,<ul>
-<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
-</ul>
-</li>
-<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
-</ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
-<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
-<li>假设样本的特征有 \(n\) 个</li>
-<li>假设filed有 \(f\) 个</li>
-</ul>
-</li>
-<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
-<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
-<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
-<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
-</ul>
-</li>
-<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
-</ul>
-<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
-<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
-<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
-</ul>
-</li>
-<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
-<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
 </ul>
 
           
@@ -1862,156 +1813,6 @@ $$
 <ul>
 <li>核心目的: 将候选商品分类,然后用于推荐</li>
 <li>模型衡量指标: Accuracy</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
-<hr>
-<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
-<ul>
-<li>m个基础模型</li>
-<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
-
-</li>
-</ul>
-<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
-<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
-<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
-</ul>
-<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
-<ul>
-<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
-<li>训练过程为阶梯状</li>
-<li>基础模型按照次序依次训练(实现时可做到并行)</li>
-<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
-
-</li>
-</ul>
-<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
-<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
-</ul>
-<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
-<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
-<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
-</ul>
-<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
-<ul>
-<li>训练所有基础模型</li>
-<li>获取所有基础模型的预测结果</li>
-<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
-<li>基于新的训练集进行训练,得到预测模型M()</li>
-<li>测试时也要将特征转换后再用M进行预测</li>
-<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
-<li>理论上可以堆叠各种各样的分类器
-
-</li>
-</ul>
-<hr>
-<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
-<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
 </ul>
 
           
@@ -2513,7 +2314,7 @@ $$
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">273</span>
+                  <span class="site-state-item-count">274</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
