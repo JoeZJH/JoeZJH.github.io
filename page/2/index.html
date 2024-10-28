@@ -437,198 +437,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍TRPO相关内容</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>：知乎</li>
-<li><a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>：博客</li>
-<li><a href="https://blog.csdn.net/wdlovecjy/article/details/124192928" target="_blank" rel="noopener">TRPO公式推导</a>:笔记式推导</li>
-<li><a href="https://www.cnblogs.com/kailugaji/p/15388913.html" target="_blank" rel="noopener">信赖域策略优化(Trust Region Policy Optimization, TRPO)</a>:PPT式推导</li>
-</ul>
-</li>
-</ul>
-<h3 id="TRPO相关概念理解"><a href="#TRPO相关概念理解" class="headerlink" title="TRPO相关概念理解"></a>TRPO相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
-<li>Q值的定义<br>$$<br>Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l})]<br>$$</li>
-<li>V值的定义<br>$$<br>V_\pi(s_t) = E_{a_t, s_{t+1},\cdots}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)]<br>$$</li>
-<li>优势函数的定义<br>$$<br>A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t)<br>$$</li>
-</ul>
-<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$<br>\eta(\pi) = E_{s_0, a_0,\ldots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)]<br>$$</p>
-<ul>
-<li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
-</ul>
-<h4 id="普通策略梯度法的解法"><a href="#普通策略梯度法的解法" class="headerlink" title="普通策略梯度法的解法"></a>普通策略梯度法的解法</h4><ul>
-<li>设定策略为\(\pi_\theta\)，则\(\eta(\pi)\)可表达为一个关于策略参数\(\theta\)的函数\(\eta(\theta)\)，此时可通过梯度上升法（策略梯度法）得到参数更新公式：<br>$$<br>\theta_{new} = \theta_{old} + \alpha\nabla_{\theta}\eta(\theta)<br>$$</li>
-</ul>
-<h4 id="普通策略梯度法会遇到的问题"><a href="#普通策略梯度法会遇到的问题" class="headerlink" title="普通策略梯度法会遇到的问题"></a>普通策略梯度法会遇到的问题</h4><ul>
-<li>普通策略梯度法可能存在不稳定问题：<ul>
-<li>如果公式更新的步长选取过小，训练速度慢</li>
-<li>如果步长选取过大，那么会导致策略参数更新步子迈得过大，如果更新过渡，可能导致策略变差，从而导致交互样本变差，差的样本进一步导致策略更差，形成恶性循环。</li>
-</ul>
-</li>
-<li>TRPO的解法：选择一个合适的更新策略，或是如何选择一个合适的步长，使得更新过后的策略一定比当前策略更好</li>
-</ul>
-<h4 id="TRPO的核心思想"><a href="#TRPO的核心思想" class="headerlink" title="TRPO的核心思想"></a>TRPO的核心思想</h4><ul>
-<li>TRPO的核心是使用一个约束优化问题来更新策略，这个约束保证了新策略与旧策略之间的差异不会太大</li>
-</ul>
-<h3 id="TRPO的推导"><a href="#TRPO的推导" class="headerlink" title="TRPO的推导"></a>TRPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
-<li>回顾强化学习的目标函数<br>$$<br>\eta(\pi) = E_{s_0, a_0,\cdots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)]<br>$$</li>
-<li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$<br>\eta(\tilde{\pi}) = \eta(\pi) + E_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]<br>$$<ul>
-<li>证明如下：<br>$$<br>\begin{aligned}<br>E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-E_{s_0}[V_\pi(s_0)] + E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
-</ul>
-</li>
-<li>显然，如果我们能找到一个策略\(\tilde{\pi}\)使得\(E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \ge 0\)成立，即可确保策略性能（目标函数）是单调递增的<ul>
-<li>但是，直接求解上式是非常困难的，因为策略\(\tilde{pi}\)是未知的，无法用这个策略收集数据，下面我们先对这个形式进行变形，再通过其他方法近似求解</li>
-</ul>
-</li>
-</ul>
-<h4 id="策略提升的变形"><a href="#策略提升的变形" class="headerlink" title="策略提升的变形"></a>策略提升的变形</h4><ul>
-<li><p>变形如下：<br>$$<br>\begin{aligned}<br>\eta({\tilde{\pi}}) - \eta({\pi}) &amp;= E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \\<br>&amp;=  \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>其中有<br>$$<br>\rho_\pi(s) = P(s_0=s) + \gamma P(s_1=s) + \gamma^2 P(s_2=s) + \ldots<br>$$</p>
-</li>
-<li><p>证明如下：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]\\<br>  &amp;=\sum\limits_{t=0}^\infty\sum\limits_sP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\\<br>  &amp;=\sum\limits_s\sum\limits_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\\<br>  &amp;=\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>对于\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\)来说，我们仍然难以求解，因为策略\(\tilde{pi}\)是未知的，我们无法用这个策略收集数据，所以我们使用旧的策略\(\pi\)来替换新策略\(\tilde{pi}\)收集数据</p>
-</li>
-<li><p>对于状态部分：当新旧策略特别接近时，他们的状态访问分布会比较接近:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)<br>\end{aligned}<br>$$</p>
-<ul>
-<li>这里可以严格证明，使用旧策略采样的状态分布后，\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)\)是原始值\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)\)的一个下界，且两者在\(\pi\)处的梯度和原始值相等（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>）</li>
-<li>这里将难以求解的目标函数替换成方便求解的目标函数的方法，是一种Minorize-Maximization（MM）方法，MM 方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。MM 方法通常用于非凸优化问题，能够简化优化过程并保证每步迭代都有所改进。</li>
-</ul>
-</li>
-<li><p>对于动作部分：可以用重要性采样来回复动作分布即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以我们最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>s.t. \quad \quad &amp;D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}}) \le \delta<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>至此，目标函数中采样策略变成了之前的旧策略：</p>
-<ul>
-<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的</li>
-<li>动作分布替换旧策略是基于重要性采样实现的（实际上，从重要性采样的视角来看，动作分布可以是基于任意策略采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略）<ul>
-<li>重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>此时，TRPO和PPO策略的基本优化目标已经推导完成</p>
-</li>
-<li><p>TRPO推导中使用到的思想是一种置信域优化，即每次迭代时，以当前点为圆心，在一定范围内，求解某个代理函数（相对原始目标函数更容易优化）的最优解</p>
-</li>
-</ul>
-<h3 id="TRPO-共轭梯度法"><a href="#TRPO-共轭梯度法" class="headerlink" title="TRPO-共轭梯度法"></a>TRPO-共轭梯度法</h3><ul>
-<li>近似求解上述式子，用一阶梯度近似目标，用二阶梯度近似约束，从而得到一个关于参数最优化问题</li>
-<li>基于共轭梯度法可以求解该问题</li>
-</ul>
-<h3 id="PPO"><a href="#PPO" class="headerlink" title="PPO"></a>PPO</h3><h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
-<li>又名PPO-惩罚</li>
-</ul>
-<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
-<li>又名PPO截断</li>
-</ul>
-<h4 id="KL散度-vs-TV散度"><a href="#KL散度-vs-TV散度" class="headerlink" title="KL散度 vs TV散度"></a>KL散度 vs TV散度</h4><p>* </p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -821,6 +629,200 @@
 <li>期望贝尔曼误差<br>$$<br>E_{s\sim \mu} [\epsilon_{\theta}(s)] = E_{s\sim \mu}[E_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  E_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
 <li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍TRPO相关内容</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>：知乎</li>
+<li><a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>：博客</li>
+<li><a href="https://blog.csdn.net/wdlovecjy/article/details/124192928" target="_blank" rel="noopener">TRPO公式推导</a>:笔记式推导</li>
+<li><a href="https://www.cnblogs.com/kailugaji/p/15388913.html" target="_blank" rel="noopener">信赖域策略优化(Trust Region Policy Optimization, TRPO)</a>:PPT式推导</li>
+</ul>
+</li>
+</ul>
+<h3 id="TRPO相关概念理解"><a href="#TRPO相关概念理解" class="headerlink" title="TRPO相关概念理解"></a>TRPO相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
+<li>Q值的定义<br>$$<br>Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l})]<br>$$</li>
+<li>V值的定义<br>$$<br>V_\pi(s_t) = E_{a_t, s_{t+1},\cdots}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)]<br>$$</li>
+<li>优势函数的定义<br>$$<br>A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t)<br>$$</li>
+</ul>
+<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$<br>\eta(\pi) = E_{s_0, a_0,\ldots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)]<br>$$</p>
+<ul>
+<li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
+</ul>
+<h4 id="普通策略梯度法的解法"><a href="#普通策略梯度法的解法" class="headerlink" title="普通策略梯度法的解法"></a>普通策略梯度法的解法</h4><ul>
+<li>设定策略为\(\pi_\theta\)，则\(\eta(\pi)\)可表达为一个关于策略参数\(\theta\)的函数\(\eta(\theta)\)，此时可通过梯度上升法（策略梯度法）得到参数更新公式：<br>$$<br>\theta_{new} = \theta_{old} + \alpha\nabla_{\theta}\eta(\theta)<br>$$</li>
+</ul>
+<h4 id="普通策略梯度法会遇到的问题"><a href="#普通策略梯度法会遇到的问题" class="headerlink" title="普通策略梯度法会遇到的问题"></a>普通策略梯度法会遇到的问题</h4><ul>
+<li>普通策略梯度法可能存在不稳定问题：<ul>
+<li>如果公式更新的步长选取过小，训练速度慢</li>
+<li>如果步长选取过大，那么会导致策略参数更新步子迈得过大，如果更新过渡，可能导致策略变差，从而导致交互样本变差，差的样本进一步导致策略更差，形成恶性循环。</li>
+</ul>
+</li>
+<li>TRPO的解法：选择一个合适的更新策略，或是如何选择一个合适的步长，使得更新过后的策略一定比当前策略更好</li>
+</ul>
+<h4 id="TRPO的核心思想"><a href="#TRPO的核心思想" class="headerlink" title="TRPO的核心思想"></a>TRPO的核心思想</h4><ul>
+<li>TRPO的核心是使用一个约束优化问题来更新策略，这个约束保证了新策略与旧策略之间的差异不会太大</li>
+</ul>
+<h3 id="TRPO的推导"><a href="#TRPO的推导" class="headerlink" title="TRPO的推导"></a>TRPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
+<li>回顾强化学习的目标函数<br>$$<br>\eta(\pi) = E_{s_0, a_0,\cdots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)]<br>$$</li>
+<li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$<br>\eta(\tilde{\pi}) = \eta(\pi) + E_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]<br>$$<ul>
+<li>证明如下：<br>$$<br>\begin{aligned}<br>E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-E_{s_0}[V_\pi(s_0)] + E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
+</ul>
+</li>
+<li>显然，如果我们能找到一个策略\(\tilde{\pi}\)使得\(E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \ge 0\)成立，即可确保策略性能（目标函数）是单调递增的<ul>
+<li>但是，直接求解上式是非常困难的，因为策略\(\tilde{pi}\)是未知的，无法用这个策略收集数据，下面我们先对这个形式进行变形，再通过其他方法近似求解</li>
+</ul>
+</li>
+</ul>
+<h4 id="策略提升的变形"><a href="#策略提升的变形" class="headerlink" title="策略提升的变形"></a>策略提升的变形</h4><ul>
+<li><p>变形如下：<br>$$<br>\begin{aligned}<br>\eta({\tilde{\pi}}) - \eta({\pi}) &amp;= E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \\<br>&amp;=  \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>其中有<br>$$<br>\rho_\pi(s) = P(s_0=s) + \gamma P(s_1=s) + \gamma^2 P(s_2=s) + \ldots<br>$$</p>
+</li>
+<li><p>证明如下：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]\\<br>  &amp;=\sum\limits_{t=0}^\infty\sum\limits_sP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\\<br>  &amp;=\sum\limits_s\sum\limits_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\\<br>  &amp;=\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>对于\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\)来说，我们仍然难以求解，因为策略\(\tilde{pi}\)是未知的，我们无法用这个策略收集数据，所以我们使用旧的策略\(\pi\)来替换新策略\(\tilde{pi}\)收集数据</p>
+</li>
+<li><p>对于状态部分：当新旧策略特别接近时，他们的状态访问分布会比较接近:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)<br>\end{aligned}<br>$$</p>
+<ul>
+<li>这里可以严格证明，使用旧策略采样的状态分布后，\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)\)是原始值\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)\)的一个下界，且两者在\(\pi\)处的梯度和原始值相等（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>）</li>
+<li>这里将难以求解的目标函数替换成方便求解的目标函数的方法，是一种Minorize-Maximization（MM）方法，MM 方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。MM 方法通常用于非凸优化问题，能够简化优化过程并保证每步迭代都有所改进。</li>
+</ul>
+</li>
+<li><p>对于动作部分：可以用重要性采样来回复动作分布即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以我们最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>s.t. \quad \quad &amp;D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}}) \le \delta<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>至此，目标函数中采样策略变成了之前的旧策略：</p>
+<ul>
+<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的</li>
+<li>动作分布替换旧策略是基于重要性采样实现的（实际上，从重要性采样的视角来看，动作分布可以是基于任意策略采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略）<ul>
+<li>重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>此时，TRPO和PPO策略的基本优化目标已经推导完成</p>
+</li>
+<li><p>TRPO推导中使用到的思想是一种置信域优化，即每次迭代时，以当前点为圆心，在一定范围内，求解某个代理函数（相对原始目标函数更容易优化）的最优解</p>
+</li>
+</ul>
+<h3 id="TRPO-共轭梯度法"><a href="#TRPO-共轭梯度法" class="headerlink" title="TRPO-共轭梯度法"></a>TRPO-共轭梯度法</h3><ul>
+<li>近似求解上述式子，用一阶梯度近似目标，用二阶梯度近似约束，从而得到一个关于参数最优化问题</li>
+<li>基于共轭梯度法可以求解该问题</li>
+</ul>
+<h3 id="GAE"><a href="#GAE" class="headerlink" title="GAE"></a>GAE</h3><ul>
+<li><h3 id="PPO"><a href="#PPO" class="headerlink" title="PPO"></a>PPO</h3><h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4></li>
+<li><p>又名PPO-惩罚</p>
+</li>
+</ul>
+<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
+<li>又名PPO截断</li>
+</ul>
+<h4 id="KL散度-vs-TV散度"><a href="#KL散度-vs-TV散度" class="headerlink" title="KL散度 vs TV散度"></a>KL散度 vs TV散度</h4><p>* </p>
 
           
         
