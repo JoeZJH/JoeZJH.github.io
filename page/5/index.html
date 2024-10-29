@@ -275,6 +275,180 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——混合精度训练.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——混合精度训练.html" itemprop="url">DL——混合精度训练</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>混合精度 (Automatically Mixed Precision, AMP)</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<h3 id="数字类型"><a href="#数字类型" class="headerlink" title="数字类型"></a>数字类型</h3><h4 id="FP32"><a href="#FP32" class="headerlink" title="FP32"></a>FP32</h4><ul>
+<li>FP32，Single-precision floating-point</li>
+<li>4B, 32位，符号位1位，指数位8位，尾数位23位<ul>
+<li>符号位：用于表示数值的正负。</li>
+<li>指数位：用于表示数值的范围。</li>
+<li>尾数位（Fraction）：也称为小数位，用于表示数值的精度。</li>
+</ul>
+</li>
+<li>数字表达范围：\([-3e^{38},-1e^{-45}] \bigcup [1e^{-45}, 3e^{38}]\)</li>
+<li>下溢精度：\(1e^{-38}\)</li>
+</ul>
+<h4 id="FP16"><a href="#FP16" class="headerlink" title="FP16"></a>FP16</h4><ul>
+<li>FP16，Half-precision floating-point</li>
+<li>2B, 16位，符号位1位，指数位5位，尾数位10位</li>
+<li>数字表达范围：\([-65504,-5.9e^{-8}] \bigcup [5.9e^{-8}, 65504]\)</li>
+<li>下溢精度：\(5.9e^{-8}\)</li>
+</ul>
+<h4 id="BF16"><a href="#BF16" class="headerlink" title="BF16"></a>BF16</h4><ul>
+<li>BF16，Brain Floating Point</li>
+<li>2B，16位，符号位1位，指数位8位，尾数位7位</li>
+<li>数字表达范围：\([−3e^{38}, -9.2^{-41}],[9.2^{-41}, 3e^{38}]\)</li>
+<li>下溢精度：\(9.2^{-41}\)</li>
+</ul>
+<h4 id="FP32-vs-FP16"><a href="#FP32-vs-FP16" class="headerlink" title="FP32 vs FP16"></a>FP32 vs FP16</h4><ul>
+<li>能表达的数字范围和精度远小于FP32</li>
+<li>浮点数都有个上下溢问题：<ul>
+<li>上/下溢出：FP16 的表示范围不大，非常容易溢出</li>
+<li>超过\(6.5e^4\)的数字会上溢出变成 inf，小于\(5.9e^{-8}\)的数字会下溢出变成 0</li>
+</ul>
+</li>
+</ul>
+<h4 id="FP16-vs-BF16"><a href="#FP16-vs-BF16" class="headerlink" title="FP16 vs BF16"></a>FP16 vs BF16</h4><ul>
+<li>都是2B存储</li>
+<li>BF16指数位更多：可以表示更大范围的数值</li>
+<li>FP16尾数位更多：可以表示更精确的数值，如果都是小数值，用FP16更好<ul>
+<li>注意：下溢精度不等于精度，下溢精度与指数关系更大</li>
+</ul>
+</li>
+</ul>
+<h3 id="混合精度训练"><a href="#混合精度训练" class="headerlink" title="混合精度训练"></a>混合精度训练</h3><ul>
+<li>最早论文：<a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed precision training</a><ul>
+<li>作者：百度，英伟达</li>
+<li>一次迭代过程<img src="/Notes/DL/DL——混合精度训练/mixed-precision-training-iteration-for-a-layer.png"></li>
+<li>基本思路：保持原始参数还是fp32的情况下，将计算梯度等所有流程都使用fp16进行，节省内存/显存的同时提升训练速度</li>
+<li>fp16会损失精度，所以在过程中需要用到scaling操作</li>
+</ul>
+</li>
+<li>混合精度训练的优点<ul>
+<li>减少显存占用：FP16 的显存占用只有 FP32 的一半，这使得我们可以用更大的 batch size；<ul>
+<li>混合精度训练下，需要存储的变量为：FP16的梯度，FP16的参数，FP32的参数；好像并没有减少显存啊？</li>
+</ul>
+</li>
+<li>加速训练：使用 FP16，模型的训练速度几乎可以提升 1 倍。</li>
+</ul>
+</li>
+<li>FP16的下溢值这么大，梯度一般都很小，为什么能存储梯度？<ul>
+<li>通过loss scaling技术，对loss进行缩放（放大很多倍）可以确保梯度不会下溢，在更新时转换成FP32再unscale回去即可（需要FP32）</li>
+</ul>
+</li>
+<li>FP32有什么用？（为什么不能只使用fp16呢？）<ul>
+<li>防止FP16导致误差过大：将模型权重、激活值、梯度等数据用 FP16 来存储，同时维护一份 FP32 的模型权重副本用于更新。在反向传播得到 FP16 的梯度以后，将其转化成 FP32 并 unscale，最后更新 FP32 的模型权重。因为整个更新过程是在 FP32 的环境中进行的，所以不会出现舍入误差。 </li>
+</ul>
+</li>
+<li>为了节省存储和加快训练速度，特别是大模型时代，越来越重要</li>
+</ul>
+<h3 id="混合精度的使用"><a href="#混合精度的使用" class="headerlink" title="混合精度的使用"></a>混合精度的使用</h3><ul>
+<li>更新最新参考资料：<a href="https://mp.weixin.qq.com/s?__biz=MzI4MDYzNzg4Mw==&mid=2247550159&idx=5&sn=f5db2afa547970bc429112e32d2e7daf&chksm=ebb73c1bdcc0b50d0e85039bd5d8349a23330e3e0f138a7dd2da218a20174d0965837682dd14&scene=27" target="_blank" rel="noopener">由浅入深的混合精度训练教程</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Java/IDEA——lombok包使用说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1455,6 +1629,158 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDPM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——DDPM.html" itemprop="url">DL——DDPM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
+<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
+<li>视频中有部分小bug，评论区已修复</li>
+</ul>
+</li>
+<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑<ul>
+<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
+
+<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
+
+<h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><ul>
+<li>待更新</li>
+</ul>
+<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
+<li>关于\(\epsilon_{\theta}(x_t, t)\)的含义<ul>
+<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪音，还是从\(x_{t-1}\)到\(x_t\)加的噪音？<ul>
+<li>回答：是从\(x_0\)到\(x_t\)加的噪音，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪音，而损失函数的目标就是让\(\epsilon_{\theta}-&gt;\epsilon\)。</li>
+</ul>
+</li>
+<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪音，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
+<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(p(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
+</ul>
+</li>
+<li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
+<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = N(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
+<li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
+<li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>DDPM可以不加入噪声吗？<ul>
+<li>实践：不可以，图片生成质量会特别差</li>
+<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1664,158 +1990,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDPM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DDPM.html" itemprop="url">DL——DDPM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
-<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
-<li>视频中有部分小bug，评论区已修复</li>
-</ul>
-</li>
-<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑<ul>
-<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
-
-<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
-
-<h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><ul>
-<li>待更新</li>
-</ul>
-<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
-<li>关于\(\epsilon_{\theta}(x_t, t)\)的含义<ul>
-<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪音，还是从\(x_{t-1}\)到\(x_t\)加的噪音？<ul>
-<li>回答：是从\(x_0\)到\(x_t\)加的噪音，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪音，而损失函数的目标就是让\(\epsilon_{\theta}-&gt;\epsilon\)。</li>
-</ul>
-</li>
-<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪音，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
-<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(p(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
-</ul>
-</li>
-<li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
-<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = N(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
-<li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
-<li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>DDPM可以不加入噪声吗？<ul>
-<li>实践：不可以，图片生成质量会特别差</li>
-<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——xDeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1928,204 +2102,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——知识图谱的描述.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/KnowledgeGraph/KG——知识图谱的描述.html" itemprop="url">KG——知识图谱的描述</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
-<hr>
-<h3 id="RDF"><a href="#RDF" class="headerlink" title="RDF"></a>RDF</h3><ul>
-<li>Resource Description Framework</li>
-<li>资源描述框架</li>
-<li>本质是一个数据模型</li>
-<li>提供了统一的描述实体和资源的标准</li>
-<li>形式上表现为主谓宾(SPO, Subject-Predication-Object)三元组, 也称为一条语句(Statement), 知识图谱中称为一条知识</li>
-</ul>
-<h4 id="RDF的序列化方法"><a href="#RDF的序列化方法" class="headerlink" title="RDF的序列化方法"></a>RDF的序列化方法</h4><p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
-<ul>
-<li><p>RDF/XML: 用XML格式来表示RDF数据</p>
-</li>
-<li><p>N-Triples: 用多个三元组来表示RDF数据集合,是最直观的表示方法,每一行表示一个三元组,方便机器解析和处理,<a href="https://wiki.dbpedia.org/" target="_blank" rel="noopener">DBpedia</a> 是按照这个方式来发布数据的</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/chineseName&gt; &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/career&gt; &quot;足球运动员&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/fullName&gt; &quot;Ronaldo Luís Nazário de Lima&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/birthDate&gt; &quot;1976-09-18&quot;^^date.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/height&gt; &quot;180&quot;^^int.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/weight&gt; &quot;98&quot;^^int.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/nationality&gt; &quot;巴西&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/hasBirthPlace&gt; &lt;http://www.kg.com/place/10086&gt;.</span><br><span class="line">&lt;http://www.kg.com/place/10086&gt; &lt;http://www.kg.com/ontology/address&gt; &quot;里约热内卢&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/place/10086&gt; &lt;http://www.kg.com/ontology/coordinate&gt; &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>RDFa: (The Resource Description Framework in Attributes)</p>
-</li>
-<li><p>Turtle是最常用的RDF序列化方式, 比RDF/XML更紧凑, 可读性比N-Triples更好</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Example2 Turtle:</span><br><span class="line"></span><br><span class="line">@prefix person: &lt;http://www.kg.com/person/&gt; .</span><br><span class="line">@prefix place: &lt;http://www.kg.com/place/&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">person:1 :chineseName &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string.</span><br><span class="line">person:1 :career &quot;足球运动员&quot;^^string.</span><br><span class="line">person:1 :fullName &quot;Ronaldo Luís Nazário de Lima&quot;^^string.</span><br><span class="line">person:1 :birthDate &quot;1976-09-18&quot;^^date.</span><br><span class="line">person:1 :height &quot;180&quot;^^int. </span><br><span class="line">person:1 :weight &quot;98&quot;^^int.</span><br><span class="line">person:1 :nationality &quot;巴西&quot;^^string. </span><br><span class="line">person:1 :hasBirthPlace place:10086.</span><br><span class="line">place:10086 :address &quot;里约热内卢&quot;^^string.</span><br><span class="line">place:10086 :address &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>同一个实体拥有多个属性（数据属性）或关系（对象属性），我们可以只用一个subject来表示，使其更紧凑。我们可以将上面的Turtle改为<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Example3 Turtle:</span><br><span class="line"></span><br><span class="line">@prefix person: &lt;http://www.kg.com/person/&gt; .</span><br><span class="line">@prefix place: &lt;http://www.kg.com/place/&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">person:1 :chineseName &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string;</span><br><span class="line">         :career &quot;足球运动员&quot;^^string;</span><br><span class="line">         :fullName &quot;Ronaldo Luís Nazário de Lima&quot;^^string;</span><br><span class="line">         :birthDate &quot;1976-09-18&quot;^^date;</span><br><span class="line">         :height &quot;180&quot;^^int;</span><br><span class="line">         :weight &quot;98&quot;^^int;</span><br><span class="line">         :nationality &quot;巴西&quot;^^string; </span><br><span class="line">         :hasBirthPlace place:10086.</span><br><span class="line">place:10086 :address &quot;里约热内卢&quot;^^string;</span><br><span class="line">            :address &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>JSON-LD: 即“JSON for Linking Data”，用键值对的方式来存储RDF数据</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;@context&quot;: &quot;https://json-ld.org/contexts/person.jsonld&quot;,</span><br><span class="line">  &quot;@id&quot;: &quot;http://dbpedia.org/resource/John_Lennon&quot;,</span><br><span class="line">  &quot;name&quot;: &quot;John Lennon&quot;,</span><br><span class="line">  &quot;born&quot;: &quot;1940-10-09&quot;,</span><br><span class="line">  &quot;spouse&quot;: &quot;http://dbpedia.org/resource/Cynthia_Lennon&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="RDF的缺点"><a href="#RDF的缺点" class="headerlink" title="RDF的缺点"></a>RDF的缺点</h4><ul>
-<li>表达能力有限<ul>
-<li>无法区分雷和对象</li>
-<li>无法定义和描述类的关系/属性</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="RDFS-OWL"><a href="#RDFS-OWL" class="headerlink" title="RDFS/OWL"></a>RDFS/OWL</h3><ul>
-<li>是RDF的一种扩展</li>
-<li>是用来描述RDF数据的</li>
-<li>本质上是一些预定义词汇(Vocabulary)构成的集合</li>
-<li>用于对RDF进行类似的类定义以及属性的定义</li>
-</ul>
-<h4 id="RDFS-OWL的序列化方法"><a href="#RDFS-OWL的序列化方法" class="headerlink" title="RDFS/OWL的序列化方法"></a>RDFS/OWL的序列化方法</h4><ul>
-<li>RDFS/OWL序列化方式和RDF没什么不同，其实在表现形式上，它们就是RDF</li>
-<li>常用的方式主要是RDF/XML，Turtle</li>
-</ul>
-<h4 id="RDFS"><a href="#RDFS" class="headerlink" title="RDFS"></a>RDFS</h4><ul>
-<li>Resource Description Framework Schema</li>
-<li>是RDF的一种扩展</li>
-<li>RDFS几个比较重要，常用的词汇： <ul>
-<li>rdfs:Class. 用于定义类。 </li>
-<li>rdfs:domain. 用于表示该属性属于哪个类别。 </li>
-<li>rdfs:range. 用于描述该属性的取值类型。 </li>
-<li>rdfs:subClassOf. 用于描述该类的父类。比如，我们可以定义一个运动员类，声明该类是人的子类。 </li>
-<li>rdfs:subProperty. 用于描述该属性的父属性。比如，我们可以定义一个名称属性，声明中文名称和全名是名称的子类。</li>
-<li>其实rdf:Property和rdf:type也是RDFS的词汇，因为RDFS本质上就是RDF词汇的一个扩展。我们在这里不罗列进去，是不希望读者混淆, 更多RDFS词汇的用法参考<a href="https://www.w3.org/TR/rdf-schema" target="_blank" rel="noopener">W3C官方文档</a></li>
-</ul>
-</li>
-<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</span><br><span class="line">@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">### 这里我们用词汇rdfs:Class定义了“人”和“地点”这两个类。</span><br><span class="line">:Person rdf:type rdfs:Class.</span><br><span class="line">:Place rdf:type rdfs:Class.</span><br><span class="line"></span><br><span class="line">### rdfs当中不区分数据属性和对象属性，词汇rdf:Property定义了属性，即RDF的“边”。</span><br><span class="line">:chineseName rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:career rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:fullName rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:birthDate rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:date .</span><br><span class="line"></span><br><span class="line">:height rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:weight rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:nationality rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:hasBirthPlace rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range :Place .</span><br><span class="line"></span><br><span class="line">:address rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:coordinate rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="OWL"><a href="#OWL" class="headerlink" title="OWL"></a>OWL</h4><ul>
-<li><p>Web Ontology Language</p>
-</li>
-<li><p>是对RDFS的一个扩展，添加了额外的预定义词汇</p>
-</li>
-<li><p>提供快速，灵活的数据建模能力</p>
-</li>
-<li><p>高效的自动推理能力</p>
-</li>
-<li><p>描述属性特征的词汇 </p>
-<ul>
-<li>owl:TransitiveProperty. 表示该属性具有传递性质。例如，我们定义“位于”是具有传递性的属性，若A位于B，B位于C，那么A肯定位于C。 </li>
-<li>owl:SymmetricProperty. 表示该属性具有对称性。例如，我们定义“认识”是具有对称性的属性，若A认识B，那么B肯定认识A。 </li>
-<li>owl:FunctionalProperty. 表示该属性取值的唯一性。 例如，我们定义“母亲”是具有唯一性的属性，若A的母亲是B，在其他地方我们得知A的母亲是C，那么B和C指的是同一个人。 </li>
-<li>owl:inverseOf. 定义某个属性的相反关系。例如，定义“父母”的相反关系是“子女”，若A是B的父母，那么B肯定是A的子女。</li>
-</ul>
-</li>
-<li><p>本体映射词汇（Ontology Mapping） </p>
-<ul>
-<li>owl:equivalentClass. 表示某个类和另一个类是相同的。 </li>
-<li>owl:equivalentProperty. 表示某个属性和另一个属性是相同的。 </li>
-<li>owl:sameAs. 表示两个实体是同一个实体。</li>
-</ul>
-</li>
-<li><p>举例</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</span><br><span class="line">@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line">@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</span><br><span class="line"></span><br><span class="line">### 这里我们用词汇owl:Class定义了“人”和“地点”这两个类。</span><br><span class="line">:Person rdf:type owl:Class.</span><br><span class="line">:Place rdf:type owl:Class.</span><br><span class="line"></span><br><span class="line">### owl区分数据属性和对象属性（对象属性表示实体和实体之间的关系）。词汇owl:DatatypeProperty定义了数据属性，owl:ObjectProperty定义了对象属性。</span><br><span class="line">:chineseName rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:career rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:fullName rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:birthDate rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:date .</span><br><span class="line"></span><br><span class="line">:height rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:weight rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:nationality rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:hasBirthPlace rdf:type owl:ObjectProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range :Place .</span><br><span class="line"></span><br><span class="line">:address rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:coordinate rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>举个例子体现对两个不同知识图谱的融合</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http://www.zhangsan.com/ontology/Person rdf:type owl:Class . </span><br><span class="line">http://www.lisi.com/ontology/Human rdf:type owl:Class . </span><br><span class="line">http://www.zhangsan.com/ontology/Person owl:equivalentClass http://www.lisi.com/ontology/Human .</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2178,7 +2154,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">274</span>
+                  <span class="site-state-item-count">275</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
