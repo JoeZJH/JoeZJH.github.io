@@ -88,7 +88,7 @@
 <meta property="og:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png">
-<meta property="og:updated_time" content="2024-10-29T17:06:36.598Z">
+<meta property="og:updated_time" content="2024-10-30T01:08:35.808Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——TRPO-PPO-目标函数基础推导">
 <meta name="twitter:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
@@ -379,13 +379,13 @@
 <li>其中有<br>$$ \rho_\pi(s) = P(s_0=s) + \gamma P(s_1=s) + \gamma^2 P(s_2=s) + \ldots $$</li>
 <li>证明如下：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]\\<br>  &amp;=\sum\limits_{t=0}^\infty\sum\limits_sP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\\<br>  &amp;=\sum\limits_s\sum\limits_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\\<br>  &amp;=\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)<br>\end{aligned}<br>$$</li>
 <li>对于\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\)来说，我们仍然难以求解，因为策略\(\tilde{pi}\)是未知的，我们无法用这个策略收集数据，所以我们使用旧的策略\(\pi\)来替换新策略\(\tilde{\pi}\)收集数据</li>
-<li>对于状态部分，当新旧策略特别接近时，他们的状态访问分布会比较接近，我们可以利用MM（Majorization-Minimization）方法构造近似目标函数:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)<br>\end{aligned}<br>$$<ul>
+<li>对于状态部分，当新旧策略特别接近时，他们的状态访问分布会比较接近，我们可以利用MM（Majorization-Minimization）方法构造近似目标函数:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) + Z<br>\end{aligned}<br>$$<ul>
 <li>MM方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。</li>
-<li>这里的状态分布的近似是一种简单的理解思路，实际上可以通过严格的数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)\)是旧的目标函数\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)\)的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>）。这个证明较为复杂，有时间可以详细看看</li>
+<li>【还需要再思考确定一下】这里的状态分布的近似是一种简单的理解思路，实际上可以通过严格的MM方法数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a)\)是旧的目标函数\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)\)的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>）。这个证明较为复杂，有时间可以详细看看</li>
 <li>在严格证明下，经过一系列推导后，我们可以得到<strong>最终优化问题</strong>是：<br>  $$ \theta = \arg\max_{\theta}\left[ \sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\right] $$<ul>
 <li>其中：<br>  $$<br>  \begin{aligned}<br>  \epsilon &amp;= \max_{s,a} A_\pi(s,a) \quad — s,a是所有可行状态动作，不属于具体分布\\<br>  D_{\text{KL}}^\max(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) &amp;= \max_s D_{\text{KL}}(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) \quad — s是所有可行状态<br>  \end{aligned}<br>  $$</li>
 <li>对应求解伪代码<img src="/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png"></li>
-<li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导则都是最优形式的近似</li>
+<li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
 </ul>
 </li>
 </ul>
@@ -402,7 +402,8 @@
 </ul>
 </li>
 <li>至此，目标函数中采样策略（包括状态和动作）变成了之前的旧策略，总结一下有：<ul>
-<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的，这个改动是MM（Majorization-Minimization）方法的思想，构造一个近似目标函数</li>
+<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的，这个改动是MM（Majorization-Minimization）方法的思想，构造一个可以严格通过MM方法证明的近似目标函数\(\sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\)，这个目标函数的优化没有信赖域的概念，所以不是Trust Region方法</li>
+<li>在构造近似目标函数后，进一步简化目标函数的等价形式为KL散度约束下的更简洁形式，此时算是Trust Region方法</li>
 <li>动作分布替换旧策略是基于重要性采样实现的</li>
 </ul>
 </li>
@@ -411,7 +412,7 @@
 <li>TRPO（Trust Region Policy Optimization）的名字来源于其核心方法——信任域（Trust Region）优化。</li>
 <li>TRPO同时包含了Trust Region算法和MM（Majorization-Minimization）算法的思想：<ul>
 <li>MM算法：推导过程中，在对策略提升部分进行转换时，使用的是MM算法的思想，构造了一个近似目标函数，同时证明了该近似目标函数与原始目标函数的关系（两者的梯度和值在当前策略处相等，且近似目标函数处处小于等于原始目标函数）；</li>
-<li>Trust Region算法：TRPO方法在每次迭代需要在KL散度约束内做更新优化，并且构造了一个优化问题来近似求解，属于Trust Region方法的思想；（这里体现了TRPO与PPO的区别，PPO则只是限制了策略更新幅度，没有重新构造优化问题，所以只有近端（“Proximal”）的思想，严格来说不属于Trust Region方法）</li>
+<li>Trust Region算法：TRPO方法在每次迭代需要在KL散度约束内做更新优化，并且构造了一个KL散度约束的优化问题来近似求解，属于Trust Region方法的思想；</li>
 </ul>
 </li>
 <li>补充问题：MM算法、Trust Region算法、近端梯度下降算法，这三种方法的区别和关系是什么？<ul>
@@ -439,7 +440,7 @@
 </ul>
 <h3 id="PPO简单理解"><a href="#PPO简单理解" class="headerlink" title="PPO简单理解"></a>PPO简单理解</h3><h4 id="PPO名字的由来"><a href="#PPO名字的由来" class="headerlink" title="PPO名字的由来"></a>PPO名字的由来</h4><ul>
 <li>PPO（Proximal Policy Optimization）名字中的“Proximal”是指“近端”约束，表示确保新策略不会偏离旧策略太远，从而保证策略更新的稳定性和有效性。跟近端梯度下降（Proximal Gradient Descent）方法没有直接关系。“Proximal”是“最接近的”或“邻近的”。在不同的上下文中，“proximal”可以有不同的具体含义，但其核心概念通常与“接近”或“邻近”有关。</li>
-<li>由于PPO的优化目标推导过程与TRPO相同，都用到了近似目标函数，所以推导过程中也用到了MM的思想，但在解决问题时仅用到了近端（“Proximal”）约束，即每次迭代策略不要更新太多，没有重新构造优化问题，严格来说不属于Trust Region方法</li>
+<li>由于PPO的优化目标推导过程与TRPO相同，都用到了近似目标函数，所以推导过程中也用到了MM的思想和Trust Region的思想，但在解决问题时仅用到了近端（“Proximal”）约束，即每次迭代策略不要更新太多（没有严格遵循Trust Region推导得到的结果），严格来说不属于Trust Region方法</li>
 </ul>
 <h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
 <li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
@@ -478,8 +479,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——策略梯度法.html" rel="next" title="RL——策略梯度法">
-                <i class="fa fa-chevron-left"></i> RL——策略梯度法
+              <a href="/Notes/RL/RL——SAC.html" rel="next" title="RL——SAC">
+                <i class="fa fa-chevron-left"></i> RL——SAC
               </a>
             
           </div>
@@ -488,8 +489,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="prev" title="RL——TRPO">
-                RL——TRPO <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——PPO-TD3.html" rel="prev" title="RL——PPO&TD3">
+                RL——PPO&TD3 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
