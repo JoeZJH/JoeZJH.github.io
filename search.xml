@@ -368,40 +368,6 @@
       </tags>
   </entry>
   <entry>
-    <title>RL——TRPO</title>
-    <url>/Notes/RL/RL%E2%80%94%E2%80%94TRPO.html</url>
-    <content><![CDATA[<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
-<ul>
-<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
-</ul>
-<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
-<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
-<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
-<li>\(H\)为海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
-<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
-<li>可根据拉格朗日乘子法求解以上问题得到：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
-<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
-<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
-<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a></li>
-</ul>
-<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
-<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
-<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)<img src="/Notes/RL/RL——TRPO/TRPO.png"></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>RL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>RL——TRPO-PPO-目标函数基础推导</title>
     <url>/Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html</url>
     <content><![CDATA[<p><em>本文主要介绍TRPO、PPO相关内容</em></p>
@@ -466,7 +432,7 @@
 <li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
 </ul>
 </li>
-<li>基于KL散度限制新旧策略的距离后，进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束）：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
+<li>基于KL散度限制新旧策略的距离后，进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
 <li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
 </ul>
 </li>
@@ -524,6 +490,40 @@
 <h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
 <li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
 <li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>RL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RL——TRPO</title>
+    <url>/Notes/RL/RL%E2%80%94%E2%80%94TRPO.html</url>
+    <content><![CDATA[<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
+<ul>
+<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
+</ul>
+<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
+<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
+<li>\(H\)为海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
+<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
+<li>可根据拉格朗日乘子法求解以上问题得到：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
+<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
+<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
+<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a></li>
+</ul>
+<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
+<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
+<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)<img src="/Notes/RL/RL——TRPO/TRPO.png"></li>
 </ul>
 ]]></content>
       <tags>
@@ -4384,50 +4384,6 @@
       </tags>
   </entry>
   <entry>
-    <title>DL——VAE</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94VAE.html</url>
-    <content><![CDATA[<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-
-<hr>
-<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><ul>
-<li>网络输出对数方差，事实使用\(e^\sigma\)，能保证方差非负<img src="/Notes/DL/DL——VAE/A-VAE.png">
-
-
-</li>
-</ul>
-<hr>
-<h3 id="李宏毅公式推导"><a href="#李宏毅公式推导" class="headerlink" title="李宏毅公式推导"></a>李宏毅公式推导</h3><ul>
-<li>目标是让似然函数最大化，也就是最大化\(\sum_x \log P(x)\)，推导可得相当于最大化变分下界(Evidence Lower Bound，\(ELBO(q)\))<img src="/Notes/DL/DL——VAE/B-VAE-formula-lihongyi.png"></li>
-<li>为什么要通过求解\(q\)来实现似然函数最大化/ELBO最大化呢？因为优化\(q\)时，与\(P(x)\)无关，相当于最小化KL散度<img src="/Notes/DL/DL——VAE/C-VAE-formula-lihongyi-why-q.png"></li>
-<li>进一步拆解变分下界<img src="/Notes/DL/DL——VAE/D-VAE-formula-lihongyi.png"></li>
-<li>变分下界的两个部分分别可用在网络中建模，两个损失函数同时优化就是VAE<img src="/Notes/DL/DL——VAE/E-VAE-formula-lihongyi.png">
-<ul>
-<li>期望部分：通过带采样的Auto-Encoder实现，损失函数为Auto-Encoder的损失函数</li>
-<li>KL散度部分【TODO：有时间手动推导一下】：使用一个关于均值和方差的损失函数可以实现，详情看原始论文可推导<a href="https://arxiv.org/pdf/1312.6114.pdf?source=post_page---------------------------" target="_blank" rel="noopener">Auto-Encoding Variational Bayes</a><img src="/Notes/DL/DL——VAE/original-paper-VAE-loss1-proof.png">
-<ul>
-<li>假设了\(p_\theta(z)\)是均值为0方差为1的标准正太分布\(N(0,I)\)，所以这里本质是尽量保证分布\(q(z|x)\)尽可能接近标准正太分布</li>
-</ul>
-</li>
-<li>KL散度部分的<a href="https://spaces.ac.cn/archives/5253" target="_blank" rel="noopener">其他证明</a>：<img src="/Notes/DL/DL——VAE/spaces-VAE-formula.png">
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="其他公式推导"><a href="#其他公式推导" class="headerlink" title="其他公式推导"></a>其他公式推导</h3><img src="/Notes/DL/DL——VAE/other-VAE-formula.png">
-
-<hr>
-<h3 id="AE-VAE-CVAE"><a href="#AE-VAE-CVAE" class="headerlink" title="AE-VAE-CVAE"></a>AE-VAE-CVAE</h3><img src="/Notes/DL/DL——VAE/other-AE-VAE-CVAE.png">
-
-]]></content>
-      <tags>
-        <tag>DL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>DL——Transformer</title>
     <url>/Notes/DL/DL%E2%80%94%E2%80%94Transformer.html</url>
     <content><![CDATA[<p><em>本文主要介绍Transformer和Attention相关内容</em></p>
@@ -4726,6 +4682,50 @@
       <tags>
         <tag>DL</tag>
         <tag>NLP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DL——VAE</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94VAE.html</url>
+    <content><![CDATA[<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><ul>
+<li>网络输出对数方差，事实使用\(e^\sigma\)，能保证方差非负<img src="/Notes/DL/DL——VAE/A-VAE.png">
+
+
+</li>
+</ul>
+<hr>
+<h3 id="李宏毅公式推导"><a href="#李宏毅公式推导" class="headerlink" title="李宏毅公式推导"></a>李宏毅公式推导</h3><ul>
+<li>目标是让似然函数最大化，也就是最大化\(\sum_x \log P(x)\)，推导可得相当于最大化变分下界(Evidence Lower Bound，\(ELBO(q)\))<img src="/Notes/DL/DL——VAE/B-VAE-formula-lihongyi.png"></li>
+<li>为什么要通过求解\(q\)来实现似然函数最大化/ELBO最大化呢？因为优化\(q\)时，与\(P(x)\)无关，相当于最小化KL散度<img src="/Notes/DL/DL——VAE/C-VAE-formula-lihongyi-why-q.png"></li>
+<li>进一步拆解变分下界<img src="/Notes/DL/DL——VAE/D-VAE-formula-lihongyi.png"></li>
+<li>变分下界的两个部分分别可用在网络中建模，两个损失函数同时优化就是VAE<img src="/Notes/DL/DL——VAE/E-VAE-formula-lihongyi.png">
+<ul>
+<li>期望部分：通过带采样的Auto-Encoder实现，损失函数为Auto-Encoder的损失函数</li>
+<li>KL散度部分【TODO：有时间手动推导一下】：使用一个关于均值和方差的损失函数可以实现，详情看原始论文可推导<a href="https://arxiv.org/pdf/1312.6114.pdf?source=post_page---------------------------" target="_blank" rel="noopener">Auto-Encoding Variational Bayes</a><img src="/Notes/DL/DL——VAE/original-paper-VAE-loss1-proof.png">
+<ul>
+<li>假设了\(p_\theta(z)\)是均值为0方差为1的标准正太分布\(N(0,I)\)，所以这里本质是尽量保证分布\(q(z|x)\)尽可能接近标准正太分布</li>
+</ul>
+</li>
+<li>KL散度部分的<a href="https://spaces.ac.cn/archives/5253" target="_blank" rel="noopener">其他证明</a>：<img src="/Notes/DL/DL——VAE/spaces-VAE-formula.png">
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="其他公式推导"><a href="#其他公式推导" class="headerlink" title="其他公式推导"></a>其他公式推导</h3><img src="/Notes/DL/DL——VAE/other-VAE-formula.png">
+
+<hr>
+<h3 id="AE-VAE-CVAE"><a href="#AE-VAE-CVAE" class="headerlink" title="AE-VAE-CVAE"></a>AE-VAE-CVAE</h3><img src="/Notes/DL/DL——VAE/other-AE-VAE-CVAE.png">
+
+]]></content>
+      <tags>
+        <tag>DL</tag>
       </tags>
   </entry>
   <entry>
@@ -5469,6 +5469,36 @@
       </tags>
   </entry>
   <entry>
+    <title>Docker——Docker使用笔记</title>
+    <url>/Notes/Docker/Docker%E2%80%94%E2%80%94Docker%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0.html</url>
+    <content><![CDATA[<p><em>本文用于记录一些Docker使用过程中的经验</em></p>
+<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
+<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="Docker服务相关操作"><a href="#Docker服务相关操作" class="headerlink" title="Docker服务相关操作"></a>Docker服务相关操作</h3><ul>
+<li><p>查看服务是否启动</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">systemctl status docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>停止Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl stop docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl enable docker</span><br></pre></td></tr></table></figure></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Docker——Dockerfile命令总结</title>
     <url>/Notes/Docker/Docker%E2%80%94%E2%80%94Dockerfile%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93.html</url>
     <content><![CDATA[<hr>
@@ -5499,36 +5529,6 @@
 <h3 id="Dockerfile命令相关说明"><a href="#Dockerfile命令相关说明" class="headerlink" title="Dockerfile命令相关说明"></a>Dockerfile命令相关说明</h3><h4 id="比较CMD和ENTRY的区别"><a href="#比较CMD和ENTRY的区别" class="headerlink" title="比较CMD和ENTRY的区别"></a>比较CMD和ENTRY的区别</h4><h4 id="比较ENV和ARG的区别"><a href="#比较ENV和ARG的区别" class="headerlink" title="比较ENV和ARG的区别"></a>比较ENV和ARG的区别</h4><ul>
 <li>ARG可以在<code>docker build</code>过程中传值，同时也可以设置默认值</li>
 <li>ENV只能定义到Dockerfile中，不能在<code>docker build</code>过程中传入</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Docker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Docker——Docker使用笔记</title>
-    <url>/Notes/Docker/Docker%E2%80%94%E2%80%94Docker%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0.html</url>
-    <content><![CDATA[<p><em>本文用于记录一些Docker使用过程中的经验</em></p>
-<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
-<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h3 id="Docker服务相关操作"><a href="#Docker服务相关操作" class="headerlink" title="Docker服务相关操作"></a>Docker服务相关操作</h3><ul>
-<li><p>查看服务是否启动</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">systemctl status docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>停止Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl stop docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>重启Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo systemctl enable docker</span><br></pre></td></tr></table></figure></li>
 </ul>
 ]]></content>
       <tags>
@@ -6440,42 +6440,6 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Ubuntu——屏幕亮度调节</title>
-    <url>/Notes/Linux/Ubuntu%E2%80%94%E2%80%94%E5%B1%8F%E5%B9%95%E4%BA%AE%E5%BA%A6%E8%B0%83%E8%8A%82.html</url>
-    <content><![CDATA[<p><em>Ubuntu屏幕亮度调节</em></p>
-<hr>
-<h3 id="Flux"><a href="#Flux" class="headerlink" title="Flux"></a>Flux</h3><ul>
-<li>Flux是一款非常好用的屏幕调整软件，不仅可以调整屏幕亮度，还能调整色调等</li>
-<li>但是，许多Ubuntu版本下，Flux都不能使用，还会影响<code>apt-get update</code>命令，一般情况下，都会将其从表中删除<ul>
-<li>如果Flux可以使用，建议优先使用Flux</li>
-</ul>
-</li>
-</ul>
-<h3 id="xrandr调整屏幕亮度"><a href="#xrandr调整屏幕亮度" class="headerlink" title="xrandr调整屏幕亮度"></a>xrandr调整屏幕亮度</h3><ul>
-<li><p>展示已有屏幕</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr -q</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>或者可以使用更简洁的版本<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr -q | grep &quot; connected&quot;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>调整指定屏幕的亮度</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr --output HDMI-0 --brightness 0.5</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>其中<code>HDMI-0</code>是屏幕名称，<code>0.5</code>是亮度参数，大于1时屏幕会发白，注意不要调整的太亮</li>
-</ul>
-</li>
-<li><p>说明：<code>xrandr</code>修改的屏幕亮度在重启电脑后不会保存，如果想要每次开机自动调整，可以在开机启动添加脚本</p>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Ubuntu</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Ubuntu——ElasticSearch安装与配置(logstash)</title>
     <url>/Notes/Linux/Ubuntu%E2%80%94%E2%80%94ElasticSearch%E5%AE%89%E8%A3%85%E4%B8%8E%E9%85%8D%E7%BD%AE.html</url>
     <content><![CDATA[<p><em>ElasticSearch的安装与基本配置</em></p>
@@ -6593,6 +6557,42 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
 <p><strong><em>一旦同步开始，如果不关闭进程，那么将一直自动同步，建议同步完成(当输出不再变化)后关闭进程</em></strong></p>
 <ul>
 <li>查看ES中相应的Index是否已经被更新</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Ubuntu</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Ubuntu——屏幕亮度调节</title>
+    <url>/Notes/Linux/Ubuntu%E2%80%94%E2%80%94%E5%B1%8F%E5%B9%95%E4%BA%AE%E5%BA%A6%E8%B0%83%E8%8A%82.html</url>
+    <content><![CDATA[<p><em>Ubuntu屏幕亮度调节</em></p>
+<hr>
+<h3 id="Flux"><a href="#Flux" class="headerlink" title="Flux"></a>Flux</h3><ul>
+<li>Flux是一款非常好用的屏幕调整软件，不仅可以调整屏幕亮度，还能调整色调等</li>
+<li>但是，许多Ubuntu版本下，Flux都不能使用，还会影响<code>apt-get update</code>命令，一般情况下，都会将其从表中删除<ul>
+<li>如果Flux可以使用，建议优先使用Flux</li>
+</ul>
+</li>
+</ul>
+<h3 id="xrandr调整屏幕亮度"><a href="#xrandr调整屏幕亮度" class="headerlink" title="xrandr调整屏幕亮度"></a>xrandr调整屏幕亮度</h3><ul>
+<li><p>展示已有屏幕</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr -q</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>或者可以使用更简洁的版本<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr -q | grep &quot; connected&quot;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>调整指定屏幕的亮度</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xrandr --output HDMI-0 --brightness 0.5</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>其中<code>HDMI-0</code>是屏幕名称，<code>0.5</code>是亮度参数，大于1时屏幕会发白，注意不要调整的太亮</li>
+</ul>
+</li>
+<li><p>说明：<code>xrandr</code>修改的屏幕亮度在重启电脑后不会保存，如果想要每次开机自动调整，可以在开机启动添加脚本</p>
+</li>
 </ul>
 ]]></content>
       <tags>
@@ -7554,7 +7554,7 @@ ser.map(func_element)</code></pre>
     <content><![CDATA[<p><em>解决PDF的权限问题</em><br><strong>很多PDF文件为保护版权，会通过加密来限制打印和修改权限。随着Acrobat DC版本的发布，PDF文件的加密强度已经达到AES 256-bit</strong></p>
 <hr>
 <h3 id="在线解密"><a href="#在线解密" class="headerlink" title="在线解密"></a>在线解密</h3><ul>
-<li>将文档添加到附件并发送到邮件地址： <a href="mailto:&#x6f;&#x63;&#x72;&#x61;&#x6c;&#x6c;&#64;&#x76;&#x69;&#x70;&#46;&#49;&#x36;&#x33;&#46;&#x63;&#x6f;&#x6d;" target="_blank" rel="noopener">&#x6f;&#x63;&#x72;&#x61;&#x6c;&#x6c;&#64;&#x76;&#x69;&#x70;&#46;&#49;&#x36;&#x33;&#46;&#x63;&#x6f;&#x6d;</a></li>
+<li>将文档添加到附件并发送到邮件地址： <a href="mailto:&#x6f;&#x63;&#114;&#97;&#x6c;&#108;&#64;&#x76;&#x69;&#112;&#46;&#49;&#54;&#51;&#46;&#99;&#111;&#109;" target="_blank" rel="noopener">&#x6f;&#x63;&#114;&#97;&#x6c;&#108;&#64;&#x76;&#x69;&#112;&#46;&#49;&#54;&#51;&#46;&#99;&#111;&#109;</a></li>
 </ul>
 <hr>
 <h3 id="离线解密"><a href="#离线解密" class="headerlink" title="离线解密"></a>离线解密</h3><ul>
@@ -9214,6 +9214,28 @@ sudo apt-get install fluxgui</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Math——因果推断</title>
+    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%9B%A0%E6%9E%9C%E6%8E%A8%E6%96%AD.html</url>
+    <content><![CDATA[<p><em>本文介绍因果推断相关概念</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li>讲的比较好的入门材料：<ul>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/616895131" target="_blank" rel="noopener">闲聊因果效应（1）：当我们聊因果时，我们在聊什么</a></li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/622399450" target="_blank" rel="noopener">闲聊因果效应（2）: 理解因果效应的计算以及PSM、IPW</a></li>
+</ul>
+</li>
+<li>阿里发的一篇论文，用神经网络实现的二分类Uplift模型：<ul>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/629853695" target="_blank" rel="noopener">KDD‘22 阿里｜DESCN: Deep Entire Space Cross Networks | 多任务、端到端、IPW的共舞</a></li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Math</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Math——奇异值分解-SVD</title>
     <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%A5%87%E5%BC%82%E5%80%BC%E5%88%86%E8%A7%A3-SVD.html</url>
     <content><![CDATA[<p><em>本文从不同角度给出奇异值分解的物理意义</em></p>
@@ -9275,28 +9297,6 @@ sudo apt-get install fluxgui</code></pre>
 <blockquote>
 <p>原始矩阵:<br>[[ 4  5  6]<br>[ 4  5  6]<br>[ 8 10 12]<br>[ 4  5  6]]<br>分解后的原始U，S，V：<br>[[-3.77964473e-01 -9.25820100e-01  1.52792960e-16  0.00000000e+00]<br>[-3.77964473e-01  1.54303350e-01  9.12870929e-01  0.00000000e+00]<br>[-7.55928946e-01  3.08606700e-01 -3.65148372e-01 -4.47213595e-01]<br>[-3.77964473e-01  1.54303350e-01 -1.82574186e-01  8.94427191e-01]]<br>[[2.32163735e+01 0.00000000e+00 0.00000000e+00]<br>[0.00000000e+00 1.22295087e-15 0.00000000e+00]<br>[0.00000000e+00 0.00000000e+00 5.18334466e-32]<br>[0.00000000e+00 0.00000000e+00 0.00000000e+00]]<br>[[-0.45584231 -0.56980288 -0.68376346]<br>[ 0.02454097  0.75988299 -0.64959647]<br>[-0.88972217  0.31289378  0.3324033 ]]<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]<br>降维后的U，S，V：<br>[[-0.37796447]<br>[-0.37796447]<br>[-0.75592895]<br>[-0.37796447]]<br>[[23.21637353]]<br>[[-0.45584231 -0.56980288 -0.68376346]]<br>降维后的恢复矩阵，与原矩阵相同：<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]</p>
 </blockquote>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Math</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Math——因果推断</title>
-    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%9B%A0%E6%9E%9C%E6%8E%A8%E6%96%AD.html</url>
-    <content><![CDATA[<p><em>本文介绍因果推断相关概念</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
-<li>讲的比较好的入门材料：<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/616895131" target="_blank" rel="noopener">闲聊因果效应（1）：当我们聊因果时，我们在聊什么</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/622399450" target="_blank" rel="noopener">闲聊因果效应（2）: 理解因果效应的计算以及PSM、IPW</a></li>
-</ul>
-</li>
-<li>阿里发的一篇论文，用神经网络实现的二分类Uplift模型：<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/629853695" target="_blank" rel="noopener">KDD‘22 阿里｜DESCN: Deep Entire Space Cross Networks | 多任务、端到端、IPW的共舞</a></li>
-</ul>
 </li>
 </ul>
 ]]></content>
@@ -10593,25 +10593,6 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
-    <title>Go语言——struct类型作为函数参数</title>
-    <url>/Notes/Go/Go%E8%AF%AD%E8%A8%80%E2%80%94%E2%80%94struct%E7%B1%BB%E5%9E%8B%E5%81%9A%E4%B8%BA%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0.html</url>
-    <content><![CDATA[<p><em>本文先给出Go语言中struct类型作为函数参数传入的例子，然后给出总结</em></p>
-<hr>
-<h3 id="首先看下面代码"><a href="#首先看下面代码" class="headerlink" title="首先看下面代码"></a>首先看下面代码</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">func changeValue(person Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func changePoint(person *Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line">func main()  &#123;</span><br><span class="line">	person := Person&#123;</span><br><span class="line">		name:&quot;origin&quot;,</span><br><span class="line">	&#125;</span><br><span class="line">	changeValue(person)</span><br><span class="line">	fmt.Printf(&quot;Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">	changePoint(&amp;person)</span><br><span class="line">	fmt.Printf(&quot;*Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//output:</span><br><span class="line">//Person:</span><br><span class="line">// person.name: origin---person.age: 0</span><br><span class="line">//*Person:</span><br><span class="line">// person.name: zhoujiahong---person.age: 22</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>struct类型的传递是按值传递的，与数组[5]byte等的传递相似，也可以理解为和C++一样</li>
-<li>struct类型传递与切片不同，切片事实上是一个指针（栈）指向一块数组（堆）这样的数据结构，所以无论如何都是传入指针或者是指针（栈）的指针（指向栈）</li>
-<li>可以理解为: 切片类似于Java（切片还多了个特色，通过传入切片可以修改指针（栈）本身，而Java是做不到的）， 而数组类似于C++</li>
-</ul>
-<p><strong>注意：struct类型与切片传值方式不同而与数组相同</strong></p>
-]]></content>
-      <tags>
-        <tag>Go</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Go语言——切片和数组的区别</title>
     <url>/Notes/Go/Go%E8%AF%AD%E8%A8%80%E2%80%94%E2%80%94%E5%88%87%E7%89%87%E5%92%8C%E6%95%B0%E7%BB%84%E7%9A%84%E5%8C%BA%E5%88%AB.html</url>
     <content><![CDATA[<p><em>关于切片与数组的区别，这里给出定义和传值等使用上的区别，最后给出总结</em></p>
@@ -10651,6 +10632,25 @@ func String2Slice(s string) (b []byte) {
 <ul>
 <li>数组的传递是按值传递的，使用了指针可实现传入地址，从而实现对数组的修改 </li>
 </ul>
+]]></content>
+      <tags>
+        <tag>Go</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Go语言——struct类型作为函数参数</title>
+    <url>/Notes/Go/Go%E8%AF%AD%E8%A8%80%E2%80%94%E2%80%94struct%E7%B1%BB%E5%9E%8B%E5%81%9A%E4%B8%BA%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0.html</url>
+    <content><![CDATA[<p><em>本文先给出Go语言中struct类型作为函数参数传入的例子，然后给出总结</em></p>
+<hr>
+<h3 id="首先看下面代码"><a href="#首先看下面代码" class="headerlink" title="首先看下面代码"></a>首先看下面代码</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">func changeValue(person Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func changePoint(person *Person)&#123;</span><br><span class="line">	person.name = &quot;zhoujiahong&quot;</span><br><span class="line">	person.age = 22</span><br><span class="line">&#125;</span><br><span class="line">func main()  &#123;</span><br><span class="line">	person := Person&#123;</span><br><span class="line">		name:&quot;origin&quot;,</span><br><span class="line">	&#125;</span><br><span class="line">	changeValue(person)</span><br><span class="line">	fmt.Printf(&quot;Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">	changePoint(&amp;person)</span><br><span class="line">	fmt.Printf(&quot;*Person:\n person.name: %s---person.age: %d\n&quot;, person.name, person.age)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//output:</span><br><span class="line">//Person:</span><br><span class="line">// person.name: origin---person.age: 0</span><br><span class="line">//*Person:</span><br><span class="line">// person.name: zhoujiahong---person.age: 22</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>struct类型的传递是按值传递的，与数组[5]byte等的传递相似，也可以理解为和C++一样</li>
+<li>struct类型传递与切片不同，切片事实上是一个指针（栈）指向一块数组（堆）这样的数据结构，所以无论如何都是传入指针或者是指针（栈）的指针（指向栈）</li>
+<li>可以理解为: 切片类似于Java（切片还多了个特色，通过传入切片可以修改指针（栈）本身，而Java是做不到的）， 而数组类似于C++</li>
+</ul>
+<p><strong>注意：struct类型与切片传值方式不同而与数组相同</strong></p>
 ]]></content>
       <tags>
         <tag>Go</tag>
@@ -11286,6 +11286,23 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
+    <title>Python——为什么Python中没有自增++和自减--操作?</title>
+    <url>/Notes/Python/Python%E2%80%94%E2%80%94%E4%B8%BA%E4%BB%80%E4%B9%88Python%E4%B8%AD%E6%B2%A1%E6%9C%89%E8%87%AA%E5%A2%9E++%E5%92%8C%E8%87%AA%E5%87%8F--%E6%93%8D%E4%BD%9C?.html</url>
+    <content><![CDATA[<p><em>C++和Java等语言都有++和–操作,为什么以方便自居的Python却没有这种操作呢?</em></p>
+<hr>
+<h3 id="Python的数值对象"><a href="#Python的数值对象" class="headerlink" title="Python的数值对象"></a>Python的数值对象</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">a = 1</span><br><span class="line">b = 1</span><br><span class="line">c = 1000123</span><br><span class="line">d = 1000123</span><br><span class="line"></span><br><span class="line">print id(a)</span><br><span class="line">print id(b)</span><br><span class="line">print id(c)</span><br><span class="line">print id(d)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">94181316498840</span><br><span class="line">94181316498840</span><br><span class="line">94181323965720</span><br><span class="line">94181323965720</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Python数值对象都是不可变类型,与String一样,所以不能修改对象内部数据</li>
+<li>C++中的<code>i++</code>修改内存中对象本身,数值增加1,而Python不能修改对象本身</li>
+<li>与C++中字符串可以修改,Python中不能修改是一个道理</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Python——优先队列PriorityQueue</title>
     <url>/Notes/Python/Python%E2%80%94%E2%80%94%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97PriorityQueue.html</url>
     <content><![CDATA[<p><em>本文介绍Python中优先队列的用法</em></p>
@@ -11341,23 +11358,6 @@ func String2Slice(s string) (b []byte) {
 </li>
 <li><p>PriorityQueue对象不是普通Python内嵌对象,不能使用Python内嵌的<code>len</code>函数</p>
 </li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Python——为什么Python中没有自增++和自减--操作?</title>
-    <url>/Notes/Python/Python%E2%80%94%E2%80%94%E4%B8%BA%E4%BB%80%E4%B9%88Python%E4%B8%AD%E6%B2%A1%E6%9C%89%E8%87%AA%E5%A2%9E++%E5%92%8C%E8%87%AA%E5%87%8F--%E6%93%8D%E4%BD%9C?.html</url>
-    <content><![CDATA[<p><em>C++和Java等语言都有++和–操作,为什么以方便自居的Python却没有这种操作呢?</em></p>
-<hr>
-<h3 id="Python的数值对象"><a href="#Python的数值对象" class="headerlink" title="Python的数值对象"></a>Python的数值对象</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">a = 1</span><br><span class="line">b = 1</span><br><span class="line">c = 1000123</span><br><span class="line">d = 1000123</span><br><span class="line"></span><br><span class="line">print id(a)</span><br><span class="line">print id(b)</span><br><span class="line">print id(c)</span><br><span class="line">print id(d)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">94181316498840</span><br><span class="line">94181316498840</span><br><span class="line">94181323965720</span><br><span class="line">94181323965720</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Python数值对象都是不可变类型,与String一样,所以不能修改对象内部数据</li>
-<li>C++中的<code>i++</code>修改内存中对象本身,数值增加1,而Python不能修改对象本身</li>
-<li>与C++中字符串可以修改,Python中不能修改是一个道理</li>
 </ul>
 ]]></content>
       <tags>
@@ -12281,6 +12281,18 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
+    <title>ML——模型性能评估之MAP</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E4%B9%8BMAP.html</url>
+    <content><![CDATA[<p><em>MAP(Mean Average Precision)</em></p>
+<ul>
+<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ML——模型的方差与偏差</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html</url>
     <content><![CDATA[<p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
@@ -12526,18 +12538,6 @@ func String2Slice(s string) (b []byte) {
 <li>可以证明\(G\)此时是正定的</li>
 <li>\(0\leq \alpha \leq 1\)</li>
 <li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ML——模型性能评估之MAP</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E4%B9%8BMAP.html</url>
-    <content><![CDATA[<p><em>MAP(Mean Average Precision)</em></p>
-<ul>
-<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
 </ul>
 ]]></content>
       <tags>
@@ -13277,132 +13277,6 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>ML——GBDT-梯度提升树-推导过程</title>
-    <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT-%E6%A2%AF%E5%BA%A6%E6%8F%90%E5%8D%87%E6%A0%91-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html</url>
-    <content><![CDATA[<p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
-<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
-<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95-%E6%97%A0%E7%BA%A6%E6%9D%9F%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">无约束参数优化方法</a></li>
-</ul>
-<hr>
-<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
-<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
-<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
-<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
-
-</li>
-</ul>
-<hr>
-<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
-<ul>
-<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
-<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
-</ul>
-<hr>
-<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
-<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
-<ul>
-<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
-</ul>
-<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \arg\max_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
-<ul>
-<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
-<li>最小化损失函数即可得到最优模型</li>
-</ul>
-<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
-<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
-<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
-<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
-<li>上面的推导中<ul>
-<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数\(L(y_{i}, F(x_{i}))\)关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)，这个梯度也是GBDT名字中梯度的由来<ul>
-<li>这个损失函数在使用不同回归方法时时定义各不相同</li>
-<li>原始论文中提到两个损失函数定义,根据损失函数的不同,对应的归回方法不同: <strong>最小二乘归回</strong>或者<strong>最小绝对误差回归</strong></li>
-</ul>
-</li>
-<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
-<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
-<li>但是需要注意的是,如果我们使用的基分类器是逻辑回归,那么这里每个基分类器的结果都是在[0-1]之间的数,是需要前面的\(\beta\)的</li>
-<li>这里我们推导的时候假定了基分类器是回归树,所以不需要使用 \(\beta\)</li>
-</ul>
-</li>
-<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
-<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
-</ul>
-</li>
-<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
-</ul>
-</li>
-</ul>
-<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用逻辑回归模型[Friedman 2000]等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
-<ul>
-<li>注意:包括Adaboost和GBDT在内<strong>Boosting框架中，基函数(基分类器)都不能使用线性模型</strong><ul>
-<li>理解: Boosting框架本质上是一个加法模型，是对多个基函数的线性组合，得到更优的分类器，可以证明线性模型的线性组合还是线性模型，如果Boosting框架中使用线性模型，那么我们最终得到的分类器也是线性模型，这就局限了我们的整体模型的表达能力</li>
-</ul>
-</li>
-</ul>
-<h5 id="最小二乘回归-损失函数"><a href="#最小二乘回归-损失函数" class="headerlink" title="最小二乘回归(损失函数)"></a>最小二乘回归(损失函数)</h5><p><em>Least-Squares Regression</em></p>
-<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
-<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
-</ul>
-<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
-<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
-<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
-<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
-<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
-</ul>
-<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least Absolute Deviation Regression, LAD</em></p>
-<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
-<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
-</ul>
-<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
-<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
-<li>绝对值的导数就是1或者-1,当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
-<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
-<li>同理得到，当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
-<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
-<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
-</ul>
-</li>
-<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
-<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下</li>
-<li>待更新*<br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
-</ul>
-<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
-<ul>
-<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
-<li>回归树和逻辑回归的优缺点比较<ul>
-<li><strong>树模型优点</strong>:<ul>
-<li>可解释性强</li>
-<li>可处理混合类型特征(混合类型特征指的是数值型和类别型均可处理)</li>
-<li>具有伸缩不变性(无需特征归一化: 神经网络和逻辑回归都需要,逻辑回归中是为了保证随机梯度下降的方向正确,速度快)</li>
-<li>可自然的处理缺失值, C4.5树处理缺失值默认使用的方法是先用未缺失样本计算信息增益确定分裂结点,然后将缺失值的每个样本按照权重(当前叶子节点未缺失样本数量 / 未缺失样本总数)分配到各个结点</li>
-<li>对异常点鲁棒(不用去除异常点,LR不具有这个优点)</li>
-<li>有特征选择的作用</li>
-<li>可扩展性强,容易并行(并行是最好的,用来解释为什么XGBoost等都用树模型)</li>
-</ul>
-</li>
-<li><strong>树模型缺点</strong>:<ul>
-<li>缺乏平滑性(回归预测时输出值只能输出若干种数值,而不是连续的数值,所以不平滑[不平滑即离散])</li>
-<li>不适合处理高维稀疏数据(当数据量太少时,非常容易过拟合,树的深度太深,从而模型变得太复杂)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
-<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-        <tag>GBDT</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ML——DT-决策树</title>
     <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html</url>
     <content><![CDATA[<p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
@@ -13719,6 +13593,132 @@ $$
       <tags>
         <tag>ML</tag>
         <tag>DT</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ML——GBDT-梯度提升树-推导过程</title>
+    <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT-%E6%A2%AF%E5%BA%A6%E6%8F%90%E5%8D%87%E6%A0%91-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html</url>
+    <content><![CDATA[<p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
+<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
+<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95-%E6%97%A0%E7%BA%A6%E6%9D%9F%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">无约束参数优化方法</a></li>
+</ul>
+<hr>
+<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
+<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
+<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
+<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
+
+</li>
+</ul>
+<hr>
+<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
+<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
+</ul>
+<hr>
+<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
+<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
+<ul>
+<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
+</ul>
+<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \arg\max_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
+<ul>
+<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
+<li>最小化损失函数即可得到最优模型</li>
+</ul>
+<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
+<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
+<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
+<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
+<li>上面的推导中<ul>
+<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数\(L(y_{i}, F(x_{i}))\)关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)，这个梯度也是GBDT名字中梯度的由来<ul>
+<li>这个损失函数在使用不同回归方法时时定义各不相同</li>
+<li>原始论文中提到两个损失函数定义,根据损失函数的不同,对应的归回方法不同: <strong>最小二乘归回</strong>或者<strong>最小绝对误差回归</strong></li>
+</ul>
+</li>
+<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
+<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
+<li>但是需要注意的是,如果我们使用的基分类器是逻辑回归,那么这里每个基分类器的结果都是在[0-1]之间的数,是需要前面的\(\beta\)的</li>
+<li>这里我们推导的时候假定了基分类器是回归树,所以不需要使用 \(\beta\)</li>
+</ul>
+</li>
+<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
+<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
+</ul>
+</li>
+<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
+</ul>
+</li>
+</ul>
+<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用逻辑回归模型[Friedman 2000]等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
+<ul>
+<li>注意:包括Adaboost和GBDT在内<strong>Boosting框架中，基函数(基分类器)都不能使用线性模型</strong><ul>
+<li>理解: Boosting框架本质上是一个加法模型，是对多个基函数的线性组合，得到更优的分类器，可以证明线性模型的线性组合还是线性模型，如果Boosting框架中使用线性模型，那么我们最终得到的分类器也是线性模型，这就局限了我们的整体模型的表达能力</li>
+</ul>
+</li>
+</ul>
+<h5 id="最小二乘回归-损失函数"><a href="#最小二乘回归-损失函数" class="headerlink" title="最小二乘回归(损失函数)"></a>最小二乘回归(损失函数)</h5><p><em>Least-Squares Regression</em></p>
+<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
+<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
+</ul>
+<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least Absolute Deviation Regression, LAD</em></p>
+<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
+<li>绝对值的导数就是1或者-1,当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
+<li>同理得到，当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
+<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
+</ul>
+</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下</li>
+<li>待更新*<br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li>回归树和逻辑回归的优缺点比较<ul>
+<li><strong>树模型优点</strong>:<ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(混合类型特征指的是数值型和类别型均可处理)</li>
+<li>具有伸缩不变性(无需特征归一化: 神经网络和逻辑回归都需要,逻辑回归中是为了保证随机梯度下降的方向正确,速度快)</li>
+<li>可自然的处理缺失值, C4.5树处理缺失值默认使用的方法是先用未缺失样本计算信息增益确定分裂结点,然后将缺失值的每个样本按照权重(当前叶子节点未缺失样本数量 / 未缺失样本总数)分配到各个结点</li>
+<li>对异常点鲁棒(不用去除异常点,LR不具有这个优点)</li>
+<li>有特征选择的作用</li>
+<li>可扩展性强,容易并行(并行是最好的,用来解释为什么XGBoost等都用树模型)</li>
+</ul>
+</li>
+<li><strong>树模型缺点</strong>:<ul>
+<li>缺乏平滑性(回归预测时输出值只能输出若干种数值,而不是连续的数值,所以不平滑[不平滑即离散])</li>
+<li>不适合处理高维稀疏数据(当数据量太少时,非常容易过拟合,树的深度太深,从而模型变得太复杂)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+        <tag>GBDT</tag>
       </tags>
   </entry>
   <entry>
@@ -15279,22 +15279,6 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>DL——特殊函数的反向传播</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E7%89%B9%E6%AE%8A%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD.html</url>
-    <content><![CDATA[<hr>
-<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
-</ul>
-<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
-<li>参考文献：Cross DQN</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>DL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>DL——迁移学习-元学习-联邦学习</title>
     <url>/Notes/DL/DL%E2%80%94%E2%80%94%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0-%E5%85%83%E5%AD%A6%E4%B9%A0-%E8%81%94%E9%82%A6%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
@@ -15312,6 +15296,22 @@ $$
 </ul>
 <h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
 <li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>DL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DL——特殊函数的反向传播</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E7%89%B9%E6%AE%8A%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD.html</url>
+    <content><![CDATA[<hr>
+<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
+</ul>
+<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
+<li>参考文献：Cross DQN</li>
 </ul>
 ]]></content>
       <tags>
@@ -18248,18 +18248,6 @@ source deactivate python3</code></pre>
   </entry>
   <entry>
     <title>Maven——maven包管理问题</title>
-    <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%9F%BA%E7%A1%80.html</url>
-    <content><![CDATA[<hr>
-<h3 id="Maven基础"><a href="#Maven基础" class="headerlink" title="Maven基础"></a>Maven基础</h3><ul>
-<li>参考链接：<a href="https://blog.csdn.net/qq_14958051/article/details/124601351" target="_blank" rel="noopener">Maven 最全教程，看了必懂，99% 的人都收藏了！</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Others</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Maven——maven包管理问题</title>
     <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%8C%85%E7%AE%A1%E7%90%86%E9%97%AE%E9%A2%98.html</url>
     <content><![CDATA[<hr>
 <h3 id="Maven配置"><a href="#Maven配置" class="headerlink" title="Maven配置"></a>Maven配置</h3><ul>
@@ -18275,6 +18263,18 @@ source deactivate python3</code></pre>
 <li>下面是一个例子<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 包信息</span><br><span class="line">    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-boot-starter-thymeleaf&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.1.6.RELEASE&lt;/version&gt;</span><br><span class="line"># 存储到本地</span><br><span class="line">	~/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/2.1.6.RELEASE/spring-boot-starter-jdbc-2.1.6.RELEASE.jar</span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Others</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Maven——maven包管理问题</title>
+    <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%9F%BA%E7%A1%80.html</url>
+    <content><![CDATA[<hr>
+<h3 id="Maven基础"><a href="#Maven基础" class="headerlink" title="Maven基础"></a>Maven基础</h3><ul>
+<li>参考链接：<a href="https://blog.csdn.net/qq_14958051/article/details/124601351" target="_blank" rel="noopener">Maven 最全教程，看了必懂，99% 的人都收藏了！</a></li>
 </ul>
 ]]></content>
       <tags>

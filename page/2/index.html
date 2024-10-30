@@ -677,135 +677,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
-<ul>
-<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
-</ul>
-<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
-<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
-<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
-<li>\(H\)为海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
-<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
-<li>可根据拉格朗日乘子法求解以上问题得到：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
-<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
-<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
-<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a></li>
-</ul>
-<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
-<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
-<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)<img src="/Notes/RL/RL——TRPO/TRPO.png"></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -923,7 +794,7 @@
 <li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
 </ul>
 </li>
-<li>基于KL散度限制新旧策略的距离后，进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束）：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
+<li>基于KL散度限制新旧策略的距离后，进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
 <li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
 </ul>
 </li>
@@ -981,6 +852,135 @@
 <h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
 <li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
 <li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
+<ul>
+<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
+</ul>
+<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
+<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
+<li>\(H\)为海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
+<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
+<li>可根据拉格朗日乘子法求解以上问题得到：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
+<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
+<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
+<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a></li>
+</ul>
+<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
+<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
+<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)<img src="/Notes/RL/RL——TRPO/TRPO.png"></li>
 </ul>
 
           
