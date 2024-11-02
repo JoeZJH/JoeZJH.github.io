@@ -275,152 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——困惑度-Perplexity.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/NLP/NLP——困惑度-Perplexity.html" itemprop="url">NLP——困惑度-Perplexity</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍困惑度在语言模型评估中的作用</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="如何评价一个语言模型的好坏"><a href="#如何评价一个语言模型的好坏" class="headerlink" title="如何评价一个语言模型的好坏"></a>如何评价一个语言模型的好坏</h3><h4 id="直接评估法"><a href="#直接评估法" class="headerlink" title="直接评估法"></a>直接评估法</h4><ul>
-<li>将语言模型应用到实际的具体问题中去,比如机器翻译,词性标注,拼写矫正等</li>
-<li>评估语言模型在这些实际问题中的具体表现</li>
-</ul>
-<h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>准确</li>
-<li>能精确评估在具体应用场景中的效果</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>费时</li>
-<li>难以操作</li>
-</ul>
-<h4 id="困惑度-Perplexity"><a href="#困惑度-Perplexity" class="headerlink" title="困惑度(Perplexity)"></a>困惑度(Perplexity)</h4><h5 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h5><ul>
-<li>给<strong>测试集</strong>的句子赋予较高概率值的语言模型较好</li>
-<li>当一个语言模型训练完成后,测试集中的句子(正常的自然语言句子)出现概率越高越好</li>
-</ul>
-<h5 id="困惑度的定义"><a href="#困惑度的定义" class="headerlink" title="困惑度的定义"></a>困惑度的定义</h5><ul>
-<li>如果存在测试文本\(d = (w_{1}, w_{2},,,w_{N})\),那么该文本在模型Model中的困惑度为:<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= P(d|Model)^{-\frac{1}{N}} \\<br>&amp;= P(w_{1}, w_{2},,,w_{N}|Model)^{-\frac{1}{N}} \\<br>&amp;= \sqrt[N]{\frac{1}{P(w_{1}, w_{2},,,w_{N}|Model)}}<br>\end{align}<br>$$</li>
-<li>两边取log有<br>$$<br>\begin{align}<br>Log(Perplexity(d|Model)) &amp;= -\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model) \\<br>\end{align}<br>$$</li>
-<li>一般来说计算时使用公式<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= e^{-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)} \\<br>&amp;= exp\left (-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>\end{align}<br>$$</li>
-<li>如果在已知模型Model参数时,文档\(d\)中的词独立,即\(w_{1},w_{2},,,w_{N}\)互相独立,则有:<br>$$<br>\begin{align}<br>P(w_{1}, w_{2},,,w_{N}|Model) = \prod_{n=1}^{N}P(w_{n}|Model) \\<br>\end{align}<br>$$</li>
-<li>进一步有<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= exp\left (-\frac{1}{N}logP(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}log\prod_{n=1}^{N}P(w_{n}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}\sum_{n=1}^{N}logP(w_{n}|Model)\right ) \\<br>\end{align}<br>$$</li>
-<li>以上是一个文档的表述,对于多个文档\(D = (d_{1}, d_{2},,,d_{M})\)<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= P(D|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \prod_{m=1}^{M} P(d_{m}|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \sqrt[(\sum_{m=1}^{M}N_{m})]{\frac{1}{\prod_{m=1}^{M}P(d_{m}|Model)}}<br>\end{align}<br>$$</li>
-<li>两边取log<br>$$<br>\begin{align}<br>Log(Perplexity(D|Model)) &amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}log(\prod_{m=1}^{M}P(d_{m}|Model)) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(d_{m}|Model) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \\<br>\end{align}<br>$$</li>
-<li>一般来说计算公式<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right )<br>\end{align}<br>$$</li>
-<li>如果在已知Model参数的情况下,每个文档中的词都相互独立,即任取文档\(d_{m}\)有\(w_{1}^{m},w_{2}^{m},,,w_{N_{m}}^{m}\)互相独立,则有<br>$$<br>\begin{align}<br>P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) = \prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \\<br>\end{align}<br>$$</li>
-<li>进一步可得<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}logP(w_{n}^{m}|Model) \right ) \\<br>\end{align}<br>$$</li>
-<li>注意,多个文档的困惑度<strong>不等于</strong>所有文档困惑度的<strong>积</strong>,而是等于<strong>把所有文档合并成一个大文档,大文档的困惑度则是最终所有文档的困惑度</strong></li>
-</ul>
-<ul>
-<li>在给定模型中,<strong>测试句子</strong>出现的概率越大,对应的困惑度越小,模型越好</li>
-</ul>
-<h5 id="LDA的困惑度"><a href="#LDA的困惑度" class="headerlink" title="LDA的困惑度"></a>LDA的困惑度</h5><ul>
-<li>LDA中\(w_{1},w_{2},,,w_{n}\)在参数已知的情况下是互相独立的,则有<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}logP(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}P(w_{n}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}P(w_{n}=t|z_{n}=k;Model)P(z_{n}=k|d=d_{m};Model)\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}log\prod_{n=1}^{N_{m}}\theta_{m,:}\phi_{:,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}log\theta_{m,:}\phi_{:,t}\right ) \\<br>\end{align}<br>$$</li>
-<li>其中\(\phi_{k,t}\)表示单词t在主题k中出现的概率,\(\theta_{m,k}\)表示主题k在文档m中出现的概率</li>
-<li>\(\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t} = (\theta_{m,:}\phi_{:,t})\)就是单词t出现在文档m中的概率(对隐变量主题k积分)</li>
-<li>上面式子中\((\theta_{m,:}\phi_{:,t})\)就是两个向量的内积,在这里:\(\theta_{m,:}\)代表行向量,表示当前文档\(d_{m}\)的主题分布,\(\phi_{:,t}\)代表列向量,表示当前每个主题生成词\(w_{t}\)的概率</li>
-<li>计算公式的代码可参考L-LDA模型的实现<a href="https://github.com/JoeZJH/Labeled-LDA-Python/blob/master/model/labeled_lda.py" target="_blank" rel="noopener">GitHub仓库: Labeled-LDA-Python</a> 中的<code>perplexity</code>函数和<code>log_perplexity</code>函数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——LLDA的Gibbs采样实现.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1231,6 +1085,131 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Docker使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Docker/Docker——Docker使用笔记.html" itemprop="url">Docker——Docker使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文用于记录一些Docker使用过程中的经验</em></p>
+<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
+<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="Docker服务相关操作"><a href="#Docker服务相关操作" class="headerlink" title="Docker服务相关操作"></a>Docker服务相关操作</h3><ul>
+<li><p>查看服务是否启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>停止Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl stop docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启Docker服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl enable docker</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Dockerfile命令总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1314,131 +1293,6 @@
 <h3 id="Dockerfile命令相关说明"><a href="#Dockerfile命令相关说明" class="headerlink" title="Dockerfile命令相关说明"></a>Dockerfile命令相关说明</h3><h4 id="比较CMD和ENTRY的区别"><a href="#比较CMD和ENTRY的区别" class="headerlink" title="比较CMD和ENTRY的区别"></a>比较CMD和ENTRY的区别</h4><h4 id="比较ENV和ARG的区别"><a href="#比较ENV和ARG的区别" class="headerlink" title="比较ENV和ARG的区别"></a>比较ENV和ARG的区别</h4><ul>
 <li>ARG可以在<code>docker build</code>过程中传值，同时也可以设置默认值</li>
 <li>ENV只能定义到Dockerfile中，不能在<code>docker build</code>过程中传入</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Docker/Docker——Docker使用笔记.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Docker/Docker——Docker使用笔记.html" itemprop="url">Docker——Docker使用笔记</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文用于记录一些Docker使用过程中的经验</em></p>
-<h3 id="清空没用的镜像以节约空间"><a href="#清空没用的镜像以节约空间" class="headerlink" title="清空没用的镜像以节约空间"></a>清空没用的镜像以节约空间</h3><ul>
-<li>清空所有悬空（dangling）镜像<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker image prune</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h3 id="Docker服务相关操作"><a href="#Docker服务相关操作" class="headerlink" title="Docker服务相关操作"></a>Docker服务相关操作</h3><ul>
-<li><p>查看服务是否启动</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>停止Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl stop docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>重启Docker服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl enable docker</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -1891,6 +1745,125 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——修改图片背景颜色.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——修改图片背景颜色.html" itemprop="url">Python——修改图片背景颜色</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>利用Python的skimage包实现修改图片背景色等</em></p>
+<hr>
+<h3 id="修改签名背景，按照灰度图像处理"><a href="#修改签名背景，按照灰度图像处理" class="headerlink" title="修改签名背景，按照灰度图像处理"></a>修改签名背景，按照灰度图像处理</h3><h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">from skimage import io, color</span><br><span class="line">import matplotlib.pyplot as plt</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def change_grey_to_white(origin, new):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    Change background color for image, such as signature</span><br><span class="line">    :param origin: the path of original image</span><br><span class="line">    :param new: the path of new image</span><br><span class="line">    :return: None</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    # img = io.imread(&apos;./origin.jpeg&apos;)</span><br><span class="line">    img = io.imread(origin)</span><br><span class="line">    io.imshow(img)</span><br><span class="line">    plt.show()</span><br><span class="line">    img_gray = color.rgb2gray(img)</span><br><span class="line">    rows, cols = img_gray.shape</span><br><span class="line">    for i in range(rows):</span><br><span class="line">        for j in range(cols):</span><br><span class="line">            if img_gray[i, j] &lt;= 0.5:</span><br><span class="line">                img_gray[i, j] = 0</span><br><span class="line">            else:</span><br><span class="line">                img_gray[i, j] = 1</span><br><span class="line">    io.imshow(img_gray)</span><br><span class="line">    plt.show()</span><br><span class="line">    io.imsave(new, img_gray)</span><br><span class="line"></span><br><span class="line"># example</span><br><span class="line">change_grey_to_white(&apos;./origin.jpeg&apos;, &apos;new.jpeg&apos;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><ul>
+<li>这里可接受彩色图片，比如拍照片得到的原始图片</li>
+<li>函数会将其转换为灰度图片然后处理，最终输出也是灰度图片</li>
+<li>如果需要处理指定灰度，可通过修改判断语句中0.5这个值从而实现（比如修改为区间等）</li>
+</ul>
+<hr>
+<h3 id="修改证件照背景，按彩色图像处理"><a href="#修改证件照背景，按彩色图像处理" class="headerlink" title="修改证件照背景，按彩色图像处理"></a>修改证件照背景，按彩色图像处理</h3><h4 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">from skimage import io</span><br><span class="line">import numpy as np</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def change_pixel_color(pixel, old_pixel, new_pixel=None, error=60):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    change color for pixel if pixel in range [old_pixel-error, old_pixel+error]</span><br><span class="line">    :param pixel:</span><br><span class="line">    :param old_pixel:</span><br><span class="line">    :param new_pixel:</span><br><span class="line">    :param error:</span><br><span class="line">    :return: the new pixel</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    if new_pixel is None:</span><br><span class="line">        new_pixel = [255, 255, 255]</span><br><span class="line">    similar = True</span><br><span class="line">    for i in abs(pixel - old_pixel):</span><br><span class="line">        if i &gt; error:</span><br><span class="line">            similar = False</span><br><span class="line">            break</span><br><span class="line">    if similar:</span><br><span class="line">        return new_pixel</span><br><span class="line">    else:</span><br><span class="line">        return pixel</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def change_background(origin_path, new_path, new_color, error=60):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    change background, auto detect background</span><br><span class="line">    :param origin_path:</span><br><span class="line">    :param new_path:</span><br><span class="line">    :param new_color: target background color</span><br><span class="line">    :param error: the error for change color</span><br><span class="line">    :return: None</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    img = io.imread(origin_path)</span><br><span class="line">    bg = img[10:30, 10:30, :]</span><br><span class="line">    bg_pixel = [1.0 * np.sum(bg[:, :, channel])/bg[:, :, channel].size for channel in range(3)]</span><br><span class="line">    print(&quot;background color: %s&quot; % bg_pixel)</span><br><span class="line">    new_img = np.array([[change_pixel_color(pixel, [0, 160, 234], new_color, error) for pixel in row] for row in img])</span><br><span class="line">    io.imshow(new_img)</span><br><span class="line">    # import matplotlib.pyplot as plt</span><br><span class="line">    # plt.show()</span><br><span class="line">    io.imsave(new_path, new_img)</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"># example</span><br><span class="line">change_background(origin_path=&quot;origin.jpeg&quot;,</span><br><span class="line">                  new_path=&apos;new.jpeg&apos;,</span><br><span class="line">                  new_color=[0, 255, 255])</span><br></pre></td></tr></table></figure>
+
+<h4 id="说明-1"><a href="#说明-1" class="headerlink" title="说明"></a>说明</h4><ul>
+<li>自动读取图片的左上角部分像素的平均值作为背景颜色</li>
+<li>允许差范围在合适的范围内，可通过<code>error</code>参数调节，该参数不宜过大也不宜过小，可测试多次选择比较合适的</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -1943,7 +1916,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">276</span>
+                  <span class="site-state-item-count">278</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

@@ -699,200 +699,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——共轭梯度法和最速下降法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——共轭梯度法和最速下降法.html" itemprop="url">ML——共轭梯度法和最速下降法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍共轭梯度法和最速下降法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>最速下降法（Steepest Descent Method）和共轭梯度法（Conjugate Gradient Method, CG）也是求解无约束最优化问题的优化方法，其他无约束优化方法见：<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%B1%82%E8%A7%A3%E6%97%A0%E7%BA%A6%E6%9D%9F%E6%9C%80%E4%BC%98%E5%8C%96%E9%97%AE%E9%A2%98%E7%9A%84%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">ML——求解无约束最优化问题的优化方法</a></li>
-<li>共轭梯度法是以共轭方向为搜索方向的一类算法，最早用于求解线性方程组，后来用于求解无约束最优化问题</li>
-<li>最速下降法和共轭梯度法都仅限于求解正定矩阵对应的方程或正定二次型对应的无约束最优化问题</li>
-</ul>
-<h3 id="优化问题定义"><a href="#优化问题定义" class="headerlink" title="优化问题定义"></a>优化问题定义</h3><ul>
-<li>在满足一定要求的情况下，求解线性方程组的解和求解最优化问题有一定的等价性</li>
-<li>当\(A\)为对称正定矩阵时，有下面的两个问题等价：<ul>
-<li>问题一：求解线性方程组<br>  $$ Ax = b $$</li>
-<li>问题二：求解最优化问题的解<br>  $$ \min_x \frac{1}{2}(x - x^*)^TA(x - x^*)  $$<ul>
-<li>其中\(x^*\)为线性方程组的解</li>
-</ul>
-</li>
-<li>等价原因：正定矩阵\(A\)使得二次型\((x - x^*)^TA(x - x^*) \)一定大于等于0，当二次型\((x - x^*)^TA(x - x^*) = 0 \)时，一定有\(x=x^*\)</li>
-</ul>
-</li>
-<li>对以上最优化问题进一步化简有：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-1.png">
-<ul>
-<li>上图中用到了以下性质：<ul>
-<li>对称正定矩阵的性质：\(A = A^T\)</li>
-<li>\(x^*\)为线性方程组的解：\(Ax^* = b\)</li>
-</ul>
-</li>
-<li>上图中\((Ax,x)\)表示内积</li>
-</ul>
-</li>
-<li>思考：对于参数数量为2的问题，实际上原始优化问题\((x - x^*)^TA(x - x^*)\)的等值线可以理解为是一个椭圆，原始问题的最优解在多个椭圆的圆心<ul>
-<li>为什么是一个椭圆，因为<strong>正定矩阵可以被对角化为一个对角线上元素都是正数的对角矩阵</strong>，即正定二次型一定可以化简为系数全为正的标准型</li>
-<li>假设\(A\)已经是一个对角矩阵，对角线上的数字为\(d_1, d_2\)，那么原始二次型对应的\(c\)等值线为：\((x - x^*)^TA(x - x^*) = d_1x_1^2+d_2x_2^2 = c\)</li>
-</ul>
-</li>
-</ul>
-<h3 id="最速下降法"><a href="#最速下降法" class="headerlink" title="最速下降法"></a>最速下降法</h3><ul>
-<li><p>最速下降法推导</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-1.png">
-<ul>
-<li>上面的式子中，最后一步的推导是直接展开以后得到<br>$$<br>\begin{align}<br>&amp;=\frac{1}{2} (A(x+\alpha r, x+\alpha r)) - (b, (x+\alpha r)) \\<br>&amp;= \frac{1}{2} (x^TA^Tx + \alpha r^TA^Tx + \alpha x^TA^Tr + \alpha^2r^TA^Tr) - (b^Tx+\alpha b^T r) \\<br>&amp;= \frac{1}{2}( 2\alpha r^TA^Tx) + \frac{1}{2}\alpha^2r^TA^Tr - \alpha b^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha (Ax + r)^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha x^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx - \alpha x^TA^Tr + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= 0 + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>\end{align}<br>$$</li>
-<li>上面的推导中使用到了\(b = Ax + r\)，和\(x^TA^Tr = x^TAr = (x, Ar) = (Ar, x) = r^TA^Tx \)</li>
-<li>其中\( \frac{1}{2}x^TA^Tx - b^Tx\)与\(\alpha\)无关</li>
-</ul>
-</li>
-<li><p>最速下降法的流程及收敛性分析</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-2.png">
-<ul>
-<li>收敛速度与特征值有关，当特征值之间的差距过大时，收敛可能会比较慢</li>
-</ul>
-</li>
-<li><p>最速下降法的收敛性图示分析</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-3.png">
-<ul>
-<li>如果运气好，也可能一步到位，如果运气不好则可能要很久才收敛</li>
-</ul>
-</li>
-</ul>
-<h3 id="共轭梯度法"><a href="#共轭梯度法" class="headerlink" title="共轭梯度法"></a>共轭梯度法</h3><ul>
-<li>共轭梯度法的引入<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-2.png">
-<ul>
-<li>\(p_{k-1}\)是上次迭代的方向， \(p_{k}\)是本次迭代的方向，初始该值设置为\(p_{-1} = 0\)，或第一步按照\(p_0 = r_0\)迭代</li>
-<li>步长推导和最速下降法推导一致</li>
-</ul>
-</li>
-<li>共轭梯度法的方向<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-3.png">
-<ul>
-<li>共轭的含义为：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugacy.png"></li>
-<li><strong>共轭梯度法名字的由来</strong>：<ul>
-<li><strong>共轭</strong>来自于：\( \forall i, \quad (Ap_{i},p_{k}) = 0\)，每一步迭代的方向与之前的所有步都是共轭相对于矩阵\(A\)共轭的</li>
-<li><strong>梯度</strong>则来自于下降的方向\(r\)是原始目标函数\(\frac{1}{2}(x - x^*)^TA(x - x^*) = \frac{1}{2}(Ax, x)- (b, x)\)的梯度，由于\(r\)同时也是方程\(Ax = b\)的残差\(r = b-Ax\)，所以也会称\(r\)为残差</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>共轭梯度法的性质<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-4.png"></li>
-<li>共轭梯度法的流程<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-5.png">
-<ul>
-<li>注意：第0步使用\(p_0 = r_0\)</li>
-</ul>
-</li>
-<li>共轭梯度法收敛性<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-6.png">
-
-
-
-
-
-
-
-
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——损失函数总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1240,6 +1046,200 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——共轭梯度法和最速下降法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——共轭梯度法和最速下降法.html" itemprop="url">ML——共轭梯度法和最速下降法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍共轭梯度法和最速下降法</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>最速下降法（Steepest Descent Method）和共轭梯度法（Conjugate Gradient Method, CG）也是求解无约束最优化问题的优化方法，其他无约束优化方法见：<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%B1%82%E8%A7%A3%E6%97%A0%E7%BA%A6%E6%9D%9F%E6%9C%80%E4%BC%98%E5%8C%96%E9%97%AE%E9%A2%98%E7%9A%84%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">ML——求解无约束最优化问题的优化方法</a></li>
+<li>共轭梯度法是以共轭方向为搜索方向的一类算法，最早用于求解线性方程组，后来用于求解无约束最优化问题</li>
+<li>最速下降法和共轭梯度法都仅限于求解正定矩阵对应的方程或正定二次型对应的无约束最优化问题</li>
+</ul>
+<h3 id="优化问题定义"><a href="#优化问题定义" class="headerlink" title="优化问题定义"></a>优化问题定义</h3><ul>
+<li>在满足一定要求的情况下，求解线性方程组的解和求解最优化问题有一定的等价性</li>
+<li>当\(A\)为对称正定矩阵时，有下面的两个问题等价：<ul>
+<li>问题一：求解线性方程组<br>  $$ Ax = b $$</li>
+<li>问题二：求解最优化问题的解<br>  $$ \min_x \frac{1}{2}(x - x^*)^TA(x - x^*)  $$<ul>
+<li>其中\(x^*\)为线性方程组的解</li>
+</ul>
+</li>
+<li>等价原因：正定矩阵\(A\)使得二次型\((x - x^*)^TA(x - x^*) \)一定大于等于0，当二次型\((x - x^*)^TA(x - x^*) = 0 \)时，一定有\(x=x^*\)</li>
+</ul>
+</li>
+<li>对以上最优化问题进一步化简有：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-1.png">
+<ul>
+<li>上图中用到了以下性质：<ul>
+<li>对称正定矩阵的性质：\(A = A^T\)</li>
+<li>\(x^*\)为线性方程组的解：\(Ax^* = b\)</li>
+</ul>
+</li>
+<li>上图中\((Ax,x)\)表示内积</li>
+</ul>
+</li>
+<li>思考：对于参数数量为2的问题，实际上原始优化问题\((x - x^*)^TA(x - x^*)\)的等值线可以理解为是一个椭圆，原始问题的最优解在多个椭圆的圆心<ul>
+<li>为什么是一个椭圆，因为<strong>正定矩阵可以被对角化为一个对角线上元素都是正数的对角矩阵</strong>，即正定二次型一定可以化简为系数全为正的标准型</li>
+<li>假设\(A\)已经是一个对角矩阵，对角线上的数字为\(d_1, d_2\)，那么原始二次型对应的\(c\)等值线为：\((x - x^*)^TA(x - x^*) = d_1x_1^2+d_2x_2^2 = c\)</li>
+</ul>
+</li>
+</ul>
+<h3 id="最速下降法"><a href="#最速下降法" class="headerlink" title="最速下降法"></a>最速下降法</h3><ul>
+<li><p>最速下降法推导</p>
+<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-1.png">
+<ul>
+<li>上面的式子中，最后一步的推导是直接展开以后得到<br>$$<br>\begin{align}<br>&amp;=\frac{1}{2} (A(x+\alpha r, x+\alpha r)) - (b, (x+\alpha r)) \\<br>&amp;= \frac{1}{2} (x^TA^Tx + \alpha r^TA^Tx + \alpha x^TA^Tr + \alpha^2r^TA^Tr) - (b^Tx+\alpha b^T r) \\<br>&amp;= \frac{1}{2}( 2\alpha r^TA^Tx) + \frac{1}{2}\alpha^2r^TA^Tr - \alpha b^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha (Ax + r)^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha x^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx - \alpha x^TA^Tr + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= 0 + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>\end{align}<br>$$</li>
+<li>上面的推导中使用到了\(b = Ax + r\)，和\(x^TA^Tr = x^TAr = (x, Ar) = (Ar, x) = r^TA^Tx \)</li>
+<li>其中\( \frac{1}{2}x^TA^Tx - b^Tx\)与\(\alpha\)无关</li>
+</ul>
+</li>
+<li><p>最速下降法的流程及收敛性分析</p>
+<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-2.png">
+<ul>
+<li>收敛速度与特征值有关，当特征值之间的差距过大时，收敛可能会比较慢</li>
+</ul>
+</li>
+<li><p>最速下降法的收敛性图示分析</p>
+<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-3.png">
+<ul>
+<li>如果运气好，也可能一步到位，如果运气不好则可能要很久才收敛</li>
+</ul>
+</li>
+</ul>
+<h3 id="共轭梯度法"><a href="#共轭梯度法" class="headerlink" title="共轭梯度法"></a>共轭梯度法</h3><ul>
+<li>共轭梯度法的引入<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-2.png">
+<ul>
+<li>\(p_{k-1}\)是上次迭代的方向， \(p_{k}\)是本次迭代的方向，初始该值设置为\(p_{-1} = 0\)，或第一步按照\(p_0 = r_0\)迭代</li>
+<li>步长推导和最速下降法推导一致</li>
+</ul>
+</li>
+<li>共轭梯度法的方向<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-3.png">
+<ul>
+<li>共轭的含义为：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugacy.png"></li>
+<li><strong>共轭梯度法名字的由来</strong>：<ul>
+<li><strong>共轭</strong>来自于：\( \forall i, \quad (Ap_{i},p_{k}) = 0\)，每一步迭代的方向与之前的所有步都是共轭相对于矩阵\(A\)共轭的</li>
+<li><strong>梯度</strong>则来自于下降的方向\(r\)是原始目标函数\(\frac{1}{2}(x - x^*)^TA(x - x^*) = \frac{1}{2}(Ax, x)- (b, x)\)的梯度，由于\(r\)同时也是方程\(Ax = b\)的残差\(r = b-Ax\)，所以也会称\(r\)为残差</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>共轭梯度法的性质<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-4.png"></li>
+<li>共轭梯度法的流程<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-5.png">
+<ul>
+<li>注意：第0步使用\(p_0 = r_0\)</li>
+</ul>
+</li>
+<li>共轭梯度法收敛性<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-6.png">
+
+
+
+
+
+
+
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型评估指标总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1375,6 +1375,123 @@
 <li>ANLP<ul>
 <li>参考：论文《Scalable Bid Landscape Forecasting in Real-time Bidding》</li>
 <li>链接：<a href="https://arxiv.org/pdf/2001.06587.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2001.06587.pdf</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——假设检验.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Math/Math——假设检验.html" itemprop="url">Math——假设检验</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
+<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
+</ul>
+<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
+<h3 id="p-value的含义"><a href="#p-value的含义" class="headerlink" title="p-value的含义"></a>p-value的含义</h3><ul>
+<li>在假设检验中，对p-value的的一种直观理解：在假设\(H_0\)：假设目标样本属于某个正太分布，这个样本不是从这个正太分布中采样的概率就是p值（即p值的本质是一个概率）<ul>
+<li>进一步的理解，已知一个正太分布和一个目标样本，那么这个目标样本对应的p值就是：重新在这个正太分布中重新采样一个新样本，新样本离中心位置\(u_0\)的距离大于等于目标样本的概率（该概率就是正太分布的两边区间积分和）</li>
+<li>p值越小，说明这个目标样本越不可能是从这个正太分布采样出来的，越应该拒绝原假设\(H_0\)（即越应该接受\(H_A\)</li>
 </ul>
 </li>
 </ul>
@@ -1708,123 +1825,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——假设检验.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——假设检验.html" itemprop="url">Math——假设检验</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
-<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
-</ul>
-<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
-<h3 id="p-value的含义"><a href="#p-value的含义" class="headerlink" title="p-value的含义"></a>p-value的含义</h3><ul>
-<li>在假设检验中，对p-value的的一种直观理解：在假设\(H_0\)：假设目标样本属于某个正太分布，这个样本不是从这个正太分布中采样的概率就是p值（即p值的本质是一个概率）<ul>
-<li>进一步的理解，已知一个正太分布和一个目标样本，那么这个目标样本对应的p值就是：重新在这个正太分布中重新采样一个新样本，新样本离中心位置\(u_0\)的距离大于等于目标样本的概率（该概率就是正太分布的两边区间积分和）</li>
-<li>p值越小，说明这个目标样本越不可能是从这个正太分布采样出来的，越应该拒绝原假设\(H_0\)（即越应该接受\(H_A\))</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——因果推断.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1981,7 +1981,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">276</span>
+                  <span class="site-state-item-count">278</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

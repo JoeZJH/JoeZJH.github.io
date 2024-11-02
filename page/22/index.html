@@ -275,6 +275,181 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html" itemprop="url">RS——WCE-YouTube推荐论文</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍WCE</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p><em>原始论文：<a href="https://github.com/wzhe06/Reco-papers/blob/master/Industry%20Recommender%20System/[Youtube]%20Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%20(Youtube%202016).pdf" target="_blank" rel="noopener">[Youtube] Deep Neural Networks for YouTube Recommendations (Youtube 2016)</a></em></p>
+<hr>
+<h3 id="WCE"><a href="#WCE" class="headerlink" title="WCE"></a>WCE</h3><ul>
+<li>Weighted Cross Entropy，加权交叉熵，也叫做Weighted LR，Weighted Logistic Regression</li>
+<li>用于解决回归问题<ul>
+<li>主要是存在大量负样本（值为0）的回归问题</li>
+<li>比如视频浏览时长问题（点击率就比较低）</li>
+</ul>
+</li>
+<li>训练时使用损失函数：<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + (1-y_i)log(1-p_i)<br>$$<ul>
+<li>其中 \(p_i = \frac{1}{1+e^{-\theta^{T}\boldsymbol{x}}}\)</li>
+<li>\(w_i\) = 回归值（如观看时长）</li>
+<li>\(y_i\) = 是否为正值（即是否点击，未点击表示观看时长为0，视为负样本）</li>
+<li>对任意样本，我们真实想要的预估目标是一个视频被点击且观看的概率\(pred = wp\)</li>
+</ul>
+</li>
+<li>serving时使用下面的定义来表示回归值：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}}<br>$$<ul>
+<li>对于原始的CE损失函数，有\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)（补充：Odds表示样本为正的概率除以样本为负的概率，\(log(Odds) = \theta^{T}\boldsymbol{x}\)）就是logit</li>
+<li>当前损失函数下，正负样本的比例（或权重）发生了变化，实际上\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)表示的值不再是原始样本中正负样本的比例，而是带权重的比例，详情看后续的证明</li>
+</ul>
+</li>
+<li>可以证明上面的方法会造成预估值有偏</li>
+</ul>
+<h3 id="WCE改进"><a href="#WCE改进" class="headerlink" title="WCE改进"></a>WCE改进</h3><ul>
+<li>改进后的损失函数<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + log(1-p_i)<br>$$</li>
+<li>改进前方案是有偏的，修改为上面的损失函数后，\(pred = Odds = e^{\theta^{T}\boldsymbol{x}}\)是无偏的</li>
+<li>证明：<ul>
+<li>假设在原始的CE损失函数下，正负样本的比例为A:B，此时有\(p = \frac{A}{A+B}\)【这里只是假设训练时遇到特征值完全相同的多个样本（有正有负），模型在遇到serving时遇到同一个特征值样本时，应该预估样本为正的概率为多少？】<ul>
+<li>原始CE下，样本为正的概率就是正样本数/总样本数</li>
+</ul>
+</li>
+<li>那么在上述加权的损失函数下，相当于正负样本的比例为\(wA:B+A\)，此时有\(p’ = \frac{wA}{wA+B+A}\)<ul>
+<li>因为权重被修改了，可以证明<strong>样本不变，增加权重</strong>等价于<strong>权重不变，增加样本（重复采样）</strong></li>
+<li>\(wA:B+A\)的原因是因为正样本被加了\(w\)倍的权重，而负样本则被增加了A个（原始的CE函数中正样本不会累加\(log(1-p)\)作为损失，但改进后的WCE会</li>
+</ul>
+</li>
+<li>我们真实想要的预估值是：\(pred = wp = w * \frac{A}{A+B}\)<ul>
+<li>可以表述为样本为正的概率乘以样本为正时的值（用户点击视频的概率*用户点击视频后观看的概率）</li>
+</ul>
+</li>
+<li>经推导有：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’}{1-p’} = \frac{\frac{wA}{wA+B+A}}{1-\frac{wA}{wA+B+A}} = w * \frac{A}{A+B} = wp<br>$$<ul>
+<li>注意，我们需要的是\(pred = wp\)而不是\(pred = wp’\)<ul>
+<li>因为\(p’\)是被我们修改权重后得到的模型输出(均值)</li>
+</ul>
+</li>
+<li>真实serving时，模型的输出值\(p’\)是不用的，只使用\(pred = e^{\theta^{T}\boldsymbol{x}}\)就可以了</li>
+<li>其他：<ul>
+<li>对于原始CE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p}{1-p} = \frac{\frac{A}{A+B}}{1-\frac{A}{A+B}} = \frac{A}{B} = \frac{p}{1-p}<br>  $$</li>
+<li>对于YouTube的WCE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’’}{1-p’’} = \frac{\frac{wA}{wA+B}}{1-\frac{wA}{wA+B}} = w * \frac{A}{B} \approx w * \frac{A}{A+B} = wp<br>  $$<ul>
+<li><strong>约等于符号成立的前提是正样本占比特别少</strong>，此时\(\frac{A}{B} \approx \frac{A}{A+B}\)</li>
+<li>也就是说，在正样本占比特别少时，使用YouTube的WCE也是没问题的，但是为了保证无偏，建议使用改进后的WCE</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="扩展问题"><a href="#扩展问题" class="headerlink" title="扩展问题"></a>扩展问题</h3><ul>
+<li>在面对回归问题是，WCE相对MSE真的有提升吗？</li>
+</ul>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul>
+<li>WCE也可以用于分类问题中，目的是让模型更关注某些特殊样本</li>
+</ul>
+<h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2273,178 +2448,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html" itemprop="url">PyTorch——关于Variable类和Tensor类的类型判断</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><h4 id="requires-grad-True"><a href="#requires-grad-True" class="headerlink" title="requires_grad=True"></a><code>requires_grad=True</code></h4><p><em>等价于<code>requires_grad=a</code>, <code>a</code>为任意非0整数,不能为浮点数</em><br><em>浮点数会报错: TypeError: integer argument expected, got float</em></p>
-<ul>
-<li><p>测试代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.], requires_grad=True)</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/home/jiahong/JupyterWorkspace/test.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    print(variable.numpy())</span><br><span class="line">RuntimeError: Can&apos;t call numpy() on Variable that requires grad. Use var.detach().numpy() instead.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li><code>Variable</code>和<code>Tensor</code>在判断类型时都是<code>torch.Tensor</code><ul>
-<li><code>type(tensor) == type(variable) == torch.Tensor</code> </li>
-</ul>
-</li>
-<li>几乎所有操作都相同<ul>
-<li><code>tensor.data == variable.data</code></li>
-<li><code>tensor.data.numpy() == varible.data.numpy()</code></li>
-</ul>
-</li>
-<li>直接输出变量结果不相同<ul>
-<li><code>tensor</code>输出时没有<code>requires_grad=True</code></li>
-<li><code>variable</code>输出时有<code>requires_grad=True</code></li>
-</ul>
-</li>
-<li><code>variable</code>不能直接调用函数<code>variable.numpy()</code>,会报异常<ul>
-<li>异常描述为: 当前<code>Variable</code>变量要求<code>requires grad</code>,也就是<code>requires_grad</code>属性为真时,变量不能直接使用</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="requires-grad-False"><a href="#requires-grad-False" class="headerlink" title="requires_grad=False"></a><code>requires_grad=False</code></h4><p><em>等价于<code>requires_grad=0</code></em><br><em>不等价于<code>requires_grad=None</code>, <code>None</code>会报错: TypeError: an integer is required</em></p>
-<ul>
-<li><p>测试代码:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=False)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type4: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li>当<code>variable</code>变量的<code>requires_grad=False</code>时,<code>variable</code>完全退化为<code>tensor</code><ul>
-<li>直接输出变量时没有<code>requires_grad=False</code>属性</li>
-<li>可以直接使用<code>variable.numpy()</code>函数</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Variable的三种等价定义"><a href="#Variable的三种等价定义" class="headerlink" title="Variable的三种等价定义"></a><code>Variable</code>的三种等价定义</h4><p><em>下面三种定义的<code>Variable</code>类型变量<code>varible</code>等价</em></p>
-<ul>
-<li><p><code>requires_grad=False</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=False)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>没有<code>requires_grad</code>参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>requires_grad=True</code>,然后<code>variable = variable.detach()</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">variable = variable.detach()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面三种定义都等价于原始的<code>tensor</code></p>
-<ul>
-<li>这里的等价并未经过详细测试,但是至少以下方面等价:<ul>
-<li>自身类型相同<code>type</code>, 类型为<code>torch.Tensor</code></li>
-<li>可以调用属性<code>.data</code>,类型为<code>torch.Tensor</code></li>
-<li>可以调用<code>.grad</code>,只不过都为<code>None</code></li>
-<li>直接输出对象完全相同,都不包含<code>requires_grad=True</code>属性</li>
-<li>可以调用相同的函数<code>.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-<li>可以调用相同的函数<code>.data.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2497,7 +2500,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">276</span>
+                  <span class="site-state-item-count">278</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

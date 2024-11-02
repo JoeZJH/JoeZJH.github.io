@@ -275,6 +275,171 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——多任务学习总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——多任务学习总结.html" itemprop="url">CA——多任务学习总结</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>多任务学习，multi-task learning</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<h3 id="多任务学习的结构"><a href="#多任务学习的结构" class="headerlink" title="多任务学习的结构"></a>多任务学习的结构</h3><h4 id="ESMM及扩展"><a href="#ESMM及扩展" class="headerlink" title="ESMM及扩展"></a>ESMM及扩展</h4><h4 id="MMoE及相关变体"><a href="#MMoE及相关变体" class="headerlink" title="MMoE及相关变体"></a>MMoE及相关变体</h4><h3 id="多任务学习的损失函数权重设置"><a href="#多任务学习的损失函数权重设置" class="headerlink" title="多任务学习的损失函数权重设置"></a>多任务学习的损失函数权重设置</h3><h4 id="基于人工经验的人工优化"><a href="#基于人工经验的人工优化" class="headerlink" title="基于人工经验的人工优化"></a>基于人工经验的人工优化</h4><ul>
+<li>一般思想是对齐损失函数均值，并按照业务偏好有所倾斜，如果愿意花时间尝试，往往能拿到不错的结果</li>
+</ul>
+<h4 id="基于贝叶斯推论的权重优化"><a href="#基于贝叶斯推论的权重优化" class="headerlink" title="基于贝叶斯推论的权重优化"></a>基于贝叶斯推论的权重优化</h4><ul>
+<li>基于不确定性的权重设置方法（Uncertainty Weighting）</li>
+<li>基本公式<br>$$<br>L(\mathbf{W}, \sigma_1, \sigma_2,…,\sigma_K) = \sum_{k=1}^K \frac{1}{2\sigma^2}L(\mathbf{W}) + \log \sigma^2<br>$$<ul>
+<li>上述公式可通过推导得出<a href="https://openaccess.thecvf.com/content_cvpr_2018/papers/Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.pdf" target="_blank" rel="noopener">Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics</a><ul>
+<li>可以推导，无论是回归问题还是分类问题（也可以是分类和回归问题的混合），都可以按照上面的方法设置损失函数（分类问题证明中会使用到一个近似值，不是严格推导）</li>
+<li>推导是在假设</li>
+</ul>
+</li>
+<li>\(\sigma\)是可学习的参数，初始设置固定值，然后使用梯度更新学习即可</li>
+<li>使用简单，实际使用时效果也确实不错，建议人工调参也可以在先使用该方案拿到权重量级后继续</li>
+</ul>
+</li>
+</ul>
+<h4 id="帕累托最优权重优化"><a href="#帕累托最优权重优化" class="headerlink" title="帕累托最优权重优化"></a>帕累托最优权重优化</h4><ul>
+<li><p>原始论文：<a href="https://proceedings.neurips.cc/paper_files/paper/2018/file/432aca3a1e345e339f35a30c8f65edce-Paper.pdf" target="_blank" rel="noopener">Multi-Task Learning as Multi-Objective Optimization</a></p>
+<img src="/Notes/ComputationalAdvertising/CA——多任务学习总结/pareto-optimazation-for-MTL.png"></li>
+<li><p>内积的含义：向量A到向量B的投影长度与向量B长度的乘积</p>
+</li>
+<li><p>Algorithm1展示的是，对于两个任务的情况，图示展示了二维向量的情况，可以通过判断向量之间的关系确定求解\(\alpha\)的方式</p>
+<ul>
+<li>Algorithm2中的FrankWolfeSlover算法则是对Algorithm1的多任务扩展</li>
+</ul>
+</li>
+<li><p>其他参考，阿里巴巴多任务学习帕累托最优论文：<a href="https://yongfeng.me/attach/lin-recsys2019.pdf" target="_blank" rel="noopener">A Pareto-Efficient Algorithm for Multiple Objective Optimization in E-Commerce Recommendation</a></p>
+</li>
+</ul>
+<h3 id="损失函数优化"><a href="#损失函数优化" class="headerlink" title="损失函数优化"></a>损失函数优化</h3><h4 id="损失函数归一化"><a href="#损失函数归一化" class="headerlink" title="损失函数归一化"></a>损失函数归一化</h4><p><em>可用于解决由于不同任务损失函数量级差异带来的问题</em></p>
+<h5 id="普通版本"><a href="#普通版本" class="headerlink" title="普通版本"></a>普通版本</h5><p>$$<br>L_{norm} = \frac{L_k(\mathbf{W})}{L_0(\mathbf{W_0})}<br>$$</p>
+<ul>
+<li>使用各个任务自己的第一次输出的损失函数作为基础损失函数，其中\(L_0(\mathbf{W_0}\)为第一次计算loss的到的损失函数</li>
+</ul>
+<h5 id="滑动平均版本"><a href="#滑动平均版本" class="headerlink" title="滑动平均版本"></a>滑动平均版本</h5><p>$$<br>L_{base} = \alpha L_{base} + (1-\alpha) L_k \\<br>L_{norm} = \frac{L_k(\mathbf{W})}{L_{base}} \\<br>$$</p>
+<ul>
+<li>使用滑动平均来记录基础损失函数，该方案可进一步减少由于初始化损失误差过大带来的问题</li>
+</ul>
+<h4 id="梯度归一化（GradNorm）"><a href="#梯度归一化（GradNorm）" class="headerlink" title="梯度归一化（GradNorm）"></a>梯度归一化（GradNorm）</h4><ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v80/chen18a/chen18a.pdf" target="_blank" rel="noopener">GradNorm: Gradient Normalization for Adaptive Loss Balancing in Deep Multitask Networks</a><img src="/Notes/ComputationalAdvertising/CA——多任务学习总结/grad-norm-definition-for-MTL.png">
+<img src="/Notes/ComputationalAdvertising/CA——多任务学习总结/grad-norm-for-MTL.png"></li>
+<li>核心思想是对各任务的损失函数进行加权(\(w_i\))求和得到更新共享参数的损失函数</li>
+<li>“GradNorm”这个名字的由来是因为权重\(w_i\)是与梯度2范数的期望等有关的？</li>
+<li>公式中\(w_i\)是各个任务损失函数对共享参数损失函数的权重，该权重初始值为1，在训练过程中逐步更新，每一步最后都保持该权重加和为\(T\)（\(T\)为任务数量，即保证权重均值为1）</li>
+<li>问题：文中没有明确各个任务各自的参数如何更新，猜测各自更新即可</li>
+</ul>
+<h3 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h3><ul>
+<li>一般情况下，根据业务特点，尽量使用类似于ESMM结构</li>
+<li>权重设置尝试次序：<ul>
+<li>对损失函数进行归一化（梯度归一化好像效果一般？）</li>
+<li>权重设置时，先使用不确定性权重（Uncertainty Weighting）跑一版，得到基线</li>
+<li>在Uncertainty Weighting的基础上，人工可以根据业务需要微调，可以偏向于需要的任务</li>
+<li>帕累托最优实现复杂，且不一定有收益<ul>
+<li>复杂体现在：需要在每个batch上重新求解最优化问题，得到当前的loss权重（用上一个batch的梯度求解这一个batch的最优权重）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1923,113 +2088,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——QR-DQN.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——QR-DQN.html" itemprop="url">RL——QR-DQN</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/40681570" target="_blank" rel="noopener">用 Quantile Regression 分析变量相关性</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/138091493" target="_blank" rel="noopener">【DRL-7】Distributional DQN: Quantile Regression-DQN</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2082,7 +2140,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">276</span>
+                  <span class="site-state-item-count">278</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
