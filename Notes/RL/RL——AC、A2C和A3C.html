@@ -79,21 +79,18 @@
 
 
 
-<meta name="description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计回报 \(R_(\tau)\)是轨迹\(\tau\)对应的回报：$$R(">
+<meta name="description" content="策略梯度法的推导结论 策略梯度法推导结论是  $$  \begin{align}  \nabla_\theta J(\theta) &amp;amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\  &amp;amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
-<meta property="og:title" content="RL——策略梯度法">
-<meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法.html">
+<meta property="og:title" content="RL——AC、A2C和A3C">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计回报 \(R_(\tau)\)是轨迹\(\tau\)对应的回报：$$R(">
+<meta property="og:description" content="策略梯度法的推导结论 策略梯度法推导结论是  $$  \begin{align}  \nabla_\theta J(\theta) &amp;amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\  &amp;amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum">
 <meta property="og:locale" content="En/中">
-<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-1.png">
-<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-2.png">
-<meta property="og:updated_time" content="2024-10-28T16:05:26.786Z">
+<meta property="og:updated_time" content="2024-11-02T16:53:02.811Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="RL——策略梯度法">
-<meta name="twitter:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计回报 \(R_(\tau)\)是轨迹\(\tau\)对应的回报：$$R(">
-<meta name="twitter:image" content="https://joezjh.github.io/Notes/RL/RL——策略梯度法/PG-1.png">
+<meta name="twitter:title" content="RL——AC、A2C和A3C">
+<meta name="twitter:description" content="策略梯度法的推导结论 策略梯度法推导结论是  $$  \begin{align}  \nabla_\theta J(\theta) &amp;amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\  &amp;amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum">
 
 
 
@@ -123,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法.html">
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
 
 
 
 
 
-  <title>RL——策略梯度法 | Jiahong的个人博客</title>
+  <title>RL——AC、A2C和A3C | Jiahong的个人博客</title>
   
 
 
@@ -278,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -295,7 +292,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">RL——策略梯度法</h1>
+          <h1 class="post-title" itemprop="name headline">RL——AC、A2C和A3C</h1>
         
 
         <div class="post-meta">
@@ -329,116 +326,92 @@
       
 
       
-        <p><em>策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+        <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
-<h3 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h3><ul>
-<li><strong>策略</strong> \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。</li>
-<li><strong>整个轨迹的累计回报</strong> \(R_(\tau)\)是轨迹\(\tau\)对应的回报：<br>$$<br>R(\tau) = \sum_{k=0}^{\infty} r_{k}<br>$$<ul>
-<li>注意：这里没有折扣因子</li>
+<h3 id="策略梯度法的推导结论"><a href="#策略梯度法的推导结论" class="headerlink" title="策略梯度法的推导结论"></a>策略梯度法的推导结论</h3><ul>
+<li>策略梯度法推导结论是<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) R(\tau)  \right] \\<br>  &amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \psi_t \nabla_\theta \log \pi_\theta(a_t|s_t) \right] \\<br>  \end{align}<br>  $$<ul>
+<li>推导详情见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
+<li>\(\psi_t\)来替换\(R(\tau)\)的理由是可以考虑用一个与时间相关的变量来替换与时间无关的累计收益</li>
 </ul>
 </li>
-<li><strong>时间t步开始的回报</strong> \(G_t\) 是从时间步 \(t\) 开始到结束的所有奖励的总和，通常定义为折扣累积奖励：<br>$$<br>G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>$$<br>其中 \(\gamma\) 是折扣因子，\(r_{k}\) 是在时间步 \(k\) 收到的即时奖励。</li>
-<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]\)。</li>
+<li>进一步地，其中的\(\psi_t\)可以换成不同的形式，包括：<ul>
+<li>\(\sum_{t’=0}^T \gamma^t r_{t’}\)：完成的轨迹收益</li>
+<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)：从第\(t\)步开始的轨迹收益，理由是策略主要影响的是\(t\)步开始收益，对前面步骤的收益影响不大</li>
+<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’} - b(s_t)\)：进一步降低方差，详细证明见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
+<li>\(Q^{\pi_\theta}(s_t,a_t)\)：动作价值函数，是\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)的估计值</li>
+<li>\(A^{\pi_\theta}(s_t,a_t)\)：优势函数，仅考虑当前状态\(s_t\)下不同动作带来的收益，忽略状态本身的价值</li>
+<li>\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)：V值的TD-Error形式，即贝尔曼残差，本质等价于优势函数</li>
 </ul>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><h4 id="优化目标："><a href="#优化目标：" class="headerlink" title="优化目标："></a>优化目标：</h4><ul>
-<li><strong>目标函数</strong> \(J(\theta)\) 定义为从初始分布开始，遵循策略 \(\pi_\theta\) 时的平均回报：<br> $$<br> J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]<br> $$</li>
-<li>其中 \(\tau = (s_0, a_0, r_1, s_1, a_1, \dots)\) 表示一个轨迹，\(p_\theta(\tau)\) 是在策略 \(\pi_\theta\) 下产生轨迹 \(\tau\) 的概率。</li>
-</ul>
-<h4 id="梯度估计："><a href="#梯度估计：" class="headerlink" title="梯度估计："></a>梯度估计：</h4><ul>
-<li>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</li>
-<li>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</li>
-<li>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$<ul>
-<li>上式是对原始梯度的无偏估计</li>
+</li>
+<li>问题：将\(\psi_t\)换成\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)可以吗？<ul>
+<li>答案是不可以。理由是\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数\(A(s,a)\)，也不是\(Q(s,a)\)没有别的含义，只有Q值自身更新时的TD-Error</li>
+<li>证明：如果\(a_{t+1} \sim \pi_\theta\)，则\(Q^{\pi_\theta}(s_{t+1}, a_{t+1}) = V^{\pi_\theta}(s_{t+1})\)；但是因为\(Q^{\pi_\theta}(s_{t}, a_t) \neq V^{\pi_\theta}(s_{t})\)（因为\(a_t\)是已经发生的事实），故而\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数，也能等价于优势函数</li>
+<li>改进：如果非要用Q值来作为Actor Critic的价值网络，则需要求解策略\(\pi_{\theta^*} = \arg\max_{\pi_\theta} E_{a_t \sim \pi_\theta(\cdot|s_t)} [Q(s_t, a_t)]\)，比如DDPG就是如此</li>
 </ul>
 </li>
 </ul>
-<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4><ul>
-<li><p>轨迹展开后，有 \(p_\theta(\tau) = p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)\)，其中 \(p(s_0)\) 是初始状态的分布，\(p(s_{t+1}|s_t, a_t)\) 是环境的转移概率。<br>  $$<br>  \begin{align}<br>  p_\theta(\tau) &amp;= p_{\pi_\theta}(s_0, a_0, s_1, a_1,\cdots) \\<br>  &amp;= p(s_0)\pi_\theta(a_0|s_0)p(s_1|s_0,a_0)\cdots \\<br>  &amp;= p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)<br>  \end{align}<br>  $$</p>
-</li>
-<li><p>由于环境的输出与策略无关，即\(\nabla_\theta p(s_1|s_0,a_0) = 0\)，于是有：<br>  $$<br>  \begin{align}<br>  \nabla_\theta \log p_\theta(\tau) &amp;= \nabla_\theta p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \log p(s_0) + \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) + \nabla_\theta  \sum_t  \log p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) \\<br>  &amp;=  \sum_t \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br>  $$</p>
-</li>
-<li><p>所以我们可以进一步简化梯度表达式为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) R(\tau^n)  \right] \\<br> &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n) = \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</p>
+<h3 id="AC算法"><a href="#AC算法" class="headerlink" title="AC算法"></a>AC算法</h3><ul>
+<li>普通AC（Actor Critic）算法一般是直接使用\(Q(s_t,a_t)\)来替换\(\psi_t\)</li>
+</ul>
+<h4 id="Critic网络的更新"><a href="#Critic网络的更新" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
 <ul>
-<li>此时，上式依然是对原始梯度的无偏估计</li>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^{w}\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
 </ul>
-</li>
-<li><p>核心理解：</p>
+<h4 id="Actor网络的更新"><a href="#Actor网络的更新" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum_t Q^{w}(s_{t}, a_t) \log \pi_\theta(a_t|s_t) \\<br>Q^{w}(s_{t}, a_t) &amp;= \text{Stop_Gradient}(Q^{w}(s_{t}, a_t))<br>\end{align}<br>$$</p>
 <ul>
-<li>\(R(\tau^n)\)表示采样得到的轨迹\(\tau^n\)对应的Reward，上述公式假设一共有N个轨迹</li>
-<li>对于任意给定的轨迹\(\tau^n\)，其上面的任意样本对\((s_t,a_t)\)，均使用固定的\(R(\tau^n)\)对 \(\nabla_\theta \log \pi_\theta(a_t|s_t)\)进行加权（实际上在使用中，不会直接使用\(R(\tau^n)\)，因为轨迹中过去的Reward与当前动作无关，所以，我们仅考虑后续的轨迹上的收益即可）</li>
+<li>这里面的\(Q^{w}(s_{t}, a_t)\)是不参与Actor参数的更新的</li>
+<li>\(a_t \sim \pi_\theta(\cdot|s_t)\)</li>
 </ul>
-</li>
+<h4 id="AC算法的问题"><a href="#AC算法的问题" class="headerlink" title="AC算法的问题"></a>AC算法的问题</h4><ul>
+<li>AC算法虽然是直接优化策略的，但是由于它是on-policy的，样本利用率很低，导致训练缓慢</li>
 </ul>
-<h4 id="REINFORCE算法："><a href="#REINFORCE算法：" class="headerlink" title="REINFORCE算法："></a>REINFORCE算法：</h4><ul>
-<li>考虑到轨迹中过去的Reward与当前动作无关，且后续轨迹上的收益与当前动作的关系越来越小，所以我们使用\(G_t\)来替换\(R(\tau)\)<br>  $$<br>  R(\tau) = \sum_{k=0}^{\infty} r_{k} \quad \rightarrow \quad G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>  $$</li>
-<li>此时梯度进一步近似为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t) \\<br> &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} G_t^n \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</li>
-<li>REINFORCE算法利用上述梯度估计来更新策略参数。具体地，对于轨迹\(R(\tau^n)\)上的状态动作样本对\((s_t,a_t)\)，参数更新规则如下：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) G_t^n<br> $$<ul>
-<li>其中 \(\alpha\) 是学习率</li>
-<li>因为是累加操作，所以可以展开对每一个状态动作样本对\((s_t,a_t)\)进行累加</li>
-<li>\(\frac{1}{N}\)可以不需要了，有了学习率了，可以调节到学习率中</li>
+<h3 id="A2C算法"><a href="#A2C算法" class="headerlink" title="A2C算法"></a>A2C算法</h3><ul>
+<li>A2C（Advantage Actor Critic）算法是使用\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)来替换\(\psi_t\)的方法</li>
+<li>很多书籍里面会直接使用A2C算法</li>
 </ul>
-</li>
-<li>补充REINFORCE算法伪代码：<img src="/Notes/RL/RL——策略梯度法/PG-1.png">
-<img src="/Notes/RL/RL——策略梯度法/PG-2.png">
-
-</li>
-</ul>
-<h4 id="减小方差："><a href="#减小方差：" class="headerlink" title="减小方差："></a>减小方差：</h4><ul>
-<li><p>为了减少方差，可以在梯度估计中引入一个baseline函数 \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
+<h4 id="Critic网络的更新-1"><a href="#Critic网络的更新-1" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma V^{\bar{w}}(s_{t+1}) - V^{w}(s_{t})) ^ 2<br>$$ </p>
 <ul>
-<li>常见的选择是使用价值函数 \(V(s_t)\) 作为基线，这有助于稳定学习过程。</li>
-<li>可以证明，增加 \(b(s_t)\) 后，梯度不会发生改变，上式对梯度的估计依然是无偏的</li>
+<li>这里V值拟合的目标是策略\(\pi_\theta\)对应的V值\(V^{\pi_\theta}\)</li>
 </ul>
-</li>
-<li><p>性质一：<strong>减去一个baseline以后，依然是原始梯度的无偏估计</strong>，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta)<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} (R(\tau) - b) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b E_{\tau \sim p_{\theta}(\tau)} \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau p_{\theta}(\tau) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau \nabla_\theta p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta \sum_\tau  p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta 1 \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  \\<br>  \end{align}<br>  $$</p>
+<h4 id="Actor网络的更新-1"><a href="#Actor网络的更新-1" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum_t \delta \log \pi_\theta(a_t|s_t) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
 <ul>
-<li>第三行到第四行用到了对数概率技巧：\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)</li>
-<li>第四行到第五行使用了求梯度和加法交换顺序的法则</li>
+<li>这里面的\(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t})\)是不参与Actor参数的更新的</li>
 </ul>
-</li>
-<li><p>性质二：<strong>减去一个合适的baseline函数以后，方差会变小</strong>，证明如下：</p>
+<h4 id="A2C算法的问题"><a href="#A2C算法的问题" class="headerlink" title="A2C算法的问题"></a>A2C算法的问题</h4><ul>
+<li>A2C算法是同步更新的，需要每个Worker都收集完成数据才能执行一次更新，很多时候数据交互完成的时间是很不一致的，训练也较慢</li>
+</ul>
+<h3 id="A3C算法"><a href="#A3C算法" class="headerlink" title="A3C算法"></a>A3C算法</h3><ul>
+<li>A3C（Asynchronous Advantage Actor Critic），是Actor Critic方法的异步版本</li>
+</ul>
+<h4 id="A3C的主要优化点"><a href="#A3C的主要优化点" class="headerlink" title="A3C的主要优化点"></a>A3C的主要优化点</h4><h5 id="异步训练框架优化："><a href="#异步训练框架优化：" class="headerlink" title="异步训练框架优化："></a>异步训练框架优化：</h5><ul>
+<li>一个全局网络（包括V网络和Actor网络）和多个相互独立的Local网络（即Worker）</li>
+<li>训练时：使用多个Worker并行的和环境分别交互，各自收集数据、计算梯度、异步更新全局网络参数</li>
+<li>inference时：仅适用全局网络中的Actor网络就可以</li>
+</ul>
+<h5 id="策略更新损失增加熵"><a href="#策略更新损失增加熵" class="headerlink" title="策略更新损失增加熵"></a>策略更新损失增加熵</h5><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum_t \delta \log \pi_\theta(a_t|s_t) + c H(\pi_\theta(a|s)) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
 <ul>
-<li>方差展开<br>  $$<br>  \begin{align}<br>  &amp;\ Var_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] ]^2 \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [R(\tau)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau)] ]^2 - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)] \\<br>  &amp;= Var_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau) ] - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]<br>  \end{align}<br>  $$</li>
-<li>进一步解的，使得上式取小值的最优\(b\)为：<br>  $$<br>  b = \frac{E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] }{E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]}<br>  $$</li>
-<li>实际应用中，为了方便计算，通常会使用：<br>  $$<br>  \hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)<br>  $$ </li>
-<li>那为什么\(\hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)是\(V_{\pi_{\theta}}(s_t)\)呢？因为两者是等价的，证明如下：<ul>
-<li>对于非确定性策略来说，在状态\(s_t\)下可选的动作服从一个分布\(\pi_{\theta}(s_t)\)，按照\(E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)的逻辑，该值是状态\(s_t\)下按照策略\(\pi_{\theta}(s_t)\)执行得到\(R(\tau)\)期望（注意\(a_t\)服从\(\pi_{\theta}\)分布，后续的执行动作也服从\(\pi_{\theta}\)分布），实际上就是\(V_{\pi_{\theta}}(s_t)\)</li>
+<li>增加熵相当于是一种正则，与SAC思想相似</li>
 </ul>
-</li>
+<h3 id="AC-A2C-A3C的区别"><a href="#AC-A2C-A3C的区别" class="headerlink" title="AC/A2C/A3C的区别"></a>AC/A2C/A3C的区别</h3><ul>
+<li>AC（Actor-Critic）、A2C（Advantage Actor-Critic）和A3C（Asynchronous Advantage Actor-Critic）三者可以从名字上看出来算法的区别</li>
 </ul>
-</li>
+<h4 id="AC（Actor-Critic）"><a href="#AC（Actor-Critic）" class="headerlink" title="AC（Actor-Critic）"></a>AC（Actor-Critic）</h4><ul>
+<li>Actor-Critic 方法结合了值函数方法和策略梯度方法的优点。它由两部分组成：一个称为“actor”的网络负责学习采取什么行动；另一个称为“critic”的网络评估采取的动作的好坏，即这个动作的价值</li>
 </ul>
-<h3 id="实际使用中的-R-tau"><a href="#实际使用中的-R-tau" class="headerlink" title="实际使用中的\(R(\tau)\)"></a>实际使用中的\(R(\tau)\)</h3><h4 id="原始形式"><a href="#原始形式" class="headerlink" title="原始形式"></a>原始形式</h4><p>$$ R(\tau) = \sum_{k=0}^{\infty} r_{k} $$</p>
+<h4 id="A2C（Advantage-Actor-Critic）"><a href="#A2C（Advantage-Actor-Critic）" class="headerlink" title="A2C（Advantage Actor-Critic）"></a>A2C（Advantage Actor-Critic）</h4><ul>
+<li><strong>关键词：Advantage</strong></li>
+<li>A2C 是 Actor-Critic 方法的一个变种，它引入了优势函数（advantage function）的概念来代替直接使用价值函数</li>
+<li>优势函数 (A(s, a)) 定义为执行特定动作相对于遵循当前策略下的平均行为所能获得的优势或劣势。这种方法有助于更准确地估计哪些动作比其他动作更好，从而提高学习效率</li>
+</ul>
 <ul>
-<li>上式中实际上是一个固定轨迹的奖励，从第0步开始</li>
-<li>可基于蒙特卡洛采样得到</li>
+<li><strong>更新方式</strong>：A2C 使用同步的方式更新参数，可以考虑使用多个网Actor分别于环境进行交互，然后共同的样本一起<strong>同步更新主网络</strong>，这意味着所有代理（agents）共享同一个模型，并且在每个训练步骤结束时同步更新模型权重</li>
 </ul>
-<h4 id="REINFORCE方法"><a href="#REINFORCE方法" class="headerlink" title="REINFORCE方法"></a>REINFORCE方法</h4><ul>
-<li>迭代样本\((s_t,a_t)\)时，使用以下形式：<br>$$ G_t = \sum_{k=t}^{\infty} \gamma^k r_{k} $$<ul>
-<li>丢弃掉动作之前的奖励，这些奖励与当前动作无关</li>
-<li>未来越远的动作奖励越小，因为这些奖励受当前动作影响的概率越小</li>
-</ul>
-</li>
-<li>使用baseline函数进行改进<br>$$\sum_{k=t}^{\infty} \gamma^k r_{k} - b(s_t)$$</li>
-</ul>
-<h4 id="用Q值替代"><a href="#用Q值替代" class="headerlink" title="用Q值替代"></a>用Q值替代</h4><ul>
-<li>用\(Q(s,a)\)值代替\(R(\tau)\)</li>
-<li>理由，\(Q(s,a)\)值是状态\(s\)执行\(a\)以后的\(G_t\)的期望值：<br>$$Q^{\pi_\theta}(s_t,a_t) = E_{\pi_\theta} [G_t|s_t, a_t]$$</li>
-<li>使用Q值来替代可以降低方差</li>
-</ul>
-<h4 id="用优势函数替代"><a href="#用优势函数替代" class="headerlink" title="用优势函数替代"></a>用优势函数替代</h4><ul>
-<li>用\(A(s,a) = Q(s,a) - V(s)\)来替代<ul>
-<li>可以减去\(V(s)\)的理由是之前证明过减去一个baseline函数\(V(s)\)可以降低方差，且梯度无偏</li>
-</ul>
-</li>
-<li>实际上使用时可以使用单个V网络+TD-Error实现对优势函数的估计<br>  $$ A(s,a) = r(s,a) + \gamma V(s’) - V(s) $$</li>
-<li>应用场景：<ul>
-<li>常规的Actor Critic方法</li>
-<li>PPO方法的优势函数估计（实际的PPO中常常是GAE方式，是优势函数的一种加权）</li>
-</ul>
-</li>
+<h4 id="A3C（Asynchronous-Advantage-Actor-Critic）"><a href="#A3C（Asynchronous-Advantage-Actor-Critic）" class="headerlink" title="A3C（Asynchronous Advantage Actor-Critic）"></a>A3C（Asynchronous Advantage Actor-Critic）</h4><ul>
+<li><strong>关键词：Asynchronous</strong></li>
+<li>A3C 是 A2C 的异步版本，它允许多个代理同时在不同的环境中学习</li>
+<li><strong>更新方式</strong>：每个代理都有自己的环境副本和局部模型副本，它们独立地探索环境并收集经验。然后，这些经验被用来异步地更新全局模型，这样可以增加数据多样性并加快学习速度</li>
+<li><strong>优点</strong>：通过异步更新，A3C 可以有效利用多核处理器的能力，实现更快的学习速度和更好的性能</li>
 </ul>
 
       
@@ -470,8 +443,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——多阶段决策-贯序决策-马尔科夫决策.html" rel="next" title="RL——多阶段决策-贯序决策-马尔科夫决策">
-                <i class="fa fa-chevron-left"></i> RL——多阶段决策-贯序决策-马尔科夫决策
+              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="next" title="RL——DDPG和TD3">
+                <i class="fa fa-chevron-left"></i> RL——DDPG和TD3
               </a>
             
           </div>
@@ -480,8 +453,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html" rel="prev" title="RL——TRPO-PPO-目标函数基础推导">
-                RL——TRPO-PPO-目标函数基础推导 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Linux/Linux——终端登录其他用户打开图形化窗口.html" rel="prev" title="Linux——多用户问题">
+                Linux——多用户问题 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -623,7 +596,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基础概念"><span class="nav-number">1.</span> <span class="nav-text">基础概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#优化目标："><span class="nav-number">2.1.</span> <span class="nav-text">优化目标：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#梯度估计："><span class="nav-number">2.2.</span> <span class="nav-text">梯度估计：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#轨迹展开："><span class="nav-number">2.3.</span> <span class="nav-text">轨迹展开：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE算法："><span class="nav-number">2.4.</span> <span class="nav-text">REINFORCE算法：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减小方差："><span class="nav-number">2.5.</span> <span class="nav-text">减小方差：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实际使用中的-R-tau"><span class="nav-number">3.</span> <span class="nav-text">实际使用中的\(R(\tau)\)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#原始形式"><span class="nav-number">3.1.</span> <span class="nav-text">原始形式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE方法"><span class="nav-number">3.2.</span> <span class="nav-text">REINFORCE方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用Q值替代"><span class="nav-number">3.3.</span> <span class="nav-text">用Q值替代</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用优势函数替代"><span class="nav-number">3.4.</span> <span class="nav-text">用优势函数替代</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#策略梯度法的推导结论"><span class="nav-number">1.</span> <span class="nav-text">策略梯度法的推导结论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AC算法"><span class="nav-number">2.</span> <span class="nav-text">AC算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Critic网络的更新"><span class="nav-number">2.1.</span> <span class="nav-text">Critic网络的更新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Actor网络的更新"><span class="nav-number">2.2.</span> <span class="nav-text">Actor网络的更新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AC算法的问题"><span class="nav-number">2.3.</span> <span class="nav-text">AC算法的问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#A2C算法"><span class="nav-number">3.</span> <span class="nav-text">A2C算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Critic网络的更新-1"><span class="nav-number">3.1.</span> <span class="nav-text">Critic网络的更新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Actor网络的更新-1"><span class="nav-number">3.2.</span> <span class="nav-text">Actor网络的更新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#A2C算法的问题"><span class="nav-number">3.3.</span> <span class="nav-text">A2C算法的问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#A3C算法"><span class="nav-number">4.</span> <span class="nav-text">A3C算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#A3C的主要优化点"><span class="nav-number">4.1.</span> <span class="nav-text">A3C的主要优化点</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#异步训练框架优化："><span class="nav-number">4.1.1.</span> <span class="nav-text">异步训练框架优化：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#策略更新损失增加熵"><span class="nav-number">4.1.2.</span> <span class="nav-text">策略更新损失增加熵</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AC-A2C-A3C的区别"><span class="nav-number">5.</span> <span class="nav-text">AC/A2C/A3C的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#AC（Actor-Critic）"><span class="nav-number">5.1.</span> <span class="nav-text">AC（Actor-Critic）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#A2C（Advantage-Actor-Critic）"><span class="nav-number">5.2.</span> <span class="nav-text">A2C（Advantage Actor-Critic）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#A3C（Asynchronous-Advantage-Actor-Critic）"><span class="nav-number">5.3.</span> <span class="nav-text">A3C（Asynchronous Advantage Actor-Critic）</span></a></li></ol></li></ol></div>
             
 
           </div>

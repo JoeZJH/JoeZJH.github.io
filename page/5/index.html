@@ -275,1467 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——QR-DQN.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——QR-DQN.html" itemprop="url">RL——QR-DQN</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/40681570" target="_blank" rel="noopener">用 Quantile Regression 分析变量相关性</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/138091493" target="_blank" rel="noopener">【DRL-7】Distributional DQN: Quantile Regression-DQN</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——混合精度训练.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——混合精度训练.html" itemprop="url">DL——混合精度训练</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>混合精度 (Automatically Mixed Precision, AMP)</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<h3 id="数字类型"><a href="#数字类型" class="headerlink" title="数字类型"></a>数字类型</h3><h4 id="FP32"><a href="#FP32" class="headerlink" title="FP32"></a>FP32</h4><ul>
-<li>FP32，Single-precision floating-point</li>
-<li>4B, 32位，符号位1位，指数位8位，尾数位23位<ul>
-<li>符号位：用于表示数值的正负。</li>
-<li>指数位：用于表示数值的范围。</li>
-<li>尾数位（Fraction）：也称为小数位，用于表示数值的精度。</li>
-</ul>
-</li>
-<li>数字表达范围：\([-3e^{38},-1e^{-45}] \bigcup [1e^{-45}, 3e^{38}]\)</li>
-<li>下溢精度：\(1e^{-38}\)</li>
-</ul>
-<h4 id="FP16"><a href="#FP16" class="headerlink" title="FP16"></a>FP16</h4><ul>
-<li>FP16，Half-precision floating-point</li>
-<li>2B, 16位，符号位1位，指数位5位，尾数位10位</li>
-<li>数字表达范围：\([-65504,-5.9e^{-8}] \bigcup [5.9e^{-8}, 65504]\)</li>
-<li>下溢精度：\(5.9e^{-8}\)</li>
-</ul>
-<h4 id="BF16"><a href="#BF16" class="headerlink" title="BF16"></a>BF16</h4><ul>
-<li>BF16，Brain Floating Point</li>
-<li>2B，16位，符号位1位，指数位8位，尾数位7位</li>
-<li>数字表达范围：\([−3e^{38}, -9.2^{-41}],[9.2^{-41}, 3e^{38}]\)</li>
-<li>下溢精度：\(9.2^{-41}\)</li>
-</ul>
-<h4 id="FP32-vs-FP16"><a href="#FP32-vs-FP16" class="headerlink" title="FP32 vs FP16"></a>FP32 vs FP16</h4><ul>
-<li>能表达的数字范围和精度远小于FP32</li>
-<li>浮点数都有个上下溢问题：<ul>
-<li>上/下溢出：FP16 的表示范围不大，非常容易溢出</li>
-<li>超过\(6.5e^4\)的数字会上溢出变成 inf，小于\(5.9e^{-8}\)的数字会下溢出变成 0</li>
-</ul>
-</li>
-</ul>
-<h4 id="FP16-vs-BF16"><a href="#FP16-vs-BF16" class="headerlink" title="FP16 vs BF16"></a>FP16 vs BF16</h4><ul>
-<li>都是2B存储</li>
-<li>BF16指数位更多：可以表示更大范围的数值</li>
-<li>FP16尾数位更多：可以表示更精确的数值，如果都是小数值，用FP16更好<ul>
-<li>注意：下溢精度不等于精度，下溢精度与指数关系更大</li>
-</ul>
-</li>
-</ul>
-<h3 id="混合精度训练"><a href="#混合精度训练" class="headerlink" title="混合精度训练"></a>混合精度训练</h3><ul>
-<li>最早论文：<a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed precision training</a><ul>
-<li>作者：百度，英伟达</li>
-<li>一次迭代过程<img src="/Notes/DL/DL——混合精度训练/mixed-precision-training-iteration-for-a-layer.png"></li>
-<li>基本思路：保持原始参数还是fp32的情况下，将计算梯度等所有流程都使用fp16进行，节省内存/显存的同时提升训练速度</li>
-<li>fp16会损失精度，所以在过程中需要用到scaling操作</li>
-</ul>
-</li>
-<li>混合精度训练的优点<ul>
-<li>减少显存占用：FP16 的显存占用只有 FP32 的一半，这使得我们可以用更大的 batch size；<ul>
-<li>混合精度训练下，需要存储的变量为：FP16的梯度，FP16的参数，FP32的参数；好像并没有减少显存啊？</li>
-</ul>
-</li>
-<li>加速训练：使用 FP16，模型的训练速度几乎可以提升 1 倍。</li>
-</ul>
-</li>
-<li>FP16的下溢值这么大，梯度一般都很小，为什么能存储梯度？<ul>
-<li>通过loss scaling技术，对loss进行缩放（放大很多倍）可以确保梯度不会下溢，在更新时转换成FP32再unscale回去即可（需要FP32）</li>
-</ul>
-</li>
-<li>FP32有什么用？（为什么不能只使用fp16呢？）<ul>
-<li>防止FP16导致误差过大：将模型权重、激活值、梯度等数据用 FP16 来存储，同时维护一份 FP32 的模型权重副本用于更新。在反向传播得到 FP16 的梯度以后，将其转化成 FP32 并 unscale，最后更新 FP32 的模型权重。因为整个更新过程是在 FP32 的环境中进行的，所以不会出现舍入误差。 </li>
-</ul>
-</li>
-<li>为了节省存储和加快训练速度，特别是大模型时代，越来越重要</li>
-</ul>
-<h3 id="混合精度的使用"><a href="#混合精度的使用" class="headerlink" title="混合精度的使用"></a>混合精度的使用</h3><ul>
-<li>更新最新参考资料：<a href="https://mp.weixin.qq.com/s?__biz=MzI4MDYzNzg4Mw==&mid=2247550159&idx=5&sn=f5db2afa547970bc429112e32d2e7daf&chksm=ebb73c1bdcc0b50d0e85039bd5d8349a23330e3e0f138a7dd2da218a20174d0965837682dd14&scene=27" target="_blank" rel="noopener">由浅入深的混合精度训练教程</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Java/IDEA——lombok包使用说明.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Java/IDEA——lombok包使用说明.html" itemprop="url">IDEA——lombok包使用说明</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>参考链接：<a href="https://blog.csdn.net/sunayn/article/details/85252507" target="_blank" rel="noopener">https://blog.csdn.net/sunayn/article/details/85252507</a></em></p>
-<ul>
-<li>在Java使用lombok包提供Setter和Getter等注解可以简化编程</li>
-</ul>
-<hr>
-<h3 id="lombok包使用流程"><a href="#lombok包使用流程" class="headerlink" title="lombok包使用流程"></a>lombok包使用流程</h3><ul>
-<li><p>在pom中导入lombok包依赖</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;!--lombok 注解--&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.projectlombok&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;lombok&lt;/artifactId&gt;</span><br><span class="line">	&lt;version&gt;1.16.10&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用注解</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">package com.example.springboot.model;</span><br><span class="line"> </span><br><span class="line">import lombok.Getter;</span><br><span class="line">import lombok.Setter;</span><br><span class="line"> </span><br><span class="line">import java.util.Date;</span><br><span class="line"> </span><br><span class="line">@Setter</span><br><span class="line">@Getter</span><br><span class="line">public class User &#123;</span><br><span class="line">    private Integer id;</span><br><span class="line"> </span><br><span class="line">    private String name;</span><br><span class="line"> </span><br><span class="line">    private Integer age;</span><br><span class="line"> </span><br><span class="line">    private String sex;</span><br><span class="line"> </span><br><span class="line">    private Date birthday;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>上面的例子是为整个类的属性加上了注解，但更多的使用时针对类里面的某个属性单独添加这@Setter和@Getter注解</li>
-</ul>
-</li>
-</ul>
-<h3 id="可能存在的问题"><a href="#可能存在的问题" class="headerlink" title="可能存在的问题"></a>可能存在的问题</h3><h4 id="IDEA中无法识别注解"><a href="#IDEA中无法识别注解" class="headerlink" title="IDEA中无法识别注解"></a>IDEA中无法识别注解</h4><ul>
-<li>这可能导致代码找不到Getter和Setter方法而报错</li>
-<li>此时IDEA需要安装lombok插件才能正常使用</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——样本不均衡问题.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——样本不均衡问题.html" itemprop="url">ML——样本不均衡问题</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="关于样本不均衡的解决"><a href="#关于样本不均衡的解决" class="headerlink" title="关于样本不均衡的解决"></a>关于样本不均衡的解决</h3><ul>
-<li>相关实践: 某次比赛中, 训练集中正负样本数量分别为20663和569877,占比分别为3.499%和96.501%, 差别很大</li>
-</ul>
-<h4 id="基于数据的解决方案"><a href="#基于数据的解决方案" class="headerlink" title="基于数据的解决方案"></a>基于数据的解决方案</h4><h5 id="过采样"><a href="#过采样" class="headerlink" title="过采样"></a>过采样</h5><ul>
-<li>增加负样本的数量<ul>
-<li>简单复制样本多次: 容易过拟合,模型变得复杂</li>
-<li>使用<strong>SMOTE</strong>算法采样: 对少数样本集\(S_{min}\)中的每一个样本 \(x\),从他的K近邻中随机选取一个样本\(y\), 然后在 \(x, y\) 之间随机选取一个新的点作为新合成的样本<ul>
-<li>能降低过拟合风险</li>
-<li>需要一个样本间距离定义的函数,且对于少数样本多时选取最近邻的复杂度太大</li>
-<li>由于为每个样本都采样了,所以可能会增大类间重叠度(生成的样本可能是符合多数样本类别的,很容易造成生成没有意义甚至是噪声)</li>
-</ul>
-</li>
-<li>使用<strong>Borderline-SMOTE</strong>算法优化<strong>SMOTE</strong>算法: <ul>
-<li>只在分类边界上的少数样本进行采样</li>
-</ul>
-</li>
-<li>使用<strong>ADASYN</strong>算法优化<strong>SMOTE</strong>算法:<ul>
-<li>给不同的少数类样本合成不同个数的新样本</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h5 id="负采样"><a href="#负采样" class="headerlink" title="负采样"></a>负采样</h5><ul>
-<li>减少正样本数量,让分类器更重视负样本<ul>
-<li>Easy Ensemble算法: 每次从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\), 最后融合多个分类模型的结果<ul>
-<li>融合模型时简单的可以对模型输出做均值(评估方式为AUC分数)或者投票(评估方式为分类精度)</li>
-</ul>
-</li>
-<li>Balance Cascade算法: 级联结构, 在每一级中从 \(S_{maj}\) 中随机抽取子集 \(E\), 然后用 \(E + S_{min}\) 训练当前级的分类其,然后将 \(S_{maj}\) 能正确被当前分类器正确分类的样本剔除, 剩下不能正确分类的样本进行下一级操作,重复若干次后得到级联结构,最终的输出结果是各级分类器结果的融合<ul>
-<li>这里有点像是Boosting方法,对样本权重进行修改,使得模型更重视上次分类错误的样本</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="基于算法的解决方案"><a href="#基于算法的解决方案" class="headerlink" title="基于算法的解决方案"></a>基于算法的解决方案</h4><ul>
-<li>修改模型的训练<strong>目标函数</strong><ul>
-<li>比如使用 AUC_ROC 的负数作为损失函数</li>
-<li>深度学习中可以使用Focal Loss代替传统的SGD</li>
-</ul>
-</li>
-<li>也可以将问题转化为<strong>基于单类学习的异常检测</strong>问题</li>
-<li><strong>单类学习</strong>(One Class Learning), <strong>异常检测</strong>(Anomaly Detection) *<ul>
-<li><strong>单类学习</strong>(One Class Learning): 训练数据只有一个类别,学习一个能够远离这个类别样本的Boundary,比如<ul>
-<li>单类别SVM(One Class SVM)</li>
-<li>K近邻非参数方法</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="一个重要的特殊说明"><a href="#一个重要的特殊说明" class="headerlink" title="一个重要的特殊说明"></a>一个重要的特殊说明</h3><ul>
-<li>在深度神经网络中,如果样本类别不平衡,不要使用BN, 否则会出现问题</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——图嵌入综述.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/KnowledgeGraph/KG——图嵌入综述.html" itemprop="url">KG——图嵌入综述</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍图嵌入(Graph Embedding)的发展和方法</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="图-Graph"><a href="#图-Graph" class="headerlink" title="图(Graph)"></a>图(Graph)</h3><ul>
-<li>结点和边的集合</li>
-<li>经典图论中的图, 知识图谱, 概率图模型中的图等</li>
-<li>传统的图算法包括(图论中的):<ul>
-<li>最小生成树算法: Prim算法, Kruskal算法等</li>
-<li>最短路径算法: Dijkstra算法, Floyed算法等</li>
-</ul>
-</li>
-<li>图神经网络算法包括<ul>
-<li><strong>图嵌入</strong>(Graph Embedding): 基于<strong>随机游走</strong>(Random Walk)生成路径</li>
-<li><strong>图卷积神经网络</strong>(Graph CNN, GCN): 基于<strong>邻居汇聚</strong>实现</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="图嵌入"><a href="#图嵌入" class="headerlink" title="图嵌入"></a>图嵌入</h3><ul>
-<li>用低维的向量来表示结点, 同时要求任意在图中相似的节点在向量空间中也接近.</li>
-<li>得到的节点的向量表示可以用来解决节点分类等下游任务</li>
-</ul>
-<hr>
-<h3 id="DeepWalk"><a href="#DeepWalk" class="headerlink" title="DeepWalk"></a>DeepWalk</h3><ul>
-<li>论文链接: <em><a href="http://www.perozzi.net/publications/14_kdd_deepwalk.pdf" target="_blank" rel="noopener">DeepWalk KDD 2014</a></em></li>
-<li>核心思想: 通过将游走路径(walks)当做句子(sentences), 用从截断随机游走(truncated random walks)中得到的局部信息来学习隐式表示<ul>
-<li>类似于Word2Vec, node对应word, walks对应sentence</li>
-</ul>
-</li>
-<li>核心方法: <ul>
-<li>随机游走方法进行采样</li>
-<li>使用Skip-Gram方法训练采样的样本</li>
-</ul>
-</li>
-<li>实验结果:<ul>
-<li>论文中展示了DeepWalk在多个多标签网络分类任务中的隐式表示, 比如BlogCatalog, Flickr和YouTube</li>
-<li>在某些实验中,仅仅用60%的训练数据即可到达(超过)所有Baseline方法</li>
-<li>在稀疏标记数据上F1分数表现良好</li>
-</ul>
-</li>
-</ul>
-<h4 id="随机游走"><a href="#随机游走" class="headerlink" title="随机游走"></a>随机游走</h4><ul>
-<li>随机游走方法: 一种可重复访问(有放回采样)的深度优先遍历算法(DFS)<ul>
-<li>给定起始访问节点A</li>
-<li>从A的邻居中随机采样一个节点B作为下一个节点</li>
-<li>从B的邻居中随机采样一个节点C作为下一个节点</li>
-<li>….</li>
-<li>直到序列长度满足truncated条件, 得到一个walk</li>
-</ul>
-</li>
-</ul>
-<h4 id="Skip-Gram-训练"><a href="#Skip-Gram-训练" class="headerlink" title="Skip-Gram 训练"></a>Skip-Gram 训练</h4><ul>
-<li>对随机游走采样到的数据进行Skip-Gram训练</li>
-<li>最终得到每个节点的表示向量</li>
-</ul>
-<hr>
-<h3 id="Node2Vec"><a href="#Node2Vec" class="headerlink" title="Node2Vec"></a>Node2Vec</h3><ul>
-<li>论文链接: <em><a href="https://cs.stanford.edu/~jure/pubs/node2vec-kdd16.pdf" target="_blank" rel="noopener">Node2Vec KDD 2016</a></em></li>
-<li>核心思想: 综合考虑DFS和BFS的图嵌入方法, 可以视为DeepWalk的一种扩展(DeepWalk的随机游走仅仅是考虑DFS的,不考虑BFS)<img src="/Notes/KnowledgeGraph/KG——图嵌入综述/DFS_BFS_for_Node2Vec.png">
-
-</li>
-</ul>
-<h4 id="优化目标"><a href="#优化目标" class="headerlink" title="优化目标"></a>优化目标</h4><ul>
-<li><p>Node2Vec要解决的问题: 找到一种从节点到embedding向量的映射函数\(f\), 最大化整体后验概率(乘积). 每个节点的后验概率为: 给定某个节点, 相邻节点出现的概率 \(Pr(N_S(u)|f(u))\)<br>$$<br>\begin{align}<br>\max_f\sum_{u \in V} log Pr(N_S(u)|f(u))<br>\end{align}<br>$$</p>
-</li>
-<li><p>为了简化上述问题,作者引入两个假设</p>
-<ul>
-<li><strong>条件独立性</strong>(Conditional independence):<br>$$<br>\begin{align}<br>Pr(N_S(u)|f(u)) = \prod_{n_i \in N_S(u)} Pr(n_i|f(u))<br>\end{align}<br>$$</li>
-<li><strong>特征空间中的对称性</strong>(Symmetry in feature space): 假设源节点和邻居节点在特征空间中有对称<br>$$<br>\begin{align}<br>Pr(n_i|f(u)) = \frac{exp(f(n_i)\cdot f(u))}{\prod_{v\in V}exp(f(v)\cdot f(u))}<br>\end{align}<br>$$<ul>
-<li>本质上表达的是: <strong>一个节点作为源节点或者邻近节点时都使用同一个特征向量表示</strong></li>
-<li>理解: 特征向量的点乘(内积)表示两个点之间的关联程度?</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Bash——Shell中的环境变量高级解析方法.html" itemprop="url">Bash——Shell中的环境变量高级解析方法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>参考链接：<a href="https://www.cnblogs.com/flintlovesam/p/6677037.html" target="_blank" rel="noopener">https://www.cnblogs.com/flintlovesam/p/6677037.html</a></em></p>
-<h3 id="Shell中的-、-和-使用范例"><a href="#Shell中的-、-和-使用范例" class="headerlink" title="Shell中的${}、##和%%使用范例"></a>Shell中的${}、##和%%使用范例</h3><ul>
-<li><p>假设我们定义了一个变量为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file=/dir1/dir2/dir3/my.file.txt</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>可以用${ }分别替换得到不同的值：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file#*/&#125;：删掉第一个 / 及其左边的字符串：dir1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file##*/&#125;：删掉最后一个 /  及其左边的字符串：my.file.txt</span><br><span class="line">$&#123;file#*.&#125;：删掉第一个 .  及其左边的字符串：file.txt</span><br><span class="line">$&#123;file##*.&#125;：删掉最后一个 .  及其左边的字符串：txt</span><br><span class="line">$&#123;file%/*&#125;：删掉最后一个  /  及其右边的字符串：/dir1/dir2/dir3</span><br><span class="line">$&#123;file%%/*&#125;：删掉第一个 /  及其右边的字符串：(空值)</span><br><span class="line">$&#123;file%.*&#125;：删掉最后一个  .  及其右边的字符串：/dir1/dir2/dir3/my.file</span><br><span class="line">$&#123;file%%.*&#125;：删掉第一个  .   及其右边的字符串：/dir1/dir2/dir3/my</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>记忆的方法为：</p>
-<ul>
-<li><code>%</code>和<code>#</code>分别在<code>$</code>的右边和左边</li>
-<li><code>#</code>是去掉左边（键盘上<code>#</code>在 <code>$</code> 的左边）</li>
-<li><code>%</code>是去掉右边（键盘上<code>%</code> 在<code>$</code> 的右边）</li>
-<li>单一符号是最小匹配；两个符号是最大匹配<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file:0:5&#125;：提取最左边的 5 个字节：/dir1</span><br><span class="line">$&#123;file:5:5&#125;：提取第 5 个字节右边的连续5个字节：/dir2</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>也可以对变量值里的字符串作替换：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file/dir/path&#125;：将第一个dir 替换为path：/path1/dir2/dir3/my.file.txt</span><br><span class="line">$&#123;file//dir/path&#125;：将全部dir 替换为 path：/path1/path2/path3/my.file.txt</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>利用 ${ } 还可针对不同的变数状态赋值(沒设定、空值、非空值)：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$&#123;file-my.file.txt&#125; ：假如 $file 沒有设定，則使用 my.file.txt 作传回值。(空值及非空值時不作处理)</span><br><span class="line">$&#123;file:-my.file.txt&#125; ：假如 $file 沒有設定或為空值，則使用 my.file.txt 作傳回值。 (非空值時不作处理)</span><br><span class="line">$&#123;file+my.file.txt&#125; ：假如 $file 設為空值或非空值，均使用 my.file.txt 作傳回值。(沒設定時不作处理)</span><br><span class="line">$&#123;file:+my.file.txt&#125; ：若 $file 為非空值，則使用 my.file.txt 作傳回值。 (沒設定及空值時不作处理)</span><br><span class="line">$&#123;file=my.file.txt&#125; ：若 $file 沒設定，則使用 my.file.txt 作傳回值，同時將 $file 賦值為 my.file.txt 。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:=my.file.txt&#125; ：若 $file 沒設定或為空值，則使用 my.file.txt 作傳回值，同時將 $file 賦值為my.file.txt 。 (非空值時不作处理)</span><br><span class="line">$&#123;file?my.file.txt&#125; ：若 $file 沒設定，則將 my.file.txt 輸出至 STDERR。 (空值及非空值時不作处理)</span><br><span class="line">$&#123;file:?my.file.txt&#125; ：若 $file 没设定或为空值，则将 my.file.txt 输出至 STDERR。 (非空值時不作处理)</span><br><span class="line">$&#123;#var&#125; 可计算出变量值的长度：</span><br><span class="line">$&#123;#file&#125; 可得到 27 ，因为/dir1/dir2/dir3/my.file.txt 是27个字节</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——Neo4j使用笔记.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/KnowledgeGraph/KG——Neo4j使用笔记.html" itemprop="url">KG——Neo4j使用笔记</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要记录Neo4j使用过程中的遇到的问题和解决方案等</em></p>
-<hr>
-<h3 id="安装与启动"><a href="#安装与启动" class="headerlink" title="安装与启动"></a>安装与启动</h3><h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><ul>
-<li>安装Neo4j前,一般需要安装Java环境, Ubuntu自带的版本不行的话需要重新下载安装新的版本并设置环境变量</li>
-</ul>
-<h5 id="自动安装"><a href="#自动安装" class="headerlink" title="自动安装"></a>自动安装</h5><ul>
-<li>Ubuntu上安装和卸载命令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install neo4j</span><br><span class="line">sudo apt-get remove neo4j</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="手动安装"><a href="#手动安装" class="headerlink" title="手动安装"></a>手动安装</h5><ul>
-<li>下载neo4j已经编译好的文件, 官网为<a href="http://www.neo4j.com/" target="_blank" rel="noopener">http://www.neo4j.com/</a><ul>
-<li>不要直接点download neo4j, 从官网选中products-&gt;neo4j database-&gt;拉到最下面选择Community Edition_&gt;选择对应的release版本(.tar文件)下载即可</li>
-</ul>
-</li>
-<li>将下载到的.tar文件解压到安装目录中(一般选择/usr/local/neo4j/)</li>
-<li>现已经安装成功,直接进入安装目录即可使用<code>./bin/neo4j console</code>启动neo4j数据库</li>
-<li>初始的账户和密码都是neo4j, 第一次登录需要重新设置密码</li>
-</ul>
-<h4 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h4><ul>
-<li><p>使用console启动</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j console</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>terminal将输出实时运行log信息,关闭terminal,neo4j数据库随之关闭</li>
-<li>此时用其他电脑不能访问,只能本地电脑localhost:7474/browser访问</li>
-</ul>
-</li>
-<li><p>查看启动状态</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j status</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j start</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>停止</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/neo4j stop</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>默认访问端口: 7474, 比如本地访问网址为: localhost:7474/browser</p>
-</li>
-</ul>
-<hr>
-<h3 id="Neo4J导入Turtle文件"><a href="#Neo4J导入Turtle文件" class="headerlink" title="Neo4J导入Turtle文件"></a>Neo4J导入Turtle文件</h3><h4 id="Turtle简介"><a href="#Turtle简介" class="headerlink" title="Turtle简介"></a>Turtle简介</h4><p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
-<ul>
-<li>Turtle是最常用的RDF序列化方式, 比RDF/XML更紧凑, 可读性比N-Triples更好</li>
-<li>其他序列化方式包括:<ul>
-<li>RDF/XML: 用XML格式来表示RDF数据</li>
-<li>N-Triples: 用多个三元组来表示RDF数据集合,是最直观的表示方法,每一行表示一个三元组,方便机器解析和处理,<a href="https://wiki.dbpedia.org/" target="_blank" rel="noopener">DBpedia</a> 是按照这个方式来发布数据的</li>
-<li>RDFa: (The Resource Description Framework in Attributes)</li>
-<li>JSON-LD</li>
-</ul>
-</li>
-</ul>
-<h4 id="安装neosemantics插件"><a href="#安装neosemantics插件" class="headerlink" title="安装neosemantics插件"></a>安装neosemantics插件</h4><p><em>注意,这里要求neo4j安装方式是手动安装的,(自动安装的neo4j本人找不到<neo_home>/plugins目录),手动安装方式参考前面的安装流程</neo_home></em></p>
-<ul>
-<li><p>下载插件release版本, 项目地址: <a href="https://github.com/neo4j-labs/neosemantics" target="_blank" rel="noopener">https://github.com/neo4j-labs/neosemantics</a></p>
-<ul>
-<li>注意,下载时一定要查看版本与已经安装的neo4j数据库是否兼容,否则可能造成运行时异常,或者找不到方法名等</li>
-</ul>
-</li>
-<li><p>按照项目中的README.md安装插件</p>
-<ul>
-<li><p>复制release版本到<neo_home>/plugins目录下</neo_home></p>
-</li>
-<li><p>修改<neo_home>/conf/neo4j.conf文件,添加一行</neo_home></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dbms.unmanaged_extension_classes=semantics.extension=/rdf</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>重启neo4j服务器</p>
-</li>
-<li><p>使用<code>call dbms.procedures()</code>测试是否安装成功</p>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="导入Turtle文件"><a href="#导入Turtle文件" class="headerlink" title="导入Turtle文件"></a>导入Turtle文件</h4><ul>
-<li><p>导入云端文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CALL semantics.importRDF(&quot;https://raw.githubusercontent.com/jbarrasa/neosemantics/3.5/docs/rdf/nsmntx.ttl&quot;,&quot;Turtle&quot;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>导入本地文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CALL semantics.importRDF(&quot;file:///home/jiahong/neosemantics/3.5/docs/rdf/nsmntx.ttl&quot;,&quot;Turtle&quot;)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="彻底清空Neo4J数据库"><a href="#彻底清空Neo4J数据库" class="headerlink" title="彻底清空Neo4J数据库"></a>彻底清空Neo4J数据库</h3><p><em>参考链接: <a href="https://blog.csdn.net/u012485480/article/details/83088818" target="_blank" rel="noopener">https://blog.csdn.net/u012485480/article/details/83088818</a></em></p>
-<h4 id="使用Cypher语句"><a href="#使用Cypher语句" class="headerlink" title="使用Cypher语句"></a>使用Cypher语句</h4><ul>
-<li>直接使用下面的Cypher语句即可<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (n) detach delete n</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h5><ul>
-<li>无需操作文件</li>
-<li>无需停止和启动服务</li>
-<li>对于数据量大的情况下删除很慢(需要先查询再删除,内存可能会溢出)</li>
-</ul>
-<h4 id="删除数据库文件"><a href="#删除数据库文件" class="headerlink" title="删除数据库文件"></a>删除数据库文件</h4><ul>
-<li><p>停止neo4j服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j stop</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>删除<code>./data/databases/graph.db</code>目录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo rm -rf ./data/database/graph.db</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动neo4j服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h5><ul>
-<li>需要删除文件操作</li>
-<li>需要停止和启动服务</li>
-<li>对于数据量大的情况下删除速度也非常快速</li>
-</ul>
-<hr>
-<h3 id="Neo4j约束"><a href="#Neo4j约束" class="headerlink" title="Neo4j约束"></a>Neo4j约束</h3><h4 id="查看当前数据库中的所有约束"><a href="#查看当前数据库中的所有约束" class="headerlink" title="查看当前数据库中的所有约束"></a>查看当前数据库中的所有约束</h4><ul>
-<li>Cypher查询语句CQL<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:schema</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="创建约束"><a href="#创建约束" class="headerlink" title="创建约束"></a>创建约束</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
-
-<h4 id="删除约束"><a href="#删除约束" class="headerlink" title="删除约束"></a>删除约束</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">drop constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
-
-<h4 id="节点的唯一性约束"><a href="#节点的唯一性约束" class="headerlink" title="节点的唯一性约束"></a>节点的唯一性约束</h4><ul>
-<li><p>为某个标签在某个属性上创建唯一性约束</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create constraint on (p:Person) assert p.name is unique</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>创建唯一性约束后会自动为该标签对应的属性创建索引Index</li>
-<li>这里的索引为<code>ON :Person(name) ONLINE (for uniqueness constraint)</code></li>
-<li>理解,因为要确保唯一性,所以需要索引加快每次插入节点前检索的效率</li>
-<li>手动创建索引(为了加快某个标签的某个属性的检索效率)的方法为:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create index on :Person(name)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>唯一性约束设置后,当写入重复的数据时,会报错</p>
-<blockquote>
-<p>Neo.ClientError.Schema.ConstraintValidationFailed<br>Node(19718935) already exists with label <code>Person</code> and property <code>name</code> = ‘Joe’</p>
-</blockquote>
-</li>
-</ul>
-<hr>
-<h3 id="节点操作"><a href="#节点操作" class="headerlink" title="节点操作"></a>节点操作</h3><h4 id="创建节点"><a href="#创建节点" class="headerlink" title="创建节点"></a>创建节点</h4><ul>
-<li><p>创建结点方式如下,其中p</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (p:Person&#123;name:&apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>上面的句子创建了一个结点</p>
-</li>
-<li><p>结点标签为: Person</p>
-<ul>
-<li>如果之前没有Person标签则新建Person标签</li>
-<li>如果没有添加索引,那么这个标签在所有Person标签的节点都被删除后也会自动消失</li>
-<li>如果添加了索引,则删除所有结点和相关索引后该标签会自动消失</li>
-</ul>
-</li>
-<li><p>结点名称为: p</p>
-<ul>
-<li>p本质上在这里是一个变量</li>
-<li>如果当前执行语句中对当前结点没有更多操作, 甚至可以省略节点名称p<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (:Person&#123;name: &apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>结点属性<code>name</code>的值为: ‘Joe’</p>
-<ul>
-<li>这个属性很有用, 可以在显示结点的时候直接在结点中显示出来”Joe”, 方便查看</li>
-<li>测试: 换成其他属性,比如属性<code>a</code>后, 在Neo4j可视化结点时是不显示的</li>
-<li><code>name</code>本身也可以省略<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (:Person)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="删除结点"><a href="#删除结点" class="headerlink" title="删除结点"></a>删除结点</h4><ul>
-<li>删除标签为Person且名字为”Joe”的所有结点<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) delete p</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="标签操作"><a href="#标签操作" class="headerlink" title="标签操作"></a>标签操作</h3><ul>
-<li>Neo4j中一般为节点创建一个标签即可,通常一些标准的知识图谱还会为同一个节点创建多个标签,说明这个节点属于多个标签</li>
-<li>节点的标签数量可以为0个,1个或多个</li>
-<li>没有标签的结点可通过id获取到<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (n) where id(n)=&lt;node-id&gt; return n</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="直接创建标签"><a href="#直接创建标签" class="headerlink" title="直接创建标签"></a>直接创建标签</h4><ul>
-<li><p>单个标签创建</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (&lt;node-name&gt;:&lt;label-name&gt;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>多个标签创建</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (&lt;node-name&gt;:&lt;label-name1&gt;:&lt;label-name2&gt;:...:&lt;label-nameN&gt;)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>从很多知识图谱的例子来看,标签之间并不是完全的从属关系</li>
-<li>从属关系: Person:Student</li>
-<li>并列关系: Man:Student</li>
-</ul>
-</li>
-</ul>
-<h4 id="给已有的节点添加标签"><a href="#给已有的节点添加标签" class="headerlink" title="给已有的节点添加标签"></a>给已有的节点添加标签</h4><ul>
-<li>使用<code>set</code>关键字添加标签标签<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) set p:Student</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="移除已有结点的标签"><a href="#移除已有结点的标签" class="headerlink" title="移除已有结点的标签"></a>移除已有结点的标签</h4><ul>
-<li>使用<code>remove</code>关键字删除标签<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&apos;Joe&apos;&#125;) remove p:Student</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="属性操作"><a href="#属性操作" class="headerlink" title="属性操作"></a>属性操作</h3><ul>
-<li>属性操作与标签操作类似, 使用的也是<code>REMOVE</code>和<code>SET</code>指令</li>
-</ul>
-<h4 id="直接创建属性"><a href="#直接创建属性" class="headerlink" title="直接创建属性"></a>直接创建属性</h4><ul>
-<li>使用<code>CREATE</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create (p:Person&#123;name:&apos;Joe&apos;&#125;)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="添加属性"><a href="#添加属性" class="headerlink" title="添加属性"></a>添加属性</h4><ul>
-<li>使用<code>SET</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&quot;Joe&quot;&#125;) set p.sex=&quot;male&quot;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="移除属性"><a href="#移除属性" class="headerlink" title="移除属性"></a>移除属性</h4><ul>
-<li>使用<code>REMOVE</code>指令<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">match (p:Person&#123;name:&quot;Joe&quot;&#125;) remove p.sex</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="各种操作命令总结"><a href="#各种操作命令总结" class="headerlink" title="各种操作命令总结"></a>各种操作命令总结</h3><ul>
-<li><code>DELETE</code>和<code>CREATE</code>指令用于删除节点和关联关系</li>
-<li><code>REMOVE</code>和<code>SET</code>指令用于删除标签和属性</li>
-</ul>
-<hr>
-<h3 id="Neo4j同时创建多个数据库"><a href="#Neo4j同时创建多个数据库" class="headerlink" title="Neo4j同时创建多个数据库"></a>Neo4j同时创建多个数据库</h3><ul>
-<li>Neo4j中无法同时创建多个数据库,但是我们可以通过硬性和软性的方法分别实现等价功能</li>
-</ul>
-<h4 id="硬件上实现多个数据库"><a href="#硬件上实现多个数据库" class="headerlink" title="硬件上实现多个数据库"></a>硬件上实现多个数据库</h4><ul>
-<li>Neo4j的数据库文件为<code>./data/databases/graph.db</code><ul>
-<li>我们可以手动修改该文件的名称,然后重新创建文件实现</li>
-</ul>
-</li>
-<li>Neo4j的数据库配置文件为<code>./conf/neo4j.conf</code><ul>
-<li>可以修改<code>#dbms.active_database=graph.db</code></li>
-<li>修改方法为将注释取消并且修改数据库为对应的数据库名称</li>
-</ul>
-</li>
-</ul>
-<h4 id="软件上实现多个数据库"><a href="#软件上实现多个数据库" class="headerlink" title="软件上实现多个数据库"></a>软件上实现多个数据库</h4><ul>
-<li>为不同数据库的每个结点分别指定同一个数据库名称对应的标签<ul>
-<li>比如”Docker”和”School”分别对应Docker知识图谱和学校知识图谱</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Py2neo中结点如何被图识别"><a href="#Py2neo中结点如何被图识别" class="headerlink" title="Py2neo中结点如何被图识别?"></a>Py2neo中结点如何被图识别?</h3><ul>
-<li>每个Python结点对象都有个唯一的标识符ID<ul>
-<li>对应属性为<code>identity</code></li>
-<li>对于从Graph中读出的结点,该属性为一个唯一的数值,与图数据库中结点的数值一致</li>
-<li>对于Python直接初始化的结点对象,该属性是<code>None</code></li>
-</ul>
-</li>
-<li>只要<code>identity</code>属性指定了,其他属性与数据库中的结点不同也可以的<ul>
-<li>使用<code>Graph.push(local_node)</code>可以把本地结点更新到远处数据库中</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Neo4j和JVM版本兼容问题"><a href="#Neo4j和JVM版本兼容问题" class="headerlink" title="Neo4j和JVM版本兼容问题"></a>Neo4j和JVM版本兼容问题</h3><h4 id="报错"><a href="#报错" class="headerlink" title="报错:"></a>报错:</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>ERROR! Neo4j cannot be started using java version 1.8.0_222. </p>
-</blockquote>
-<ul>
-<li>Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j.</li>
-<li>Please see <a href="https://neo4j.com/docs/" target="_blank" rel="noopener">https://neo4j.com/docs/</a> for Neo4j installation instructions.</li>
-</ul>
-<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
-<li><p>安装对应版本的Java虚拟机(这里不会修改操作系统中原来的JAVA_HOME)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo yum search jdk</span><br><span class="line">sudo yum install java-11-openjdk</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>将对应的JAVA_HONE配置到Neo4j中(不修改原来系统中的JAVA_HOME)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim ./conf/neo4j.conf</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>在文件最后一行添加</p>
-</li>
-</ul>
-<blockquote>
-<p>JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64</p>
-</blockquote>
-<ul>
-<li><p>重新启动neo4j</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/neo4j start</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>注意: 以上方法都不会影响系统的JAVA_HOME和JAVA环境</p>
-</li>
-</ul>
-<hr>
-<h3 id="Neo4j服务器配置远程访问功能"><a href="#Neo4j服务器配置远程访问功能" class="headerlink" title="Neo4j服务器配置远程访问功能"></a>Neo4j服务器配置远程访问功能</h3><ul>
-<li><p>打开配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim ./conf/neo4j.conf</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>将下面的语句注释取消</p>
-</li>
-</ul>
-<blockquote>
-<p>dbms.connectors.default_listen_address=0.0.0.0</p>
-</blockquote>
-<ul>
-<li>注意: 如果是服务器有防火墙,则需要把以下端口打开<ul>
-<li>7474: http</li>
-<li>7687: bolt</li>
-</ul>
-</li>
-</ul>
-<h3 id="Neo4j-dump数据"><a href="#Neo4j-dump数据" class="headerlink" title="Neo4j dump数据"></a>Neo4j dump数据</h3><ul>
-<li>参考链接：<a href="https://www.jianshu.com/p/8c501b49adb7" target="_blank" rel="noopener">https://www.jianshu.com/p/8c501b49adb7</a></li>
-<li>dump原始数据库为<code>.dump</code>文件<br><code>bin/neo4j-admin dump --database graph.db --to [dir]</code><ul>
-<li>将数据库graph.db中的数据dump为<code>.dump</code>文件，文件名字自动生成为<code>对应的数据库名称.dump</code></li>
-</ul>
-</li>
-<li>将<code>.dump</code>文件导入到库中，（库需要停掉，并且库名不能有相同的名字）<br><code>bin/neo4j-admin load --from graph.db.dump</code><ul>
-<li>相当于是dump的逆向操作，数据库文件名称自动生成为前缀(注意不能与已经存在的数据库产生冲突)</li>
-</ul>
-</li>
-<li>当不同版本库相互倒数据时需要把该参数开启，在conf/neo4j.conf中<br><code>dbms.allow_format_migration=true</code></li>
-<li>这个dump命令只有在3.2.0才有的</li>
-</ul>
-<hr>
-<h3 id="Neo4j-4-0-0以后"><a href="#Neo4j-4-0-0以后" class="headerlink" title="Neo4j 4.0.0以后"></a>Neo4j 4.0.0以后</h3><ul>
-<li>数据库文件夹变化了,不能像之前一样修改文件夹名为<code>graph.db</code>来更改数据库</li>
-</ul>
-<hr>
-<h3 id="使用Cypher查询数据库时的效率问题"><a href="#使用Cypher查询数据库时的效率问题" class="headerlink" title="使用Cypher查询数据库时的效率问题"></a>使用Cypher查询数据库时的效率问题</h3><ul>
-<li>应该把Cypher语句和MySQL的查询语句联系起来看</li>
-<li>Cypher从第一句开始匹配，然后依次匹配相关的每一句</li>
-<li>如果存在两条匹配过程的路径，而又需要把这两个路径联系起来，那么需要使用<code>WHERE</code>子句<ul>
-<li><code>WHERE</code>语句非常有用，能避免很多不必要的问题，还能加入与或非的逻辑</li>
-</ul>
-</li>
-<li>但是一定要注意，<code>WHERE</code>语句使用方便，但是容易造成检索慢的问题</li>
-</ul>
-<h4 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h4><ul>
-<li><p>尽量不要写出如下语句</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MATCH (image:Image), (base_image:BaseImage) </span><br><span class="line">WHERE image.name = &quot;ubuntu:latest&quot; and </span><br><span class="line">	(image)-[:hasBaseImage]-&gt;(base_image)</span><br><span class="line">RETURN base_image</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>上述语句将匹配所有的Image对象</li>
-<li>然后匹配所有BaseImage对象</li>
-<li>接着执行WHERE子句过滤</li>
-<li>最后再返回</li>
-</ul>
-</li>
-<li><p>上面的句子可以换成如下语句</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MATCH (image:Image&#123;name:&quot;ubuntu:latest&quot;), (image)-[:hasBaseImage]-&gt;(base_image)</span><br><span class="line">RETURN base_image</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>上面的句子直接找到名称为”ubuntu:latest“的镜像</li>
-<li>然后直接从改对象开始搜索相关关系的BaseImage</li>
-<li>最后返回</li>
-</ul>
-</li>
-<li><p>实验表明：后面一句比前一句速度快很多</p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/CSDN——打印博客.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/CSDN——打印博客.html" itemprop="url">CSDN——打印博客</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文描述了如何打印干净的CSDN博客</em><br>参考博客: <a href="https://blog.csdn.net/sinat_42483341/article/details/89354222" target="_blank" rel="noopener">https://blog.csdn.net/sinat_42483341/article/details/89354222</a></p>
-<hr>
-<h3 id="使用JavaScript脚本"><a href="#使用JavaScript脚本" class="headerlink" title="使用JavaScript脚本"></a>使用JavaScript脚本</h3><p><em>本方法适用在Chrome中</em></p>
-<ul>
-<li>在Chrome的调试窗口中,Console处输入下面的脚本即可<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">(function()&#123;</span><br><span class="line">$(&quot;#side&quot;).remove();</span><br><span class="line">$(&quot;#comment_title, #comment_list, #comment_bar, #comment_form, .announce, #ad_cen, #ad_bot&quot;).remove();</span><br><span class="line">$(&quot;.nav_top_2011, #header, #navigator&quot;).remove();</span><br><span class="line">$(&quot;.p4course_target, .comment-box, .recommend-box, #csdn-toolbar, #tool-box&quot;).remove();</span><br><span class="line">$(&quot;aside&quot;).remove();</span><br><span class="line">$(&quot;.tool-box&quot;).remove();</span><br><span class="line">$(&quot;main&quot;).css(&apos;display&apos;,&apos;content&apos;); </span><br><span class="line">$(&quot;main&quot;).css(&apos;float&apos;,&apos;left&apos;); </span><br><span class="line">window.print();</span><br><span class="line"></span><br><span class="line">$(&quot;tool-box&quot;).remove();</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="使用油猴插件"><a href="#使用油猴插件" class="headerlink" title="使用油猴插件"></a>使用油猴插件</h3><p><em>没搜索到相关脚本,有时间的时候自己实现一份</em></p>
-<ul>
-<li>基本功能<ul>
-<li>在CSDN网站访问时添加一个”打印博客”按钮,点击即可打印</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2049,6 +588,1126 @@
 </ul>
 </li>
 </ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——xDeepFM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——xDeepFM.html" itemprop="url">DL——xDeepFM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍xDeepFM的理论介绍,包括阅读论文后自己的理解</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>上篇博客参考: <a href="/Notes/DL/DL%E2%80%94%E2%80%94DeepFM.html">DeepFM</a></li>
+<li>原始论文: <a href="https://arxiv.org/pdf/1803.05170.pdf" target="_blank" rel="noopener">xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, KDD 2018</a></li>
+</ul>
+<h3 id="xDeepFM结构图"><a href="#xDeepFM结构图" class="headerlink" title="xDeepFM结构图"></a>xDeepFM结构图</h3><img src="/Notes/DL/DL——xDeepFM/xDeepFM_overview.png">
+<ul>
+<li>显然, 上图中除了 CIN 部分以外,其他跟 DeepFM 基本是相同的, 所以我们本文主要讲述 CIN 组件部分, 其他的嵌入层等可参考我之前的博客<a href="/Notes/DL/DL%E2%80%94%E2%80%94DeepFM.html">DeepFM</a></li>
+</ul>
+<h4 id="CIN组件"><a href="#CIN组件" class="headerlink" title="CIN组件"></a>CIN组件</h4><p><em>Compressed Interaction Network</em></p>
+<ul>
+<li>论文中首先提出的就是这个CIN网络(Compressed Interaction Network)</li>
+<li>结构图如下:<img src="/Notes/DL/DL——xDeepFM/cin_overview.png"></li>
+<li>理解<ul>
+<li>每个隐藏层都与一个池化操作连接到一起</li>
+<li>特征阶数与网络层数相关</li>
+<li>可以与 RNN 对应着看, 当前网络层由上一个隐藏层和一个额外输入确定</li>
+<li>确切的说: CIN 中当前层输入是前一层的隐藏层 + 原来的特征向量</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/KnowledgeGraph/KG——知识图谱的描述.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/KnowledgeGraph/KG——知识图谱的描述.html" itemprop="url">KG——知识图谱的描述</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
+<hr>
+<h3 id="RDF"><a href="#RDF" class="headerlink" title="RDF"></a>RDF</h3><ul>
+<li>Resource Description Framework</li>
+<li>资源描述框架</li>
+<li>本质是一个数据模型</li>
+<li>提供了统一的描述实体和资源的标准</li>
+<li>形式上表现为主谓宾(SPO, Subject-Predication-Object)三元组, 也称为一条语句(Statement), 知识图谱中称为一条知识</li>
+</ul>
+<h4 id="RDF的序列化方法"><a href="#RDF的序列化方法" class="headerlink" title="RDF的序列化方法"></a>RDF的序列化方法</h4><p><em>参考博客: <a href="https://blog.csdn.net/u011801161/article/details/78833958" target="_blank" rel="noopener">https://blog.csdn.net/u011801161/article/details/78833958</a></em></p>
+<ul>
+<li><p>RDF/XML: 用XML格式来表示RDF数据</p>
+</li>
+<li><p>N-Triples: 用多个三元组来表示RDF数据集合,是最直观的表示方法,每一行表示一个三元组,方便机器解析和处理,<a href="https://wiki.dbpedia.org/" target="_blank" rel="noopener">DBpedia</a> 是按照这个方式来发布数据的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/chineseName&gt; &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/career&gt; &quot;足球运动员&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/fullName&gt; &quot;Ronaldo Luís Nazário de Lima&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/birthDate&gt; &quot;1976-09-18&quot;^^date.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/height&gt; &quot;180&quot;^^int.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/weight&gt; &quot;98&quot;^^int.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/nationality&gt; &quot;巴西&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/person/1&gt; &lt;http://www.kg.com/ontology/hasBirthPlace&gt; &lt;http://www.kg.com/place/10086&gt;.</span><br><span class="line">&lt;http://www.kg.com/place/10086&gt; &lt;http://www.kg.com/ontology/address&gt; &quot;里约热内卢&quot;^^string.</span><br><span class="line">&lt;http://www.kg.com/place/10086&gt; &lt;http://www.kg.com/ontology/coordinate&gt; &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>RDFa: (The Resource Description Framework in Attributes)</p>
+</li>
+<li><p>Turtle是最常用的RDF序列化方式, 比RDF/XML更紧凑, 可读性比N-Triples更好</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Example2 Turtle:</span><br><span class="line"></span><br><span class="line">@prefix person: &lt;http://www.kg.com/person/&gt; .</span><br><span class="line">@prefix place: &lt;http://www.kg.com/place/&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">person:1 :chineseName &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string.</span><br><span class="line">person:1 :career &quot;足球运动员&quot;^^string.</span><br><span class="line">person:1 :fullName &quot;Ronaldo Luís Nazário de Lima&quot;^^string.</span><br><span class="line">person:1 :birthDate &quot;1976-09-18&quot;^^date.</span><br><span class="line">person:1 :height &quot;180&quot;^^int. </span><br><span class="line">person:1 :weight &quot;98&quot;^^int.</span><br><span class="line">person:1 :nationality &quot;巴西&quot;^^string. </span><br><span class="line">person:1 :hasBirthPlace place:10086.</span><br><span class="line">place:10086 :address &quot;里约热内卢&quot;^^string.</span><br><span class="line">place:10086 :address &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>同一个实体拥有多个属性（数据属性）或关系（对象属性），我们可以只用一个subject来表示，使其更紧凑。我们可以将上面的Turtle改为<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Example3 Turtle:</span><br><span class="line"></span><br><span class="line">@prefix person: &lt;http://www.kg.com/person/&gt; .</span><br><span class="line">@prefix place: &lt;http://www.kg.com/place/&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">person:1 :chineseName &quot;罗纳尔多·路易斯·纳萨里奥·德·利马&quot;^^string;</span><br><span class="line">         :career &quot;足球运动员&quot;^^string;</span><br><span class="line">         :fullName &quot;Ronaldo Luís Nazário de Lima&quot;^^string;</span><br><span class="line">         :birthDate &quot;1976-09-18&quot;^^date;</span><br><span class="line">         :height &quot;180&quot;^^int;</span><br><span class="line">         :weight &quot;98&quot;^^int;</span><br><span class="line">         :nationality &quot;巴西&quot;^^string; </span><br><span class="line">         :hasBirthPlace place:10086.</span><br><span class="line">place:10086 :address &quot;里约热内卢&quot;^^string;</span><br><span class="line">            :address &quot;-22.908333, -43.196389&quot;^^string.</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>JSON-LD: 即“JSON for Linking Data”，用键值对的方式来存储RDF数据</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;@context&quot;: &quot;https://json-ld.org/contexts/person.jsonld&quot;,</span><br><span class="line">  &quot;@id&quot;: &quot;http://dbpedia.org/resource/John_Lennon&quot;,</span><br><span class="line">  &quot;name&quot;: &quot;John Lennon&quot;,</span><br><span class="line">  &quot;born&quot;: &quot;1940-10-09&quot;,</span><br><span class="line">  &quot;spouse&quot;: &quot;http://dbpedia.org/resource/Cynthia_Lennon&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="RDF的缺点"><a href="#RDF的缺点" class="headerlink" title="RDF的缺点"></a>RDF的缺点</h4><ul>
+<li>表达能力有限<ul>
+<li>无法区分雷和对象</li>
+<li>无法定义和描述类的关系/属性</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="RDFS-OWL"><a href="#RDFS-OWL" class="headerlink" title="RDFS/OWL"></a>RDFS/OWL</h3><ul>
+<li>是RDF的一种扩展</li>
+<li>是用来描述RDF数据的</li>
+<li>本质上是一些预定义词汇(Vocabulary)构成的集合</li>
+<li>用于对RDF进行类似的类定义以及属性的定义</li>
+</ul>
+<h4 id="RDFS-OWL的序列化方法"><a href="#RDFS-OWL的序列化方法" class="headerlink" title="RDFS/OWL的序列化方法"></a>RDFS/OWL的序列化方法</h4><ul>
+<li>RDFS/OWL序列化方式和RDF没什么不同，其实在表现形式上，它们就是RDF</li>
+<li>常用的方式主要是RDF/XML，Turtle</li>
+</ul>
+<h4 id="RDFS"><a href="#RDFS" class="headerlink" title="RDFS"></a>RDFS</h4><ul>
+<li>Resource Description Framework Schema</li>
+<li>是RDF的一种扩展</li>
+<li>RDFS几个比较重要，常用的词汇： <ul>
+<li>rdfs:Class. 用于定义类。 </li>
+<li>rdfs:domain. 用于表示该属性属于哪个类别。 </li>
+<li>rdfs:range. 用于描述该属性的取值类型。 </li>
+<li>rdfs:subClassOf. 用于描述该类的父类。比如，我们可以定义一个运动员类，声明该类是人的子类。 </li>
+<li>rdfs:subProperty. 用于描述该属性的父属性。比如，我们可以定义一个名称属性，声明中文名称和全名是名称的子类。</li>
+<li>其实rdf:Property和rdf:type也是RDFS的词汇，因为RDFS本质上就是RDF词汇的一个扩展。我们在这里不罗列进去，是不希望读者混淆, 更多RDFS词汇的用法参考<a href="https://www.w3.org/TR/rdf-schema" target="_blank" rel="noopener">W3C官方文档</a></li>
+</ul>
+</li>
+<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</span><br><span class="line">@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line"></span><br><span class="line">### 这里我们用词汇rdfs:Class定义了“人”和“地点”这两个类。</span><br><span class="line">:Person rdf:type rdfs:Class.</span><br><span class="line">:Place rdf:type rdfs:Class.</span><br><span class="line"></span><br><span class="line">### rdfs当中不区分数据属性和对象属性，词汇rdf:Property定义了属性，即RDF的“边”。</span><br><span class="line">:chineseName rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:career rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:fullName rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:birthDate rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:date .</span><br><span class="line"></span><br><span class="line">:height rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:weight rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:nationality rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:hasBirthPlace rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range :Place .</span><br><span class="line"></span><br><span class="line">:address rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:coordinate rdf:type rdf:Property;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="OWL"><a href="#OWL" class="headerlink" title="OWL"></a>OWL</h4><ul>
+<li><p>Web Ontology Language</p>
+</li>
+<li><p>是对RDFS的一个扩展，添加了额外的预定义词汇</p>
+</li>
+<li><p>提供快速，灵活的数据建模能力</p>
+</li>
+<li><p>高效的自动推理能力</p>
+</li>
+<li><p>描述属性特征的词汇 </p>
+<ul>
+<li>owl:TransitiveProperty. 表示该属性具有传递性质。例如，我们定义“位于”是具有传递性的属性，若A位于B，B位于C，那么A肯定位于C。 </li>
+<li>owl:SymmetricProperty. 表示该属性具有对称性。例如，我们定义“认识”是具有对称性的属性，若A认识B，那么B肯定认识A。 </li>
+<li>owl:FunctionalProperty. 表示该属性取值的唯一性。 例如，我们定义“母亲”是具有唯一性的属性，若A的母亲是B，在其他地方我们得知A的母亲是C，那么B和C指的是同一个人。 </li>
+<li>owl:inverseOf. 定义某个属性的相反关系。例如，定义“父母”的相反关系是“子女”，若A是B的父母，那么B肯定是A的子女。</li>
+</ul>
+</li>
+<li><p>本体映射词汇（Ontology Mapping） </p>
+<ul>
+<li>owl:equivalentClass. 表示某个类和另一个类是相同的。 </li>
+<li>owl:equivalentProperty. 表示某个属性和另一个属性是相同的。 </li>
+<li>owl:sameAs. 表示两个实体是同一个实体。</li>
+</ul>
+</li>
+<li><p>举例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</span><br><span class="line">@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .</span><br><span class="line">@prefix : &lt;http://www.kg.com/ontology/&gt; .</span><br><span class="line">@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</span><br><span class="line"></span><br><span class="line">### 这里我们用词汇owl:Class定义了“人”和“地点”这两个类。</span><br><span class="line">:Person rdf:type owl:Class.</span><br><span class="line">:Place rdf:type owl:Class.</span><br><span class="line"></span><br><span class="line">### owl区分数据属性和对象属性（对象属性表示实体和实体之间的关系）。词汇owl:DatatypeProperty定义了数据属性，owl:ObjectProperty定义了对象属性。</span><br><span class="line">:chineseName rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:career rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:fullName rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:birthDate rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:date .</span><br><span class="line"></span><br><span class="line">:height rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:weight rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:int .</span><br><span class="line"></span><br><span class="line">:nationality rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:hasBirthPlace rdf:type owl:ObjectProperty;</span><br><span class="line">        rdfs:domain :Person;</span><br><span class="line">        rdfs:range :Place .</span><br><span class="line"></span><br><span class="line">:address rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br><span class="line"></span><br><span class="line">:coordinate rdf:type owl:DatatypeProperty;</span><br><span class="line">        rdfs:domain :Place;</span><br><span class="line">        rdfs:range xsd:string .</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>举个例子体现对两个不同知识图谱的融合</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http://www.zhangsan.com/ontology/Person rdf:type owl:Class . </span><br><span class="line">http://www.lisi.com/ontology/Human rdf:type owl:Class . </span><br><span class="line">http://www.zhangsan.com/ontology/Person owl:equivalentClass http://www.lisi.com/ontology/Human .</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——isinstance的困境.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——isinstance的困境.html" itemprop="url">Python——类的__class__属性与isinstance函数的用法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="不同文件为入口文件时"><a href="#不同文件为入口文件时" class="headerlink" title="不同文件为入口文件时"></a>不同文件为入口文件时</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line"></span><br><span class="line">class Apple:</span><br><span class="line">	def __init__(self):</span><br><span class="line">		name = &quot;HongFuShi&quot;</span><br><span class="line"></span><br><span class="line">apple = Apple()</span><br><span class="line">print apple.__class__</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">import fruit</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>考虑一个文件名为<em>fruit.py</em>的文件夹中定义了一个类<code>Apple</code>,同时初始化一个对象<code>apple</code><ul>
+<li>若执行<code>python fruit.py</code>: 输入”<strong>main</strong>.Apple”</li>
+<li>若将当前文件导入到另一个文件<em>run.py</em>中,然后执行<code>python run.py</code>: 输出”fruit.Apple”</li>
+<li>也就是说,执行不同文件,类<code>Apple</code>的前缀不同</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="isinstance的困境"><a href="#isinstance的困境" class="headerlink" title="isinstance的困境"></a>isinstance的困境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># file: fruit.py</span><br><span class="line">class Apple(object):</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    from run import get_apple</span><br><span class="line">    apple1 = Apple()</span><br><span class="line">    print apple1.__class__</span><br><span class="line">    apple2 = get_apple()</span><br><span class="line">    print apple2.__class__</span><br><span class="line">    print isinstance(apple2, Apple)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># file: run.py</span><br><span class="line">from fruit import Apple</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_apple():</span><br><span class="line">    apple = Apple()</span><br><span class="line">    print apple.__class__</span><br><span class="line">    return apple</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>此时执行<code>python run.py</code>, 无任何输出</p>
+</li>
+<li><p>若执行<code>python fruit.py</code>, 则输出如下:</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &apos;__main__.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">&lt;class &apos;fruit.Apple&apos;&gt;</span><br><span class="line">False</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>此时<code>fruit.py</code>是程序的入口文件</li>
+<li>在入口文件中执行<code>apple1 = Apple()</code>后得到的类将是<code>__main__.Apple</code></li>
+<li>在入口文件被导入到<code>run.py</code>文件中后,执行<code>apple2 = Apple()</code>后得到的类将是<code>fruit.Apple</code></li>
+<li>此时,由于<code>apple2</code>的类别是<code>fruit.Apple</code>且<code>Apple</code>在<code>fruit.py</code>中是<code>__main__.Apple</code>,造成<code>isinstance(apple2, Apple)</code>返回<code>False</code></li>
+<li>isinstance的困境: <strong>看起来是同一个类,但执行isinstance后返回False</strong></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——强化学习相关笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——强化学习相关笔记.html" itemprop="url">RL——强化学习相关笔记</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="为什么off-policy的方法在于不与环境交互时效果不好？"><a href="#为什么off-policy的方法在于不与环境交互时效果不好？" class="headerlink" title="为什么off-policy的方法在于不与环境交互时效果不好？"></a>为什么off-policy的方法在于不与环境交互时效果不好？</h3><ul>
+<li>注：<em>理论上，off-policy的方法对收集样本的行为策略没有要求</em></li>
+<li><strong>Absent Data: 数据集中可能存在某些状态是从来没有出现过的</strong><ul>
+<li>某些state-action对的缺失会导致在该状态和动作上的错误估计</li>
+</ul>
+</li>
+<li><strong>Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致</strong><ul>
+<li>用于更新网络的状态分布需要满足当前策略对应的分布（即使所有状态动作都见过，没有OOD问题，也可能因为分布不同而导致问题），否则会导致线上线下状态分布不一致。可能导致训练效率低下，甚至模型关注一些不重要的状态动作（可类比CTR模型样本分布最好是线上线下一致的）</li>
+</ul>
+</li>
+<li><strong>Model Bias: 数据集本身可能分布与MDP分布不一致</strong><ul>
+<li>数据集本身与MDP分布不一致（这里主要指与策略无关的部分，比如数据集中\(P(s’|s,a)\)无法准确表达真实环境）</li>
+</ul>
+</li>
+</ul>
+<h3 id="为什么Online-RL中不能使用BN？"><a href="#为什么Online-RL中不能使用BN？" class="headerlink" title="为什么Online RL中不能使用BN？"></a>为什么Online RL中不能使用BN？</h3><ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a></li>
+<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a></li>
+</ul>
+</li>
+<li>BN能work的主要原因是，每个Batch的数据是从整体数据中随机采样得到的，每个Batch的均值和方差不会差别太大</li>
+<li>在Online RL中，随着Agent的探索，数据分布一直在变化，进入模型的不同Batch无法保证能代表整体样本，随着Agent的迭代数据分布逐步变化，模型来不及学到固定的均值和方差，导致无法收敛</li>
+<li>Offline RL中，数据是提前固定的，则没有这个问题，所以Offline RL中，可以使用BN</li>
+<li>实际上，可以分场景尝试，在一些状态变化不剧烈的场景中，BN也是可以使用的，大部分场景中则建议使用LN</li>
+</ul>
+<h3 id="为什么DQN不需要重要性采样？"><a href="#为什么DQN不需要重要性采样？" class="headerlink" title="为什么DQN不需要重要性采样？"></a>为什么DQN不需要重要性采样？</h3><ul>
+<li>DQN有Reply Buffer，使用了其他策略收集到的样本，但是不需要重要性采样</li>
+<li>因为DQN是贝尔曼最优公式推导得到的，在推导和收敛性证明过程中，不涉及任何的策略数据采样分布要求，只要求计算下个状态Q值用的Q网络是上次迭代的值即可</li>
+<li>对于状态-动作分布的问题，实际上DQN也最好是使用当前策略采样的数据，原因是更能保证线上线下一致性；此外，在Offline RL场景中直接使用DQN可能因为没有探索而出现OOD等问题</li>
+</ul>
+<h3 id="Q网络的更新应该是软更新还是硬更新？"><a href="#Q网络的更新应该是软更新还是硬更新？" class="headerlink" title="Q网络的更新应该是软更新还是硬更新？"></a>Q网络的更新应该是软更新还是硬更新？</h3><ul>
+<li>DDPG，BCQ连续版本等连续动作模型的Q值：软更新 </li>
+<li>DQN，BCQ离散版本等离散动作模型的Q值：硬更新 </li>
+<li>问题：是因为BCQ本身就是基于以上两个模型实现的吗？（TODO）</li>
+</ul>
+<h3 id="为什么DDPG-SAC是off-policy的？"><a href="#为什么DDPG-SAC是off-policy的？" class="headerlink" title="为什么DDPG/SAC是off-policy的？"></a>为什么DDPG/SAC是off-policy的？</h3><ul>
+<li>DDPG/SAC是off-policy的，原因如下：<ul>
+<li><strong>Q函数的学习</strong>：本质和DQN是off-policy的原因一样的，是因为Q函数都是在学习某个策略\(\pi_0\)下对应的Q值，只要TD-Error中的Q值目标\(r(s,a)+\gamma Q(s’,a’) - Q(s, a)\)中的\(a’\)是策略\(\pi_0\)采样的，即服从策略\(a~\pi_0(\cdot|s’)\)即可保证学到的Q值是\(Q^{\pi_0}(s,a)\)，与\((s,a,s’)\)本身的采样策略无关（但是最好与当前策略的状态分布差距不要太大，否则容易出现线上线下分布不一致等问题）。随着策略逐步提升到最优策略，Q函数也会收敛到最优策略对应的Q值。<ul>
+<li>注：SAC的Q函数是包含了熵信息的，但这不影响Q值本身的学习策略</li>
+</ul>
+</li>
+<li><strong>策略的学习</strong>：在保证Q函数预估的是当前策略对应的Q值以后，我们只需要求解一个策略，保证当前动作下的Q函数最大即可，此时有：<ul>
+<li><strong>DDPG</strong>：目标是找到一个确定性策略\(\pi_\theta(s)\)，最大化\(Q(s,\pi_\theta(s))\)（本质可以理解为Q值在策略下的期望\(\pi_\theta(s)\)，确定性策略的期望就是这个策略对应的Q值），可采用梯度直接回传的方式链式求导；</li>
+<li><strong>SAC-连续动作</strong>：通过随机采样生成动作 \(\tilde{a}\)（重参数法），然后将基于状态动作生成 \(Q(s,\tilde{a})\)，从最大化Q值实现梯度传到到策略参数上（本质上是最大化Q值在策略分布上的期望）</li>
+<li><strong>SAC-离散动作</strong>：则通过玻尔兹曼分布直接得到一个Q值下最优的随机策略（离线动作），具体实现时先生成不同动作下的Q值\(Q(s,a)\)，求Q值在策略\(\pi(a|s)\)（本质是一个分布）上的期望\(\sum_a \pi(a|s)Q(s,a) \)（与连续版本本质一致），然后最大化这个期望以实现梯度传导到策略参数上</li>
+<li>注意：<strong>DDPG/SAC等方法中</strong>，策略学习的目标是找到使得当前\(Q(s,a)|a\sim\pi_\theta(s)\)值最大的策略\(\pi_\theta\)，学习时状态\(s\)是从什么策略采样来的无关，即任意给我一个状态\(s\)，目标策略都能使得该状态下的\(Q\)值最大化（这里的Q值在学习中拟合目标是在当前策略下的Q值）；但<strong>普通的AC方法中</strong>，Actor是直接对Reward的期望求梯度来更新的，这个期望是需要在当前策略下的期望，故而状态和动作都需要是当前状态下采样得到的，否则梯度有偏，而DDPG/SAC中则因为直接最大化Q值(该Q值是当前策略下的Q值)来实现了，绕过了必须保证状态\(s\)是当前策略采样得到的这一步了</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>PPO/TRPO是on-policy的，原因则是因为他们每一步的迭代目标是直接<strong>找到一个能提升RL代理函数 \(J\) 的更优策略</strong>，每次迭代都保证策略优于当前策略，在推导过程中，<strong>使用MM方法构造代理函数时，要求状态分布于新策略的状态分布差异不能太大</strong>，最好是当前策略采样的数据更新，生成新策略；（注意，动作分布部分有重要性采样保证，只要能保证准确记录每个动作采样的分布即可通过重要性采样方式恢复）</li>
+</ul>
+<h3 id="为什么SARSA和DQN都可以收敛到最优解？"><a href="#为什么SARSA和DQN都可以收敛到最优解？" class="headerlink" title="为什么SARSA和DQN都可以收敛到最优解？"></a>为什么SARSA和DQN都可以收敛到最优解？</h3><ul>
+<li>两者的Q值目标都可以表述为：\(r(s,a)+\gamma Q(s’,a’) - Q(s, a)\)，但两者的\(a’\)值对应的策略不同</li>
+<li>SARSA：  <ul>
+<li><strong>更新目标</strong>：\(a’\)是按照当前Q值对应的\(\epsilon\)-Greedy策略采样的（该动作大多以大概率取\(a’\sim \arg\max_{a’} Q(s’,a’)\)，并以一定的小概率随机采样）</li>
+<li><strong>样本状态动作分布</strong>：当前策略采样到的状态分布\(s,a,s’\)</li>
+</ul>
+</li>
+<li>DQN：<ul>
+<li><strong>更新目标</strong>：\(a’\sim \arg\max_{a’} Q(s’,a’)\)，相当于没有\(\epsilon\)-Greedy策略</li>
+<li><strong>样本状态动作分布</strong>：历史行为策略采样到的状态分布\(s,a,s’\)</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——数字范围边界等问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——数字范围边界等问题.html" itemprop="url">Python——数字范围边界等问题</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>C++中不同类型的数字有自己不同的边界和范围,Python中呢?如何判断边界问题?</em></p>
+<hr>
+<h3 id="最大最小整数"><a href="#最大最小整数" class="headerlink" title="最大最小整数"></a>最大最小整数</h3><h4 id="C"><a href="#C" class="headerlink" title="C++"></a>C++</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">int minInt = 0x80000000;</span><br><span class="line">int maxInt = 0xffffffff</span><br></pre></td></tr></table></figure>
+
+<h4 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">minInt = -0xffffffff</span><br><span class="line">maxInt = 0xffffffff</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>Python中int大小为24个字节,数字太大时不会越界,会变为long类型,long类型的字节占位可以非常大(24以下为int,之后为long,分别可以为36,44,52,60等,每次8位递加?),不会越界</p>
+<ul>
+<li>测试:当一个数字太大时,使用int(a)强制字符转换也不能将数字转换为int类型,将一直为long类型</li>
+<li>测试: Python中24个字节存储一个int类型对象,但是并不是所有空间都存值,只有一部分用来存储数值<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">MinInt = int(0x80000000000000000)</span><br><span class="line">print MinInt</span><br><span class="line">import sys</span><br><span class="line">print sys.getsizeof(MinInt)</span><br><span class="line">print type(int(MinInt))</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">147573952589676412928</span><br><span class="line">36</span><br><span class="line">&lt;type &apos;long&apos;&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>Python中定义最小负数时可以使用float最小值或者是很大的整数的负数,而不是像C++一样</p>
+</li>
+</ul>
+<hr>
+<h3 id="最大最小浮点数"><a href="#最大最小浮点数" class="headerlink" title="最大最小浮点数"></a>最大最小浮点数</h3><h4 id="Python-1"><a href="#Python-1" class="headerlink" title="Python"></a>Python</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">minFloat = float(&quot;-inf&quot;)</span><br><span class="line">maxFloat = float(&quot;inf&quot;)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主成分分析-PCA.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——主成分分析-PCA.html" itemprop="url">ML——主成分分析-PCA</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="与TSVD的对比"><a href="#与TSVD的对比" class="headerlink" title="与TSVD的对比"></a>与TSVD的对比</h3><ul>
+<li>关于SVD的进一步了解可参考<a href="/Notes/Others/Math%E2%80%94%E2%80%94%E5%A5%87%E5%BC%82%E5%80%BC%E5%88%86%E8%A7%A3-SVD.html">Math——奇异值分解-SVD</a></li>
+<li>PCA与TSVD目标不同</li>
+<li>TSVD奇异值与PCA分解得到的对角矩阵元素意义不同<ul>
+<li>PCA得到矩阵对角元素的是该维度的方差</li>
+<li>TSVD得到的是某种重要的隐形意义(注意,不是方差)</li>
+</ul>
+</li>
+<li>PCA等价于下面两个步骤:<ul>
+<li>对数据X中心化</li>
+<li>对数据做TSVD分解</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="与ICA的对比"><a href="#与ICA的对比" class="headerlink" title="与ICA的对比"></a>与ICA的对比</h3><ul>
+<li>ICA得到的变量满足独立性</li>
+<li>PCA得到的变量满足不相关性</li>
+<li>独立与不相关的关系<ul>
+<li>变量独立\(=&gt;\)变量不相关</li>
+<li>变量不相关\(\neq&gt;\)变量独立</li>
+<li>当变量是正态分布时:变量独立\(&lt;=&gt;\)变量不相关</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Tips——一些有用的tips总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/Tips——一些有用的tips总结.html" itemprop="url">Tips——一些有用的tips总结</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文对一些程序员日常可能用到的小tips进行总结和记录</em></p>
+<hr>
+<h3 id="海量字符串的合并"><a href="#海量字符串的合并" class="headerlink" title="海量字符串的合并"></a>海量字符串的合并</h3><h4 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h4><ul>
+<li><p>将大量的(现实遇到的是18W+级别的句子,句子长度平均在100个字符以上)字符串需要合并为一个字符串</p>
+</li>
+<li><p>如果直接迭代并使用下面的语句合并,花费很多时间,随着字符串的增大,合并速度越来越慢</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">all_texts += &quot; %s&quot; % text</span><br><span class="line">all_texts = &quot;%s %s&quot; % (all_text, text)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>现实生活中发现到了5000个字符串以上时速度变得极慢</p>
+</li>
+</ul>
+<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
+<li>分批次合并,将词语分批次分别合并为一个比较小的,最后再合并到一起<ul>
+<li>实际中我按照2000个句子一份合并完成,再最终合并,速度提升了非常多</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——队列和栈使用.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Python——队列和栈使用.html" itemprop="url">Python——队列和栈使用</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文从总结Python中栈和队列的基本使用</em><br><strong>Python 中queue模块是线程安全的,为多线程任务设计的,没有peek()操作</strong></p>
+<ul>
+<li>双端队列(deque)是一个具有栈和队列性质的数据结构，可以从两端弹出</li>
+</ul>
+<hr>
+<h3 id="普通的栈和队列"><a href="#普通的栈和队列" class="headerlink" title="普通的栈和队列"></a>普通的栈和队列</h3><h4 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h4><h5 id="list实现栈"><a href="#list实现栈" class="headerlink" title="list实现栈"></a>list实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># init</span><br><span class="line">stack = list()</span><br><span class="line"># push</span><br><span class="line">stack.append(1)</span><br><span class="line"># pop</span><br><span class="line">stack.pop()</span><br><span class="line"># peek</span><br><span class="line">top = stack[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(stack) == 0:</span><br><span class="line">	print(&quot;stack is empty&quot;)</span><br></pre></td></tr></table></figure>
+
+<h5 id="deque实现栈"><a href="#deque实现栈" class="headerlink" title="deque实现栈"></a>deque实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line"># init</span><br><span class="line">stack = deque([1, 2, 3])</span><br><span class="line"># push</span><br><span class="line">stack.append(4)</span><br><span class="line"># pop</span><br><span class="line">stack.pop()</span><br><span class="line"># peek</span><br><span class="line">top = stack[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(stack) == 0:</span><br><span class="line">	print(&quot;stack is empty&quot;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="队列"><a href="#队列" class="headerlink" title="队列"></a>队列</h4><h5 id="list实现栈-1"><a href="#list实现栈-1" class="headerlink" title="list实现栈"></a>list实现栈</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># init</span><br><span class="line">queue = [1, 2, 3]</span><br><span class="line"># push</span><br><span class="line">queue.append(4)</span><br><span class="line"># pop</span><br><span class="line">queue.pop(0)</span><br><span class="line"># peek</span><br><span class="line">first = queue[0]</span><br><span class="line">last = queue[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(queue) == 0:</span><br><span class="line">	print(&quot;queue is empty&quot;)</span><br></pre></td></tr></table></figure>
+
+<h5 id="deque实现队列"><a href="#deque实现队列" class="headerlink" title="deque实现队列"></a>deque实现队列</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line"># init</span><br><span class="line">queue = deque([1, 2, 3])</span><br><span class="line"># push</span><br><span class="line">queue.append(4)</span><br><span class="line"># pop</span><br><span class="line">queue.popleft()</span><br><span class="line"># peek</span><br><span class="line">first = queue[0]</span><br><span class="line">last = queue[-1]</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if len(queue) == 0:</span><br><span class="line">	print(&quot;queue is empty&quot;)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="线程安全的栈和队列"><a href="#线程安全的栈和队列" class="headerlink" title="线程安全的栈和队列"></a>线程安全的栈和队列</h3><h4 id="queue模块实现队列和栈"><a href="#queue模块实现队列和栈" class="headerlink" title="queue模块实现队列和栈"></a>queue模块实现队列和栈</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import queue</span><br><span class="line"># init, stack and queue</span><br><span class="line">sstack = queue.LifoQueue()</span><br><span class="line">squeue = queue.Queue()</span><br><span class="line"># push</span><br><span class="line">sstack.put(item)</span><br><span class="line"># pop</span><br><span class="line">sstack.get()</span><br><span class="line"># determine whether it is empty</span><br><span class="line">if sstack.empty():</span><br><span class="line">	print(&quot;sstack is empty&quot;)</span><br></pre></td></tr></table></figure>
+
 
           
         

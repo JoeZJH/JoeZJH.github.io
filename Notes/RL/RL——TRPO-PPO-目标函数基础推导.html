@@ -88,7 +88,7 @@
 <meta property="og:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png">
-<meta property="og:updated_time" content="2024-10-30T01:24:01.734Z">
+<meta property="og:updated_time" content="2024-11-02T12:48:36.893Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——TRPO-PPO-目标函数基础推导">
 <meta name="twitter:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
@@ -394,11 +394,11 @@
 <li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
 </ul>
 </li>
-<li>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以有最大化\(\eta(\tilde{\pi})\)，等价于最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>\text{s.t. } \quad \quad &amp;D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}}) \le \delta<br>\end{aligned}<br>$$</li>
+<li>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以有最大化\(\eta(\tilde{\pi})\)，等价于最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>\text{s.t. } \quad \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
 <li>一般也会写成期望的等价形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}(s), a \sim \pi_{\theta_\text{old}}(a|s)}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}(s)} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
 <li>或者进一步简写成：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$<ul>
 <li>目标是原始目标等价的期望形式</li>
-<li>约束则考虑了计算KL散度时在旧策略采样的状态分布上进行验证</li>
+<li>约束则考虑了计算KL散度时在旧策略采样的状态分布上进行验证（个人理解：这里策略之间的KL散度需要指定状态或状态分布才有意义，实际上该状态分布应该是当前策略对应的状态分布，详细展开写应该是\(E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}(\cdot|s), \pi_{\theta_\text{new}}(\cdot|s))\right]\)，使用状态\(s \sim \rho_{\pi_{\theta_\text{old}}}\)或者\(s \sim \rho_{\pi_{\theta_\text{new}}}\)都可以，因为两者很接近）</li>
 </ul>
 </li>
 <li>至此，目标函数中采样策略（包括状态和动作）变成了之前的旧策略，总结一下有：<ul>
@@ -479,8 +479,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——策略梯度法.html" rel="next" title="RL——策略梯度法">
-                <i class="fa fa-chevron-left"></i> RL——策略梯度法
+              <a href="/Notes/RL/RL——策略梯度法推导.html" rel="next" title="RL——策略梯度法推导">
+                <i class="fa fa-chevron-left"></i> RL——策略梯度法推导
               </a>
             
           </div>
@@ -489,8 +489,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="prev" title="RL——TRPO">
-                RL——TRPO <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——PPO.html" rel="prev" title="RL——PPO">
+                RL——PPO <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

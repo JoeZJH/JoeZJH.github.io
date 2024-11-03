@@ -447,6 +447,272 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
+</ul>
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+
+</li>
+</ul>
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制<ul>
+<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+
+
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+</ul>
+</li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
+<li>现有查询<strong>向量</strong> q </li>
+<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
+<li>要求是样本与 q 越相关，权重越大</li>
+</ul>
+</li>
+<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
+<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
+<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
+<li>按照这个比例将 Value 中的样本加权输出结果</li>
+<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
+<li>也就是 q 对应的结果</li>
+</ul>
+<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
+<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
+<li>相当于重复 m 次做单个请求为向量的运算</li>
+<li>每个 q 都能得到一个结果</li>
+<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
+</ul>
+<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
+<li>当 Key 与 Value 相同时<ul>
+<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
+<li>NLP中一般都是这样的</li>
+</ul>
+</li>
+<li>当 Key 与 Query 相同时，<ul>
+<li>其实是找自身不同样本间的相关性</li>
+<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
+<li>NLP中Self-Attention是这样的</li>
+</ul>
+</li>
+<li>Self-Attention是 Key == Value == Query 的情况</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -922,440 +1188,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Attention的原理和变种</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<ul>
-<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
-<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
-<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
-<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
-<li>这个博客中有李宏毅老师的讲解：<a href="https://zhuanlan.zhihu.com/p/576380058" target="_blank" rel="noopener">Self Attention详解——知乎</a></li>
-</ul>
-<hr>
-<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
-<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
-<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
-
-</li>
-</ul>
-<hr>
-<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
-<li>Attention机制的根本优势在于对不同的</li>
-<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
-<ul>
-<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
-<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
-<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
-<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>动态图理解 Attention 机制<ul>
-<li>图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小<img src="/Notes/DL/DL——Attention/attention_overview.gif">
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
-<li>上图中Encoder使用的是双层双向的RNN<ul>
-<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
-<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
-<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
-</ul>
-</li>
-<li>流程说明:<ul>
-<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
-<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
-<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
-<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
-<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
-<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
-<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
-<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
-<ul>
-<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
-<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
-<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
-<li>多源注意力机制：Attend到多种源语言语句</li>
-<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
-<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
-<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
-<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
-<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
-<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
-</ul>
-<hr>
-<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
-<ul>
-<li>Attention的本质: <ul>
-<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
-<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
-<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
-</ul>
-</li>
-<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
-<li>如上图所示,在计算 Attention 时主要分为三步<ul>
-<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
-<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
-<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
-</ul>
-</li>
-<li>Attention过程还可以大致分为两步理解:<ul>
-<li><ol>
-<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
-<li>变换一般包括 <ul>
-<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
-<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
-<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
-<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
-</ul>
-</li>
-<li>Query和Key在不同任务中是不同的东西<ul>
-<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
-<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><ol start="2">
-<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
-<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
-<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
-<li>简单文本分类中, Value指句子</li>
-<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
-<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="对Attention的直观解释是"><a href="#对Attention的直观解释是" class="headerlink" title="对Attention的直观解释是"></a>对Attention的直观解释是</h3><h4 id="请求为向量时"><a href="#请求为向量时" class="headerlink" title="请求为向量时"></a>请求为向量时</h4><ul>
-<li>现有查询<strong>向量</strong> q </li>
-<li>想从 Value <strong>矩阵</strong>(每列对应一个样本) 中按照比例选择样本进行加权求和得到与 q 相关的查询结果<ul>
-<li>要求是样本与 q 越相关，权重越大</li>
-</ul>
-</li>
-<li>Value 中的每个样本都有 Key <strong>矩阵</strong> 中的一个样本与之对应(NLP中 Key 往往是 Value 自己)</li>
-<li>将 q 与 Key 的每个样本做相关性计算，得到其与 Key 中每个样本的相关性</li>
-<li>对 q 与 Key 的所有相关性做归一化，得到权重比例</li>
-<li>按照这个比例将 Value 中的样本加权输出结果</li>
-<li>该结果就是 Value 经过 \(F(q, Key)\)加权求和后的结果</li>
-<li>也就是 q 对应的结果</li>
-</ul>
-<h4 id="请求为矩阵时"><a href="#请求为矩阵时" class="headerlink" title="请求为矩阵时"></a>请求为矩阵时</h4><ul>
-<li>现有查询<strong>矩阵</strong> Query， 包含 m 个查询向量</li>
-<li>相当于重复 m 次做单个请求为向量的运算</li>
-<li>每个 q 都能得到一个结果</li>
-<li>在实际计算时，可以将整个矩阵一起计算，主要注意归一化是对单个 q 向量与 Key 矩阵生成的结果即可</li>
-</ul>
-<h4 id="更多分析"><a href="#更多分析" class="headerlink" title="更多分析"></a>更多分析</h4><ul>
-<li>当 Key 与 Value 相同时<ul>
-<li>其实是说计算 Value 每个样本的权重就用自己去与 q 计算即可</li>
-<li>NLP中一般都是这样的</li>
-</ul>
-</li>
-<li>当 Key 与 Query 相同时，<ul>
-<li>其实是找自身不同样本间的相关性</li>
-<li>然后根据不同样本的对应其他样本的相关性对其他样本进行加权求和得到自己对应的结果</li>
-<li>NLP中Self-Attention是这样的</li>
-</ul>
-</li>
-<li>Self-Attention是 Key == Value == Query 的情况</li>
-</ul>
-<hr>
-<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
-<hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
-</ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
-<ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1554,6 +1386,174 @@
 <li>不是越深越好</li>
 <li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
 <li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
+</ul>
+<hr>
+<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
+<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
+<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
+<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
+<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
+</ul>
+<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
+<li>在CNN中防止过拟合的效果明显</li>
+<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
+<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
+<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
+<li>下面介绍两个主流的观点</li>
+</ul>
+<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
+<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
+<li>过拟合是很多机器学习的通病</li>
+<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
+<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
+<li><strong>Dropout</strong>能同时解决以上问题:<ul>
+<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
+<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
+</ul>
+</li>
+</ul>
+<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
+<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
+</li>
+<li><p>首先分析一个小故事</p>
+</li>
+</ul>
+<blockquote>
+<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
+</blockquote>
+<ul>
+<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
+</li>
+<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
+</li>
+</ul>
+<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
+<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
+</ul>
+<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
+<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
+<li>dropout由固定值变为一个区间，可以提高效果</li>
+<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
+</ul>
+<hr>
+<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
+<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
+<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
 </ul>
 
           

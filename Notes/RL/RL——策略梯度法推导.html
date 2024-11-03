@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="参考链接： 强化学习之图解PPO算法和TD3算法       TD3 TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm 有两个改进包含在名字中，Twin和Delayed 其他改进是在Actor 的target网络输出中，增加噪声  改进1：Twin 采用双Critic网络（训练网络和target网络">
+<meta name="description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    参考链接： 策略梯度法总结：策略梯度算法专题 （包含推导和总结）    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
-<meta property="og:title" content="RL——TD3">
-<meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——TD3.html">
+<meta property="og:title" content="RL——策略梯度法推导">
+<meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法推导.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="参考链接： 强化学习之图解PPO算法和TD3算法       TD3 TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm 有两个改进包含在名字中，Twin和Delayed 其他改进是在Actor 的target网络输出中，增加噪声  改进1：Twin 采用双Critic网络（训练网络和target网络">
+<meta property="og:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    参考链接： 策略梯度法总结：策略梯度算法专题 （包含推导和总结）    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-10-30T16:14:38.452Z">
+<meta property="og:updated_time" content="2024-11-03T14:48:08.740Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="RL——TD3">
-<meta name="twitter:description" content="参考链接： 强化学习之图解PPO算法和TD3算法       TD3 TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm 有两个改进包含在名字中，Twin和Delayed 其他改进是在Actor 的target网络输出中，增加噪声  改进1：Twin 采用双Critic网络（训练网络和target网络">
+<meta name="twitter:title" content="RL——策略梯度法推导">
+<meta name="twitter:description" content="策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍    参考链接： 策略梯度法总结：策略梯度算法专题 （包含推导和总结）    基础概念 策略 \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。 整个轨迹的累计">
 
 
 
@@ -120,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="https://JoeZJH.github.io/Notes/RL/RL——TD3.html">
+  <link rel="canonical" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法推导.html">
 
 
 
 
 
-  <title>RL——TD3 | Jiahong的个人博客</title>
+  <title>RL——策略梯度法推导 | Jiahong的个人博客</title>
   
 
 
@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD3.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法推导.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -292,7 +292,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">RL——TD3</h1>
+          <h1 class="post-title" itemprop="name headline">RL——策略梯度法推导</h1>
         
 
         <div class="post-meta">
@@ -326,32 +326,126 @@
       
 
       
-        <ul>
+        <p><em>策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
 <li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<li>策略梯度法总结：<a href="https://paperexplained.cn/articles/article/detail/31/#5a5b5c8b-ed5f-42f4-92bd-589568e5d867" target="_blank" rel="noopener">策略梯度算法专题</a> （包含推导和总结）</li>
+</ul>
+</li>
+</ul>
+<h3 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h3><ul>
+<li><strong>策略</strong> \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。</li>
+<li><strong>整个轨迹的累计回报</strong> \(R_(\tau)\)是轨迹\(\tau\)对应的回报：<br>$$<br>R(\tau) = \sum_{k=0}^{\infty} r_{k}<br>$$<ul>
+<li>注意：这里没有折扣因子</li>
+</ul>
+</li>
+<li><strong>时间t步开始的回报</strong> \(G_t\) 是从时间步 \(t\) 开始到结束的所有奖励的总和，通常定义为折扣累积奖励：<br>$$<br>G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>$$<br>其中 \(\gamma\) 是折扣因子，\(r_{k}\) 是在时间步 \(k\) 收到的即时奖励。</li>
+<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]\)。</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><h4 id="优化目标："><a href="#优化目标：" class="headerlink" title="优化目标："></a>优化目标：</h4><ul>
+<li><strong>目标函数</strong> \(J(\theta)\) 定义为从初始分布开始，遵循策略 \(\pi_\theta\) 时的平均回报：<br> $$<br> J(\theta) = E_{\tau \sim p_\theta(\tau)} [R(\tau)]<br> $$</li>
+<li>其中 \(\tau = (s_0, a_0, r_1, s_1, a_1, \dots)\) 表示一个轨迹，\(p_\theta(\tau)\) 是在策略 \(\pi_\theta\) 下产生轨迹 \(\tau\) 的概率。</li>
+</ul>
+<h4 id="梯度估计："><a href="#梯度估计：" class="headerlink" title="梯度估计："></a>梯度估计：</h4><ul>
+<li>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</li>
+<li>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</li>
+<li>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$<ul>
+<li>上式是对原始梯度的无偏估计</li>
+</ul>
+</li>
+</ul>
+<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4><ul>
+<li><p>轨迹展开后，有 \(p_\theta(\tau) = p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)\)，其中 \(p(s_0)\) 是初始状态的分布，\(p(s_{t+1}|s_t, a_t)\) 是环境的转移概率。<br>  $$<br>  \begin{align}<br>  p_\theta(\tau) &amp;= p_{\pi_\theta}(s_0, a_0, s_1, a_1,\cdots) \\<br>  &amp;= p(s_0)\pi_\theta(a_0|s_0)p(s_1|s_0,a_0)\cdots \\<br>  &amp;= p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>由于环境的输出与策略无关，即\(\nabla_\theta p(s_1|s_0,a_0) = 0\)，于是有：<br>  $$<br>  \begin{align}<br>  \nabla_\theta \log p_\theta(\tau) &amp;= \nabla_\theta p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \log p(s_0) + \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) + \nabla_\theta  \sum_t  \log p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) \\<br>  &amp;=  \sum_t \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>所以我们可以进一步简化梯度表达式为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] = E_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)   \right] \\<br> &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n) = \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</p>
+<ul>
+<li>此时，上式依然是对原始梯度的无偏估计</li>
+<li>本文以上的推导主要都是在证明下面的式子：<strong>\(\nabla_\theta \int R(\tau) p_\theta(\tau) d\tau\)等价于\(E_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)  \right]\)</strong></li>
+<li>在一些其他文章中，证明的重点是如下的式子：<br>   $$<br>   \begin{aligned}<br>   \nabla_\theta J(\theta)<br>   &amp;= \nabla_\theta \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \pi_\theta(a \vert s) \\<br>   &amp;\propto \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \nabla_\theta \pi_\theta(a \vert s)<br>   \end{aligned}<br>   $$<ul>
+<li>本质上与本文的证明等价，因为\( \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \nabla_\theta \pi_\theta(a \vert s) = E_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)  \right] \)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>核心理解：</p>
+<ul>
+<li>\(R(\tau^n)\)表示采样得到的轨迹\(\tau^n\)对应的Reward，上述公式假设一共有N个轨迹</li>
+<li>对于任意给定的轨迹\(\tau^n\)，其上面的任意样本对\((s_t,a_t)\)，均使用固定的\(R(\tau^n)\)对 \(\nabla_\theta \log \pi_\theta(a_t|s_t)\)进行加权（实际上在使用中，不会直接使用\(R(\tau^n)\)，因为轨迹中过去的Reward与当前动作无关，所以，我们仅考虑后续的轨迹上的收益即可）</li>
+</ul>
+</li>
+</ul>
+<h4 id="REINFORCE算法："><a href="#REINFORCE算法：" class="headerlink" title="REINFORCE算法："></a>REINFORCE算法：</h4><ul>
+<li>考虑到轨迹中过去的Reward与当前动作无关，且后续轨迹上的收益与当前动作的关系越来越小，所以我们使用\(G_t\)来替换\(R(\tau)\)<br>  $$<br>  R(\tau) = \sum_{k=0}^{\infty} r_{k} \quad \rightarrow \quad G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>  $$</li>
+<li>此时梯度进一步近似为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t) \\<br> &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} G_t^n \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</li>
+<li>REINFORCE算法利用上述梯度估计来更新策略参数。具体地，对于轨迹\(R(\tau^n)\)上的状态动作样本对\((s_t,a_t)\)，参数更新规则如下：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) G_t^n<br> $$<ul>
+<li>其中 \(\alpha\) 是学习率</li>
+<li>因为是累加操作，所以可以展开对每一个状态动作样本对\((s_t,a_t)\)进行累加</li>
+<li>\(\frac{1}{N}\)可以不需要了，有了学习率了，可以调节到学习率中</li>
+</ul>
+</li>
+<li>补充REINFORCE算法伪代码：
 
 
 </li>
 </ul>
+<h4 id="减小方差："><a href="#减小方差：" class="headerlink" title="减小方差："></a>减小方差：</h4><ul>
+<li><p>为了减少方差，可以在梯度估计中引入一个baseline函数 \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
+<ul>
+<li>常见的选择是使用价值函数 \(V(s_t)\) 作为基线，这有助于稳定学习过程。</li>
+<li>可以证明，增加 \(b(s_t)\) 后，梯度不会发生改变，上式对梯度的估计依然是无偏的</li>
+</ul>
+</li>
+<li><p>性质一：<strong>减去一个baseline以后，依然是原始梯度的无偏估计</strong>，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta)<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} (R(\tau) - b) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b E_{\tau \sim p_{\theta}(\tau)} \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau p_{\theta}(\tau) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau \nabla_\theta p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta \sum_\tau  p_{\theta}(\tau) \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta 1 \\<br>  &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  \\<br>  \end{align}<br>  $$</p>
+<ul>
+<li>第三行到第四行用到了对数概率技巧：\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)</li>
+<li>第四行到第五行使用了求梯度和加法交换顺序的法则</li>
+</ul>
+</li>
+<li><p>性质二：<strong>减去一个合适的baseline函数以后，方差会变小</strong>，证明如下：</p>
+<ul>
+<li>方差展开<br>  $$<br>  \begin{align}<br>  &amp;\ Var_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] ]^2 \\<br>  &amp;= E_{\tau \sim p_{\theta}(\tau)} [R(\tau)^2 \nabla^2 \log p_{\theta}(\tau)] - [E_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau)] ]^2 - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)] \\<br>  &amp;= Var_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau) ] - 2 b E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]<br>  \end{align}<br>  $$</li>
+<li>进一步解的，使得上式取小值的最优\(b\)为：<br>  $$<br>  b = \frac{E_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] }{E_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]}<br>  $$</li>
+<li>实际应用中，为了方便计算，通常会使用：<br>  $$<br>  \hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)<br>  $$ </li>
+<li>那为什么\(\hat{b} = E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)是\(V_{\pi_{\theta}}(s_t)\)呢？因为两者是等价的，证明如下：<ul>
+<li>对于非确定性策略来说，在状态\(s_t\)下可选的动作服从一个分布\(\pi_{\theta}(s_t)\)，按照\(E_{\tau \sim p_{\theta}(\tau)} R(\tau)\)的逻辑，该值是状态\(s_t\)下按照策略\(\pi_{\theta}(s_t)\)执行得到\(R(\tau)\)期望（注意\(a_t\)服从\(\pi_{\theta}\)分布，后续的执行动作也服从\(\pi_{\theta}\)分布），实际上就是\(V_{\pi_{\theta}}(s_t)\)</li>
+</ul>
 </li>
 </ul>
-<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
-<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm</li>
-<li>有两个改进包含在名字中，Twin和Delayed</li>
-<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
+</li>
 </ul>
-<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
-<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
+<h3 id="实际使用中的-R-tau"><a href="#实际使用中的-R-tau" class="headerlink" title="实际使用中的\(R(\tau)\)"></a>实际使用中的\(R(\tau)\)</h3><h4 id="原始形式"><a href="#原始形式" class="headerlink" title="原始形式"></a>原始形式</h4><p>$$ R(\tau) = \sum_{k=0}^{\infty} r_{k} $$</p>
+<ul>
+<li>上式中实际上是一个固定轨迹的奖励，从第0步开始</li>
+<li>可基于蒙特卡洛采样得到</li>
 </ul>
-<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
-<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
-<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
+<h4 id="REINFORCE方法"><a href="#REINFORCE方法" class="headerlink" title="REINFORCE方法"></a>REINFORCE方法</h4><ul>
+<li>迭代样本\((s_t,a_t)\)时，使用以下形式：<br>$$ G_t = \sum_{k=t}^{\infty} \gamma^k r_{k} $$<ul>
+<li>丢弃掉动作之前的奖励，这些奖励与当前动作无关</li>
+<li>未来越远的动作奖励越小，因为这些奖励受当前动作影响的概率越小</li>
 </ul>
-<h4 id="改进3：增加噪声"><a href="#改进3：增加噪声" class="headerlink" title="改进3：增加噪声"></a>改进3：增加噪声</h4><ul>
-<li>在Actor 的target网络输出中，增加噪声，可以缓解Q值高估问题</li>
+</li>
+<li>使用baseline函数进行改进<br>$$\sum_{k=t}^{\infty} \gamma^k r_{k} - b(s_t)$$</li>
 </ul>
-<h4 id="其他扩展"><a href="#其他扩展" class="headerlink" title="其他扩展"></a>其他扩展</h4><ul>
-<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{BC} = (\pi_{\theta}(s) - a)^2\)</li>
+<h4 id="用Q值替代"><a href="#用Q值替代" class="headerlink" title="用Q值替代"></a>用Q值替代</h4><ul>
+<li>用\(Q(s,a)\)值代替\(R(\tau)\)</li>
+<li>理由，\(Q(s,a)\)值是状态\(s\)执行\(a\)以后的\(G_t\)的期望值：<br>$$Q^{\pi_\theta}(s_t,a_t) = E_{\pi_\theta} [G_t|s_t, a_t]$$</li>
+<li>使用Q值来替代可以降低方差</li>
+</ul>
+<h4 id="用优势函数替代"><a href="#用优势函数替代" class="headerlink" title="用优势函数替代"></a>用优势函数替代</h4><ul>
+<li>用\(A(s,a) = Q(s,a) - V(s)\)来替代<ul>
+<li>可以减去\(V(s)\)的理由是之前证明过减去一个baseline函数\(V(s)\)可以降低方差，且梯度无偏</li>
+</ul>
+</li>
+<li>实际上使用时可以使用单个V网络+TD-Error实现对优势函数的估计<br>  $$ A(s,a) = r(s,a) + \gamma V(s’) - V(s) $$</li>
+<li>应用场景：<ul>
+<li>常规的Actor Critic方法</li>
+<li>PPO方法的优势函数估计（实际的PPO中常常是GAE方式，是优势函数的一种加权）</li>
+</ul>
+</li>
 </ul>
 
       
@@ -383,8 +477,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="next" title="RL——TD误差和优势函数的区别">
-                <i class="fa fa-chevron-left"></i> RL——TD误差和优势函数的区别
+              <a href="/Notes/RL/RL——TRPO.html" rel="next" title="RL——TRPO">
+                <i class="fa fa-chevron-left"></i> RL——TRPO
               </a>
             
           </div>
@@ -393,8 +487,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——SAC.html" rel="prev" title="RL——SAC">
-                RL——SAC <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html" rel="prev" title="RL——TRPO-PPO-目标函数基础推导">
+                RL——TRPO-PPO-目标函数基础推导 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -536,7 +630,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#TD3"><span class="nav-number">1.</span> <span class="nav-text">TD3</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#改进1：Twin"><span class="nav-number">1.1.</span> <span class="nav-text">改进1：Twin</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进2：Delayed"><span class="nav-number">1.2.</span> <span class="nav-text">改进2：Delayed</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进3：增加噪声"><span class="nav-number">1.3.</span> <span class="nav-text">改进3：增加噪声</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他扩展"><span class="nav-number">1.4.</span> <span class="nav-text">其他扩展</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基础概念"><span class="nav-number">1.</span> <span class="nav-text">基础概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">2.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#优化目标："><span class="nav-number">2.1.</span> <span class="nav-text">优化目标：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#梯度估计："><span class="nav-number">2.2.</span> <span class="nav-text">梯度估计：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#轨迹展开："><span class="nav-number">2.3.</span> <span class="nav-text">轨迹展开：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE算法："><span class="nav-number">2.4.</span> <span class="nav-text">REINFORCE算法：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减小方差："><span class="nav-number">2.5.</span> <span class="nav-text">减小方差：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实际使用中的-R-tau"><span class="nav-number">3.</span> <span class="nav-text">实际使用中的\(R(\tau)\)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#原始形式"><span class="nav-number">3.1.</span> <span class="nav-text">原始形式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REINFORCE方法"><span class="nav-number">3.2.</span> <span class="nav-text">REINFORCE方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用Q值替代"><span class="nav-number">3.3.</span> <span class="nav-text">用Q值替代</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用优势函数替代"><span class="nav-number">3.4.</span> <span class="nav-text">用优势函数替代</span></a></li></ol></li></ol></div>
             
 
           </div>
