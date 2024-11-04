@@ -275,181 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html" itemprop="url">RS——WCE-YouTube推荐论文</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍WCE</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p><em>原始论文：<a href="https://github.com/wzhe06/Reco-papers/blob/master/Industry%20Recommender%20System/[Youtube]%20Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%20(Youtube%202016).pdf" target="_blank" rel="noopener">[Youtube] Deep Neural Networks for YouTube Recommendations (Youtube 2016)</a></em></p>
-<hr>
-<h3 id="WCE"><a href="#WCE" class="headerlink" title="WCE"></a>WCE</h3><ul>
-<li>Weighted Cross Entropy，加权交叉熵，也叫做Weighted LR，Weighted Logistic Regression</li>
-<li>用于解决回归问题<ul>
-<li>主要是存在大量负样本（值为0）的回归问题</li>
-<li>比如视频浏览时长问题（点击率就比较低）</li>
-</ul>
-</li>
-<li>训练时使用损失函数：<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + (1-y_i)log(1-p_i)<br>$$<ul>
-<li>其中 \(p_i = \frac{1}{1+e^{-\theta^{T}\boldsymbol{x}}}\)</li>
-<li>\(w_i\) = 回归值（如观看时长）</li>
-<li>\(y_i\) = 是否为正值（即是否点击，未点击表示观看时长为0，视为负样本）</li>
-<li>对任意样本，我们真实想要的预估目标是一个视频被点击且观看的概率\(pred = wp\)</li>
-</ul>
-</li>
-<li>serving时使用下面的定义来表示回归值：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}}<br>$$<ul>
-<li>对于原始的CE损失函数，有\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)（补充：Odds表示样本为正的概率除以样本为负的概率，\(log(Odds) = \theta^{T}\boldsymbol{x}\)）就是logit</li>
-<li>当前损失函数下，正负样本的比例（或权重）发生了变化，实际上\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)表示的值不再是原始样本中正负样本的比例，而是带权重的比例，详情看后续的证明</li>
-</ul>
-</li>
-<li>可以证明上面的方法会造成预估值有偏</li>
-</ul>
-<h3 id="WCE改进"><a href="#WCE改进" class="headerlink" title="WCE改进"></a>WCE改进</h3><ul>
-<li>改进后的损失函数<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + log(1-p_i)<br>$$</li>
-<li>改进前方案是有偏的，修改为上面的损失函数后，\(pred = Odds = e^{\theta^{T}\boldsymbol{x}}\)是无偏的</li>
-<li>证明：<ul>
-<li>假设在原始的CE损失函数下，正负样本的比例为A:B，此时有\(p = \frac{A}{A+B}\)【这里只是假设训练时遇到特征值完全相同的多个样本（有正有负），模型在遇到serving时遇到同一个特征值样本时，应该预估样本为正的概率为多少？】<ul>
-<li>原始CE下，样本为正的概率就是正样本数/总样本数</li>
-</ul>
-</li>
-<li>那么在上述加权的损失函数下，相当于正负样本的比例为\(wA:B+A\)，此时有\(p’ = \frac{wA}{wA+B+A}\)<ul>
-<li>因为权重被修改了，可以证明<strong>样本不变，增加权重</strong>等价于<strong>权重不变，增加样本（重复采样）</strong></li>
-<li>\(wA:B+A\)的原因是因为正样本被加了\(w\)倍的权重，而负样本则被增加了A个（原始的CE函数中正样本不会累加\(log(1-p)\)作为损失，但改进后的WCE会</li>
-</ul>
-</li>
-<li>我们真实想要的预估值是：\(pred = wp = w * \frac{A}{A+B}\)<ul>
-<li>可以表述为样本为正的概率乘以样本为正时的值（用户点击视频的概率*用户点击视频后观看的概率）</li>
-</ul>
-</li>
-<li>经推导有：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’}{1-p’} = \frac{\frac{wA}{wA+B+A}}{1-\frac{wA}{wA+B+A}} = w * \frac{A}{A+B} = wp<br>$$<ul>
-<li>注意，我们需要的是\(pred = wp\)而不是\(pred = wp’\)<ul>
-<li>因为\(p’\)是被我们修改权重后得到的模型输出(均值)</li>
-</ul>
-</li>
-<li>真实serving时，模型的输出值\(p’\)是不用的，只使用\(pred = e^{\theta^{T}\boldsymbol{x}}\)就可以了</li>
-<li>其他：<ul>
-<li>对于原始CE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p}{1-p} = \frac{\frac{A}{A+B}}{1-\frac{A}{A+B}} = \frac{A}{B} = \frac{p}{1-p}<br>  $$</li>
-<li>对于YouTube的WCE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’’}{1-p’’} = \frac{\frac{wA}{wA+B}}{1-\frac{wA}{wA+B}} = w * \frac{A}{B} \approx w * \frac{A}{A+B} = wp<br>  $$<ul>
-<li><strong>约等于符号成立的前提是正样本占比特别少</strong>，此时\(\frac{A}{B} \approx \frac{A}{A+B}\)</li>
-<li>也就是说，在正样本占比特别少时，使用YouTube的WCE也是没问题的，但是为了保证无偏，建议使用改进后的WCE</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="扩展问题"><a href="#扩展问题" class="headerlink" title="扩展问题"></a>扩展问题</h3><ul>
-<li>在面对回归问题是，WCE相对MSE真的有提升吗？</li>
-</ul>
-<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul>
-<li>WCE也可以用于分类问题中，目的是让模型更关注某些特殊样本</li>
-</ul>
-<h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -689,7 +514,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -708,7 +533,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html" itemprop="url">RS——WCE-YouTube推荐论文</a></h1>
         
 
         <div class="post-meta">
@@ -744,90 +569,77 @@
       
         
           
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+            <p><em>本文主要介绍WCE</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p><em>原始论文：<a href="https://github.com/wzhe06/Reco-papers/blob/master/Industry%20Recommender%20System/[Youtube]%20Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%20(Youtube%202016).pdf" target="_blank" rel="noopener">[Youtube] Deep Neural Networks for YouTube Recommendations (Youtube 2016)</a></em></p>
 <hr>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
+<h3 id="WCE"><a href="#WCE" class="headerlink" title="WCE"></a>WCE</h3><ul>
+<li>Weighted Cross Entropy，加权交叉熵，也叫做Weighted LR，Weighted Logistic Regression</li>
+<li>用于解决回归问题<ul>
+<li>主要是存在大量负样本（值为0）的回归问题</li>
+<li>比如视频浏览时长问题（点击率就比较低）</li>
+</ul>
+</li>
+<li>训练时使用损失函数：<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + (1-y_i)log(1-p_i)<br>$$<ul>
+<li>其中 \(p_i = \frac{1}{1+e^{-\theta^{T}\boldsymbol{x}}}\)</li>
+<li>\(w_i\) = 回归值（如观看时长）</li>
+<li>\(y_i\) = 是否为正值（即是否点击，未点击表示观看时长为0，视为负样本）</li>
+<li>对任意样本，我们真实想要的预估目标是一个视频被点击且观看的概率\(pred = wp\)</li>
+</ul>
+</li>
+<li>serving时使用下面的定义来表示回归值：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}}<br>$$<ul>
+<li>对于原始的CE损失函数，有\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)（补充：Odds表示样本为正的概率除以样本为负的概率，\(log(Odds) = \theta^{T}\boldsymbol{x}\)）就是logit</li>
+<li>当前损失函数下，正负样本的比例（或权重）发生了变化，实际上\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)表示的值不再是原始样本中正负样本的比例，而是带权重的比例，详情看后续的证明</li>
+</ul>
+</li>
+<li>可以证明上面的方法会造成预估值有偏</li>
+</ul>
+<h3 id="WCE改进"><a href="#WCE改进" class="headerlink" title="WCE改进"></a>WCE改进</h3><ul>
+<li>改进后的损失函数<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + log(1-p_i)<br>$$</li>
+<li>改进前方案是有偏的，修改为上面的损失函数后，\(pred = Odds = e^{\theta^{T}\boldsymbol{x}}\)是无偏的</li>
+<li>证明：<ul>
+<li>假设在原始的CE损失函数下，正负样本的比例为A:B，此时有\(p = \frac{A}{A+B}\)【这里只是假设训练时遇到特征值完全相同的多个样本（有正有负），模型在遇到serving时遇到同一个特征值样本时，应该预估样本为正的概率为多少？】<ul>
+<li>原始CE下，样本为正的概率就是正样本数/总样本数</li>
+</ul>
+</li>
+<li>那么在上述加权的损失函数下，相当于正负样本的比例为\(wA:B+A\)，此时有\(p’ = \frac{wA}{wA+B+A}\)<ul>
+<li>因为权重被修改了，可以证明<strong>样本不变，增加权重</strong>等价于<strong>权重不变，增加样本（重复采样）</strong></li>
+<li>\(wA:B+A\)的原因是因为正样本被加了\(w\)倍的权重，而负样本则被增加了A个（原始的CE函数中正样本不会累加\(log(1-p)\)作为损失，但改进后的WCE会</li>
+</ul>
+</li>
+<li>我们真实想要的预估值是：\(pred = wp = w * \frac{A}{A+B}\)<ul>
+<li>可以表述为样本为正的概率乘以样本为正时的值（用户点击视频的概率*用户点击视频后观看的概率）</li>
+</ul>
+</li>
+<li>经推导有：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’}{1-p’} = \frac{\frac{wA}{wA+B+A}}{1-\frac{wA}{wA+B+A}} = w * \frac{A}{A+B} = wp<br>$$<ul>
+<li>注意，我们需要的是\(pred = wp\)而不是\(pred = wp’\)<ul>
+<li>因为\(p’\)是被我们修改权重后得到的模型输出(均值)</li>
+</ul>
+</li>
+<li>真实serving时，模型的输出值\(p’\)是不用的，只使用\(pred = e^{\theta^{T}\boldsymbol{x}}\)就可以了</li>
+<li>其他：<ul>
+<li>对于原始CE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p}{1-p} = \frac{\frac{A}{A+B}}{1-\frac{A}{A+B}} = \frac{A}{B} = \frac{p}{1-p}<br>  $$</li>
+<li>对于YouTube的WCE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’’}{1-p’’} = \frac{\frac{wA}{wA+B}}{1-\frac{wA}{wA+B}} = w * \frac{A}{B} \approx w * \frac{A}{A+B} = wp<br>  $$<ul>
+<li><strong>约等于符号成立的前提是正样本占比特别少</strong>，此时\(\frac{A}{B} \approx \frac{A}{A+B}\)</li>
+<li>也就是说，在正样本占比特别少时，使用YouTube的WCE也是没问题的，但是为了保证无偏，建议使用改进后的WCE</li>
 </ul>
 </li>
 </ul>
-<hr>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="如何理解GBDT中的梯度G？"><a href="#如何理解GBDT中的梯度G？" class="headerlink" title="如何理解GBDT中的梯度G？"></a>如何理解GBDT中的梯度G？</h4><ul>
-<li>G表示Gradient，表示梯度，在GBDT中梯度是指损失函数关于每一个迭代中模型的梯度</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
-<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
 </li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
-<ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
-</ul>
-</li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
 </ul>
 </li>
 </ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
 </li>
 </ul>
-<hr>
-<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
-<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
-<li>和LR对比: 线性模型</li>
-<li>和GBDT对比: </li>
+<h3 id="扩展问题"><a href="#扩展问题" class="headerlink" title="扩展问题"></a>扩展问题</h3><ul>
+<li>在面对回归问题是，WCE相对MSE真的有提升吗？</li>
 </ul>
-</li>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul>
+<li>WCE也可以用于分类问题中，目的是让模型更关注某些特殊样本</li>
 </ul>
-<hr>
-<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
-<li>通过不同层级和类型的网络可以对时空信息建模</li>
-<li>适合图像, 声音, 文字等带有时序特质的数据</li>
-</ul>
-<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
-<li>基于树模型的GBDT则能很好地处理表格数据</li>
-<li>模型的可解释性</li>
-<li>输入数据的不变性(几乎不用格式化数据)</li>
-<li>更易于调参等特质更适合数值型数据</li>
+<h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
 </ul>
 
           
@@ -1611,6 +1423,194 @@
 <hr>
 <h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
 <li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
+<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
+<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+<hr>
+<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
+<li>各种简称,都是同一种算法:<ul>
+<li>GBDT(Gradient Boosting Decision Tree)</li>
+<li>MART(Multiple Additive Regression Tree)</li>
+<li>GBT(Gradient Boosting Tree)</li>
+<li>GTB(Gradient Tree Boosting)</li>
+<li>GBRT(Gradient Boosting Regression Tree)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
+<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
+<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
+<li>残差 = 真实值 - 预测值</li>
+</ul>
+<h4 id="如何理解GBDT中的梯度G？"><a href="#如何理解GBDT中的梯度G？" class="headerlink" title="如何理解GBDT中的梯度G？"></a>如何理解GBDT中的梯度G？</h4><ul>
+<li>G表示Gradient，表示梯度，在GBDT中梯度是指损失函数关于每一个迭代中模型的梯度</li>
+</ul>
+<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
+<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
+<ul>
+<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
+</ul>
+</li>
+<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
+<ul>
+<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
+<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
+</ul>
+</li>
+<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
+<ul>
+<li>因为我们的目标是拟合上一若学习器的残差</li>
+<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
+</ul>
+</li>
+</ul>
+<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
+<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
+<li>此时类别可编码为一个一维向量,取值0或1</li>
+</ul>
+<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
+<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
+<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
+<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
+<li>然后每个模型每轮分别学习当前特征的残差</li>
+<li>每个模型都会用到所有的样本<ul>
+<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
+<li>编码为(x, [0,1,0])</li>
+<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
+<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
+</ul>
+</li>
+<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
+<li>最后预测时<ul>
+<li>给定一个未标记样本</li>
+<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
+<li>最后选择分数最高的一个类为最终分类即可</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
+<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
+<li>和LR对比: 线性模型</li>
+<li>和GBDT对比: </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
+<li>通过不同层级和类型的网络可以对时空信息建模</li>
+<li>适合图像, 声音, 文字等带有时序特质的数据</li>
+</ul>
+<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
+<li>基于树模型的GBDT则能很好地处理表格数据</li>
+<li>模型的可解释性</li>
+<li>输入数据的不变性(几乎不用格式化数据)</li>
+<li>更易于调参等特质更适合数值型数据</li>
 </ul>
 
           
