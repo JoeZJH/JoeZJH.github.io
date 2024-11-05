@@ -1125,6 +1125,176 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——PPO.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——PPO.html" itemprop="url">RL——PPO</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<h3 id="PPO"><a href="#PPO" class="headerlink" title="PPO"></a>PPO</h3><h4 id="PPO的目标"><a href="#PPO的目标" class="headerlink" title="PPO的目标"></a>PPO的目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
+<ul>
+<li>PPO目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
+</ul>
+<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
+<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
+</ul>
+<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
+<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+</ul>
+<h4 id="PPO的训练技巧"><a href="#PPO的训练技巧" class="headerlink" title="PPO的训练技巧"></a>PPO的训练技巧</h4><ul>
+<li>参考：<a href="https://zhuanlan.zhihu.com/p/512327050" target="_blank" rel="noopener">影响PPO算法性能的10个关键技巧（附PPO算法简洁Pytorch实现）</a></li>
+<li>TODO：真实训练一下，测试各种优化技巧的收益</li>
+</ul>
+<h5 id="Advantage-Normalization"><a href="#Advantage-Normalization" class="headerlink" title="Advantage Normalization"></a>Advantage Normalization</h5><ul>
+<li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage Function进行归一化，用于提升PG方法的性能</li>
+<li>具体方法：减去均值除以方差</li>
+<li>实现方案：<ul>
+<li>方案一：Batch Advantage Normalization（BAN），第当前Batch的所有Advantage求均值和方差</li>
+<li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
+</ul>
+</li>
+<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差</li>
+</ul>
+<h5 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h5><ul>
+<li>对状态做归一化</li>
+<li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
+<li>采用滑动增量更新的方式：<ul>
+<li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
+<li>方差：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)</li>
+</ul>
+</li>
+</ul>
+<h5 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h5><ul>
+<li>与state normalization的操作类似，也是动态维护所有获得过的reward的mean和std，然后再对当前的reward做normalization。</li>
+</ul>
+<h5 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h5><ul>
+<li>在《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》[3]这篇论文中，作者中提出了一种名叫reward scaling的方法，如图5所示。reward scaling与reward normalization的区别在于，reward scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std。</li>
+</ul>
+<h5 id="Policy-Entropy"><a href="#Policy-Entropy" class="headerlink" title="Policy Entropy"></a>Policy Entropy</h5><ul>
+<li>在actor的loss中增加一项策略熵，在最大化收益的同时，最大化策略熵，增加探索性（理解：同时有正则的作用）</li>
+</ul>
+<h5 id="Learning-Rate-Decay"><a href="#Learning-Rate-Decay" class="headerlink" title="Learning Rate Decay"></a>Learning Rate Decay</h5><ul>
+<li>学习率逐步衰减</li>
+</ul>
+<h5 id="Gradient-Clip"><a href="#Gradient-Clip" class="headerlink" title="Gradient Clip"></a>Gradient Clip</h5><ul>
+<li>梯度裁剪</li>
+</ul>
+<h5 id="Orthogonal-Initialization"><a href="#Orthogonal-Initialization" class="headerlink" title="Orthogonal Initialization"></a>Orthogonal Initialization</h5><ul>
+<li>正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：<ul>
+<li>用均值为0，标准差为1的高斯分布初始化权重矩阵</li>
+<li>对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。</li>
+</ul>
+</li>
+</ul>
+<h5 id="Adam-Optimizer-Epsilon-Parameter"><a href="#Adam-Optimizer-Epsilon-Parameter" class="headerlink" title="Adam Optimizer Epsilon Parameter"></a>Adam Optimizer Epsilon Parameter</h5><ul>
+<li>实践中，从官方默认值1e-8改成1e-5</li>
+<li>原因？</li>
+</ul>
+<h5 id="Tanh-Activation-Function"><a href="#Tanh-Activation-Function" class="headerlink" title="Tanh Activation Function"></a>Tanh Activation Function</h5><ul>
+<li>将ReLU换成tanh激活函数</li>
+<li>建议PPO算法默认使用激活函数</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1266,126 +1436,6 @@
 <li>A3C 是 A2C 的异步版本，它允许多个代理同时在不同的环境中学习</li>
 <li><strong>更新方式</strong>：每个代理都有自己的环境副本和局部模型副本，它们独立地探索环境并收集经验。然后，这些经验被用来异步地更新全局模型，这样可以增加数据多样性并加快学习速度</li>
 <li><strong>优点</strong>：通过异步更新，A3C 可以有效利用多核处理器的能力，实现更快的学习速度和更好的性能</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——PPO.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——PPO.html" itemprop="url">RL——PPO</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<h3 id="PPO"><a href="#PPO" class="headerlink" title="PPO"></a>PPO</h3><h4 id="PPO的目标"><a href="#PPO的目标" class="headerlink" title="PPO的目标"></a>PPO的目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
-<ul>
-<li>PPO目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
-</ul>
-<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
-<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
-</ul>
-<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
-<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
-<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
-</ul>
-<h4 id="PPO的训练技巧"><a href="#PPO的训练技巧" class="headerlink" title="PPO的训练技巧"></a>PPO的训练技巧</h4><ul>
-<li>参考：<a href="https://zhuanlan.zhihu.com/p/512327050" target="_blank" rel="noopener">影响PPO算法性能的10个关键技巧（附PPO算法简洁Pytorch实现）</a></li>
 </ul>
 
           

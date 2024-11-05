@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-03T15:15:31.372Z">
+<meta property="og:updated_time" content="2024-11-05T17:43:26.391Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——PPO">
 <meta name="twitter:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
@@ -342,6 +342,56 @@
 </ul>
 <h4 id="PPO的训练技巧"><a href="#PPO的训练技巧" class="headerlink" title="PPO的训练技巧"></a>PPO的训练技巧</h4><ul>
 <li>参考：<a href="https://zhuanlan.zhihu.com/p/512327050" target="_blank" rel="noopener">影响PPO算法性能的10个关键技巧（附PPO算法简洁Pytorch实现）</a></li>
+<li>TODO：真实训练一下，测试各种优化技巧的收益</li>
+</ul>
+<h5 id="Advantage-Normalization"><a href="#Advantage-Normalization" class="headerlink" title="Advantage Normalization"></a>Advantage Normalization</h5><ul>
+<li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage Function进行归一化，用于提升PG方法的性能</li>
+<li>具体方法：减去均值除以方差</li>
+<li>实现方案：<ul>
+<li>方案一：Batch Advantage Normalization（BAN），第当前Batch的所有Advantage求均值和方差</li>
+<li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
+</ul>
+</li>
+<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差</li>
+</ul>
+<h5 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h5><ul>
+<li>对状态做归一化</li>
+<li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
+<li>采用滑动增量更新的方式：<ul>
+<li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
+<li>方差：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)</li>
+</ul>
+</li>
+</ul>
+<h5 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h5><ul>
+<li>与state normalization的操作类似，也是动态维护所有获得过的reward的mean和std，然后再对当前的reward做normalization。</li>
+</ul>
+<h5 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h5><ul>
+<li>在《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》[3]这篇论文中，作者中提出了一种名叫reward scaling的方法，如图5所示。reward scaling与reward normalization的区别在于，reward scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std。</li>
+</ul>
+<h5 id="Policy-Entropy"><a href="#Policy-Entropy" class="headerlink" title="Policy Entropy"></a>Policy Entropy</h5><ul>
+<li>在actor的loss中增加一项策略熵，在最大化收益的同时，最大化策略熵，增加探索性（理解：同时有正则的作用）</li>
+</ul>
+<h5 id="Learning-Rate-Decay"><a href="#Learning-Rate-Decay" class="headerlink" title="Learning Rate Decay"></a>Learning Rate Decay</h5><ul>
+<li>学习率逐步衰减</li>
+</ul>
+<h5 id="Gradient-Clip"><a href="#Gradient-Clip" class="headerlink" title="Gradient Clip"></a>Gradient Clip</h5><ul>
+<li>梯度裁剪</li>
+</ul>
+<h5 id="Orthogonal-Initialization"><a href="#Orthogonal-Initialization" class="headerlink" title="Orthogonal Initialization"></a>Orthogonal Initialization</h5><ul>
+<li>正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：<ul>
+<li>用均值为0，标准差为1的高斯分布初始化权重矩阵</li>
+<li>对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。</li>
+</ul>
+</li>
+</ul>
+<h5 id="Adam-Optimizer-Epsilon-Parameter"><a href="#Adam-Optimizer-Epsilon-Parameter" class="headerlink" title="Adam Optimizer Epsilon Parameter"></a>Adam Optimizer Epsilon Parameter</h5><ul>
+<li>实践中，从官方默认值1e-8改成1e-5</li>
+<li>原因？</li>
+</ul>
+<h5 id="Tanh-Activation-Function"><a href="#Tanh-Activation-Function" class="headerlink" title="Tanh Activation Function"></a>Tanh Activation Function</h5><ul>
+<li>将ReLU换成tanh激活函数</li>
+<li>建议PPO算法默认使用激活函数</li>
 </ul>
 
       
@@ -373,8 +423,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="next" title="RL——DDPG和TD3">
-                <i class="fa fa-chevron-left"></i> RL——DDPG和TD3
+              <a href="/Notes/RL/RL——AC、A2C和A3C.html" rel="next" title="RL——AC、A2C和A3C">
+                <i class="fa fa-chevron-left"></i> RL——AC、A2C和A3C
               </a>
             
           </div>
@@ -383,8 +433,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——AC、A2C和A3C.html" rel="prev" title="RL——AC、A2C和A3C">
-                RL——AC、A2C和A3C <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——GAE.html" rel="prev" title="RL——GAE">
+                RL——GAE <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -526,7 +576,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#PPO"><span class="nav-number">1.</span> <span class="nav-text">PPO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO的目标"><span class="nav-number">1.1.</span> <span class="nav-text">PPO的目标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO-Penalty"><span class="nav-number">1.2.</span> <span class="nav-text">PPO-Penalty</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO-Clip"><span class="nav-number">1.3.</span> <span class="nav-text">PPO-Clip</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO的训练技巧"><span class="nav-number">1.4.</span> <span class="nav-text">PPO的训练技巧</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#PPO"><span class="nav-number">1.</span> <span class="nav-text">PPO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO的目标"><span class="nav-number">1.1.</span> <span class="nav-text">PPO的目标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO-Penalty"><span class="nav-number">1.2.</span> <span class="nav-text">PPO-Penalty</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO-Clip"><span class="nav-number">1.3.</span> <span class="nav-text">PPO-Clip</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PPO的训练技巧"><span class="nav-number">1.4.</span> <span class="nav-text">PPO的训练技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Advantage-Normalization"><span class="nav-number">1.4.1.</span> <span class="nav-text">Advantage Normalization</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#State-Normalization"><span class="nav-number">1.4.2.</span> <span class="nav-text">State Normalization</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Reward-Normalization"><span class="nav-number">1.4.3.</span> <span class="nav-text">Reward Normalization</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Reward-Scaling"><span class="nav-number">1.4.4.</span> <span class="nav-text">Reward Scaling</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Policy-Entropy"><span class="nav-number">1.4.5.</span> <span class="nav-text">Policy Entropy</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Learning-Rate-Decay"><span class="nav-number">1.4.6.</span> <span class="nav-text">Learning Rate Decay</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Gradient-Clip"><span class="nav-number">1.4.7.</span> <span class="nav-text">Gradient Clip</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Orthogonal-Initialization"><span class="nav-number">1.4.8.</span> <span class="nav-text">Orthogonal Initialization</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Adam-Optimizer-Epsilon-Parameter"><span class="nav-number">1.4.9.</span> <span class="nav-text">Adam Optimizer Epsilon Parameter</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Tanh-Activation-Function"><span class="nav-number">1.4.10.</span> <span class="nav-text">Tanh Activation Function</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
