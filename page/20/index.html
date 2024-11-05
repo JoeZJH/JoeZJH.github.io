@@ -602,6 +602,135 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍AUC和GAUC</em></p>
+<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
+</ul>
+<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
+<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
+</li>
+<li><p>推导思路：</p>
+<ul>
+<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
+<li>对所有正样本的概率求均值</li>
+</ul>
+</li>
+<li><p>SQL实现</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>SQL实现（分场景+pcoc实现）</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——EM算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -917,6 +1046,130 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——CEM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——CEM.html" itemprop="url">ML——CEM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p>***</p>
+<h3 id="交叉熵基础定义"><a href="#交叉熵基础定义" class="headerlink" title="交叉熵基础定义"></a>交叉熵基础定义</h3><p>Cross Entropy 方法中的 “Cross Entropy” 这个名字来源于信息论中的一个概念。在信息论中，交叉熵（Cross Entropy）是用来衡量两个概率分布之间的差异的一个指标，通常用于评估一个概率模型对真实数据分布的拟合程度。给定两个概率分布 \(P\) 和 \(Q\)，其中 \(P\) 代表真实的概率分布，而 \(Q\) 代表模型预测的概率分布，那么 \(P\) 和 \(Q\) 之间的交叉熵定义为：</p>
+<p>$$ H(P, Q) = -\sum_x P(x) \log Q(x) $$</p>
+<p>这里的 \(H(P, Q)\) 就是 \(P\) 相对于 \(Q\) 的交叉熵。当 \(Q\) 完美地匹配 \(P\) 时，即 \(P=Q\)，交叉熵达到最小值，此时等于 \(P\) 的熵 \(H(P)\)。如果 \(Q\) 与 \(P\) 不同，那么交叉熵会比 \(P\) 的熵大，表示了额外的信息损失或误差。</p>
+<h3 id="交叉熵损失函数"><a href="#交叉熵损失函数" class="headerlink" title="交叉熵损失函数"></a>交叉熵损失函数</h3><p>在优化和机器学习领域，交叉熵经常被用作损失函数，特别是在分类任务中，比如使用神经网络进行图像分类。在这种情况下，\(P\) 通常是样本的真实标签分布（例如，对于二分类问题，正类可以表示为 [1, 0]，负类为 [0, 1]），而 \(Q\) 是模型预测的概率分布。通过最小化交叉熵损失函数，可以训练模型更好地拟合训练数据。</p>
+<h3 id="交叉熵方法名字的来源"><a href="#交叉熵方法名字的来源" class="headerlink" title="交叉熵方法名字的来源"></a>交叉熵方法名字的来源</h3><p>Cross Entropy 方法本身是一种用于优化和采样的算法，它最初是从稀有事件模拟中发展出来的。该方法通过迭代地从候选解集中采样，并根据这些样本计算出一个精英集的概率分布，然后利用这个分布来指导下一步的采样过程。在这个过程中，算法实际上是在尝试最小化目标分布（最优解的分布）和当前采样分布之间的交叉熵，因此得名“Cross Entropy 方法”。这种方法能够有效地解决一些复杂的优化问题，尤其是在高维空间中寻找最优解的问题。</p>
+<h3 id="交叉熵方法的核心思想"><a href="#交叉熵方法的核心思想" class="headerlink" title="交叉熵方法的核心思想"></a>交叉熵方法的核心思想</h3><p>在 Cross Entropy (CE) 方法中，最小化目标分布 \(P^*\)（最优解的分布）和当前采样分布 \(Q\) 之间的交叉熵是一个核心思想。这个过程可以通过以下步骤来理解：</p>
+<h4 id="定义目标"><a href="#定义目标" class="headerlink" title="定义目标"></a>定义目标</h4><p>首先，我们定义我们的目标是找到一个分布 \(Q\)，使得 \(Q\) 尽可能接近目标分布 \(P^*\)。这里 \(P^*\) 通常是一个难以直接求解的分布，因为它对应于所有可能解中的最优解。</p>
+<h4 id="交叉熵作为度量"><a href="#交叉熵作为度量" class="headerlink" title="交叉熵作为度量"></a>交叉熵作为度量</h4><p>我们使用交叉熵 \(H(P^*, Q)\) 作为度量 \(P^*\) 和 \(Q\) 之间差异的标准。交叉熵定义为：</p>
+<p>$$ H(P^*, Q) = -\sum_x P^*(x) \log Q(x) $$</p>
+<p>这里 \(x\) 表示解空间中的一个点，\(P^*(x)\) 是 \(x\) 属于最优解的概率，而 \(Q(x)\) 是 \(x\) 被当前采样分布选中的概率。</p>
+<h4 id="精英集的选择"><a href="#精英集的选择" class="headerlink" title="精英集的选择"></a>精英集的选择</h4><p>在 CE 方法中，我们并不直接计算 \(P^*\)，而是通过迭代过程逐步逼近 \(P^*\)。每一步，我们从当前的分布 \(Q\) 中随机采样一组解，然后选择表现最好的一部分解（称为精英集）。假设我们采样了 \(N\) 个解，并选择了其中表现最好的 \(N_e\) 个解作为精英集。</p>
+<h4 id="更新分布"><a href="#更新分布" class="headerlink" title="更新分布"></a>更新分布</h4><p>接下来，我们基于精英集来更新分布 \(Q\)。具体来说，我们希望新的 \(Q\) 更好地拟合精英集中的解。这可以通过计算精英集的统计特性（如均值和协方差）来实现。例如，如果 \(Q\) 是一个高斯分布，我们可以计算精英集的均值 \(\mu_e\) 和协方差矩阵 \(\Sigma_e\)，并用它们来更新 \(Q\) 的参数：</p>
+<p>$$ \mu_{\text{new}} = \frac{1}{N_e} \sum_{i=1}^{N_e} x_i $$<br>$$ \Sigma_{\text{new}} = \frac{1}{N_e} \sum_{i=1}^{N_e} (x_i - \mu_{\text{new}})(x_i - \mu_{\text{new}})^T $$</p>
+<h4 id="重复迭代"><a href="#重复迭代" class="headerlink" title="重复迭代"></a>重复迭代</h4><p>上述过程构成了 CE 方法的一个迭代步骤。我们重复执行采样、选择精英集和更新分布的过程，直到 \(Q\) 收敛到一个接近 \(P^*\) 的分布，或者满足某个停止条件（如达到最大迭代次数或分布变化小于某个阈值）。</p>
+<h4 id="最小化交叉熵的直观解释"><a href="#最小化交叉熵的直观解释" class="headerlink" title="最小化交叉熵的直观解释"></a>最小化交叉熵的直观解释</h4><p>通过选择精英集并更新分布，CE 方法实际上是在逐步减少 \(P^*\) 和 \(Q\) 之间的交叉熵。这是因为每次迭代后，新的分布 \(Q\) 更加集中在那些表现好的解上，从而更接近 \(P^*\)。从数学上看，选择精英集并更新分布的过程可以看作是在最小化 \(P^*\) 和 \(Q\) 之间的 KL 散度（Kullback-Leibler divergence），而 KL 散度与交叉熵密切相关：</p>
+<p>$$ D_{\text{KL}}(P^* | Q) = H(P^*, Q) - H(P^*) $$</p>
+<p>由于 \(H(P^*)\) 是常数，最小化 \(D_{\text{KL}}(P^* | Q)\) 等价于最小化 \(H(P^*, Q)\)。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>通过上述步骤，CE 方法逐步更新采样分布 \(Q\)，使其更接近目标分布 \(P^*\)，从而最小化两者之间的交叉熵。这一过程不仅有助于找到最优解，还能够在高维和复杂问题中有效地进行优化。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1110,130 +1363,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——CEM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——CEM.html" itemprop="url">ML——CEM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p>***</p>
-<h3 id="交叉熵基础定义"><a href="#交叉熵基础定义" class="headerlink" title="交叉熵基础定义"></a>交叉熵基础定义</h3><p>Cross Entropy 方法中的 “Cross Entropy” 这个名字来源于信息论中的一个概念。在信息论中，交叉熵（Cross Entropy）是用来衡量两个概率分布之间的差异的一个指标，通常用于评估一个概率模型对真实数据分布的拟合程度。给定两个概率分布 \(P\) 和 \(Q\)，其中 \(P\) 代表真实的概率分布，而 \(Q\) 代表模型预测的概率分布，那么 \(P\) 和 \(Q\) 之间的交叉熵定义为：</p>
-<p>$$ H(P, Q) = -\sum_x P(x) \log Q(x) $$</p>
-<p>这里的 \(H(P, Q)\) 就是 \(P\) 相对于 \(Q\) 的交叉熵。当 \(Q\) 完美地匹配 \(P\) 时，即 \(P=Q\)，交叉熵达到最小值，此时等于 \(P\) 的熵 \(H(P)\)。如果 \(Q\) 与 \(P\) 不同，那么交叉熵会比 \(P\) 的熵大，表示了额外的信息损失或误差。</p>
-<h3 id="交叉熵损失函数"><a href="#交叉熵损失函数" class="headerlink" title="交叉熵损失函数"></a>交叉熵损失函数</h3><p>在优化和机器学习领域，交叉熵经常被用作损失函数，特别是在分类任务中，比如使用神经网络进行图像分类。在这种情况下，\(P\) 通常是样本的真实标签分布（例如，对于二分类问题，正类可以表示为 [1, 0]，负类为 [0, 1]），而 \(Q\) 是模型预测的概率分布。通过最小化交叉熵损失函数，可以训练模型更好地拟合训练数据。</p>
-<h3 id="交叉熵方法名字的来源"><a href="#交叉熵方法名字的来源" class="headerlink" title="交叉熵方法名字的来源"></a>交叉熵方法名字的来源</h3><p>Cross Entropy 方法本身是一种用于优化和采样的算法，它最初是从稀有事件模拟中发展出来的。该方法通过迭代地从候选解集中采样，并根据这些样本计算出一个精英集的概率分布，然后利用这个分布来指导下一步的采样过程。在这个过程中，算法实际上是在尝试最小化目标分布（最优解的分布）和当前采样分布之间的交叉熵，因此得名“Cross Entropy 方法”。这种方法能够有效地解决一些复杂的优化问题，尤其是在高维空间中寻找最优解的问题。</p>
-<h3 id="交叉熵方法的核心思想"><a href="#交叉熵方法的核心思想" class="headerlink" title="交叉熵方法的核心思想"></a>交叉熵方法的核心思想</h3><p>在 Cross Entropy (CE) 方法中，最小化目标分布 \(P^*\)（最优解的分布）和当前采样分布 \(Q\) 之间的交叉熵是一个核心思想。这个过程可以通过以下步骤来理解：</p>
-<h4 id="定义目标"><a href="#定义目标" class="headerlink" title="定义目标"></a>定义目标</h4><p>首先，我们定义我们的目标是找到一个分布 \(Q\)，使得 \(Q\) 尽可能接近目标分布 \(P^*\)。这里 \(P^*\) 通常是一个难以直接求解的分布，因为它对应于所有可能解中的最优解。</p>
-<h4 id="交叉熵作为度量"><a href="#交叉熵作为度量" class="headerlink" title="交叉熵作为度量"></a>交叉熵作为度量</h4><p>我们使用交叉熵 \(H(P^*, Q)\) 作为度量 \(P^*\) 和 \(Q\) 之间差异的标准。交叉熵定义为：</p>
-<p>$$ H(P^*, Q) = -\sum_x P^*(x) \log Q(x) $$</p>
-<p>这里 \(x\) 表示解空间中的一个点，\(P^*(x)\) 是 \(x\) 属于最优解的概率，而 \(Q(x)\) 是 \(x\) 被当前采样分布选中的概率。</p>
-<h4 id="精英集的选择"><a href="#精英集的选择" class="headerlink" title="精英集的选择"></a>精英集的选择</h4><p>在 CE 方法中，我们并不直接计算 \(P^*\)，而是通过迭代过程逐步逼近 \(P^*\)。每一步，我们从当前的分布 \(Q\) 中随机采样一组解，然后选择表现最好的一部分解（称为精英集）。假设我们采样了 \(N\) 个解，并选择了其中表现最好的 \(N_e\) 个解作为精英集。</p>
-<h4 id="更新分布"><a href="#更新分布" class="headerlink" title="更新分布"></a>更新分布</h4><p>接下来，我们基于精英集来更新分布 \(Q\)。具体来说，我们希望新的 \(Q\) 更好地拟合精英集中的解。这可以通过计算精英集的统计特性（如均值和协方差）来实现。例如，如果 \(Q\) 是一个高斯分布，我们可以计算精英集的均值 \(\mu_e\) 和协方差矩阵 \(\Sigma_e\)，并用它们来更新 \(Q\) 的参数：</p>
-<p>$$ \mu_{\text{new}} = \frac{1}{N_e} \sum_{i=1}^{N_e} x_i $$<br>$$ \Sigma_{\text{new}} = \frac{1}{N_e} \sum_{i=1}^{N_e} (x_i - \mu_{\text{new}})(x_i - \mu_{\text{new}})^T $$</p>
-<h4 id="重复迭代"><a href="#重复迭代" class="headerlink" title="重复迭代"></a>重复迭代</h4><p>上述过程构成了 CE 方法的一个迭代步骤。我们重复执行采样、选择精英集和更新分布的过程，直到 \(Q\) 收敛到一个接近 \(P^*\) 的分布，或者满足某个停止条件（如达到最大迭代次数或分布变化小于某个阈值）。</p>
-<h4 id="最小化交叉熵的直观解释"><a href="#最小化交叉熵的直观解释" class="headerlink" title="最小化交叉熵的直观解释"></a>最小化交叉熵的直观解释</h4><p>通过选择精英集并更新分布，CE 方法实际上是在逐步减少 \(P^*\) 和 \(Q\) 之间的交叉熵。这是因为每次迭代后，新的分布 \(Q\) 更加集中在那些表现好的解上，从而更接近 \(P^*\)。从数学上看，选择精英集并更新分布的过程可以看作是在最小化 \(P^*\) 和 \(Q\) 之间的 KL 散度（Kullback-Leibler divergence），而 KL 散度与交叉熵密切相关：</p>
-<p>$$ D_{\text{KL}}(P^* | Q) = H(P^*, Q) - H(P^*) $$</p>
-<p>由于 \(H(P^*)\) 是常数，最小化 \(D_{\text{KL}}(P^* | Q)\) 等价于最小化 \(H(P^*, Q)\)。</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>通过上述步骤，CE 方法逐步更新采样分布 \(Q\)，使其更接近目标分布 \(P^*\)，从而最小化两者之间的交叉熵。这一过程不仅有助于找到最优解，还能够在高维和复杂问题中有效地进行优化。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1345,135 +1474,6 @@
 <td align="center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
 </tr>
 </tbody></table>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍AUC和GAUC</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
-</ul>
-<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
-
-<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
-<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
-</li>
-<li><p>推导思路：</p>
-<ul>
-<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
-<li>对所有正样本的概率求均值</li>
-</ul>
-</li>
-<li><p>SQL实现</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>SQL实现（分场景+pcoc实现）</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
 
           
         
@@ -1767,7 +1767,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——参数化模型与非参数化模型.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——分布的距离评估.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1786,7 +1786,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——参数化模型与非参数化模型.html" itemprop="url">ML——参数化模型与非参数化模型</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——分布的距离评估.html" itemprop="url">ML——分布的距离评估</a></h1>
         
 
         <div class="post-meta">
@@ -1822,20 +1822,8 @@
       
         
           
-            <p><em>本文介绍非参数化模型（Non-parametric models）和参数化模型（Parametric models）</em></p>
-<script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="参数化模型"><a href="#参数化模型" class="headerlink" title="参数化模型"></a>参数化模型</h3><h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><p><strong>参数化模型</strong>指的是那些依赖于固定数量参数的模型，这些参数可以通过训练数据学习得到。参数化模型的特点是一旦参数确定，模型的复杂度也就固定了。</p>
-<h4 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h4><p>参数化模型的例子包括线性回归、逻辑回归、支持向量机（SVM）和神经网络等</p>
-<h3 id="非参数化模型"><a href="#非参数化模型" class="headerlink" title="非参数化模型"></a>非参数化模型</h3><h4 id="定义-1"><a href="#定义-1" class="headerlink" title="定义"></a>定义</h4><p><strong>非参数化模型</strong>则不对模型形式做出严格的假设，也不依赖于固定数量的参数。这类模型通常具有更大的灵活性，可以根据数据的复杂性来适应模型的复杂度。</p>
-<h4 id="举例-1"><a href="#举例-1" class="headerlink" title="举例"></a>举例</h4><p>非参数化模型的例子包括高斯过程回归、决策树、k-最近邻（k-NN）算法、核方法以及各种基于模型的集成方法如随机森林和提升树（Boosting Trees）等</p>
-<h3 id="其他说明"><a href="#其他说明" class="headerlink" title="其他说明"></a>其他说明</h3><ul>
-<li><blockquote>
-<p>尽管神经网络可以拥有大量的参数，使得它们具有高度的灵活性和强大的表达能力，但这些特点并不使其成为非参数化模型。非参数化模型指的是不对模型形式做出严格假设的模型，其参数的数量和模型的复杂度可以随着数据量的增加而增加。因此，即使神经网络在实际应用中可以非常复杂，它们仍然是基于固定参数数量的参数化模型。</p>
-</blockquote>
-</li>
-<li>神经网络越来越复杂，现在参数量已经非常大，实际上可以看做是非参数模型？</li>
+            <h3 id="KL散度"><a href="#KL散度" class="headerlink" title="KL散度"></a>KL散度</h3><h3 id="TV距离"><a href="#TV距离" class="headerlink" title="TV距离"></a>TV距离</h3><ul>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/352946799" target="_blank" rel="noopener">Total Variation Distance 总变差</a></li>
 </ul>
 
           

@@ -88,7 +88,7 @@
 <meta property="og:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png">
-<meta property="og:updated_time" content="2024-11-03T15:15:31.379Z">
+<meta property="og:updated_time" content="2024-11-05T16:02:05.805Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——TRPO-PPO-目标函数基础推导">
 <meta name="twitter:description" content="本文主要介绍TRPO、PPO相关内容   参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization (T">
@@ -341,11 +341,11 @@
 </li>
 </ul>
 <h3 id="相关概念理解"><a href="#相关概念理解" class="headerlink" title="相关概念理解"></a>相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
-<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l})] $$</li>
-<li>V值的定义<br>$$ V_\pi(s_t) = E_{a_t, s_{t+1},\cdots}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
+<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots \sim \pi}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l})] $$</li>
+<li>V值的定义<br>$$ V_\pi(s_t) = E_{a_t, s_{t+1},\cdots \sim \pi}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
 <li>优势函数的定义<br>$$ A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t) $$</li>
 </ul>
-<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = E_{s_0, a_0,\ldots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</p>
+<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = E_{s_0, a_0,\ldots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</p>
 <ul>
 <li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
 </ul>
@@ -364,7 +364,7 @@
 <li>TRPO/PPO的核心是使用一个约束优化问题来更新策略，这个约束保证了新策略与旧策略之间的差异不会太大</li>
 </ul>
 <h3 id="TRPO-PPO的推导"><a href="#TRPO-PPO的推导" class="headerlink" title="TRPO/PPO的推导"></a>TRPO/PPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
-<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = E_{s_0, a_0,\cdots}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</li>
+<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = E_{s_0, a_0,\cdots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</li>
 <li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$ \eta(\tilde{\pi}) = \eta(\pi) + E_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)] $$<ul>
 <li>证明如下：<br>$$<br>\begin{aligned}<br>E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-E_{s_0}[V_\pi(s_0)] + E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
 </ul>
@@ -386,11 +386,12 @@
 </ul>
 </li>
 <li>MM方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。</li>
-<li>可以通过严格的MM方法数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数是旧的目标函数的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>）。这个证明较为复杂，有时间可以详细看看。</li>
+<li>可以通过严格的MM方法数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数是旧的目标函数的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>、<a href="https://www.zhihu.com/question/316004388" target="_blank" rel="noopener">强化学习TRPO模型中，L_pi(.)可逼近rho(.)的证明何解？</a>）。这个证明较为复杂，有时间可以详细看看。</li>
 <li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
 </ul>
 </li>
-<li>基于KL散度限制新旧策略的距离后，进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
+<li>基于KL散度限制新旧策略的距离后我们得到如下的目标<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \\<br>  \text{s.t.} \quad &amp;E_{s \sim \rho_{\pi}(s)} \left[D_{\text{KL}}(\pi, \tilde{\pi})\right] \le \delta<br>\end{aligned}<br>$$</li>
+<li>进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
 <li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
 </ul>
 </li>
@@ -489,8 +490,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="prev" title="RL——TD误差和优势函数的区别">
-                RL——TD误差和优势函数的区别 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="prev" title="RL——DDPG和TD3">
+                RL——DDPG和TD3 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

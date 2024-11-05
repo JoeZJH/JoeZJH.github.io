@@ -88,7 +88,7 @@
 <meta property="og:description" content="TRPOTRPO目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{o">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——TRPO/TRPO.png">
-<meta property="og:updated_time" content="2024-11-03T15:15:31.382Z">
+<meta property="og:updated_time" content="2024-11-05T16:07:51.854Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——TRPO">
 <meta name="twitter:description" content="TRPOTRPO目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{o">
@@ -336,10 +336,11 @@
 <li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
 </ul>
 <h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
-<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
-<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
-<li>\(H\)为海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
+<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似（近似形式的具体证明见附录）<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
+<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵（Hessian Matrix，又译作黑塞矩阵）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
 <li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
+<li>在当前场景中\(H_{ij}\)为<br>$$ H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}} $$</li>
 </ul>
 </li>
 </ul>
@@ -356,7 +357,36 @@
 
 </li>
 </ul>
-<h4 id="附录：最优化问题求解的详细推导"><a href="#附录：最优化问题求解的详细推导" class="headerlink" title="附录：最优化问题求解的详细推导"></a>附录：最优化问题求解的详细推导</h4><ul>
+<h3 id="附录：约束问题的泰勒展开近似推导证明"><a href="#附录：约束问题的泰勒展开近似推导证明" class="headerlink" title="附录：约束问题的泰勒展开近似推导证明"></a>附录：约束问题的泰勒展开近似推导证明</h3><ul>
+<li>近似结果<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$</li>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
+<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵：<br>  $$<br>  H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}}<br>  $$</li>
+</ul>
+<h4 id="泰勒展开回顾"><a href="#泰勒展开回顾" class="headerlink" title="泰勒展开回顾"></a>泰勒展开回顾</h4><ul>
+<li>泰勒展开是一种在数学分析中用于近似函数的方法，特别是当直接计算函数值较为困难时，基本思想是将一个函数在一个点附近用一个多项式来近似表示</li>
+<li>对于一个在点 \(a\) 处具有 \(n+1\) 阶导数的函数 \(f(x)\)，其在 \(a\) 点的泰勒展开可以表示为：<br>$$ f(x) = f(a) + \frac{f’(a)}{1!}(x-a) + \frac{f’’(a)}{2!}(x-a)^2 + \cdots + \frac{f^{(n)}(a)}{n!}(x-a)^n + R_n(x) $$<ul>
+<li>其中，\(R_n(x)\) 是余项，表示的是泰勒多项式与实际函数之间的误差，常表示为：<br>  $$ R_n(x) = o((x-a)^n) $$<ul>
+<li>这里的 \(o\) 表示当 \(x\) 趋向于 \(a\) 时，\(R_n(x)\) 相对于 \((x-a)^n\) 是高阶无穷小</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>泰勒展开在很多领域都有广泛的应用，例如物理学中的近似计算、工程学中的信号处理等。通过选择合适的 (a) 值和 (n) 阶次，可以得到不同精度的近似结果。特别地，当 (a=0) 时，这种特殊的泰勒展开被称为麦克劳林展开。</p>
+<h4 id="目标的泰勒一阶近似推导"><a href="#目标的泰勒一阶近似推导" class="headerlink" title="目标的泰勒一阶近似推导"></a>目标的泰勒一阶近似推导</h4><ul>
+<li>令\(f(\theta)\)为最优化目标，则：<br>$$ f(\theta) = E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
+<li>此时对\(f(\theta)\)在\(\theta = \theta_{\text{old}}\)做泰勒展开有<br>$$ f(\theta) = f(\theta_{\text{old}}) + \nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) + o(\theta^2)$$</li>
+<li>由于\(f(\theta_{\text{old}})\)与\(\theta\)无关，所以最大化\(f(\theta)\)等价于最大化\(\nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) = g^T(\theta-\theta_{old})\)</li>
+</ul>
+<h4 id="约束的泰勒二阶近似推导"><a href="#约束的泰勒二阶近似推导" class="headerlink" title="约束的泰勒二阶近似推导"></a>约束的泰勒二阶近似推导</h4><ul>
+<li>将KL散度在\(\theta = \theta_{\text{old}}\)处二阶展开有<br>$$<br>\begin{align}<br>f(\theta) &amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \\<br>&amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}}) + \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} (\theta - \theta_{\text{old}}) + \frac{1}{2}(\theta - \theta_{\text{old}})^TH(\theta - \theta_{\text{old}}) + o(\theta^3)<br>\end{align}<br>$$<ul>
+<li>显然，第一项\( D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}})=0 \)</li>
+<li>可以证明，第二项为0，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} &amp;= \nabla_\theta \int_a \pi_{\theta_{\text{old}}}(a|s) \log \frac{\pi_{\theta_{\text{old}}}(a|s)}{\pi_{\theta(a|s)}} da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= \nabla_\theta \int \pi_{\theta_{\text{old}}}(a|s) \log (\pi_{\theta_{\text{old}}}(a|s) - \pi_{\theta}(a|s)) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \nabla_\theta \log \pi_{\theta(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{积分求导互换} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \frac{\nabla_\theta \pi_{\theta}(a|s)}{\pi_{\theta}(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{对数概率技巧}  \\<br>  &amp;= - \nabla_\theta  \int \pi_{\theta}(a|s) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \nabla_\theta  1  \\<br>  &amp;= 0<br>  \end{align}<br>  $$</li>
+<li>证毕</li>
+</ul>
+</li>
+</ul>
+<h3 id="附录：最优化问题求解的详细推导证明"><a href="#附录：最优化问题求解的详细推导证明" class="headerlink" title="附录：最优化问题求解的详细推导证明"></a>附录：最优化问题求解的详细推导证明</h3><ul>
 <li><p>给定最优化问题<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</p>
 </li>
 <li><p>对于上述问题，Karush-Kuhn-Tucker (KKT) 条件可以表述为以下几点：</p>
@@ -374,7 +404,7 @@
 </li>
 <li><p>根据KKT条件中的互补松弛性条件，当 \(\lambda &gt; 0\) 时，这意味着约束 \(\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) \leq \delta\) 是紧的，即：<br>$$<br>\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) = \delta.<br>$$</p>
 <ul>
-<li>注意，这里无法直接求解这个问题，因为这个解问题的解不是唯一的，比如一维情况就是二次方程，解就有正负两个值，实际上，这里的解是一个以\theta_k为球心的球体（椭球体）构成的集合（一共有\(2^n\)个解？其中n是变量的维度）</li>
+<li>注意，这里无法直接求解这个问题，因为这个解问题的解不是唯一的，比如一维情况就是二次方程，解就有正负两个值，实际上，这里的解是一个以\(\theta_k\)为球心的球体（椭球体）构成的集合（一共有\(2^n\)个解？其中n是变量的维度）</li>
 </ul>
 </li>
 <li><p>因此，当 \(\lambda &gt; 0\) 时，\(\theta\) 必须位于约束的边界上。为了确定 \(\theta\) 的具体值，我们需要同时考虑其他KKT条件，尤其是拉格朗日函数的梯度为零的条件：<br>$$<br>- g + \lambda H (\theta - \theta_k) = 0<br>$$</p>
@@ -422,8 +452,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——策略梯度法推导.html" rel="next" title="RL——策略梯度法推导">
-                <i class="fa fa-chevron-left"></i> RL——策略梯度法推导
+              <a href="/Notes/RL/RL——SAC.html" rel="next" title="RL——SAC">
+                <i class="fa fa-chevron-left"></i> RL——SAC
               </a>
             
           </div>
@@ -575,7 +605,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO"><span class="nav-number">1.</span> <span class="nav-text">TRPO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO目标"><span class="nav-number">1.1.</span> <span class="nav-text">TRPO目标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO推导"><span class="nav-number">1.2.</span> <span class="nav-text">TRPO推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO更新步长"><span class="nav-number">1.3.</span> <span class="nav-text">TRPO更新步长</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#附录：最优化问题求解的详细推导"><span class="nav-number">1.4.</span> <span class="nav-text">附录：最优化问题求解的详细推导</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO"><span class="nav-number">1.</span> <span class="nav-text">TRPO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO目标"><span class="nav-number">1.1.</span> <span class="nav-text">TRPO目标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO推导"><span class="nav-number">1.2.</span> <span class="nav-text">TRPO推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TRPO更新步长"><span class="nav-number">1.3.</span> <span class="nav-text">TRPO更新步长</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：约束问题的泰勒展开近似推导证明"><span class="nav-number">2.</span> <span class="nav-text">附录：约束问题的泰勒展开近似推导证明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#泰勒展开回顾"><span class="nav-number">2.1.</span> <span class="nav-text">泰勒展开回顾</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#目标的泰勒一阶近似推导"><span class="nav-number">2.2.</span> <span class="nav-text">目标的泰勒一阶近似推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#约束的泰勒二阶近似推导"><span class="nav-number">2.3.</span> <span class="nav-text">约束的泰勒二阶近似推导</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：最优化问题求解的详细推导证明"><span class="nav-number">3.</span> <span class="nav-text">附录：最优化问题求解的详细推导证明</span></a></li></ol></div>
             
 
           </div>
