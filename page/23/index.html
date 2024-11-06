@@ -275,178 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html" itemprop="url">PyTorch——关于Variable类和Tensor类的类型判断</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><h4 id="requires-grad-True"><a href="#requires-grad-True" class="headerlink" title="requires_grad=True"></a><code>requires_grad=True</code></h4><p><em>等价于<code>requires_grad=a</code>, <code>a</code>为任意非0整数,不能为浮点数</em><br><em>浮点数会报错: TypeError: integer argument expected, got float</em></p>
-<ul>
-<li><p>测试代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.], requires_grad=True)</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/home/jiahong/JupyterWorkspace/test.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    print(variable.numpy())</span><br><span class="line">RuntimeError: Can&apos;t call numpy() on Variable that requires grad. Use var.detach().numpy() instead.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li><code>Variable</code>和<code>Tensor</code>在判断类型时都是<code>torch.Tensor</code><ul>
-<li><code>type(tensor) == type(variable) == torch.Tensor</code> </li>
-</ul>
-</li>
-<li>几乎所有操作都相同<ul>
-<li><code>tensor.data == variable.data</code></li>
-<li><code>tensor.data.numpy() == varible.data.numpy()</code></li>
-</ul>
-</li>
-<li>直接输出变量结果不相同<ul>
-<li><code>tensor</code>输出时没有<code>requires_grad=True</code></li>
-<li><code>variable</code>输出时有<code>requires_grad=True</code></li>
-</ul>
-</li>
-<li><code>variable</code>不能直接调用函数<code>variable.numpy()</code>,会报异常<ul>
-<li>异常描述为: 当前<code>Variable</code>变量要求<code>requires grad</code>,也就是<code>requires_grad</code>属性为真时,变量不能直接使用</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="requires-grad-False"><a href="#requires-grad-False" class="headerlink" title="requires_grad=False"></a><code>requires_grad=False</code></h4><p><em>等价于<code>requires_grad=0</code></em><br><em>不等价于<code>requires_grad=None</code>, <code>None</code>会报错: TypeError: an integer is required</em></p>
-<ul>
-<li><p>测试代码:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=False)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type4: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>从上面的测试用例可以看出:</p>
-<ul>
-<li>当<code>variable</code>变量的<code>requires_grad=False</code>时,<code>variable</code>完全退化为<code>tensor</code><ul>
-<li>直接输出变量时没有<code>requires_grad=False</code>属性</li>
-<li>可以直接使用<code>variable.numpy()</code>函数</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Variable的三种等价定义"><a href="#Variable的三种等价定义" class="headerlink" title="Variable的三种等价定义"></a><code>Variable</code>的三种等价定义</h4><p><em>下面三种定义的<code>Variable</code>类型变量<code>varible</code>等价</em></p>
-<ul>
-<li><p><code>requires_grad=False</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=False)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>没有<code>requires_grad</code>参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>requires_grad=True</code>,然后<code>variable = variable.detach()</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">variable = variable.detach()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面三种定义都等价于原始的<code>tensor</code></p>
-<ul>
-<li>这里的等价并未经过详细测试,但是至少以下方面等价:<ul>
-<li>自身类型相同<code>type</code>, 类型为<code>torch.Tensor</code></li>
-<li>可以调用属性<code>.data</code>,类型为<code>torch.Tensor</code></li>
-<li>可以调用<code>.grad</code>,只不过都为<code>None</code></li>
-<li>直接输出对象完全相同,都不包含<code>requires_grad=True</code>属性</li>
-<li>可以调用相同的函数<code>.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-<li>可以调用相同的函数<code>.data.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -873,132 +701,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
-<hr>
-<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
-<li>图示如下</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
-
-<hr>
-<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
-
-<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
-<li>动图</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
-
-<hr>
-<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
-<ul>
-<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
-<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
-<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1188,6 +890,132 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
+<hr>
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
+
+<hr>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
+
+<hr>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
+<ul>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1259,174 +1087,6 @@
 
 <h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
 <img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
-<hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
-</ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
-<ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
-</ul>
-
           
         
       
@@ -2209,6 +1869,285 @@
 <li>层的参数?</li>
 </ul>
 </li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
+</ul>
+<hr>
+<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
+<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
+<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
+<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
+<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
+</ul>
+<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
+<li>在CNN中防止过拟合的效果明显</li>
+<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
+<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
+<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
+<li>下面介绍两个主流的观点</li>
+</ul>
+<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
+<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
+<li>过拟合是很多机器学习的通病</li>
+<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
+<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
+<li><strong>Dropout</strong>能同时解决以上问题:<ul>
+<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
+<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
+</ul>
+</li>
+</ul>
+<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
+<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
+</li>
+<li><p>首先分析一个小故事</p>
+</li>
+</ul>
+<blockquote>
+<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
+</blockquote>
+<ul>
+<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
+</li>
+<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
+</li>
+</ul>
+<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
+<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
+</ul>
+<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
+<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
+<li>dropout由固定值变为一个区间，可以提高效果</li>
+<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
+</ul>
+<hr>
+<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
+<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
+<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——特殊函数的反向传播.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——特殊函数的反向传播.html" itemprop="url">DL——特殊函数的反向传播</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
+</ul>
+<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
+<li>参考文献：Cross DQN</li>
 </ul>
 
           
