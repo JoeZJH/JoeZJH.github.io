@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——WCE-YouTube推荐论文.html" itemprop="url">RS——WCE-YouTube推荐论文</a></h1>
         
 
         <div class="post-meta">
@@ -330,107 +330,77 @@
       
         
           
-            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+            <p><em>本文主要介绍WCE</em></p>
 <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
+<p><em>原始论文：<a href="https://github.com/wzhe06/Reco-papers/blob/master/Industry%20Recommender%20System/[Youtube]%20Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%20(Youtube%202016).pdf" target="_blank" rel="noopener">[Youtube] Deep Neural Networks for YouTube Recommendations (Youtube 2016)</a></em></p>
 <hr>
-<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
-<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
-</ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>假设训练数据为:\(\{(x, y)\}\)<ul>
-<li>\(x\)特征维度为n(所有特征One-Hot编码后Concat的总维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度，累计计算x是所有One-Hot的维度和)<ul>
-<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
-<li><strong>在FM中，特征\(x\)的所有取值都为0或者1</strong>，因为都是One-Hot的结果做Concat得到的；在使用FM作为组件的模型（比如DeepFM等）中，输入FM的部分也只是稀疏特征的One-Hot编码</li>
-<li>如果有连续特征想要输入FM怎么办？可采用连续特征离散化的方法（比如等频分桶）</li>
+<h3 id="WCE"><a href="#WCE" class="headerlink" title="WCE"></a>WCE</h3><ul>
+<li>Weighted Cross Entropy，加权交叉熵，也叫做Weighted LR，Weighted Logistic Regression</li>
+<li>用于解决回归问题<ul>
+<li>主要是存在大量负样本（值为0）的回归问题</li>
+<li>比如视频浏览时长问题（点击率就比较低）</li>
 </ul>
 </li>
-<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+<li>训练时使用损失函数：<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + (1-y_i)log(1-p_i)<br>$$<ul>
+<li>其中 \(p_i = \frac{1}{1+e^{-\theta^{T}\boldsymbol{x}}}\)</li>
+<li>\(w_i\) = 回归值（如观看时长）</li>
+<li>\(y_i\) = 是否为正值（即是否点击，未点击表示观看时长为0，视为负样本）</li>
+<li>对任意样本，我们真实想要的预估目标是一个视频被点击且观看的概率\(pred = wp\)</li>
 </ul>
 </li>
-<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
-<li>未挖掘到特征之间的关联关系,<ul>
-<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
-<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
+<li>serving时使用下面的定义来表示回归值：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}}<br>$$<ul>
+<li>对于原始的CE损失函数，有\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)（补充：Odds表示样本为正的概率除以样本为负的概率，\(log(Odds) = \theta^{T}\boldsymbol{x}\)）就是logit</li>
+<li>当前损失函数下，正负样本的比例（或权重）发生了变化，实际上\(Odds = \frac{p}{1-p} = e^{\theta^{T}\boldsymbol{x}}\)表示的值不再是原始样本中正负样本的比例，而是带权重的比例，详情看后续的证明</li>
 </ul>
 </li>
+<li>可以证明上面的方法会造成预估值有偏</li>
+</ul>
+<h3 id="WCE改进"><a href="#WCE改进" class="headerlink" title="WCE改进"></a>WCE改进</h3><ul>
+<li>改进后的损失函数<br>$$<br>loss = \sum_i w_i y_ilog(p_i) + log(1-p_i)<br>$$</li>
+<li>改进前方案是有偏的，修改为上面的损失函数后，\(pred = Odds = e^{\theta^{T}\boldsymbol{x}}\)是无偏的</li>
+<li>证明：<ul>
+<li>假设在原始的CE损失函数下，正负样本的比例为A:B，此时有\(p = \frac{A}{A+B}\)【这里只是假设训练时遇到特征值完全相同的多个样本（有正有负），模型在遇到serving时遇到同一个特征值样本时，应该预估样本为正的概率为多少？】<ul>
+<li>原始CE下，样本为正的概率就是正样本数/总样本数</li>
 </ul>
 </li>
-<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
-<li>n是样本的特征数量</li>
-<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
-<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
-<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
+<li>那么在上述加权的损失函数下，相当于正负样本的比例为\(wA:B+A\)，此时有\(p’ = \frac{wA}{wA+B+A}\)<ul>
+<li>因为权重被修改了，可以证明<strong>样本不变，增加权重</strong>等价于<strong>权重不变，增加样本（重复采样）</strong></li>
+<li>\(wA:B+A\)的原因是因为正样本被加了\(w\)倍的权重，而负样本则被增加了A个（原始的CE函数中正样本不会累加\(log(1-p)\)作为损失，但改进后的WCE会</li>
 </ul>
 </li>
-<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
-<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
+<li>我们真实想要的预估值是：\(pred = wp = w * \frac{A}{A+B}\)<ul>
+<li>可以表述为样本为正的概率乘以样本为正时的值（用户点击视频的概率*用户点击视频后观看的概率）</li>
 </ul>
 </li>
-<li>解决问题的灵感<ul>
-<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+<li>经推导有：<br>$$<br>pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’}{1-p’} = \frac{\frac{wA}{wA+B+A}}{1-\frac{wA}{wA+B+A}} = w * \frac{A}{A+B} = wp<br>$$<ul>
+<li>注意，我们需要的是\(pred = wp\)而不是\(pred = wp’\)<ul>
+<li>因为\(p’\)是被我们修改权重后得到的模型输出(均值)</li>
 </ul>
 </li>
-<li>FM解决问题的方法:<ul>
-<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
-<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
-<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
-<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
-<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
-<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
-<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
-<li>问题: 以前不能用来学习吗?</li>
-<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
-<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
-$$
-\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
-$$
--->
-
-</li>
-</ul>
-<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
-<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
-<ul>
-<li>上式中：<ul>
-<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
-<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
-<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
-<li>整体模型的参数一共是\(1+n+nk\)个<ul>
-<li>偏执项一个\(w_{0}\)</li>
-<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
-<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
-<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
-<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
-<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
-</ul>
-</li>
-<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
-<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
-<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
-<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
-<li>显然可得结论</li>
+<li>真实serving时，模型的输出值\(p’\)是不用的，只使用\(pred = e^{\theta^{T}\boldsymbol{x}}\)就可以了</li>
+<li>其他：<ul>
+<li>对于原始CE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p}{1-p} = \frac{\frac{A}{A+B}}{1-\frac{A}{A+B}} = \frac{A}{B} = \frac{p}{1-p}<br>  $$</li>
+<li>对于YouTube的WCE，有：<br>  $$<br>  pred = e^{\theta^{T}\boldsymbol{x}} = \frac{p’’}{1-p’’} = \frac{\frac{wA}{wA+B}}{1-\frac{wA}{wA+B}} = w * \frac{A}{B} \approx w * \frac{A}{A+B} = wp<br>  $$<ul>
+<li><strong>约等于符号成立的前提是正样本占比特别少</strong>，此时\(\frac{A}{B} \approx \frac{A}{A+B}\)</li>
+<li>也就是说，在正样本占比特别少时，使用YouTube的WCE也是没问题的，但是为了保证无偏，建议使用改进后的WCE</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
-<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="扩展问题"><a href="#扩展问题" class="headerlink" title="扩展问题"></a>扩展问题</h3><ul>
+<li>在面对回归问题是，WCE相对MSE真的有提升吗？</li>
+</ul>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul>
+<li>WCE也可以用于分类问题中，目的是让模型更关注某些特殊样本</li>
+</ul>
+<h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
 </ul>
 
           

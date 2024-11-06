@@ -1196,6 +1196,225 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）</li>
+</ul>
+<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
+<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
+<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
+</ul>
+</li>
+<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
+<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\arg\max_a Q(s,a)\)来找到最优策略。</li>
+<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
+<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
+<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
+</ul>
+<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
+<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
+<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
+</ul>
+</li>
+<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= E_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
+<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
+</ul>
+<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
+<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
+<ul>
+<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
+</ul>
+</li>
+<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
+<ul>
+<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
+<ul>
+<li>上面的Loss求导就可以得到梯度是\(E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
+<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
+</ul>
+</li>
+</ul>
+<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
+<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a></li>
+</ul>
+<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
+<li>伪代码：<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
+<ul>
+<li>其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数</li>
+<li><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</li>
+<li><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</li>
+</ul>
+</li>
+</ul>
+<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
+<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods</a></li>
+<li>有两个改进包含在名字中，Twin和Delayed</li>
+<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
+</ul>
+<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
+<li>伪代码<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
+<ul>
+<li>\(t \text{mod} d\)表示策略更新比Q值更新慢一些，\(d\)次Q值更新对应一次策略更新</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
+<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
+</ul>
+<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
+<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
+<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
+</ul>
+<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
+<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
+</ul>
+<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
+<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
+<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——GAE.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1392,23 +1611,35 @@
 <li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage Function进行归一化，用于提升PG方法的性能</li>
 <li>具体方法：减去均值除以方差</li>
 <li>实现方案：<ul>
-<li>方案一：Batch Advantage Normalization（BAN），第当前Batch的所有Advantage求均值和方差</li>
+<li>方案一：Batch Advantage Normalization（BAN），对当前Batch的所有Advantage求均值和方差</li>
 <li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
 </ul>
 </li>
-<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差</li>
+<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差；<ul>
+<li>理解，方案一和方案二并未限定具体采样的轨迹是多少个，但是主要思路是尽量在更多的样本上统计均值和方差，减少波动，这样效果更好些</li>
+</ul>
+</li>
+<li>关于MBAN，<a href="https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/" target="_blank" rel="noopener">ppo-implementation-details</a>博客中有详细实现</li>
+<li>问题：GAE中还需要做Advantage Normalization吗？是否是在计算GAE之前做归一化？</li>
 </ul>
 <h5 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h5><ul>
 <li>对状态做归一化</li>
 <li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
-<li>采用滑动增量更新的方式：<ul>
+<li>采用滑动增量更新的方式（详细证明见附录）：<ul>
 <li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
-<li>方差：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)</li>
+<li>方差中间变量：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)<ul>
+<li>注意这个值除以n才是方差</li>
 </ul>
 </li>
 </ul>
+</li>
+<li>代码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class RunningMeanStd:</span><br><span class="line">    # Dynamically calculate mean and std</span><br><span class="line">    def __init__(self, shape):  # shape:the dimension of input data</span><br><span class="line">        self.n = 0</span><br><span class="line">        self.mean = np.zeros(shape)</span><br><span class="line">        self.S = np.zeros(shape)</span><br><span class="line">        self.std = np.sqrt(self.S)</span><br><span class="line"></span><br><span class="line">    def update(self, x):</span><br><span class="line">        x = np.array(x)</span><br><span class="line">        self.n += 1</span><br><span class="line">        if self.n == 1:</span><br><span class="line">            self.mean = x</span><br><span class="line">            self.std = x</span><br><span class="line">        else:</span><br><span class="line">            old_mean = self.mean.copy()</span><br><span class="line">            self.mean = old_mean + (x - old_mean) / self.n</span><br><span class="line">            self.S = self.S + (x - old_mean) * (x - self.mean)</span><br><span class="line">            self.std = np.sqrt(self.S / self.n )</span><br><span class="line"></span><br><span class="line">class Normalization:</span><br><span class="line">    def __init__(self, shape):</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x, update=True):</span><br><span class="line">        # Whether to update the mean and std,during the evaluating,update=Flase</span><br><span class="line">        if update:  </span><br><span class="line">            self.running_ms.update(x)</span><br><span class="line">        x = (x - self.running_ms.mean) / (self.running_ms.std + 1e-8)</span><br><span class="line"></span><br><span class="line">        return x</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
 <h5 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h5><ul>
-<li>与state normalization的操作类似，也是动态维护所有获得过的reward的mean和std，然后再对当前的reward做normalization。</li>
+<li>与State Normalization的方案，动态维护所有获得过的Reward的Mean和Std，然后再对当前的Reward做Normalization</li>
+<li>问题：是对单次Reward做了Normalization吗？如果Reward已经做了Normalization，GAE中实际上就已经使用了标准化后的Reward了，Advantage是否还需要做呢？</li>
 </ul>
 <h5 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h5><ul>
 <li>在《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》[3]这篇论文中，作者中提出了一种名叫reward scaling的方法，如图5所示。reward scaling与reward normalization的区别在于，reward scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std。</li>
@@ -1442,227 +1673,8 @@
 <li>均值更新推导详情：<br>$$<br>\begin{align}<br>\mu_n &amp;= \frac{1}{n}\sum_{i=1}^n x_i \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\cdot\frac{1}{n-1}\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\mu_{n-1} + x_n) \\<br>&amp;= \frac{1}{n}(n\mu_{n-1} + x_n - \mu_{n-1}) \\<br>&amp;= \mu_{n-1} + \frac{1}{n}(x_n - \mu_{n-1})<br>\end{align}<br>$$</li>
 </ul>
 <h4 id="方差更新推导"><a href="#方差更新推导" class="headerlink" title="方差更新推导"></a>方差更新推导</h4><ul>
-<li>方差公式化简：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n} (x_i^2 - 2x_i\mu_n + \mu_n^2) \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - 2\mu_n \sum_{i=1}^{n} x_i + \sum_{i=1}^{n} \mu_n^2 \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - 2\mu_n \cdot \mu_n + n \mu_n^2 \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - n\mu_n^2<br>\end{align}<br>$$</li>
-<li>所以有<br>$$<br>S_n - S_{n-1} = \sum_{i=1}^{n} x_i^2 - n\mu_n^2 - (\sum_{i=1}^{n-1} x_i^2 - (n-1)\mu_{n-1}^2) \\<br>&amp;= x_n^2 - n\mu_n^2 + (n-1)\mu_{n-1}^2 \\<br>&amp;= (x_n-\mu_{n-1})(x_n-\mu_n)<br>$$</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a><script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
-<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）</li>
-</ul>
-<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
-<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
-</ul>
-</li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
-<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
-<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
-<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
-</ul>
-</li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
-<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
-<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
-</ul>
-</li>
-<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
-<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\arg\max_a Q(s,a)\)来找到最优策略。</li>
-<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
-<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
-<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
-</ul>
-<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
-<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
-<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
-</ul>
-</li>
-<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= E_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
-<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
-</ul>
-<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
-<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
-<ul>
-<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
-</ul>
-</li>
-<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
-<ul>
-<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
-</ul>
-</li>
-<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
-<ul>
-<li>上面的Loss求导就可以得到梯度是\(E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
-<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
-</ul>
-</li>
-</ul>
-<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
-<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a></li>
-</ul>
-<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
-<li>伪代码：<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
-<ul>
-<li>其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数</li>
-<li><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</li>
-<li><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</li>
-</ul>
-</li>
-</ul>
-<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
-<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods</a></li>
-<li>有两个改进包含在名字中，Twin和Delayed</li>
-<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
-</ul>
-<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
-<li>伪代码<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
-<ul>
-<li>\(t \text{mod} d\)表示策略更新比Q值更新慢一些，\(d\)次Q值更新对应一次策略更新</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
-<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
-</ul>
-<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
-<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
-<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
-</ul>
-<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
-<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
-</ul>
-<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
-<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
-<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
+<li>将方差中间变量\(S_n\)展开（这里\(S_n\)除以n才是方差）有：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1} + \mu_{n-1} - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1})^2 + 2(\mu_{n-1} - \mu_{n})\sum_{i=1}^{n-1}(x_i - \mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})(\sum_{i=1}^{n-1} x_i - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})((n-1)\mu_{n-1} - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})\cdot 0 + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + ((n-1)\mu_{n-1} -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n\mu_{n} - x_n -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (\mu_{n} - x_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1}) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1} + x_n - \mu_n)\\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\\<br>\end{align}<br>$$</li>
+<li>最终有：\(S_n = S_{n+1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\)</li>
 </ul>
 
           

@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-06T15:48:02.317Z">
+<meta property="og:updated_time" content="2024-11-06T16:51:34.358Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——PPO">
 <meta name="twitter:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
@@ -348,23 +348,35 @@
 <li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage Function进行归一化，用于提升PG方法的性能</li>
 <li>具体方法：减去均值除以方差</li>
 <li>实现方案：<ul>
-<li>方案一：Batch Advantage Normalization（BAN），第当前Batch的所有Advantage求均值和方差</li>
+<li>方案一：Batch Advantage Normalization（BAN），对当前Batch的所有Advantage求均值和方差</li>
 <li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
 </ul>
 </li>
-<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差</li>
+<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差；<ul>
+<li>理解，方案一和方案二并未限定具体采样的轨迹是多少个，但是主要思路是尽量在更多的样本上统计均值和方差，减少波动，这样效果更好些</li>
+</ul>
+</li>
+<li>关于MBAN，<a href="https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/" target="_blank" rel="noopener">ppo-implementation-details</a>博客中有详细实现</li>
+<li>问题：GAE中还需要做Advantage Normalization吗？是否是在计算GAE之前做归一化？</li>
 </ul>
 <h5 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h5><ul>
 <li>对状态做归一化</li>
 <li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
-<li>采用滑动增量更新的方式：<ul>
+<li>采用滑动增量更新的方式（详细证明见附录）：<ul>
 <li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
-<li>方差：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)</li>
+<li>方差中间变量：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)<ul>
+<li>注意这个值除以n才是方差</li>
 </ul>
 </li>
 </ul>
+</li>
+<li>代码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class RunningMeanStd:</span><br><span class="line">    # Dynamically calculate mean and std</span><br><span class="line">    def __init__(self, shape):  # shape:the dimension of input data</span><br><span class="line">        self.n = 0</span><br><span class="line">        self.mean = np.zeros(shape)</span><br><span class="line">        self.S = np.zeros(shape)</span><br><span class="line">        self.std = np.sqrt(self.S)</span><br><span class="line"></span><br><span class="line">    def update(self, x):</span><br><span class="line">        x = np.array(x)</span><br><span class="line">        self.n += 1</span><br><span class="line">        if self.n == 1:</span><br><span class="line">            self.mean = x</span><br><span class="line">            self.std = x</span><br><span class="line">        else:</span><br><span class="line">            old_mean = self.mean.copy()</span><br><span class="line">            self.mean = old_mean + (x - old_mean) / self.n</span><br><span class="line">            self.S = self.S + (x - old_mean) * (x - self.mean)</span><br><span class="line">            self.std = np.sqrt(self.S / self.n )</span><br><span class="line"></span><br><span class="line">class Normalization:</span><br><span class="line">    def __init__(self, shape):</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x, update=True):</span><br><span class="line">        # Whether to update the mean and std,during the evaluating,update=Flase</span><br><span class="line">        if update:  </span><br><span class="line">            self.running_ms.update(x)</span><br><span class="line">        x = (x - self.running_ms.mean) / (self.running_ms.std + 1e-8)</span><br><span class="line"></span><br><span class="line">        return x</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
 <h5 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h5><ul>
-<li>与state normalization的操作类似，也是动态维护所有获得过的reward的mean和std，然后再对当前的reward做normalization。</li>
+<li>与State Normalization的方案，动态维护所有获得过的Reward的Mean和Std，然后再对当前的Reward做Normalization</li>
+<li>问题：是对单次Reward做了Normalization吗？如果Reward已经做了Normalization，GAE中实际上就已经使用了标准化后的Reward了，Advantage是否还需要做呢？</li>
 </ul>
 <h5 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h5><ul>
 <li>在《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》[3]这篇论文中，作者中提出了一种名叫reward scaling的方法，如图5所示。reward scaling与reward normalization的区别在于，reward scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std。</li>
@@ -398,8 +410,8 @@
 <li>均值更新推导详情：<br>$$<br>\begin{align}<br>\mu_n &amp;= \frac{1}{n}\sum_{i=1}^n x_i \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\cdot\frac{1}{n-1}\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\mu_{n-1} + x_n) \\<br>&amp;= \frac{1}{n}(n\mu_{n-1} + x_n - \mu_{n-1}) \\<br>&amp;= \mu_{n-1} + \frac{1}{n}(x_n - \mu_{n-1})<br>\end{align}<br>$$</li>
 </ul>
 <h4 id="方差更新推导"><a href="#方差更新推导" class="headerlink" title="方差更新推导"></a>方差更新推导</h4><ul>
-<li>方差公式化简：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n} (x_i^2 - 2x_i\mu_n + \mu_n^2) \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - 2\mu_n \sum_{i=1}^{n} x_i + \sum_{i=1}^{n} \mu_n^2 \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - 2\mu_n \cdot \mu_n + n \mu_n^2 \\<br>&amp;= \sum_{i=1}^{n} x_i^2 - n\mu_n^2<br>\end{align}<br>$$</li>
-<li>所以有<br>$$<br>S_n - S_{n-1} = \sum_{i=1}^{n} x_i^2 - n\mu_n^2 - (\sum_{i=1}^{n-1} x_i^2 - (n-1)\mu_{n-1}^2) \\<br>&amp;= x_n^2 - n\mu_n^2 + (n-1)\mu_{n-1}^2 \\<br>&amp;= (x_n-\mu_{n-1})(x_n-\mu_n)<br>$$</li>
+<li>将方差中间变量\(S_n\)展开（这里\(S_n\)除以n才是方差）有：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1} + \mu_{n-1} - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1})^2 + 2(\mu_{n-1} - \mu_{n})\sum_{i=1}^{n-1}(x_i - \mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})(\sum_{i=1}^{n-1} x_i - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})((n-1)\mu_{n-1} - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})\cdot 0 + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + ((n-1)\mu_{n-1} -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n\mu_{n} - x_n -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (\mu_{n} - x_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1}) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1} + x_n - \mu_n)\\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\\<br>\end{align}<br>$$</li>
+<li>最终有：\(S_n = S_{n+1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\)</li>
 </ul>
 
       
@@ -431,8 +443,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="next" title="RL——DDPG和TD3">
-                <i class="fa fa-chevron-left"></i> RL——DDPG和TD3
+              <a href="/Notes/RL/RL——SAC.html" rel="next" title="RL——SAC">
+                <i class="fa fa-chevron-left"></i> RL——SAC
               </a>
             
           </div>
