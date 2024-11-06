@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-06T16:51:34.358Z">
+<meta property="og:updated_time" content="2024-11-06T17:11:08.492Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——PPO">
 <meta name="twitter:description" content="PPOPPO的目标$$\begin{aligned}\max_{\theta_\text{new}} \quad &amp;amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{ol">
@@ -377,24 +377,39 @@
 <h5 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h5><ul>
 <li>与State Normalization的方案，动态维护所有获得过的Reward的Mean和Std，然后再对当前的Reward做Normalization</li>
 <li>问题：是对单次Reward做了Normalization吗？如果Reward已经做了Normalization，GAE中实际上就已经使用了标准化后的Reward了，Advantage是否还需要做呢？</li>
+<li>常常被替换为Reward Scaling</li>
 </ul>
 <h5 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h5><ul>
-<li>在《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》[3]这篇论文中，作者中提出了一种名叫reward scaling的方法，如图5所示。reward scaling与reward normalization的区别在于，reward scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std。</li>
+<li>相关论文：《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》</li>
+<li>Reward Scaling与Reward Normalization的区别在于，Reward Scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std（不减去均值？）</li>
+<li>Reward Normalization和Reward Scaling二选一即可，建议使用Reward Scaling而不是Reward Normalization即可</li>
+<li>代码实现<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">class RewardScaling:</span><br><span class="line">    def __init__(self, shape, gamma):</span><br><span class="line">        self.shape = shape  # reward shape=1</span><br><span class="line">        self.gamma = gamma  # discount factor</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=self.shape)</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x):</span><br><span class="line">        self.R = self.gamma * self.R + x</span><br><span class="line">        self.running_ms.update(self.R)</span><br><span class="line">        x = x / (self.running_ms.std + 1e-8)  # Only divided std</span><br><span class="line">        return x</span><br><span class="line"></span><br><span class="line">    def reset(self):  # When an episode is done,we should reset &apos;self.R&apos;</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br></pre></td></tr></table></figure>
+
+</li>
 </ul>
 <h5 id="Policy-Entropy"><a href="#Policy-Entropy" class="headerlink" title="Policy Entropy"></a>Policy Entropy</h5><ul>
 <li>在actor的loss中增加一项策略熵，在最大化收益的同时，最大化策略熵，增加探索性（理解：同时有正则的作用）</li>
 </ul>
 <h5 id="Learning-Rate-Decay"><a href="#Learning-Rate-Decay" class="headerlink" title="Learning Rate Decay"></a>Learning Rate Decay</h5><ul>
 <li>学习率逐步衰减</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">def lr_decay(self, total_steps):</span><br><span class="line">    lr_a_now = self.lr_a * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    lr_c_now = self.lr_c * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    for p in self.optimizer_actor.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_a_now</span><br><span class="line">    for p in self.optimizer_critic.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_c_now</span><br></pre></td></tr></table></figure>
+
+</li>
 </ul>
 <h5 id="Gradient-Clip"><a href="#Gradient-Clip" class="headerlink" title="Gradient Clip"></a>Gradient Clip</h5><ul>
 <li>梯度裁剪</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># Update actor</span><br><span class="line">self.optimizer_actor.zero_grad()</span><br><span class="line">actor_loss.mean().backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5) </span><br><span class="line">self.optimizer_actor.step()</span><br><span class="line"></span><br><span class="line"># Update critic</span><br><span class="line">self.optimizer_critic.zero_grad()</span><br><span class="line">critic_loss.backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5) </span><br><span class="line">self.optimizer_critic.step()</span><br></pre></td></tr></table></figure>
+
+</li>
 </ul>
 <h5 id="Orthogonal-Initialization"><a href="#Orthogonal-Initialization" class="headerlink" title="Orthogonal Initialization"></a>Orthogonal Initialization</h5><ul>
 <li>正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：<ul>
 <li>用均值为0，标准差为1的高斯分布初始化权重矩阵</li>
 <li>对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。</li>
 </ul>
+</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"># orthogonal init</span><br><span class="line">def orthogonal_init(layer, gain=1.0):</span><br><span class="line">    nn.init.orthogonal_(layer.weight, gain=gain)</span><br><span class="line">    nn.init.constant_(layer.bias, 0)</span><br><span class="line"></span><br><span class="line">class Actor_Gaussian(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Actor_Gaussian, self).__init__()</span><br><span class="line">        self.max_action = args.max_action</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.mean_layer = nn.Linear(args.hidden_width, args.action_dim)</span><br><span class="line">        self.log_std = nn.Parameter(torch.zeros(1, args.action_dim))  # We use &apos;nn.Paremeter&apos; to train log_std automatically</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.mean_layer, gain=0.01)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        mean = self.max_action * torch.tanh(self.mean_layer(s))  # [-1,1]-&gt;[-max_action,max_action]</span><br><span class="line">        return mean</span><br><span class="line"></span><br><span class="line">    def get_dist(self, s):</span><br><span class="line">        mean = self.forward(s)</span><br><span class="line">        log_std = self.log_std.expand_as(mean)  # To make &apos;log_std&apos; have the same dimension as &apos;mean&apos;</span><br><span class="line">        std = torch.exp(log_std)  # The reason we train the &apos;log_std&apos; is to ensure std=exp(log_std)&gt;0</span><br><span class="line">        dist = Normal(mean, std)  # Get the Gaussian distribution</span><br><span class="line">        return dist</span><br><span class="line"></span><br><span class="line">class Critic(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Critic, self).__init__()</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.fc3 = nn.Linear(args.hidden_width, 1)</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.fc3)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        v_s = self.fc3(s)</span><br><span class="line">        return v_s</span><br></pre></td></tr></table></figure>
+
 </li>
 </ul>
 <h5 id="Adam-Optimizer-Epsilon-Parameter"><a href="#Adam-Optimizer-Epsilon-Parameter" class="headerlink" title="Adam Optimizer Epsilon Parameter"></a>Adam Optimizer Epsilon Parameter</h5><ul>
@@ -404,6 +419,7 @@
 <h5 id="Tanh-Activation-Function"><a href="#Tanh-Activation-Function" class="headerlink" title="Tanh Activation Function"></a>Tanh Activation Function</h5><ul>
 <li>将ReLU换成tanh激活函数</li>
 <li>建议PPO算法默认使用激活函数</li>
+<li>原因？</li>
 </ul>
 <hr>
 <h3 id="附录-均值方差滑动更新公式证明"><a href="#附录-均值方差滑动更新公式证明" class="headerlink" title="附录-均值方差滑动更新公式证明"></a>附录-均值方差滑动更新公式证明</h3><h4 id="均值更新推导"><a href="#均值更新推导" class="headerlink" title="均值更新推导"></a>均值更新推导</h4><ul>
@@ -443,8 +459,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="next" title="RL——TRPO">
-                <i class="fa fa-chevron-left"></i> RL——TRPO
+              <a href="/Notes/RL/RL——GAE.html" rel="next" title="RL——GAE">
+                <i class="fa fa-chevron-left"></i> RL——GAE
               </a>
             
           </div>
@@ -453,8 +469,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="prev" title="RL——TD误差和优势函数的区别">
-                RL——TD误差和优势函数的区别 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="prev" title="RL——DDPG和TD3">
+                RL——DDPG和TD3 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
