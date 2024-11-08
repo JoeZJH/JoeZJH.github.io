@@ -334,15 +334,15 @@
 
 <ul>
 <li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a>  </li>
 </ul>
 </li>
 </ul>
 <hr>
 <h3 id="SAC"><a href="#SAC" class="headerlink" title="SAC"></a>SAC</h3><ul>
 <li>原始论文：<ul>
-<li>论文1（2V+2Q+1策略, 2018，UC Berkeley）：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a></li>
-<li>论文2（4Q+1策略，自适应温度系数，2019，UC Berkeley）：<a href="https://arxiv.org/pdf/1812.05905" target="_blank" rel="noopener">Soft Actor-Critic Algorithms and Applications</a></li>
+<li>论文1（2V+2Q+1策略, 2018，UC Berkeley）：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>  </li>
+<li>论文2（4Q+1策略，自适应温度系数，2019，UC Berkeley）：<a href="https://arxiv.org/pdf/1812.05905" target="_blank" rel="noopener">Soft Actor-Critic Algorithms and Applications</a>  </li>
 </ul>
 </li>
 </ul>
@@ -366,9 +366,43 @@
 <li>两个Q网络分别迭代，有各自的Target Q网络</li>
 </ul>
 </li>
-<li>训练流程<img src="/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png"></li>
-</ul>
+<li>训练流程<img src="/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png">
 
+</li>
+</ul>
+<h4 id="SAC连续动作与离散动作的实现有什么区别"><a href="#SAC连续动作与离散动作的实现有什么区别" class="headerlink" title="SAC连续动作与离散动作的实现有什么区别"></a>SAC连续动作与离散动作的实现有什么区别</h4><h5 id="建模方式"><a href="#建模方式" class="headerlink" title="建模方式"></a>建模方式</h5><ul>
+<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\theta,\sigma_\theta\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算</p>
+</li>
+<li><p><strong>采样方式</strong>：采样时需要创建分布来采样，由于需要梯度回传，所以需要使用重参数法</p>
+</li>
+<li><p><strong>log_prob的计算</strong>：借助概率密度函数定义完成log值的抽取</p>
+<ul>
+<li><p>连续策略对应的动作采样和对数概率计算：1）重参数法；2）tanh转换；3）对数概率计算</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">def forward(self, x):</span><br><span class="line">    x = F.relu(self.fc1(x))</span><br><span class="line">    mu = self.fc_mu(x)</span><br><span class="line">    std = F.softplus(self.fc_std(x))</span><br><span class="line">    dist = Normal(mu, std)</span><br><span class="line">    normal_sample = dist.rsample()  # rsample()是重参数化采样</span><br><span class="line">    log_prob = dist.log_prob(normal_sample)</span><br><span class="line">    action = torch.tanh(normal_sample)</span><br><span class="line">    # 计算tanh_normal分布的对数概率密度</span><br><span class="line">    log_prob = log_prob - torch.log(1 - torch.tanh(action).pow(2) + 1e-7)</span><br><span class="line">    action = action * self.action_bound</span><br><span class="line">    return action, log_prob</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>这里关于<code>log_prob = log_prob - torch.log(1 - torch.tanh(action).pow(2) + 1e-7)</code>是一个推导得到的，若\(y = tanh(x)\)，那么有\(\log p(y) = \log p(x) - \log(1-(tanh(x))^2)\)</p>
+</li>
+<li><p>使用\(action = torch.tanh(normal_sample)\)的原因是想将原来的值放缩到[-1,1]之间</p>
+</li>
+</ul>
+</li>
+<li><p><strong>Critic网络</strong>：连续动作下，需要将动作放到输入侧，输出维度为1；离散动作下，可以像连续时一样处理，也可以不输入动作，同时输出维度为动作维度</p>
+</li>
+</ul>
+<h5 id="计算损失函数"><a href="#计算损失函数" class="headerlink" title="计算损失函数"></a>计算损失函数</h5><ul>
+<li><p><strong>熵+目标的计算(最大化Q值)的计算</strong>：</p>
+<ul>
+<li><p>连续场景下（最大化动作下的Q值，梯度直接包含在重参数法采样的动作中；熵则仅使用对数概率，因为连续分布下，难以积分，虽然状态不同，但多个动作自然一起优化，自然就有期望熵的含义了）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">new_actions, log_prob = self.actor(states) # 重参数法</span><br><span class="line">entropy = -log_prob</span><br><span class="line">q1_value = self.critic_1(states, new_actions)</span><br><span class="line">q2_value = self.critic_2(states, new_actions)</span><br><span class="line">actor_loss = torch.mean(-self.log_alpha.exp() * entropy - torch.min(q1_value, q2_value))</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>离散场景下（用策略输出的分布计算Q值期望；熵也是完整的期望版本）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">probs = self.actor(states)</span><br><span class="line">log_probs = torch.log(probs + 1e-8)</span><br><span class="line"># 直接根据概率计算熵</span><br><span class="line">entropy = -torch.sum(probs * log_probs, dim=1, keepdim=True)  #</span><br><span class="line">q1_value = self.critic_1(states)</span><br><span class="line">q2_value = self.critic_2(states)</span><br><span class="line">min_qvalue = torch.sum(probs * torch.min(q1_value, q2_value), dim=1, keepdim=True)  # 直接根据概率计算期望</span><br><span class="line">actor_loss = torch.mean(-self.log_alpha.exp() * entropy - min_qvalue)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="DSAC-Distributional-SAC"><a href="#DSAC-Distributional-SAC" class="headerlink" title="DSAC(Distributional SAC)"></a>DSAC(Distributional SAC)</h3>
           
         
       

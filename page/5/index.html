@@ -1171,8 +1171,8 @@
 <hr>
 <h3 id="为什么Online-RL中不能使用BN？"><a href="#为什么Online-RL中不能使用BN？" class="headerlink" title="为什么Online RL中不能使用BN？"></a>为什么Online RL中不能使用BN？</h3><ul>
 <li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a></li>
-<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a>  </li>
+<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a>  </li>
 </ul>
 </li>
 <li>BN能work的主要原因是，每个Batch的数据是从整体数据中随机采样得到的，每个Batch的均值和方差不会差别太大</li>
@@ -1212,7 +1212,7 @@
 </ul>
 <hr>
 <h3 id="为什么SARSA和DQN都可以收敛到最优解？"><a href="#为什么SARSA和DQN都可以收敛到最优解？" class="headerlink" title="为什么SARSA和DQN都可以收敛到最优解？"></a>为什么SARSA和DQN都可以收敛到最优解？</h3><ul>
-<li>两者的Q值目标都可以表述为：\(r(s,a)+\gamma Q(s’,a’) - Q(s, a)\)，但两者的\(a’\)值对应的策略不同</li>
+<li>两者的Q值目标都可以表述为：\(r(s,a)+\gamma Q(s’,a’) - Q(s, a)\)，两者的\(Q(s’,a’)\)都是上一轮的\(Q\)值（一般也会使用Q的目标网络\(Q_{\bar{\theta}}(s’,a’)\)，但含义就是上一轮的Q的含义），但两者的\(a’\)值对应的策略不同</li>
 <li>SARSA：  <ul>
 <li><strong>更新目标</strong>：\(a’\)是按照当前Q值对应的\(\epsilon\)-Greedy策略采样的（该动作大多以大概率取\(a’\sim \arg\max_{a’} Q(s’,a’)\)，并以一定的小概率随机采样）</li>
 <li><strong>样本状态动作分布</strong>：当前策略采样到的状态分布\(s,a,s’\)</li>
@@ -1224,6 +1224,87 @@
 <li><strong>样本状态动作分布</strong>：历史行为策略采样到的状态分布\(s,a,s’\)</li>
 </ul>
 </li>
+<li>注意：\(Q(s’,a’)\)需要是上一轮的Q，才能收敛，不动点定理证明时，\(Q(s’,a’)\)是上一轮的Q的情况下，可得到最终\(Q(s’,a’)\)的Q和\(Q(s,a)\)的Q收敛到同一个Q</li>
+</ul>
+<hr>
+<h3 id="V值更新如何保证学习到指定策略？"><a href="#V值更新如何保证学习到指定策略？" class="headerlink" title="V值更新如何保证学习到指定策略？"></a>V值更新如何保证学习到指定策略？</h3><ul>
+<li>V值更新的目标都可以归纳为：\(r+\gamma V(s’) - V(s)\)，其中\(V(s’)\)是上一轮的V网络，一般使用目标网络\(V_{\bar{\theta}}(s’)\)</li>
+<li>\(r\)来源于什么策略\(r(s,a)\vert_{a\sim \pi(\cdot|s)}\)，V值学习的就是什么策略</li>
+</ul>
+<hr>
+<h3 id="离散连续、随机确定性动作场景？"><a href="#离散连续、随机确定性动作场景？" class="headerlink" title="离散连续、随机确定性动作场景？"></a>离散连续、随机确定性动作场景？</h3><h4 id="离散动作、连续动作的使用场景辨析"><a href="#离散动作、连续动作的使用场景辨析" class="headerlink" title="离散动作、连续动作的使用场景辨析"></a>离散动作、连续动作的使用场景辨析</h4><ul>
+<li>一般来说，Q-Learning相关方法（DQN等为代表）仅支持离散动作，策略梯度相关大部分方法（SAC、PPO为代表）支持连续动作和离散动作，有部分（DDPG等为代表）仅支持连续动作</li>
+<li>DDPG本质是不支持离散动作的，但是如果基于DDPG学到的Q网络做离散化动作搜索，也可以作为一种策略（次优策略）</li>
+<li>PPO和SAC中均需要使用某个动作下对应的概率，连续动作下实际上概率值是0</li>
+</ul>
+<h4 id="随机策略、确定性策略的使用场景辨析【TOOD】"><a href="#随机策略、确定性策略的使用场景辨析【TOOD】" class="headerlink" title="随机策略、确定性策略的使用场景辨析【TOOD】"></a>随机策略、确定性策略的使用场景辨析【TOOD】</h4><ul>
+<li><p>确定性动作：策略效果更稳定、在状态观测不全面时可能陷入死循环、可解释性和安全性也更高些、更利于探索（确定性策略在训练时往往也需要加入随机探索）</p>
+<ul>
+<li>状态观测不全面导致陷入死循环的示例：<ul>
+<li>状态：<ul>
+<li>o o o o o</li>
+<li>x x ✓ x x</li>
+</ul>
+</li>
+<li>学习结果：<ul>
+<li>￫ o ￬ o ￩</li>
+<li>x x ✓ x x</li>
+</ul>
+</li>
+<li>以上状态中，假设每个点只能观察到上下左右随机相邻点和自己的情况，那么第一行的第二和第四个点状态相同，此时按照确定性策略决策一定陷入局部最优</li>
+<li>这个例子可以用来帮助解释LLM中使用确定性策略（取概率最大的动作）容易陷入循环，产生大量重复的token，LLM中原始token被压缩后不算是状态观测完全的了，此时按照决策确定性容易陷入循环（此时会在相似的压缩空间下输出完全相同的token），加入随机反而使得生成的文本更正常</li>
+<li>其他理解：Diffusion中生成是需要采样是不是也是类似LLM的原理？</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>随机性动作：策略效果会有波动、能防止某些特定场景（状态观测不全面时）陷入死循环的问题、可解释性和安全性会偏低</p>
+</li>
+<li><p>二者的转换：</p>
+<ul>
+<li>随机策略转确定性策略：1）不直接采用Actor，通过搜索期望奖励最大的动作（连续动作可按照一定的间隔来搜索）；2）直接使用Actor，找概率最大的动作（连续动作也有概率最大的动作，高斯分布对应取均值）</li>
+<li>确定性策略转随机策略：\(\epsilon\)-Greedy（离散动作）或者加一个方差扰动（连续动作）即可</li>
+<li>所有转换方法均会不同程度的影响最优策略，不再是最优决策</li>
+</ul>
+</li>
+<li><p>思考：</p>
+<ul>
+<li>理论上，随机策略的搜索空间大于等于确定性策略，因为随机策略可以学出来以概率1执行某个动作</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="off-policy-AC目标和on-policy-AC目标等价吗？"><a href="#off-policy-AC目标和on-policy-AC目标等价吗？" class="headerlink" title="off-policy AC目标和on-policy AC目标等价吗？"></a>off-policy AC目标和on-policy AC目标等价吗？</h3><ul>
+<li>off-policy AC方法的目标都是类似形式：\(\max_\pi \quad E_{s\sim \rho^{\beta}(s)}[V^{\pi}(s)]\)<ul>
+<li>基本含义就是，找一个最优的策略\(\pi\)，使得\(V^{\pi}(s)\)在<strong>行为策略</strong>的状态访问分布下期望最大</li>
+</ul>
+</li>
+<li>实际上，on-policy AC方法的目标是类似形式：\(\max_\pi \quad E_{s\sim \rho^{\pi}(s)}[V^{\pi}(s)]\)<ul>
+<li>基本含义就是，找一个最优的策略\(\pi\)，使得\(V^{\pi}(s)\)在<strong>策略\(\pi\)</strong>的状态访问分布下期望最大</li>
+</ul>
+</li>
+<li>答案是不一定等价：<ul>
+<li>如果能找到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi^*}(s)\)成立，那么，我们找到策略\(pi^*\)就同时是off-policy和on-policy的最优解<ul>
+<li>这种情况下，如果能找到\(pi^*\)，则两者等价（注意：即使存在\(pi^*\)，模型也不一定能学到）</li>
+</ul>
+</li>
+<li>如果找不到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi^*}(s)\)成立，那么，策略的选择就会根据状态访问分布有所取舍，更倾向于状态分布概率高的那部分状态，off-policy AC方法的目标与on-policy AC目标一定不等价，在状态分布不同的情况下，找不到一个共同的最优解\(\pi^*\)<ul>
+<li>此时，两者不等价，行为策略中出现越多的状态，越收到重视</li>
+</ul>
+</li>
+<li>现实生活中，SAC和DDPG为什么可以正常运行且拿到不错的收益呢？<ul>
+<li>off-policy方法本身样本利用率更高些</li>
+<li>SAC和DDPG都是在off-policy中使用，如果即时丢弃过早的数据，那行为策略分布和最优策略差异不会太大，且online的训练确保了模型见过几乎所有状态</li>
+<li>有些场景中，可能会存在最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi^*}(s)\)成立，或近似成立（当然，神经网络训练时共享参数的情况下，很难找到这种策略）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>这个问题和DQN的问题还不等价，DQN主要问题是训练模型时存在off-policy导致的线上线下分布不一致的问题，off-policy AC从目标上就存在线上线下不一致的问题，同时训练模型时也有线上线下不一致的问题（都是线上线下不一致，但是目标上的不一致是从根本上定义导致的偏差，理论上更严重些）</li>
+</ul>
+<hr>
+<h3 id="TRPO可以用确定性策略建模吗？"><a href="#TRPO可以用确定性策略建模吗？" class="headerlink" title="TRPO可以用确定性策略建模吗？"></a>TRPO可以用确定性策略建模吗？</h3><ul>
+<li>不可以，理由是无法进行重要性采样了，无法推导出TRPO的更新公式，从这个视角看，PPO和TRPO都不可以</li>
 </ul>
 
           
