@@ -1045,6 +1045,296 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍AUC和GAUC</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
+</ul>
+<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
+<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
+</li>
+<li><p>推导思路：</p>
+<ul>
+<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
+<li>对所有正样本的概率求均值</li>
+</ul>
+</li>
+<li><p>SQL实现</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>SQL实现（分场景+pcoc实现）</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
+<hr>
+<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
+<li>学得的模型能适用于训练过程中从未观察到的数据</li>
+<li>也就是说:测试集未知</li>
+</ul>
+<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
+<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
+<li>也就是说:测试集就是训练时观察到的未标记数据</li>
+</ul>
+<hr>
+<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
+<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
+<li>都是迭代扩充标记数据集的算法:<ul>
+<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
+<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
+<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
+</ul>
+<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
+<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
+<li>半监督学习和主动学习的测试集都是未知数据</li>
+<li>半监督学习是基于”开放世界”假设的</li>
+<li>直推学习是基于”封闭世界”假设的</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
+
+<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
+<thead>
+<tr>
+<th align="left">学习算法</th>
+<th align="center">是否需要专家知识(人工)</th>
+<th align="center">是否具有泛化性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">半监督学习</td>
+<td align="center">否</td>
+<td align="center">是(“开放世界”假设)</td>
+</tr>
+<tr>
+<td align="left">主动学习</td>
+<td align="center">是</td>
+<td align="center">是(“开放世界”假设)</td>
+</tr>
+<tr>
+<td align="left">直推学习</td>
+<td align="center">否</td>
+<td align="center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
+</tr>
+</tbody></table>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1437,296 +1727,6 @@
 </ul>
 </li>
 <li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
-<hr>
-<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
-<li>学得的模型能适用于训练过程中从未观察到的数据</li>
-<li>也就是说:测试集未知</li>
-</ul>
-<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
-<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
-<li>也就是说:测试集就是训练时观察到的未标记数据</li>
-</ul>
-<hr>
-<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
-<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
-<li>都是迭代扩充标记数据集的算法:<ul>
-<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
-<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
-<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
-</ul>
-<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
-<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
-<li>半监督学习和主动学习的测试集都是未知数据</li>
-<li>半监督学习是基于”开放世界”假设的</li>
-<li>直推学习是基于”封闭世界”假设的</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
-
-<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
-<thead>
-<tr>
-<th align="left">学习算法</th>
-<th align="center">是否需要专家知识(人工)</th>
-<th align="center">是否具有泛化性</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">半监督学习</td>
-<td align="center">否</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">主动学习</td>
-<td align="center">是</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">直推学习</td>
-<td align="center">否</td>
-<td align="center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
-</tr>
-</tbody></table>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍AUC和GAUC</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
-</ul>
-<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
-
-<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
-<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
-</li>
-<li><p>推导思路：</p>
-<ul>
-<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
-<li>对所有正样本的概率求均值</li>
-</ul>
-</li>
-<li><p>SQL实现</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>SQL实现（分场景+pcoc实现）</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
-
 </li>
 </ul>
 

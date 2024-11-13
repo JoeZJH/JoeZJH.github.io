@@ -452,7 +452,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -471,7 +471,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
         
 
         <div class="post-meta">
@@ -507,143 +507,382 @@
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
+<hr>
+<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
 <ul>
-<li>参考博客:<ul>
-<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
+<li>m个基础模型</li>
+<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
+
+</li>
+</ul>
+<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
+<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
+<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
+</ul>
+<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
+<ul>
+<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
+<li>训练过程为阶梯状</li>
+<li>基础模型按照次序依次训练(实现时可做到并行)</li>
+<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
+
+</li>
+</ul>
+<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
+<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
+</ul>
+<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
+<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
+<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
+</ul>
+<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
+<ul>
+<li>训练所有基础模型</li>
+<li>获取所有基础模型的预测结果</li>
+<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
+<li>基于新的训练集进行训练,得到预测模型M()</li>
+<li>测试时也要将特征转换后再用M进行预测</li>
+<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
+<li>理论上可以堆叠各种各样的分类器
+
+</li>
+</ul>
+<hr>
+<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
+<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
+<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
+<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+<hr>
+<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
+<li>各种简称,都是同一种算法:<ul>
+<li>GBDT(Gradient Boosting Decision Tree)</li>
+<li>MART(Multiple Additive Regression Tree)</li>
+<li>GBT(Gradient Boosting Tree)</li>
+<li>GTB(Gradient Tree Boosting)</li>
+<li>GBRT(Gradient Boosting Regression Tree)</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
-<p>[待更新]</p>
-<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
+<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
+<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
+<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
+<li>残差 = 真实值 - 预测值</li>
+</ul>
+<h4 id="如何理解GBDT中的梯度G？"><a href="#如何理解GBDT中的梯度G？" class="headerlink" title="如何理解GBDT中的梯度G？"></a>如何理解GBDT中的梯度G？</h4><ul>
+<li>G表示Gradient，表示梯度，在GBDT中梯度是指损失函数关于每一个迭代中模型的梯度</li>
+</ul>
+<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
+<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
 <ul>
-<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
-<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
-<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
-<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c \in C\)对特定项目\(s_{c}’ \in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
-<li>基于启发式的方法(Heuristic-based method): <ul>
-<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
-<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
+<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
 </ul>
 </li>
-<li>基于机器学习的方法(Machine learning-based mehod):<ul>
-<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
-<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \arg\max_{s \in S} u(c,s)$$</li>
-</ul>
-<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
-<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
-<li>直接对User-Item矩阵进行研究<ul>
-<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
-<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
-</ul>
-</li>
-</ul>
-<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
-<li>Traditional SVD<ul>
-<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
-<li>缺点:<ul>
-<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
-<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
-<li>计算复杂度高,空间消耗大</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>FunkSVD<ul>
-<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
-<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
-<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
-<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
-</ul>
-</li>
-<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
-<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
-<li>正则项是两个参数的L2正则</li>
-<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>BiasSVD<ul>
-<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
-<li>带有偏执项的SVD分解</li>
-<li>基于假设: <ul>
-<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
-<li>这些用户的固有属性与商品无关</li>
-</ul>
-</li>
-<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
-<li>这些商品的固有属性与用户无关</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}_{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum_{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
-<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
-<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
-<li>\(b_{u}\)[待更新]</li>
-<li>\(b_{i}\)[待更新]</li>
-<li>\(u\)[待更新]</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
 <ul>
-<li>SVD++<ul>
-<li>SVD++是对BiasSVD进行改进的</li>
-<li>基于假设:<ul>
-<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
+<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
+<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
 </ul>
 </li>
-<li>优化问题定义[待更新]</li>
+<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
+<ul>
+<li>因为我们的目标是拟合上一若学习器的残差</li>
+<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
 </ul>
 </li>
-<li>TimeSVD++<ul>
-<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
-<li>优化问题定义[待更新]</li>
+</ul>
+<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
+<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
+<li>此时类别可编码为一个一维向量,取值0或1</li>
+</ul>
+<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
+<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
+<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
+<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
+<li>然后每个模型每轮分别学习当前特征的残差</li>
+<li>每个模型都会用到所有的样本<ul>
+<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
+<li>编码为(x, [0,1,0])</li>
+<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
+<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
 </ul>
 </li>
-<li>BiasSVDwithU</li>
-<li>NMF</li>
-<li>非负矩阵分解Nonnegative Matrix Factorization*</li>
-<li>PMF</li>
-<li>概率矩阵分解Probabilistic Matrix Factorization*</li>
-<li>WRMF</li>
-<li>weighted regularized matrix factorization*</li>
+<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
+<li>最后预测时<ul>
+<li>给定一个未标记样本</li>
+<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
+<li>最后选择分数最高的一个类为最终分类即可</li>
 </ul>
-<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
-<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
-<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
-<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94Ensemble-%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0.html">ML——Ensemble-集成学习</a></li>
+</li>
 </ul>
-<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
-<ul>
-<li>核心目的: 填充User-Item矩阵中的缺失值</li>
-<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
+<hr>
+<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
+<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
+<li>和LR对比: 线性模型</li>
+<li>和GBDT对比: </li>
 </ul>
-<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
-<ul>
-<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
-<li>模型衡量指标: Precision@K, Recall@K等</li>
+</li>
 </ul>
-<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
-<ul>
-<li>核心目的: 将候选商品分类,然后用于推荐</li>
-<li>模型衡量指标: Accuracy</li>
+<hr>
+<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
+<li>通过不同层级和类型的网络可以对时空信息建模</li>
+<li>适合图像, 声音, 文字等带有时序特质的数据</li>
+</ul>
+<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
+<li>基于树模型的GBDT则能很好地处理表格数据</li>
+<li>模型的可解释性</li>
+<li>输入数据的不变性(几乎不用格式化数据)</li>
+<li>更易于调参等特质更适合数值型数据</li>
 </ul>
 
           
@@ -1281,344 +1520,6 @@
 <hr>
 <h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
 <li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
-<hr>
-<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
-<ul>
-<li>m个基础模型</li>
-<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
-
-</li>
-</ul>
-<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
-<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
-<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
-</ul>
-<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
-<ul>
-<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
-<li>训练过程为阶梯状</li>
-<li>基础模型按照次序依次训练(实现时可做到并行)</li>
-<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
-<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
-
-</li>
-</ul>
-<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
-<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
-</ul>
-<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
-<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
-<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
-</ul>
-<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
-<ul>
-<li>训练所有基础模型</li>
-<li>获取所有基础模型的预测结果</li>
-<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
-<li>基于新的训练集进行训练,得到预测模型M()</li>
-<li>测试时也要将特征转换后再用M进行预测</li>
-<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
-<li>理论上可以堆叠各种各样的分类器
-
-</li>
-</ul>
-<hr>
-<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
-<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
-<hr>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="如何理解GBDT中的梯度G？"><a href="#如何理解GBDT中的梯度G？" class="headerlink" title="如何理解GBDT中的梯度G？"></a>如何理解GBDT中的梯度G？</h4><ul>
-<li>G表示Gradient，表示梯度，在GBDT中梯度是指损失函数关于每一个迭代中模型的梯度</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
-<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
-</li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
-<ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
-</ul>
-</li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
-</ul>
-</li>
-</ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
-<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
-<li>和LR对比: 线性模型</li>
-<li>和GBDT对比: </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
-<li>通过不同层级和类型的网络可以对时空信息建模</li>
-<li>适合图像, 声音, 文字等带有时序特质的数据</li>
-</ul>
-<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
-<li>基于树模型的GBDT则能很好地处理表格数据</li>
-<li>模型的可解释性</li>
-<li>输入数据的不变性(几乎不用格式化数据)</li>
-<li>更易于调参等特质更适合数值型数据</li>
 </ul>
 
           
