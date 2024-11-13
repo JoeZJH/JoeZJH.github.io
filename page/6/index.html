@@ -394,186 +394,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>以Centos7为例, Ubuntu相似</em></p>
-<hr>
-<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动nfs和rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>配置exports文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
-<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
-</ul>
-</li>
-<li><p>使exports的配置生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>-r生效</li>
-<li>-v显示结果</li>
-</ul>
-</li>
-<li><p>查看是否生效</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
-<li><p>安装nfs所需的所有组件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>设置开机启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>启动rpcbind服务</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看服务器哪些目录可以共享</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>新建文件夹以作为mount目标</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>挂载操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查看挂载情况</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解除挂载</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
-<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
-<ul>
-<li>mount.nfs: No route to host</li>
-<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
-<ul>
-<li>mount.nfs: Stale file handle</li>
-<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——硬盘操作-分区和挂载.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -828,6 +648,186 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——NFS服务器和客户端的配置.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Linux——NFS服务器和客户端的配置.html" itemprop="url">Linux——NFS服务器和客户端的配置</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>以Centos7为例, Ubuntu相似</em></p>
+<hr>
+<h3 id="NFS-Server"><a href="#NFS-Server" class="headerlink" title="NFS Server"></a>NFS Server</h3><ul>
+<li><p>安装nfs所需的所有组件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动nfs和rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br><span class="line">systemctl enable nfs-server.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动nfs和rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br><span class="line">systemctl start nfs-server.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>配置exports文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/exports</span><br><span class="line">&gt;&gt;&gt; input</span><br><span class="line">/home/jiahong/SharedTest *(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">/home/jiahong/SharedTest 123.45.6.7(rw,no_root_squash,no_all_squash,sync)</span><br><span class="line">&gt;&gt;&gt; input done</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这里的*号可以使用ip,表示只有这个ip可以访问共享文件</li>
+<li>使用*则表示所有ip均可访问,设置多个ip可以访问则可使用多行</li>
+</ul>
+</li>
+<li><p>使exports的配置生效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs -rv</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>-r生效</li>
+<li>-v显示结果</li>
+</ul>
+</li>
+<li><p>查看是否生效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exportfs</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="NFS-Client"><a href="#NFS-Client" class="headerlink" title="NFS Client"></a>NFS Client</h3><ul>
+<li><p>安装nfs所需的所有组件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum -y install nfs*</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置开机启动rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl enable rpcbind.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动rpcbind服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start rpcbind.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看服务器哪些目录可以共享</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">showmount -e serverip</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>新建文件夹以作为mount目标</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mnt/nfs/shared_dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>挂载操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs serverip:server_dir client_dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看挂载情况</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解除挂载</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount client_dir</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="相关问题"><a href="#相关问题" class="headerlink" title="相关问题"></a>相关问题</h3><ul>
+<li><p>客户端出现以下情况时, 一般是服务器防火墙有问题, 解决方案是下面的解开防火墙的命令</p>
+<ul>
+<li>mount.nfs: No route to host</li>
+<li>mount.nfs: Connection timed out<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --permanent --add-service=rpc-bind</span><br><span class="line">firewall-cmd --permanent --add-service=mountd</span><br><span class="line">firewall-cmd --permanent --add-port=2049/tcp</span><br><span class="line">firewall-cmd --permanent --add-port=2049/udp</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>客户端出现以下情况时,说明客户端未umount但服务器解除文件夹了</p>
+<ul>
+<li>mount.nfs: Stale file handle</li>
+<li>umount: xx/xx: Stale file handle<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">umount -lf /xx/xx</span><br><span class="line"></span><br><span class="line"># then mount /xx/xx again</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——文件操作.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -905,6 +905,275 @@
 <li>文件被删除后软链接也会自动失效,链接路径链接不上</li>
 </ul>
 </li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——查看服务器内核和系统版本.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Linux——查看服务器内核和系统版本.html" itemprop="url">Linux——查看服务器内核和系统版本</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Linux系统的内核版本和系统版本等信息用命令行如何查看</em></p>
+<hr>
+<h3 id="系统类型和版本"><a href="#系统类型和版本" class="headerlink" title="系统类型和版本"></a>系统类型和版本</h3><h4 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h4><ul>
+<li><p>文件存在表示为Centos</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/redhat-release</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>上述指令同时会输出Centos版本</p>
+</li>
+</ul>
+<h4 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h4><ul>
+<li><p>命令可以执行表示为Ubuntu</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsb_release -a</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行下面命令可以看出Ubuntu的版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/issue</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="更进一步的内核信息"><a href="#更进一步的内核信息" class="headerlink" title="更进一步的内核信息"></a>更进一步的内核信息</h3><ul>
+<li><p>内核名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -s</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>结点名称</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -n</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>内核发行号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -r</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>处理器类型</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>操作系统</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -o</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——自动加载bashrc.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Ubuntu——自动加载bashrc.html" itemprop="url">Ubuntu——自动加载bashrc</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文描述了如何为Ubuntu用户创建默认的<del>/.bashrc并设置自动加载</del>/.bashrc</em></p>
+<hr>
+<h3 id="创建-bashrc"><a href="#创建-bashrc" class="headerlink" title="创建.bashrc"></a>创建.bashrc</h3><ul>
+<li><p>如果.bashrc存在,则无需创建,很多程序安装时可能会自动创建,否则,需要我们复制一个</p>
+</li>
+<li><p>复制命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /etc/skel/.bashrc ~/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>亲测,无需复制,创建一个新的即可</p>
+</li>
+</ul>
+<hr>
+<h3 id="使-bashrc生效"><a href="#使-bashrc生效" class="headerlink" title="使.bashrc生效"></a>使.bashrc生效</h3><h4 id="暂时生效"><a href="#暂时生效" class="headerlink" title="暂时生效"></a>暂时生效</h4><p><em>用户重新登录不会生效</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
+
+<h4 id="永久生效"><a href="#永久生效" class="headerlink" title="永久生效"></a>永久生效</h4><p><em>用户登录后默认生效</em></p>
+<ul>
+<li><p>新建或打开文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.profile</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加下面的语句</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># ~/.profile: executed by Bourne-compatible login shells.</span><br><span class="line"> </span><br><span class="line">if [ &quot;$BASH&quot; ]; then</span><br><span class="line">  if [ -f ~/.bashrc ]; then</span><br><span class="line">    . ~/.bashrc</span><br><span class="line">  fi</span><br><span class="line">fi</span><br><span class="line"> </span><br><span class="line">mesg n</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>保存后退出,以后默认的,我们登录后<code>~/.bashrc</code>即可生效</p>
+</li>
+<li><p>马上生效<code>~/.profile</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.profile</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -1175,275 +1444,6 @@
 <ul>
 <li>从上面的输出中可以看出来<code>ssh</code>服务默认被开启防火墙了,所以无需开启22端口即可使用ssh指令登录到服务器</li>
 <li>同时开启的还有<code>dhcpv6-client</code>服务,这个服务用于ipv6的DHCP服务(为什么ipv4不需要这个服务呢?详情参考问答:<a href="https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/176717/what-is-dhcpv6-client-service-in-firewalld-and-can-i-safely-remove-it</a> )</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——查看服务器内核和系统版本.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Linux——查看服务器内核和系统版本.html" itemprop="url">Linux——查看服务器内核和系统版本</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍Linux系统的内核版本和系统版本等信息用命令行如何查看</em></p>
-<hr>
-<h3 id="系统类型和版本"><a href="#系统类型和版本" class="headerlink" title="系统类型和版本"></a>系统类型和版本</h3><h4 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h4><ul>
-<li><p>文件存在表示为Centos</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/redhat-release</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上述指令同时会输出Centos版本</p>
-</li>
-</ul>
-<h4 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h4><ul>
-<li><p>命令可以执行表示为Ubuntu</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsb_release -a</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>执行下面命令可以看出Ubuntu的版本</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/issue</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="更进一步的内核信息"><a href="#更进一步的内核信息" class="headerlink" title="更进一步的内核信息"></a>更进一步的内核信息</h3><ul>
-<li><p>内核名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -s</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>结点名称</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -n</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>内核发行号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -r</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>处理器类型</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -p</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>操作系统</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uname -o</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——自动加载bashrc.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Ubuntu——自动加载bashrc.html" itemprop="url">Ubuntu——自动加载bashrc</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文描述了如何为Ubuntu用户创建默认的<del>/.bashrc并设置自动加载</del>/.bashrc</em></p>
-<hr>
-<h3 id="创建-bashrc"><a href="#创建-bashrc" class="headerlink" title="创建.bashrc"></a>创建.bashrc</h3><ul>
-<li><p>如果.bashrc存在,则无需创建,很多程序安装时可能会自动创建,否则,需要我们复制一个</p>
-</li>
-<li><p>复制命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /etc/skel/.bashrc ~/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>亲测,无需复制,创建一个新的即可</p>
-</li>
-</ul>
-<hr>
-<h3 id="使-bashrc生效"><a href="#使-bashrc生效" class="headerlink" title="使.bashrc生效"></a>使.bashrc生效</h3><h4 id="暂时生效"><a href="#暂时生效" class="headerlink" title="暂时生效"></a>暂时生效</h4><p><em>用户重新登录不会生效</em></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
-
-<h4 id="永久生效"><a href="#永久生效" class="headerlink" title="永久生效"></a>永久生效</h4><p><em>用户登录后默认生效</em></p>
-<ul>
-<li><p>新建或打开文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.profile</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加下面的语句</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># ~/.profile: executed by Bourne-compatible login shells.</span><br><span class="line"> </span><br><span class="line">if [ &quot;$BASH&quot; ]; then</span><br><span class="line">  if [ -f ~/.bashrc ]; then</span><br><span class="line">    . ~/.bashrc</span><br><span class="line">  fi</span><br><span class="line">fi</span><br><span class="line"> </span><br><span class="line">mesg n</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>保存后退出,以后默认的,我们登录后<code>~/.bashrc</code>即可生效</p>
-</li>
-<li><p>马上生效<code>~/.profile</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/.profile</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
