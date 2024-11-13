@@ -275,6 +275,214 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——模型压缩技术.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——模型压缩技术.html" itemprop="url">DL——模型压缩技术</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="模型压缩"><a href="#模型压缩" class="headerlink" title="模型压缩"></a>模型压缩</h3><ul>
+<li>模型压缩（Model Compression）技术包含模型量化、蒸馏、剪枝等</li>
+<li>有时候模型量化和蒸馏会同时使用</li>
+<li>剪枝不常见</li>
+</ul>
+<h3 id="模型量化"><a href="#模型量化" class="headerlink" title="模型量化"></a>模型量化</h3><ul>
+<li>模型量化（Model Quantization），是一种将模型中的权重和激活从浮点数（高位宽）转换为低精度（低位宽）的表示的方法，如8位整数（INT8）</li>
+<li>数值上来看，量化是将连续值离散化的过程</li>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/693034534" target="_blank" rel="noopener">TinyML —— 模型量化（quantization）</a></li>
+<li>B站北大学生汇报：<a href="https://www.bilibili.com/video/BV1xf4y1f7wn/" target="_blank" rel="noopener">模型量化加速</a></li>
+<li><a href="https://juejin.cn/post/7259275893795782717" target="_blank" rel="noopener">QLoRA: 训练更大的GPT</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="线性量化与非线性量化"><a href="#线性量化与非线性量化" class="headerlink" title="线性量化与非线性量化"></a>线性量化与非线性量化</h4><ul>
+<li>线性量化(linear quantization)，也叫仿射量化(affine quantization)或者均匀量化<ul>
+<li>我们很容易给出量化公式：<br>其中，r(real value)值得是量化前的值，q(quantized value)是量化后的值，s(scale)是放缩比例，z(zero point)相当于是一个偏移量。</li>
+</ul>
+</li>
+<li>非线性量化（nonlinear quantization），也叫作非均匀量化</li>
+</ul>
+<h4 id="对称量化与非对称量化"><a href="#对称量化与非对称量化" class="headerlink" title="对称量化与非对称量化"></a>对称量化与非对称量化</h4><ul>
+<li>对称量化(symmetric quantization)：映射前后0点相同</li>
+<li>非对称量化(asymmetric quantization)：映射前后0点不相同</li>
+</ul>
+<h4 id="量化粒度"><a href="#量化粒度" class="headerlink" title="量化粒度"></a>量化粒度</h4><ul>
+<li>Per-Tensor Quantization（逐张量量化）：<ul>
+<li>这是最简单的量化方式，对整个张量（即模型中的一个参数矩阵或输入数据）使用相同的量化参数（比如最小值和最大值，或者量化因子）。</li>
+<li>由于所有值共享相同的量化参数，因此这种方法的精度较低，但计算简单，存储和传输效率高。</li>
+</ul>
+</li>
+<li>Per-Channel Quantization（逐通道量化）：<ul>
+<li>在这种量化方式中，每个通道（对于卷积神经网络中的滤波器来说，通道通常指的是滤波器输出的不同颜色或特征）使用不同的量化参数。</li>
+<li>这种方法比逐张量量化更精细，因为不同的通道可能具有不同的值范围，因此可以独立地进行量化，以保持每个通道的精度。</li>
+<li>因为有研究发现不同Channel的参数量级差距较大</li>
+</ul>
+</li>
+<li>Per-Layer Quantization（逐层量化）：<ul>
+<li>逐层量化意味着网络中的每一层都有自己的量化参数集。</li>
+<li>这种方法允许每一层根据其激活值的范围独立地进行量化，这可能比逐张量量化提供更好的精度，但比逐通道量化的计算成本要低。</li>
+</ul>
+</li>
+<li>Per-Axis Quantization（逐轴量化）：<ul>
+<li>这种量化方式通常用于多维张量，比如二维的权重矩阵。在这种情况下，”axis”可以指特定的维度，比如行或列。</li>
+<li>逐轴量化意味着沿着张量的一个或多个维度，量化参数是不同的。例如，在二维张量中，可以对每一行或每一列使用不同的量化参数。</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化方式（PTQ-vs-QAT"><a href="#量化方式（PTQ-vs-QAT" class="headerlink" title="量化方式（PTQ vs QAT)"></a>量化方式（PTQ vs QAT)</h4><ul>
+<li>PTQ(Post training quantization)，后训练量化，训完的模型直接量化，然后进行推理</li>
+<li>QAT(Quantization aware training)，量化感知训练，训练完的模型加载到内存，进行微调后再用于推理<ul>
+<li>LLM常用的思路就是float16训练base模型并存储，SFT时使用INT8量化并使用LoRA微调模型，然后存储LoRA参数，推理时加载base模型(INT8量化加载)和LoRA参数一起推理</li>
+</ul>
+</li>
+</ul>
+<h4 id="量化位宽"><a href="#量化位宽" class="headerlink" title="量化位宽"></a>量化位宽</h4><ul>
+<li>统一位宽</li>
+<li>混合精度</li>
+</ul>
+<h4 id="量化模型训练梯度"><a href="#量化模型训练梯度" class="headerlink" title="量化模型训练梯度"></a>量化模型训练梯度</h4><ul>
+<li>梯度回传时量化是离散的，梯度为0，实际上可以设置为1，因为量化一般是阶梯函数，类似于线性的</li>
+</ul>
+<h4 id="最新的量化模型"><a href="#最新的量化模型" class="headerlink" title="最新的量化模型"></a>最新的量化模型</h4><h5 id="QLoRA"><a href="#QLoRA" class="headerlink" title="QLoRA"></a>QLoRA</h5><ul>
+<li>QLoRA是一种高效的微调方法，它允许在保持完整的16位微调任务性能的同时，将内存使用量降低到足以在单个48GB GPU上微调650亿参数模型。QLoRA通过冻结的4位量化预训练语言模型向低秩适配器（Low Rank Adapters，简称LoRA）反向传播梯度。这种方法的主要贡献包括：<ul>
+<li>4-bit NormalFloat (NF4)：一种新的数据类型，理论上对正态分布的权重是最优的。</li>
+<li>Double Quantization：通过量化量化常数来减少平均内存占用。</li>
+<li>Paged Optimizers：使用NVIDIA统一内存特性，自动在CPU和GPU之间进行页面转换，以避免梯度检查点操作时内存不足。</li>
+</ul>
+</li>
+<li>QLoRA主要用于微调训练阶段，使得在单个GPU上进行大型模型的微调成为可能，这对于资源有限的研究者和开发者来说是一个重大突破。</li>
+</ul>
+<h5 id="GPTQ"><a href="#GPTQ" class="headerlink" title="GPTQ"></a>GPTQ</h5><ul>
+<li>GPTQ（Generative Pre-trained Transformer Quantization）是一种针对生成预训练Transformer模型的量化技术。GPTQ旨在解决大型GPT模型的高计算和存储成本问题。这些模型由于其庞大的规模，即使在高性能GPU上进行推理也需要大量的计算资源。GPTQ通过以下方式来提高效率：<ul>
+<li>一次性权重量化：基于近似二阶信息的方法，可以在不需要重新训练的情况下压缩模型。</li>
+<li>高压缩率：能够将模型量化到每个权重3或4位，同时几乎不降低准确度。</li>
+<li>高效执行：允许在单个GPU上执行大型参数模型的生成推理，显著减少了所需的硬件资源。</li>
+</ul>
+</li>
+<li>GPTQ通过用于部署推理阶段，用于减少模型的大小和内存占用，使得这些大型模型更易于部署和使用。</li>
+</ul>
+<hr>
+<h3 id="模型蒸馏"><a href="#模型蒸馏" class="headerlink" title="模型蒸馏"></a>模型蒸馏</h3><ul>
+<li>模型蒸馏（Model Distillation），主要包含Logits蒸馏和特征蒸馏两大类</li>
+<li>以模型压缩为目标的模型蒸馏通常也叫作知识蒸馏，知识蒸馏主要目的是将一个大型、复杂、训练良好的模型（教师模型）的知识转移到一个小型、简单、更易于部署的模型（学生模型）中。<img src="/Notes/DL/DL——模型压缩技术/Model-Distillation-Logits-vs-Features.png"></li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/583273832" target="_blank" rel="noopener">知识蒸馏算法汇总</a><blockquote>
+<p>知识蒸馏有两大类：一类是logits蒸馏，另一类是特征蒸馏。logits蒸馏指的是在softmax时使用较高的温度系数，提升负标签的信息，然后使用Student和Teacher在高温softmax下logits的KL散度作为loss。中间特征蒸馏就是强迫Student去学习Teacher某些中间层的特征，直接匹配中间的特征或学习特征之间的转换关系。例如，在特征No.1和No.2中间，知识可以表示为如何模做两者中间的转化，可以用一个矩阵让学习者产生这个矩阵，学习者和转化之间的学习关系。 这篇文章汇总了常用的知识蒸馏的论文和代码，方便后续的学习和研究。</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="Logits蒸馏"><a href="#Logits蒸馏" class="headerlink" title="Logits蒸馏"></a>Logits蒸馏</h4><ul>
+<li>关注输出层</li>
+<li>也叫作基于反馈的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型的输出概率分布。通过最小化两个模型输出概率分布之间的KL散度（或其他相似性度量），学生模型学习教师模型的“软目标”，即对每个类别的概率预测，而不是单一的预测标签。</li>
+</ul>
+<h4 id="特征蒸馏"><a href="#特征蒸馏" class="headerlink" title="特征蒸馏"></a>特征蒸馏</h4><ul>
+<li>关注中间层</li>
+<li>也叫作基于特征的知识蒸馏</li>
+<li>学生模型被训练以模仿教师模型在中间层的激活或特征图。这通常通过最小化两个模型对应层的特征表示之间的距离（如L2距离或cosine相似度）来实现。</li>
+</ul>
+<hr>
+<h3 id="模型剪枝"><a href="#模型剪枝" class="headerlink" title="模型剪枝"></a>模型剪枝</h3><ul>
+<li>Model Pruning</li>
+<li>通过删减网络结构然后调整分布实现模型压缩，剪枝方法不常用</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Git/Git——管理HuggingFace项目.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -782,6 +990,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Numpy/Numpy——一些说明.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Numpy/Numpy——一些说明.html" itemprop="url">Numpy——一些说明</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="关于效率"><a href="#关于效率" class="headerlink" title="关于效率"></a>关于效率</h3><p><em>Numpy包含很多高效的函数，能够替换普通的循环，实现非常快</em></p>
+<h4 id="累加变成向量运算"><a href="#累加变成向量运算" class="headerlink" title="累加变成向量运算"></a>累加变成向量运算</h4><h4 id="对向量每个元素进行某个运算生成另一个向量"><a href="#对向量每个元素进行某个运算生成另一个向量" class="headerlink" title="对向量每个元素进行某个运算生成另一个向量"></a>对向量每个元素进行某个运算生成另一个向量</h4><ul>
+<li><p>普通用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.zeros((n, 1))</span><br><span class="line"></span><br><span class="line">for i in range(n):</span><br><span class="line">	b[i] = math.exp(a[i])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>高效用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.exp(a)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>相似的还有<code>log</code>,<code>abs</code>等函数</p>
+</li>
+</ul>
+<h4 id="值得关注的广播机制-broadcasting"><a href="#值得关注的广播机制-broadcasting" class="headerlink" title="值得关注的广播机制(broadcasting)"></a>值得关注的广播机制(broadcasting)</h4><ul>
+<li>当两个向量（<code>numpy</code>的对象）的维度不同时，Python会将维度小的一个拓展（复制）成与维度大的相同，以便于计算</li>
+<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = a + 10</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h5 id="广播规则"><a href="#广播规则" class="headerlink" title="广播规则"></a>广播规则</h5><ul>
+<li><p>形式1</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (m,1) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按列复制第二个n次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式2</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式3</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] r # r为实数，维度为1</span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 复制r m*n 次</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>形式4</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,1) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次,并按列复制第一个n次</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h5 id="需要注意"><a href="#需要注意" class="headerlink" title="需要注意"></a>需要注意</h5><ul>
+<li>广播机制使得书写更加美观，代码更加简洁</li>
+<li>但广播机制往往会出现用户意想不到的微妙bug, 需要开发者注意</li>
+</ul>
+<h4 id="关于矩阵运算的维度"><a href="#关于矩阵运算的维度" class="headerlink" title="关于矩阵运算的维度"></a>关于矩阵运算的维度</h4><ul>
+<li><code>axis=i</code>表示第<code>i</code>维计算后将会消失（该维度的size变成1）</li>
+</ul>
+<h4 id="多使用reshape函数"><a href="#多使用reshape函数" class="headerlink" title="多使用reshape函数"></a>多使用reshape函数</h4><ul>
+<li>reshape函数复杂度是常数的(O(1))</li>
+<li>reshape函数可确保我们的程序正确，不用随意猜测矩阵的维度</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Numpy/Numpy——random模块.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -886,152 +1240,6 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">assert(a.shape == (3,4))</span><br></pre></td></tr></table></figure>
 
 </li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Numpy/Numpy——一些说明.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Numpy/Numpy——一些说明.html" itemprop="url">Numpy——一些说明</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="关于效率"><a href="#关于效率" class="headerlink" title="关于效率"></a>关于效率</h3><p><em>Numpy包含很多高效的函数，能够替换普通的循环，实现非常快</em></p>
-<h4 id="累加变成向量运算"><a href="#累加变成向量运算" class="headerlink" title="累加变成向量运算"></a>累加变成向量运算</h4><h4 id="对向量每个元素进行某个运算生成另一个向量"><a href="#对向量每个元素进行某个运算生成另一个向量" class="headerlink" title="对向量每个元素进行某个运算生成另一个向量"></a>对向量每个元素进行某个运算生成另一个向量</h4><ul>
-<li><p>普通用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.zeros((n, 1))</span><br><span class="line"></span><br><span class="line">for i in range(n):</span><br><span class="line">	b[i] = math.exp(a[i])</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>高效用法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = np.exp(a)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>相似的还有<code>log</code>,<code>abs</code>等函数</p>
-</li>
-</ul>
-<h4 id="值得关注的广播机制-broadcasting"><a href="#值得关注的广播机制-broadcasting" class="headerlink" title="值得关注的广播机制(broadcasting)"></a>值得关注的广播机制(broadcasting)</h4><ul>
-<li>当两个向量（<code>numpy</code>的对象）的维度不同时，Python会将维度小的一个拓展（复制）成与维度大的相同，以便于计算</li>
-<li>举例<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a = np.zeros((n, 1))</span><br><span class="line">b = a + 10</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="广播规则"><a href="#广播规则" class="headerlink" title="广播规则"></a>广播规则</h5><ul>
-<li><p>形式1</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (m,1) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按列复制第二个n次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式2</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式3</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,n) [+-*/] r # r为实数，维度为1</span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 复制r m*n 次</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>形式4</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(m,1) [+-*/] (1,n) </span><br><span class="line">&lt;===&gt;</span><br><span class="line">(m,n) [+-*/] (m,n) # 按行复制第二个m次,并按列复制第一个n次</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="需要注意"><a href="#需要注意" class="headerlink" title="需要注意"></a>需要注意</h5><ul>
-<li>广播机制使得书写更加美观，代码更加简洁</li>
-<li>但广播机制往往会出现用户意想不到的微妙bug, 需要开发者注意</li>
-</ul>
-<h4 id="关于矩阵运算的维度"><a href="#关于矩阵运算的维度" class="headerlink" title="关于矩阵运算的维度"></a>关于矩阵运算的维度</h4><ul>
-<li><code>axis=i</code>表示第<code>i</code>维计算后将会消失（该维度的size变成1）</li>
-</ul>
-<h4 id="多使用reshape函数"><a href="#多使用reshape函数" class="headerlink" title="多使用reshape函数"></a>多使用reshape函数</h4><ul>
-<li>reshape函数复杂度是常数的(O(1))</li>
-<li>reshape函数可确保我们的程序正确，不用随意猜测矩阵的维度</li>
 </ul>
 
           
@@ -1555,131 +1763,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——Python3新特性f-string.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——Python3新特性f-string.html" itemprop="url">Python——Python3新特性f-string</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Formatted string literals</em></p>
-<hr>
-<h3 id="f-string"><a href="#f-string" class="headerlink" title="f-string"></a>f-string</h3><h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><ul>
-<li>格式化的字符串文字以“f”为前缀</li>
-<li>类似于str.format()接受的格式字符串</li>
-<li>它们包含由花括号包围的替换字段</li>
-<li>替换字段是表达式，在运行时进行评估，然后使用format()协议进行格式化</li>
-</ul>
-<h4 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h4><ul>
-<li>从字符串中提取的表达式在f字符串出现的上下文中计算</li>
-<li>这意味着表达式可以完全访问本地和全局变量</li>
-<li>可以使用任何有效的Python表达式，包括函数和方法调用</li>
-</ul>
-<h4 id="与之前的表达式对比"><a href="#与之前的表达式对比" class="headerlink" title="与之前的表达式对比"></a>与之前的表达式对比</h4><ul>
-<li><p>之前</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">print(&quot;%s%s%s&quot; % (a, b, c+d))</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>f-string</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">print(f&apos;&#123;a&#125;&#123;b&#125;&#123;c+d&#125;&apos;)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1732,7 +1815,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">278</span>
+                  <span class="site-state-item-count">279</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

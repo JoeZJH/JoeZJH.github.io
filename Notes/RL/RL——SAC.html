@@ -79,18 +79,21 @@
 
 
 
+<meta name="description" content="参考链接： 强化学习之图解SAC算法       Soft Actor Critic算法论文公式详解        SAC 原始论文： 论文1（2V+2Q+1策略, 2018，UC Berkeley）：Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Ac">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RL——SAC">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
+<meta property="og:description" content="参考链接： 强化学习之图解SAC算法       Soft Actor Critic算法论文公式详解        SAC 原始论文： 论文1（2V+2Q+1策略, 2018，UC Berkeley）：Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Ac">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-2V-2Q-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-Learned-Temperature.png">
-<meta property="og:updated_time" content="2024-11-12T17:27:43.040Z">
+<meta property="og:updated_time" content="2024-11-13T16:34:23.770Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——SAC">
+<meta name="twitter:description" content="参考链接： 强化学习之图解SAC算法       Soft Actor Critic算法论文公式详解        SAC 原始论文： 论文1（2V+2Q+1策略, 2018，UC Berkeley）：Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Ac">
 <meta name="twitter:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-2V-2Q-Algorithm.png">
 
 
@@ -327,13 +330,14 @@
       
 
       
-        <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML&#34;     type=" text javascript"></script>
+        <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
 <ul>
 <li>参考链接：<ul>
 <li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a>      </li>
+<li><a href="https://blog.csdn.net/baishuiniyaonulia/article/details/121538413" target="_blank" rel="noopener">Soft Actor Critic算法论文公式详解</a>   </li>
 </ul>
 </li>
 </ul>
@@ -346,11 +350,14 @@
 </li>
 </ul>
 <h4 id="相关推导"><a href="#相关推导" class="headerlink" title="相关推导"></a>相关推导</h4><ul>
-<li>目标定义<br>$$ J(\phi) = \sum_{t=1}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$</li>
+<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
+<li>这里目标中增加的熵就是Soft名字的来源</li>
+</ul>
+</li>
 <li>Q值V值定义<br>$$<br>\begin{aligned}<br>Q(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V(s_{t+1})] \\<br>V(s_t) &amp;= E_{a_t \sim \pi} [Q(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>\end{aligned}<br>$$</li>
 </ul>
 <h4 id="SAC-2V-2Q-1策略"><a href="#SAC-2V-2Q-1策略" class="headerlink" title="SAC(2V+2Q+1策略)"></a>SAC(2V+2Q+1策略)</h4><ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>     <ul>
+<li>原始论文：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>       <ul>
 <li>目标定义见上面部分，由于温度系数\(\alpha\)是一个固定的超参数，于是，当我们可以通过将Reward乘以\(\frac{1}{\alpha}\)来Rescaling Reward，使得熵的系数为1，所以本论文后面的推导都可以将\(\alpha=1\)来推导</li>
 </ul>
 </li>
@@ -367,10 +374,11 @@
 <li>V值更新：<br>  $$<br>  \begin{aligned}<br>  J_V(\psi) &amp;= E_{s_t \sim \mathcal{D}} [\frac{1}{2} \big(V_\psi(s_t) - E[Q_w(s_t, a_t) - \log \pi_\phi(a_t \vert s_t)] \big)^2] \\<br>  \nabla_\psi J_V(\psi) &amp;= \nabla_\psi V_\psi(s_t)\big( V_\psi(s_t) - Q_w(s_t, a_t) + \log \pi_\phi (a_t \vert s_t) \big)<br>  \end{aligned}<br>  $$</li>
 <li>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_\pi(s)}[V_{\bar{\psi}}(s_{t+1})]) \big)^2] \\<br>  \nabla_w J_Q(w) &amp;= \nabla_w Q_w(s_t, a_t) \big( Q_w(s_t, a_t) - r(s_t, a_t) - \gamma V_{\bar{\psi}}(s_{t+1})\big)<br>  \end{aligned}<br>  $$<ul>
 <li><strong>策略评估（Q值和V值的更新过程统称为策略评估过程）的收敛性证明</strong>：<ul>
-<li>定义回报为\(r_\pi(s_t, a_t) \triangleq r(s_t, a_t) + \alpha E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[\mathcal{H}(\pi(\cdot\vert s_{t+1}))]\)，其中\(p(s_{t+1}|s_t,a_t)\)常简写为p</li>
+<li>定义回报为\(r_\pi(s_t, a_t) \triangleq r(s_t, a_t) + \alpha E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[\mathcal{H}(\pi(\cdot\vert s_{t+1}))]\)（注意：其中\(p(s_{t+1}|s_t,a_t)\)在论文中常简写为\(p\)）</li>
 <li>则有：\(Q(s_t, a_t) = r_\pi(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t), a_{t+1}\sim\pi}[Q(s_{t+1},a_{t+1})]\)</li>
-<li>此时有Bellman backup operator \(\mathcal{T}^\pi\)为：\(\mathcal{T}^\pi Q(s_t, a_t) \triangleq r(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[V(s_{t+1})]\)<ul>
+<li>此时有贝尔曼算子（Bellman backup operator） \(\mathcal{T}^\pi\)为：\(\mathcal{T}^\pi Q(s_t, a_t) \triangleq r(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[V(s_{t+1})]\)<ul>
 <li>其中\(V(s_{t}) = E_{a_t \sim \pi}[Q(s_t, a_t) - log\pi(a_t|s_t)]\)</li>
+<li>贝尔曼算子\(\mathcal{T}^\pi\)是一种操作符，它表示对当前的价值函数集Q利用贝尔曼方程进行更新</li>
 </ul>
 </li>
 <li><strong>Lemma 1 (Soft Policy Evaluation)</strong>: 按照上式定义的\(\mathcal{T}^\pi\)，当动作维度\(|\mathcal{A}|&lt;\infty\)时，\(Q^{k+1} = \mathcal{T}^\pi Q^{k}\)会收敛到策略\(\pi\)对应的soft Q-value<ul>
@@ -428,7 +436,7 @@
 </li>
 <li><p>训练流程</p>
 <img src="/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png"></li>
-<li><p>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma (Q_\bar{w}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_t \vert s_t))] \big)^2] \\<br>  \end{aligned}<br>  $$</p>
+<li><p>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma (Q_\bar{w}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_t \vert s_t))) \big)^2] \\<br>  \end{aligned}<br>  $$</p>
 </li>
 <li><p>策略更新（在前一篇文章的基础上，增加\(\alpha\)即可）：</p>
 <ul>
@@ -457,6 +465,7 @@
 </li>
 <li><p>温度系数自动调整方案不一定优于固定温度系数方案，在不同场景下效果不同，详情见原始论文</p>
 <img src="/Notes/RL/RL——SAC/SAC-Learned-Temperature.png">
+
 </li>
 </ul>
 </li>
@@ -465,7 +474,7 @@
 </ul>
 <hr>
 <h3 id="SAC连续动作与离散动作的实现有什么区别"><a href="#SAC连续动作与离散动作的实现有什么区别" class="headerlink" title="SAC连续动作与离散动作的实现有什么区别"></a>SAC连续动作与离散动作的实现有什么区别</h3><h4 id="建模方式"><a href="#建模方式" class="headerlink" title="建模方式"></a>建模方式</h4><ul>
-<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\phi,\sigma_\phi\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算</p>
+<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\phi,\sigma_\phi\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算概率密度来使用</p>
 </li>
 <li><p><strong>采样方式</strong>：采样时需要创建分布来采样，由于需要梯度回传，所以需要使用重参数法</p>
 </li>
@@ -510,6 +519,16 @@
 <li>回答：得到的策略不再是最优的，决策到的不再是Q值最大的动作【TODO】</li>
 </ul>
 </li>
+</ul>
+<h4 id="为什么最大熵能带来收益呢？"><a href="#为什么最大熵能带来收益呢？" class="headerlink" title="为什么最大熵能带来收益呢？"></a>为什么最大熵能带来收益呢？</h4><ul>
+<li><strong>所有可能的模型中熵最大的模型是最好的模型</strong>：这意味着在给定的信息下，模型的选择应该尽可能地保持不确定性，即不做不必要的假设。</li>
+<li><strong>熵与正则化</strong>：机器学习/深度学习模型容易过拟合，主要原因是数据不足，建模太复杂等，增加一些正则可以降低过拟合，最大熵可以理解为一种正则</li>
+<li><strong>在普通机器学习中收益来源</strong>：主要是防止过拟合（不做不必要的假设）</li>
+<li><strong>在强化学习中收益来源</strong>：一方面是防止过拟合，另一方面是让探索更加充分</li>
+</ul>
+<h4 id="SAC-vs-AC中添加entropy-loss？"><a href="#SAC-vs-AC中添加entropy-loss？" class="headerlink" title="SAC vs AC中添加entropy loss？"></a>SAC vs AC中添加entropy loss？</h4><ul>
+<li>SAC将原始AC的目标修改了，理论上目标就是让熵和reward一起最优，Critic网络和策略网络学习的目标都包含了最大化熵</li>
+<li>AC 中加入 entropy loss则只是一种正则，在损失函数上对熵进行了一些约束，此时Critic网络学不到熵的信息（此时AC的Actor目标和Critic目标不完全一致）</li>
 </ul>
 <hr>
 <h3 id="DSAC-Distributional-SAC"><a href="#DSAC-Distributional-SAC" class="headerlink" title="DSAC(Distributional SAC)"></a>DSAC(Distributional SAC)</h3><ul>
@@ -598,8 +617,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="next" title="RL——TD误差和优势函数的区别">
-                <i class="fa fa-chevron-left"></i> RL——TD误差和优势函数的区别
+              <a href="/Notes/RL/RL——Soft-Q-Learning.html" rel="next" title="RL——Soft-Q-Learning">
+                <i class="fa fa-chevron-left"></i> RL——Soft-Q-Learning
               </a>
             
           </div>
@@ -608,8 +627,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——GAE.html" rel="prev" title="RL——GAE">
-                RL——GAE <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="prev" title="RL——DDPG和TD3">
+                RL——DDPG和TD3 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -689,7 +708,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">278</span>
+                  <span class="site-state-item-count">279</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -751,7 +770,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#SAC"><span class="nav-number">1.</span> <span class="nav-text">SAC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#相关推导"><span class="nav-number">1.1.</span> <span class="nav-text">相关推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC-2V-2Q-1策略"><span class="nav-number">1.2.</span> <span class="nav-text">SAC(2V+2Q+1策略)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Evaluation"><span class="nav-number">1.2.1.</span> <span class="nav-text">Soft Policy Evaluation</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Improvement"><span class="nav-number">1.2.2.</span> <span class="nav-text">Soft Policy Improvement</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Iteration"><span class="nav-number">1.2.3.</span> <span class="nav-text">Soft Policy Iteration</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC-4Q-1策略"><span class="nav-number">1.3.</span> <span class="nav-text">SAC(4Q+1策略)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SAC连续动作与离散动作的实现有什么区别"><span class="nav-number">2.</span> <span class="nav-text">SAC连续动作与离散动作的实现有什么区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#建模方式"><span class="nav-number">2.1.</span> <span class="nav-text">建模方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#计算损失函数"><span class="nav-number">2.2.</span> <span class="nav-text">计算损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC的连续和离散动作的思考"><span class="nav-number">2.3.</span> <span class="nav-text">SAC的连续和离散动作的思考</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC必须是随机策略吗？"><span class="nav-number">2.4.</span> <span class="nav-text">SAC必须是随机策略吗？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DSAC-Distributional-SAC"><span class="nav-number">3.</span> <span class="nav-text">DSAC(Distributional SAC)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：新策略一定优于旧策略的证明"><span class="nav-number">4.</span> <span class="nav-text">附录：新策略一定优于旧策略的证明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明tanh变换后的对数概率密度"><span class="nav-number">5.</span> <span class="nav-text">附录：证明tanh变换后的对数概率密度</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#SAC"><span class="nav-number">1.</span> <span class="nav-text">SAC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#相关推导"><span class="nav-number">1.1.</span> <span class="nav-text">相关推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC-2V-2Q-1策略"><span class="nav-number">1.2.</span> <span class="nav-text">SAC(2V+2Q+1策略)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Evaluation"><span class="nav-number">1.2.1.</span> <span class="nav-text">Soft Policy Evaluation</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Improvement"><span class="nav-number">1.2.2.</span> <span class="nav-text">Soft Policy Improvement</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Soft-Policy-Iteration"><span class="nav-number">1.2.3.</span> <span class="nav-text">Soft Policy Iteration</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC-4Q-1策略"><span class="nav-number">1.3.</span> <span class="nav-text">SAC(4Q+1策略)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SAC连续动作与离散动作的实现有什么区别"><span class="nav-number">2.</span> <span class="nav-text">SAC连续动作与离散动作的实现有什么区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#建模方式"><span class="nav-number">2.1.</span> <span class="nav-text">建模方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#计算损失函数"><span class="nav-number">2.2.</span> <span class="nav-text">计算损失函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC的连续和离散动作的思考"><span class="nav-number">2.3.</span> <span class="nav-text">SAC的连续和离散动作的思考</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC必须是随机策略吗？"><span class="nav-number">2.4.</span> <span class="nav-text">SAC必须是随机策略吗？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么最大熵能带来收益呢？"><span class="nav-number">2.5.</span> <span class="nav-text">为什么最大熵能带来收益呢？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SAC-vs-AC中添加entropy-loss？"><span class="nav-number">2.6.</span> <span class="nav-text">SAC vs AC中添加entropy loss？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DSAC-Distributional-SAC"><span class="nav-number">3.</span> <span class="nav-text">DSAC(Distributional SAC)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：新策略一定优于旧策略的证明"><span class="nav-number">4.</span> <span class="nav-text">附录：新策略一定优于旧策略的证明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明tanh变换后的对数概率密度"><span class="nav-number">5.</span> <span class="nav-text">附录：证明tanh变换后的对数概率密度</span></a></li></ol></div>
             
 
           </div>

@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-10T13:21:01.759Z">
+<meta property="og:updated_time" content="2024-11-13T16:27:13.186Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——强化学习相关笔记">
 <meta name="twitter:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
@@ -349,8 +349,8 @@
 <hr>
 <h3 id="为什么Online-RL中不能使用BN？"><a href="#为什么Online-RL中不能使用BN？" class="headerlink" title="为什么Online RL中不能使用BN？"></a>为什么Online RL中不能使用BN？</h3><ul>
 <li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a>  </li>
-<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a>  </li>
+<li><a href="https://zhuanlan.zhihu.com/p/210761985" target="_blank" rel="noopener">强化学习需要批归一化(Batch Norm) 或归一化吗？</a>    </li>
+<li><a href="https://www.bilibili.com/video/BV12d4y1f74C" target="_blank" rel="noopener">[5分钟深度学习] #06 批量归一化 Batch Normalization</a>    </li>
 </ul>
 </li>
 <li>BN能work的主要原因是，每个Batch的数据是从整体数据中随机采样得到的，每个Batch的均值和方差不会差别太大</li>
@@ -446,23 +446,25 @@
 <li>清华李升波书籍<a href="https://link.springer.com/book/10.1007/978-981-19-7784-8" target="_blank" rel="noopener">Reinforcement Learning for Sequential Decision and Optimal Control</a>中第六章确定性策略最优的证明和策略建模选型表述（见<a href="https://zhuanlan.zhihu.com/p/720910112" target="_blank" rel="noopener">清华大学李升波教授强化学习书籍《Reinforcement Learning for Sequential Decision and Optimal Control》读书笔记——U6函数近似间接RL</a>）<blockquote>
 <p>在训练阶段，应该使用随机策略，因为这样可以更好地探索环境；而在评估阶段，应该使用确定性策略，因为最优策略总是一个确定的策略</p>
 </blockquote>
+<ul>
+<li><strong>最优策略是确定性策略</strong>，证明：对于任意给定的状态\(s\),有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \arg\max_a q^*(s,a)\)</li>
+</ul>
 </li>
 <li>个人理解：以上描述基本没有问题，但是加一些限定说明会更准确：<ul>
-<li><strong>最优策略是确定性策略</strong>，证明：对于任意给定的状态\(s\),有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \arg\max_a q^*(s,a)\)</li>
 <li><strong>状态观测完全的情况下，才可以说最优策略是确定性策略</strong>：假设状态不是完全观测的，可能出现观测值相同，但实际上状态不同的情况，此时同一个部分观测状态对应的最优动作不再是唯一的）</li>
 <li><strong>最优动作不唯一时，最优策略也可以是随机策略</strong>：可能存在两个同时最优的确定性策略（决策的不同动作拿到相同的Q值），此时最优策略也可以是随机策略（即最优策略的混合策略）</li>
 <li><strong>对于约束优化问题，可能最优策略是随机策略</strong>：如果需要保证动作决策符合某个约束，该约束不在Reward中体现（即Q值无法体现约束），此时可能需要使用随机策略才能保证约束被满足（比如要求决策动作的期望满足一定均值约束，则不能总是执行Q值最大的策略；这里类似于状态不完全观测的情况，假如约束以及约束满足情况可以建模在Reward或者状态中，则可以看成是状态完全观测的情况，此时最优策略也是确定性策略）</li>
 <li><strong>理论上，随机策略的搜索空间大于等于确定性策略</strong>：理论上，随机策略可以学出来以概率1执行某个动作，按照随机策略建模也可以学到确定性策略；实际上，随机策略很难真正学到以概率1执行某个动作</li>
 <li>对于on-policy场景，需要保证行为策略和学习策略相同，故而无法实现学习策略是确定性策略，行为策略是随机性策略，实际操作中，可以开始引入随机策略，后续逐步变成确定性策略，比如SARSA策略</li>
 <li>对于Reward中包含策略熵的方法，无法使用确定性策略（加入熵是避免过拟合，增加探索，确定性策略容易过拟合，其探索性不足）</li>
-<li>为何许多优秀的模型都是确定性模型？因为：1）建模时难以保证观测完全；2）on-policy样本利用率不高；3）随机性策略能探索到更多状态；4）随机策略不容易过拟合</li>
+<li>为何许多优秀的模型都是随机策略模型？因为：1）建模时难以保证观测完全；2）随机性策略能探索到更多状态；3）随机策略不容易过拟合（在对Q估值无法很准确的时候，确定性策略容易过拟合）</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>补充：关于书籍《Reinforcement Learning for Sequential Decision and Optimal Control》的博客<ul>
-<li><a href="https://blog.csdn.net/m0_72557046/article/details/141000433" target="_blank" rel="noopener">CSDN-StarMelt-清华大学李升波教授强化学习书籍《Reinforcement Learning for Sequential Decision and Optimal Control》系列读书笔记</a></li>
-<li><a href="https://www.zhihu.com/people/haruka-81-1/posts" target="_blank" rel="noopener">知乎-StarMelt-清华大学李升波教授强化学习书籍《Reinforcement Learning for Sequential Decision and Optimal Control》读书笔记</a></li>
+<li><a href="https://blog.csdn.net/m0_72557046/article/details/141000433" target="_blank" rel="noopener">CSDN-StarMelt-清华大学李升波教授强化学习书籍《Reinforcement Learning for Sequential Decision and Optimal Control》系列读书笔记</a>  </li>
+<li><a href="https://www.zhihu.com/people/haruka-81-1/posts" target="_blank" rel="noopener">知乎-StarMelt-清华大学李升波教授强化学习书籍《Reinforcement Learning for Sequential Decision and Optimal Control》读书笔记</a>  </li>
 </ul>
 </li>
 </ul>
@@ -476,24 +478,25 @@
 <li>基本含义就是，找一个最优的策略\(\pi\)，使得\(V^{\pi}(s)\)在<strong>策略\(\pi\)</strong>的状态访问分布下期望最大</li>
 </ul>
 </li>
-<li>答案是不一定等价：<ul>
+<li>答案是<strong>如果策略空间包含所有策略，则两者等价，否则不等价</strong>：<ul>
+<li><strong>如果策略模型空间是无限大的，一定存在最优的策略\(\pi^*\)</strong>，使得任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s), \forall{\pi}\)成立，证明是：对于任意给定的状态\(s\)，有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \arg\max_a q^*(s,a)\)，此时，我们定义一个策略为：对任意状态\(s\)，都取该状态下的\(a^*\)即可</li>
 <li>如果能找到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，那么，我们找到策略\(\pi^*\)就同时是off-policy和on-policy的最优解<ul>
-<li>这种情况下，如果能找到\(\pi^*\)，则两者等价（注意：即使存在\(\pi^*\)，模型也不一定能学到）</li>
+<li>这种情况下，如果能找到\(\pi^*\)，则两者等价（注意：即使存在\(\pi^*\)，模型也不一定能学到，如果在off-policy和on-policy设定下学到的难度不同，甚至策略模型空间受限，拟合不了最优的策略\(\pi^*\)，也不能说两者目标等价）</li>
 </ul>
 </li>
-<li>如果找不到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，那么，策略的选择就会根据状态访问分布有所取舍，更倾向于状态分布概率高的那部分状态，off-policy AC方法的目标与on-policy AC目标一定不等价，在状态分布不同的情况下，找不到一个共同的最优解\(\pi^*\)<ul>
+<li>如果模型空间限制导致模型空间中找不到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，那么，策略的选择就会根据状态访问分布有所取舍，更倾向于状态分布概率高的那部分状态，off-policy AC方法的目标与on-policy AC目标一定不等价，在状态分布不同的情况下，找不到一个共同的最优解\(\pi^*\)<ul>
 <li>此时，两者不等价，行为策略中出现越多的状态，越收到重视</li>
 </ul>
 </li>
 <li>现实生活中，SAC和DDPG为什么可以正常运行且拿到不错的收益呢？<ul>
 <li>off-policy方法本身样本利用率更高些</li>
 <li>SAC和DDPG都是在off-policy中使用，如果即时丢弃过早的数据，那行为策略分布和最优策略差异不会太大，且online的训练确保了模型见过几乎所有状态</li>
-<li>有些场景中，可能会存在最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，或近似成立（当然，神经网络训练时共享参数的情况下，很难找到这种策略）</li>
+<li>大部分场景中，只要策略模型空间够大，应当都可以认为存在最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，或近似成立</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>这个问题和DQN的问题还不等价，DQN主要问题是训练模型时存在off-policy导致的线上线下分布不一致的问题，off-policy AC从目标上就存在线上线下不一致的问题，同时训练模型时也有线上线下不一致的问题（都是线上线下不一致，但是目标上的不一致是从根本上定义导致的偏差，理论上更严重些）</li>
+<li>如果这里模型找不到最优的策略\(\pi^*\)，则这个问题和DQN的问题还不等价，DQN主要问题是训练模型时存在off-policy导致的线上线下分布不一致的问题，off-policy AC从目标上就存在线上线下不一致的问题，同时训练模型时也有线上线下不一致的问题（都是线上线下不一致，但是off-policy AC还多了目标上的不一致，是从根本上定义导致的偏差，理论上更严重些）</li>
 </ul>
 <hr>
 <h3 id="TRPO可以用确定性策略建模吗？"><a href="#TRPO可以用确定性策略建模吗？" class="headerlink" title="TRPO可以用确定性策略建模吗？"></a>TRPO可以用确定性策略建模吗？</h3><ul>
@@ -620,7 +623,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">278</span>
+                  <span class="site-state-item-count">279</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

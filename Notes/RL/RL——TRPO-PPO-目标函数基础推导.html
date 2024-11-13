@@ -88,7 +88,7 @@
 <meta property="og:description" content="本文主要介绍TRPO、PPO相关内容     参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png">
-<meta property="og:updated_time" content="2024-11-10T13:21:01.757Z">
+<meta property="og:updated_time" content="2024-11-13T16:29:27.247Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——TRPO-PPO-目标函数基础推导">
 <meta name="twitter:description" content="本文主要介绍TRPO、PPO相关内容     参考链接： 如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎：知乎 从TRPO到PPO（理论分析与数学证明）：博客 TRPO公式推导:笔记式推导 信赖域策略优化(Trust Region Policy Optimization, TRPO):PPT式推导 RL - Trust Region Policy Optimization">
@@ -345,11 +345,14 @@
 </ul>
 <hr>
 <h3 id="相关概念理解"><a href="#相关概念理解" class="headerlink" title="相关概念理解"></a>相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
-<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots \sim \pi}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l})] $$</li>
-<li>V值的定义<br>$$ V_\pi(s_t) = E_{a_t, s_{t+1},\cdots \sim \pi}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
+<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = E_{s_{t+1},a_{t+1},\cdots \sim \pi}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})] $$<ul>
+<li>说明：以上期望是条件概率下的期望，为了更准确表达，一般来说可以加上”\(\vert_{(s_t,a_t)} \)”</li>
+</ul>
+</li>
+<li>V值的定义<br>$$ V_\pi(s_t) = E_{a_t, s_{t+1},\cdots \sim \pi}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l}, a_{t+l})] = E_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
 <li>优势函数的定义<br>$$ A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t) $$</li>
 </ul>
-<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = E_{s_0, a_0,\ldots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</p>
+<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = E_{s_0, a_0,\ldots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</p>
 <ul>
 <li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
 </ul>
@@ -369,7 +372,7 @@
 </ul>
 <hr>
 <h3 id="TRPO-PPO的推导"><a href="#TRPO-PPO的推导" class="headerlink" title="TRPO/PPO的推导"></a>TRPO/PPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
-<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = E_{s_0, a_0,\cdots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t)] $$</li>
+<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = E_{s_0, a_0,\cdots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</li>
 <li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$ \eta(\tilde{\pi}) = \eta(\pi) + E_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)] $$<ul>
 <li>证明如下：<br>$$<br>\begin{aligned}<br>E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=E_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-E_{s_0}[V_\pi(s_0)] + E_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
 </ul>
@@ -487,8 +490,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——策略梯度法推导.html" rel="next" title="RL——策略梯度法推导">
-                <i class="fa fa-chevron-left"></i> RL——策略梯度法推导
+              <a href="/Notes/RL/RL——TRPO.html" rel="next" title="RL——TRPO">
+                <i class="fa fa-chevron-left"></i> RL——TRPO
               </a>
             
           </div>
@@ -497,8 +500,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="prev" title="RL——TRPO">
-                RL——TRPO <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——PPO.html" rel="prev" title="RL——PPO">
+                RL——PPO <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -578,7 +581,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">278</span>
+                  <span class="site-state-item-count">279</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
