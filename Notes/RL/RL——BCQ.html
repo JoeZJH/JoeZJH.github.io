@@ -87,10 +87,15 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎   BCQ整体介绍 BCQ（Batch-Constrained deep Q-learning）分为连续版本（Off-Policy Deep Reinforcement Learning">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-14T15:16:38.667Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——BCQ/BCQ-Algorithm.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——BCQ/Discrete-BCQ-Algorithm.png">
+<meta property="og:updated_time" content="2024-11-14T16:04:01.830Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——BCQ">
 <meta name="twitter:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎   BCQ整体介绍 BCQ（Batch-Constrained deep Q-learning）分为连续版本（Off-Policy Deep Reinforcement Learning">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png">
 
 
 
@@ -351,39 +356,60 @@
 </ul>
 <hr>
 <h3 id="BCQ连续版本"><a href="#BCQ连续版本" class="headerlink" title="BCQ连续版本"></a>BCQ连续版本</h3><h4 id="关键实验"><a href="#关键实验" class="headerlink" title="关键实验"></a>关键实验</h4><ul>
-<li>实验设置：<ul>
-<li>第一个实验，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
-<li>第二个实验，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
-<li>第三个实验，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
+<li><p>实验设置：</p>
+<ul>
+<li>第一个实验(Final Buffer)，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
+<li>第二个实验(Concurrent)，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
+<li>第三个实验(Imitation)，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
 </ul>
 </li>
-<li>实验结果：<ul>
+<li><p>实验结果：</p>
+  <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png" title height="50%" width="50%">
+  <!-- <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png"> -->
+
+<ul>
 <li>第三个实验中使用的样本最好，但是训练得到的离线智能体效果最差，原因分析主要是<strong>外推误差</strong>导致</li>
+<li>三个实验的离线DDPG智能体都有不同情况的Q值高估问题，其中第三个实验的Q值高估问题最为严重（注意图2中看起来高估问题大于图1中，其实不是，是因为图二的量纲较小导致的）</li>
 </ul>
 </li>
 </ul>
 <h4 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h4><ul>
 <li>对于给定的真实MDP和数据集\(\mathcal{B}\)，定义外推误差<br>$$\epsilon_\text{MDP}(s,a) = Q^\pi(s,a) - Q_{\mathcal{B}}^\pi(s,a)$$</li>
-<li>则有外推误差可推导得到如下结论：
+<li>则有外推误差可推导得到如下结论：<img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png" title height="80%" width="80%">
+<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png"> -->
 
 </li>
 </ul>
 <h4 id="训练流程"><a href="#训练流程" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
-<li>训练流程解释：<ul>
+<li><p>整体流程概览:</p>
+<img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png" title height="80%" width="80%">
+<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png"> -->
+</li>
+<li><p>训练流程解释：</p>
+<ul>
 <li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
-<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
+<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中公式(13)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
 </ul>
 </li>
 </ul>
 <h4 id="Serving步骤"><a href="#Serving步骤" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
 <li>给定一个状态\(s\)</li>
-<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE \(G_w(s)\) 采样\(n\)个动作</li>
+<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE网络 \(G_w(s)\) 采样\(n\)个动作</li>
 <li>\(\xi_{\phi}(s,a_i,\Phi)\)：将这些状态和动作经过扰动网络，扰动网络输出是在\([-\Phi,\Phi]\)内的，得到的扰动值</li>
 <li>将扰动添加到原始动作上，再将动作经过Q网络，选取能使Q value最大的动作</li>
-<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}<em>{a_i + \xi</em>{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
+<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}_{a_i + \xi_{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
 </ul>
 <hr>
-<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4>
+<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
+<li>整体流程概览:<img src="/Notes/RL/RL——BCQ/Discrete-BCQ-Algorithm.png">
+
+</li>
+</ul>
+<h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
+<li>按照如下策略决策：</li>
+</ul>
+<p>$$ \pi(s) = \mathop{\arg\max}_{a\vert\frac{G_w(a|s)}{\max_\hat{a} G_w(\hat{a}|s)} \gt \tau} Q_\theta(s,a) $$</p>
+
       
     </div>
     
