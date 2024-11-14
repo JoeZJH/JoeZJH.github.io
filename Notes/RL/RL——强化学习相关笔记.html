@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-13T16:27:13.186Z">
+<meta property="og:updated_time" content="2024-11-14T15:19:37.698Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——强化学习相关笔记">
 <meta name="twitter:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
@@ -342,7 +342,7 @@
 </ul>
 </li>
 <li><strong>Model Bias: 数据集本身可能分布与MDP分布不一致</strong><ul>
-<li>数据集本身与MDP分布不一致（这里主要指与策略无关的部分，比如数据集中\(P(s’|s,a)\)无法准确表达真实环境）</li>
+<li>这里主要指在随机MDP中，数据集本身与MDP分布不一致（这里主要指与策略无关的部分，比如数据集中\(P(s’|s,a)\)无法准确表达真实环境）</li>
 </ul>
 </li>
 </ul>
@@ -366,9 +366,16 @@
 </ul>
 <hr>
 <h3 id="Q网络的更新应该是软更新还是硬更新？"><a href="#Q网络的更新应该是软更新还是硬更新？" class="headerlink" title="Q网络的更新应该是软更新还是硬更新？"></a>Q网络的更新应该是软更新还是硬更新？</h3><ul>
-<li>DDPG，BCQ连续版本等连续动作模型的Q值：软更新 </li>
+<li>DDPG，BCQ连续版本等连续动作模型的Q值：软更新 <ul>
+<li>DDPG论文中提到，使用这种软更新的方式，模型参数和对应的Target值都会缓慢的被更新，有利于保持学习的稳定性</li>
+</ul>
+</li>
 <li>DQN，BCQ离散版本等离散动作模型的Q值：硬更新 </li>
 <li>问题：是因为BCQ本身就是基于以上两个模型实现的吗？（TODO）</li>
+<li>在<a href="https://zhuanlan.zhihu.com/p/354953290" target="_blank" rel="noopener">DQN中目标网络两种常见更新方法对比</a>有针对硬更新和软更新在DQN上分别尝试效果： <blockquote>
+<p>实验结果表明，当目标网络更新间隔\(C\)和软间隔更新系数\(\tau\)满足\(\tau C = 1\)时，DQN算法使用这两种目标网路更新方式的性能是相当的。</p>
+</blockquote>
+</li>
 </ul>
 <hr>
 <h3 id="为什么DDPG-SAC是off-policy的？"><a href="#为什么DDPG-SAC是off-policy的？" class="headerlink" title="为什么DDPG/SAC是off-policy的？"></a>为什么DDPG/SAC是off-policy的？</h3><ul>
@@ -501,6 +508,37 @@
 <hr>
 <h3 id="TRPO可以用确定性策略建模吗？"><a href="#TRPO可以用确定性策略建模吗？" class="headerlink" title="TRPO可以用确定性策略建模吗？"></a>TRPO可以用确定性策略建模吗？</h3><ul>
 <li>不可以，理由是无法进行重要性采样了，无法推导出TRPO的更新公式，从这个视角看，PPO和TRPO都不可以</li>
+</ul>
+<hr>
+<h3 id="为什么DDPG-TD3有Target-Actor网络，而PPO-SAC没有？"><a href="#为什么DDPG-TD3有Target-Actor网络，而PPO-SAC没有？" class="headerlink" title="为什么DDPG/TD3有Target Actor网络，而PPO/SAC没有？"></a>为什么DDPG/TD3有Target Actor网络，而PPO/SAC没有？</h3><ul>
+<li><strong>Target Q网络</strong>的引入主要有两个优点（<strong>Target V网络</strong>也类似）：<strong>防止网络波动</strong>、<strong>缓解Q值高估问题</strong><ul>
+<li><strong>DQN初始的Target网络</strong>：用于固定网络参数，防止Q网络更新的时候目标也一直发生改变，训练不收敛</li>
+<li><strong>Double DQN（DDQN）</strong>：做法是从当前策略选动作，从Target网络取Q-value，缓解Q值高估问题（注意：DDQN相对普通DQN不需要增加网络）</li>
+</ul>
+</li>
+<li><strong>引申问题：什么场景下需要Target Actor网络？</strong><ul>
+<li>DDPG/TD3需要用到当前策略来取下一个状态的动作来评估Q网络TD目标，此时使用的是Target Actor网络；<ul>
+<li>DDPG原始论文中提到，DDPG中Target Q和Target Actor网络都是必须的，有利于保证训练不发散（即训练稳定，直观理解是，如果策略被更新的同时也用来计算Q网络的TD目标，可能导致目标来回波动，网络不收敛的现象）；当然，论文中提到这种设置可能导致训练收敛慢一些，但是稳定性的收益超过了这个地方</li>
+</ul>
+</li>
+<li>PPO/SAC也需要用到当前策略来取下一个状态的动作来评估Q网络TD目标，为什么不需要Target Actor网络呢？<ul>
+<li>SAC离散版本下，是通过采样动作来影响目标Q值的，不直接影响目标Q值；连续版本的Actor网络也是直接输出动作，且参与目标Q值计算的（为什么不使用未知，猜测加了收敛会变慢，但学习会更稳定）</li>
+<li>PPO离散版本和连续版本下，均只需要学习V值，理论上Actor网络仅参与采样动作与环境交互，不参与生成目标V值</li>
+</ul>
+</li>
+<li>总结：增加Target Actor网络的成本是学习会变慢；优点是学习会更稳定</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="什么场景下需要Twin-Q网络？"><a href="#什么场景下需要Twin-Q网络？" class="headerlink" title="什么场景下需要Twin Q网络？"></a>什么场景下需要Twin Q网络？</h3><ul>
+<li>Q值/V值更新时，如果用到Q网络，则需要使用Twin Q网络，可以降低对Q值的高估</li>
+<li>Actor更新时也需要吗？什么时候需要呢？为什么SAC原作者开源代码没有使用，而其他实现使用了？<ul>
+<li>SAC(2V+2Q+1策略)版本：更新Q网络时用了Twin Q；更新Actor网络时仅使用其中一个网络（<a href="https://github.com/haarnoja/sac/blob/master/sac/algos/sac.py#L312-L325" target="_blank" rel="noopener">SAC(V)论文作者开源实现</a>）  </li>
+<li>SAC(4Q+1策略)版本：更新Q网络时用了Twin Q；更新Actor网络时使用两个Q的均值（<a href="https://github.com/rail-berkeley/softlearning/blob/master/softlearning/algorithms/sac.py#L225-L227" target="_blank" rel="noopener">SAC论文作者开源实现</a>）  </li>
+<li>理解：Actor网络更新时使用均值可能更好些，相当于Bagging的思想，Actor更新的方向同时要让两个Q都更大</li>
+</ul>
+</li>
 </ul>
 
       
@@ -685,7 +723,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么off-policy的方法在于不与环境交互时效果不好？"><span class="nav-number">1.</span> <span class="nav-text">为什么off-policy的方法在于不与环境交互时效果不好？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Online-RL中不能使用BN？"><span class="nav-number">2.</span> <span class="nav-text">为什么Online RL中不能使用BN？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DQN不需要重要性采样？"><span class="nav-number">3.</span> <span class="nav-text">为什么DQN不需要重要性采样？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q网络的更新应该是软更新还是硬更新？"><span class="nav-number">4.</span> <span class="nav-text">Q网络的更新应该是软更新还是硬更新？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-SAC是off-policy的？"><span class="nav-number">5.</span> <span class="nav-text">为什么DDPG/SAC是off-policy的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么SARSA和DQN都可以收敛到最优解？"><span class="nav-number">6.</span> <span class="nav-text">为什么SARSA和DQN都可以收敛到最优解？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#V值更新如何保证学习到指定策略？"><span class="nav-number">7.</span> <span class="nav-text">V值更新如何保证学习到指定策略？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#离散动作、连续动作的使用场景辨析"><span class="nav-number">8.</span> <span class="nav-text">离散动作、连续动作的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#随机策略、确定性策略的使用场景辨析"><span class="nav-number">9.</span> <span class="nav-text">随机策略、确定性策略的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#off-policy-AC目标和on-policy-AC目标等价吗？"><span class="nav-number">10.</span> <span class="nav-text">off-policy AC目标和on-policy AC目标等价吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO可以用确定性策略建模吗？"><span class="nav-number">11.</span> <span class="nav-text">TRPO可以用确定性策略建模吗？</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么off-policy的方法在于不与环境交互时效果不好？"><span class="nav-number">1.</span> <span class="nav-text">为什么off-policy的方法在于不与环境交互时效果不好？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Online-RL中不能使用BN？"><span class="nav-number">2.</span> <span class="nav-text">为什么Online RL中不能使用BN？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DQN不需要重要性采样？"><span class="nav-number">3.</span> <span class="nav-text">为什么DQN不需要重要性采样？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q网络的更新应该是软更新还是硬更新？"><span class="nav-number">4.</span> <span class="nav-text">Q网络的更新应该是软更新还是硬更新？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-SAC是off-policy的？"><span class="nav-number">5.</span> <span class="nav-text">为什么DDPG/SAC是off-policy的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么SARSA和DQN都可以收敛到最优解？"><span class="nav-number">6.</span> <span class="nav-text">为什么SARSA和DQN都可以收敛到最优解？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#V值更新如何保证学习到指定策略？"><span class="nav-number">7.</span> <span class="nav-text">V值更新如何保证学习到指定策略？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#离散动作、连续动作的使用场景辨析"><span class="nav-number">8.</span> <span class="nav-text">离散动作、连续动作的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#随机策略、确定性策略的使用场景辨析"><span class="nav-number">9.</span> <span class="nav-text">随机策略、确定性策略的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#off-policy-AC目标和on-policy-AC目标等价吗？"><span class="nav-number">10.</span> <span class="nav-text">off-policy AC目标和on-policy AC目标等价吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO可以用确定性策略建模吗？"><span class="nav-number">11.</span> <span class="nav-text">TRPO可以用确定性策略建模吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-TD3有Target-Actor网络，而PPO-SAC没有？"><span class="nav-number">12.</span> <span class="nav-text">为什么DDPG/TD3有Target Actor网络，而PPO/SAC没有？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么场景下需要Twin-Q网络？"><span class="nav-number">13.</span> <span class="nav-text">什么场景下需要Twin Q网络？</span></a></li></ol></div>
             
 
           </div>

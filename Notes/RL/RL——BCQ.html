@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎">
+<meta name="description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎   BCQ整体介绍 BCQ（Batch-Constrained deep Q-learning）分为连续版本（Off-Policy Deep Reinforcement Learning">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RL——BCQ">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——BCQ.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎">
+<meta property="og:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎   BCQ整体介绍 BCQ（Batch-Constrained deep Q-learning）分为连续版本（Off-Policy Deep Reinforcement Learning">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-08-02T14:57:40.653Z">
+<meta property="og:updated_time" content="2024-11-14T15:16:38.667Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——BCQ">
-<meta name="twitter:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎">
+<meta name="twitter:description" content="参考链接：【笔记】BCQ详解 原作者的PPT   参考链接：BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎 参考链接：【代码速读】（RL）1.BCQ - 一条的文章 - 知乎   BCQ整体介绍 BCQ（Batch-Constrained deep Q-learning）分为连续版本（Off-Policy Deep Reinforcement Learning">
 
 
 
@@ -326,7 +326,9 @@
       
 
       
-        <ul>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
 <li>参考链接：<a href="https://zhuanlan.zhihu.com/p/369524801" target="_blank" rel="noopener">【笔记】BCQ详解</a><ul>
 <li>原作者的PPT</li>
 </ul>
@@ -334,7 +336,54 @@
 <li>参考链接：<a href="https://zhuanlan.zhihu.com/p/272152582" target="_blank" rel="noopener">BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎</a></li>
 <li>参考链接：<a href="https://zhuanlan.zhihu.com/p/206489894" target="_blank" rel="noopener">【代码速读】（RL）1.BCQ - 一条的文章 - 知乎</a></li>
 </ul>
+<hr>
+<h3 id="BCQ整体介绍"><a href="#BCQ整体介绍" class="headerlink" title="BCQ整体介绍"></a>BCQ整体介绍</h3><ul>
+<li>BCQ（Batch-Constrained deep Q-learning）分为连续版本（<a href="https://proceedings.mlr.press/v97/fujimoto19a/fujimoto19a.pdf" target="_blank" rel="noopener">Off-Policy Deep Reinforcement Learning without Exploration</a>，2019年8月）和离散版本（<a href="https://arxiv.org/pdf/1910.01708" target="_blank" rel="noopener">Benchmarking   Batch Deep Reinforcement Learning Algorithms</a>，2019年10月）两篇文章，一作是同一个作者  </li>
+<li><strong>外推误差(Extrapolation Error)的定义：off-policy值学习中，当前策略真实状态动作访问分布和数据集中的状态动作分布不匹配导致的一种误差</strong><blockquote>
+<p>Extrapolation error is an error in off-policy value learning which is introduced by the mismatch between the dataset and true state-action visitation of the current policy</p>
+</blockquote>
+</li>
+<li>背景：off-policy的策略理论上可以从任意行为策略采样的数据中学习最优策略，但是直接将off-policy策略应用到Offline RL（也称为Batch RL）场景中可能面临，<strong>Absent Data</strong>（状态动作对缺失），<strong>Training Mismatch</strong>（训练预测分布不一致），<strong>Model Bias</strong>（随机MDP的状态转移概率有偏差）等问题</li>
+<li>BCQ的基本思想：采取保守策略，让学到的策略对应的状态动作访问空间尽量只在出现过的数据集上，或者相近的数据上<ul>
+<li>基本方法：主要通过限制\(Q(s’,\pi(s’))\)中的\(s’\)不要偏离数据集太多来实现</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="BCQ连续版本"><a href="#BCQ连续版本" class="headerlink" title="BCQ连续版本"></a>BCQ连续版本</h3><h4 id="关键实验"><a href="#关键实验" class="headerlink" title="关键实验"></a>关键实验</h4><ul>
+<li>实验设置：<ul>
+<li>第一个实验，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
+<li>第二个实验，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
+<li>第三个实验，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
+</ul>
+</li>
+<li>实验结果：<ul>
+<li>第三个实验中使用的样本最好，但是训练得到的离线智能体效果最差，原因分析主要是<strong>外推误差</strong>导致</li>
+</ul>
+</li>
+</ul>
+<h4 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h4><ul>
+<li>对于给定的真实MDP和数据集\(\mathcal{B}\)，定义外推误差<br>$$\epsilon_\text{MDP}(s,a) = Q^\pi(s,a) - Q_{\mathcal{B}}^\pi(s,a)$$</li>
+<li>则有外推误差可推导得到如下结论：
 
+</li>
+</ul>
+<h4 id="训练流程"><a href="#训练流程" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
+<li>训练流程解释：<ul>
+<li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
+<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
+</ul>
+</li>
+</ul>
+<h4 id="Serving步骤"><a href="#Serving步骤" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
+<li>给定一个状态\(s\)</li>
+<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE \(G_w(s)\) 采样\(n\)个动作</li>
+<li>\(\xi_{\phi}(s,a_i,\Phi)\)：将这些状态和动作经过扰动网络，扰动网络输出是在\([-\Phi,\Phi]\)内的，得到的扰动值</li>
+<li>将扰动添加到原始动作上，再将动作经过Q网络，选取能使Q value最大的动作</li>
+<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}<em>{a_i + \xi</em>{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
+</ul>
+<hr>
+<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4>
       
     </div>
     
@@ -428,8 +477,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -498,6 +556,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#BCQ整体介绍"><span class="nav-number">1.</span> <span class="nav-text">BCQ整体介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BCQ连续版本"><span class="nav-number">2.</span> <span class="nav-text">BCQ连续版本</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#关键实验"><span class="nav-number">2.1.</span> <span class="nav-text">关键实验</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#理论推导"><span class="nav-number">2.2.</span> <span class="nav-text">理论推导</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#训练流程"><span class="nav-number">2.3.</span> <span class="nav-text">训练流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Serving步骤"><span class="nav-number">2.4.</span> <span class="nav-text">Serving步骤</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BCQ离散版本"><span class="nav-number">3.</span> <span class="nav-text">BCQ离散版本</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#训练流程-1"><span class="nav-number">3.1.</span> <span class="nav-text">训练流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Serving步骤-1"><span class="nav-number">3.2.</span> <span class="nav-text">Serving步骤</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       

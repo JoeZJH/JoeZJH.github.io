@@ -275,6 +275,164 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Soft-Q-Learning.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——Soft-Q-Learning.html" itemprop="url">RL——Soft-Q-Learning</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>参考文献<ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v70/haarnoja17a/haarnoja17a-supp.pdf" target="_blank" rel="noopener">Reinforcement learning with deep energy-based policies.</a>，2017，ICML，UC Berkeley，作者与SAC作者是同一个</li>
+<li><a href="https://zhuanlan.zhihu.com/p/430792032" target="_blank" rel="noopener">Soft Q-learning解读 - 单字卓的文章 - 知乎</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="回顾常规的强化学习场景"><a href="#回顾常规的强化学习场景" class="headerlink" title="回顾常规的强化学习场景"></a>回顾常规的强化学习场景</h3><ul>
+<li>目标定义：<br>$$<br>\begin{align}<br>J(\theta) &amp;= E_{\tau\sim \pi_\theta}[R(\tau)] \\<br>&amp;= E_{s_0, a_0,\ldots \sim \pi_\theta}\Big[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t) \Big] \\<br>&amp;= \sum_{t=0}^\infty E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]<br>\end{align}<br>$$<ul>
+<li>第一行是普通PG方法推导的写法，最贴近本质</li>
+<li>第二行是TRPO文章的写法，是第一行的展开形势</li>
+<li>第三行这里\(\sum_{t=0}^T E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]\)的写法是Soft Q-Learning论文和SAC论文提出来的，和之前TRPO等文章写法都不同，这里从第二行到第三行的变换可以理解为积分和求和交换顺序的写法，从状态\(s_0\)开始，\((s_t,a_t)\)都是按照策略\(\pi_\theta\)执行下去可能遇到的概率分布</li>
+</ul>
+</li>
+<li>Q值定义：<br>$$<br>\begin{align}<br>Q^\pi(s_t,a_t) &amp;= E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^lr(s_{t+l}, a_{t+l})] \vert_{(s_t,a_t)}<br>\end{align}<br>$$<ul>
+<li>“\(\vert_{(s_t,a_t)}\)”表示条件概率，一般来说，不引起歧义的情况下，也可以省略”\(\vert_{(s_t,a_t)}\)”</li>
+</ul>
+</li>
+<li>V值定义：<br>$$<br>\begin{align}<br>V^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft-Q-Learning"><a href="#Soft-Q-Learning" class="headerlink" title="Soft Q-Learning"></a>Soft Q-Learning</h3><ul>
+<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
+<li>这里目标中增加的熵就是Soft名字的来源，这里相对标准的强化学习，仅增加了\(\alpha \mathcal{H}(\pi_\phi(.\vert s_t))\)为额外目标，后续在不引起歧义的情况下，我们也用\(\alpha \mathcal{H}(\pi_\phi(s_{t}))\)来表示，且为了方便，后续推导中常常会视为\(\alpha=1\)，这里可以通过奖励和熵同时乘以\(\frac{1}{\alpha}\)来变换得到</li>
+</ul>
+</li>
+<li>Soft Q值定义<br>$$<br>\begin{align}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))]<br>\end{align}<br>$$<ul>
+<li>对于\(Q_{\text{soft}}^\pi(s_t, a_t)\)来说，已经发生的事件是“\((s_t,a_t)\)”，此时\(a_t\)是确定的动作，对应的熵\(\mathcal{H}(\pi(s_{t}))=0\)</li>
+</ul>
+</li>
+<li>Soft V值定义，同时推导用Soft Q值表示Soft V值<br>$$<br>\begin{align}<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + \alpha\mathcal{H}(\pi(s_{t})) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big]\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] + \alpha\mathcal{H}(\pi(s_{t}))\Big] \\<br>&amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t})) \\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t)] - \alpha E_{a_t \sim \pi} [\log \pi(a_t \vert s_t)]\\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{align}<br>$$</li>
+<li>推导用Soft V值表示Soft Q值<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^{l-1}(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) +\alpha\mathcal{H}(\pi(s_{t+1+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} \Big[E_{a_{t+1},s_{t+2},a_{t+2},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) + \alpha\mathcal{H}(\pi(s_{t+1+l})))\Big]\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>\end{aligned}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft贝尔曼期望方程"><a href="#Soft贝尔曼期望方程" class="headerlink" title="Soft贝尔曼期望方程"></a>Soft贝尔曼期望方程</h3><ul>
+<li>通过上面的推导，我们可以得到，<strong>Soft贝尔曼期望方程</strong>为：<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [E_{a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})]] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{aligned}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft贝尔曼最优方程"><a href="#Soft贝尔曼最优方程" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h3><ul>
+<li>首先证明，在满足如下策略改进的时候(其中\(\tilde{\pi}\))是新策略，\(\pi\)是旧策略，<br>$$<br>\tilde{\pi}(\cdot | s) \propto \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right), \quad \forall s.<br>$$</li>
+<li>策略的Soft Q值是单调的，即：<br>$$<br>Q_{\text{soft}}^{\tilde{\pi}}(s, a) \geq Q_{\text{soft}}^{\pi_{\text{old}}}(s, a) ; \forall s, a.<br>$$<ul>
+<li>证明如下：<img src="/Notes/RL/RL——Soft-Q-Learning/Soft-Q-Learning-Policy-Improvement.png"></li>
+<li>其中使用到以下不等式  ：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \le \mathcal{H}(\tilde{\pi}(\cdot\vert s)) + E_{a\sim \tilde{\pi}}[Q_{\text{soft}}^\pi(s,a)]<br>  $$</li>
+<li>上面的不等式又使用到以下式子（下面的式子如何推出上面的式子待确认）：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da<br>  $$<ul>
+<li>以上式子证明过程如下：<br>  $$<br>  \begin{align}<br>  \text{right}  &amp;= - \int \pi(\cdot | s) \log \frac{\pi(\cdot | s)}{\tilde{\pi}(\cdot | s)} + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>  &amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  {\tilde{\pi}(\cdot | s)} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>  &amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>  &amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right) \\<br>  &amp;= \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \\<br>  &amp;= \text{left}<br>  \end{align}<br>  $$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -831,366 +989,6 @@
 </li>
 <li><p>最终，\(\theta\) 的值为：<br>$$<br>\theta_{k+1} = \theta_k + \sqrt{\frac{2\delta}{g^T H^{-1} g}} H^{-1} g.<br>$$</p>
 </li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——SAC.html" itemprop="url">RL——SAC</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/385658411" target="_blank" rel="noopener">强化学习之图解SAC算法</a>      </li>
-<li><a href="https://blog.csdn.net/baishuiniyaonulia/article/details/121538413" target="_blank" rel="noopener">Soft Actor Critic算法论文公式详解</a>   </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="SAC"><a href="#SAC" class="headerlink" title="SAC"></a>SAC</h3><ul>
-<li>原始论文：<ul>
-<li>论文1（2V+2Q+1策略, 2018，UC Berkeley）：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>      </li>
-<li>论文2（4Q+1策略，自适应温度系数，2019，UC Berkeley）：<a href="https://arxiv.org/pdf/1812.05905" target="_blank" rel="noopener">Soft Actor-Critic Algorithms and Applications</a>      </li>
-</ul>
-</li>
-</ul>
-<h4 id="相关推导"><a href="#相关推导" class="headerlink" title="相关推导"></a>相关推导</h4><ul>
-<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
-<li>这里目标中增加的熵就是Soft名字的来源</li>
-</ul>
-</li>
-<li>Q值V值定义<br>$$<br>\begin{aligned}<br>Q(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V(s_{t+1})] \\<br>V(s_t) &amp;= E_{a_t \sim \pi} [Q(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>\end{aligned}<br>$$</li>
-</ul>
-<h4 id="SAC-2V-2Q-1策略"><a href="#SAC-2V-2Q-1策略" class="headerlink" title="SAC(2V+2Q+1策略)"></a>SAC(2V+2Q+1策略)</h4><ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>       <ul>
-<li>目标定义见上面部分，由于温度系数\(\alpha\)是一个固定的超参数，于是，当我们可以通过将Reward乘以\(\frac{1}{\alpha}\)来Rescaling Reward，使得熵的系数为1，所以本论文后面的推导都可以将\(\alpha=1\)来推导</li>
-</ul>
-</li>
-<li>网络结构<ul>
-<li>一个V网络及其对应的一个Target V网络，两个Q网络（Twin Q），一个策略网络</li>
-<li>由于存在V网络和Target V网络，不需要Q网络的Target Q网络了</li>
-</ul>
-</li>
-<li>训练流程<img src="/Notes/RL/RL——SAC/SAC-2V-2Q-Algorithm.png">
-
-</li>
-</ul>
-<h5 id="Soft-Policy-Evaluation"><a href="#Soft-Policy-Evaluation" class="headerlink" title="Soft Policy Evaluation"></a>Soft Policy Evaluation</h5><ul>
-<li>V值更新：<br>  $$<br>  \begin{aligned}<br>  J_V(\psi) &amp;= E_{s_t \sim \mathcal{D}} [\frac{1}{2} \big(V_\psi(s_t) - E[Q_w(s_t, a_t) - \log \pi_\phi(a_t \vert s_t)] \big)^2] \\<br>  \nabla_\psi J_V(\psi) &amp;= \nabla_\psi V_\psi(s_t)\big( V_\psi(s_t) - Q_w(s_t, a_t) + \log \pi_\phi (a_t \vert s_t) \big)<br>  \end{aligned}<br>  $$</li>
-<li>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_\pi(s)}[V_{\bar{\psi}}(s_{t+1})]) \big)^2] \\<br>  \nabla_w J_Q(w) &amp;= \nabla_w Q_w(s_t, a_t) \big( Q_w(s_t, a_t) - r(s_t, a_t) - \gamma V_{\bar{\psi}}(s_{t+1})\big)<br>  \end{aligned}<br>  $$<ul>
-<li><strong>策略评估（Q值和V值的更新过程统称为策略评估过程）的收敛性证明</strong>：<ul>
-<li>定义回报为\(r_\pi(s_t, a_t) \triangleq r(s_t, a_t) + \alpha E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[\mathcal{H}(\pi(\cdot\vert s_{t+1}))]\)（注意：其中\(p(s_{t+1}|s_t,a_t)\)在论文中常简写为\(p\)）</li>
-<li>则有：\(Q(s_t, a_t) = r_\pi(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t), a_{t+1}\sim\pi}[Q(s_{t+1},a_{t+1})]\)</li>
-<li>此时有贝尔曼算子（Bellman backup operator） \(\mathcal{T}^\pi\)为：\(\mathcal{T}^\pi Q(s_t, a_t) \triangleq r(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[V(s_{t+1})]\)<ul>
-<li>其中\(V(s_{t}) = E_{a_t \sim \pi}[Q(s_t, a_t) - log\pi(a_t|s_t)]\)</li>
-<li>贝尔曼算子\(\mathcal{T}^\pi\)是一种操作符，它表示对当前的价值函数集Q利用贝尔曼方程进行更新</li>
-</ul>
-</li>
-<li><strong>Lemma 1 (Soft Policy Evaluation)</strong>: 按照上式定义的\(\mathcal{T}^\pi\)，当动作维度\(|\mathcal{A}|&lt;\infty\)时，\(Q^{k+1} = \mathcal{T}^\pi Q^{k}\)会收敛到策略\(\pi\)对应的soft Q-value<ul>
-<li>问题这里的动作维度有限，是否说明连续动作是不可以的？证明中哪里用到了动作有限？<ul>
-<li>Lemma 1 (Soft Policy Evaluation)中引用的论文证明需要保证动作空间有限，从而保证熵是有界的，此时可以保证加入熵以后的reward还是可以收敛的<blockquote>
-<p>apply the standard convergence results for policy evaluation (Sutton &amp; Barto, 1998). The assumption |A| &lt; ∞ is required to guarantee that the entropy augmented reward is bounded.</p>
-</blockquote>
-</li>
-<li>连续动作的熵如果是有界的理论上也可以?</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h5 id="Soft-Policy-Improvement"><a href="#Soft-Policy-Improvement" class="headerlink" title="Soft Policy Improvement"></a>Soft Policy Improvement</h5><ul>
-<li><p>策略更新目标推导（新策略本质是在拟合函数Q的玻尔兹曼分布，后续有相关证明这种方式得到的新策略一定优于旧策略）：<br>  $$<br>  \begin{aligned}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi’(.\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, .) - \log Z^{\pi_\text{old}}(s_t)) \big) \Big] \\[6pt]<br>  \text{目标函数: } J_\pi(\phi) &amp;= E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi_\phi(. \vert s_t) | \exp(Q_w(s_t, .) - \log Z_w(s_t)) \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi} \Big[ \log \big( \frac{\pi_\phi(a_t \vert s_t)}{\exp(Q_w(s_t, a_t) - \log Z_w(s_t))} \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi} [ \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) + \log Z_w(s_t) ]<br>  \end{aligned}<br>  $$</p>
-<ul>
-<li>Lemma 2 (Soft Policy Improvement)，详细证明见附录：<ul>
-<li>若新策略\(\pi_\text{new}\)定义为\(<br>\pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big)\)</li>
-<li>则有\(Q^{\pi_\text{new}}(s_t, a_t) \ge Q^{\pi_\text{old}}(s_t, a_t), \quad \forall (s_t, a_t) \in \mathcal{S} \times \mathcal{A}\)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>由于\(\log Z_w(s_t)\)与参数\(\phi\)无关，梯度为0，故而可以消掉\(\log Z_w(s_t)\)，最终得到<strong>SAC离散策略的的更新目标</strong>：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi} [ \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) ]<br>  $$</p>
-</li>
-<li><p><strong>SAC连续动作的策略更新目标</strong>，首先需要采用重参数法建模连续动作\(a_t = f_\phi(\epsilon_t; s_t)\)，然后有：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t))]<br>  $$</p>
-<ul>
-<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数</li>
-</ul>
-</li>
-</ul>
-<h5 id="Soft-Policy-Iteration"><a href="#Soft-Policy-Iteration" class="headerlink" title="Soft Policy Iteration"></a>Soft Policy Iteration</h5><ul>
-<li>Theorem 1 (Soft Policy Iteration). 重复应用上面的Soft Policy Evaluation 和 Soft Policy Improvement，最终策略\(\pi\)会收敛到最优策略\(\pi^*\)，使得\(Q^{\pi^*}(s_t, a_t) \ge Q^{\pi}(s_t, a_t)\)对所有的\(\pi \in \Pi\)和\((s_t, a_t) \in \mathcal{S} \times \mathcal{A}\)成立<ul>
-<li>原始论文中有证明，实际上可以表述为“单调有界，所以收敛：Soft Q单调有界，所以会收敛到一个最优的Soft Q，对应的就是最优策略”</li>
-</ul>
-</li>
-</ul>
-<h4 id="SAC-4Q-1策略"><a href="#SAC-4Q-1策略" class="headerlink" title="SAC(4Q+1策略)"></a>SAC(4Q+1策略)</h4><ul>
-<li><p>原始论文：<a href="https://arxiv.org/pdf/1812.05905" target="_blank" rel="noopener">Soft Actor-Critic Algorithms and Applications</a>      </p>
-<ul>
-<li>本论文是第一篇论文的改进版本，主要改进是允许温度系数\(\alpha\)变得可学习</li>
-<li>由于\(\alpha\)是一个是可学习的变量，所以不再可以像之前的论文一样，通过将Reward乘以\(\frac{1}{\alpha}\)来Rescaling Reward，使得熵的系数为1。所以本论文后面的推导都可以将带着\(\alpha\)</li>
-</ul>
-</li>
-<li><p>网络结构  </p>
-<ul>
-<li>两个Q网络（Twin Q）及其分别对应的Target Q网络，一个策略网络</li>
-<li>两个Q网络分别迭代，有各自的Target Q网络</li>
-</ul>
-</li>
-<li><p>训练流程</p>
-<img src="/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png"></li>
-<li><p>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma (Q_\bar{w}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_t \vert s_t))) \big)^2] \\<br>  \end{aligned}<br>  $$</p>
-</li>
-<li><p>策略更新（在前一篇文章的基础上，增加\(\alpha\)即可）：</p>
-<ul>
-<li><strong>SAC离散策略的的更新目标</strong>：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi} [ \alpha \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) ]<br>  $$</li>
-<li><strong>SAC连续动作的策略更新目标</strong>，首先需要采用重参数法建模连续动作\(a_t = f_\phi(\epsilon_t; s_t)\)，然后有：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\alpha \log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t))]<br>  $$<ul>
-<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>温度系数\(\alpha\)自动更新：</strong></p>
-<ul>
-<li><p>将强化学习的目标改成：<br>  $$<br>  \begin{align}<br>  \max_{\pi_0, \dots, \pi_T} E_{\rho_\pi} \Big[ \sum_{t=0}^T r(s_t, a_t)\Big] \text{s.t. } &amp;\forall t\text{, } \mathcal{H}(\pi_t) \geq \mathcal{H}_0 \\<br>  \end{align}<br>  $$</p>
-</li>
-<li><p>即：<br>  $$<br>  \max_{\pi_0, \dots, \pi_T} E_{\rho_\pi} \Big[ \sum_{t=0}^T r(s_t, a_t)\Big] \text{s.t. } \forall t\text{, } E_{(s_t, a_t) \sim \rho_\pi}[-\log(\pi_t(a_t|s_t))] \geq \mathcal{H}_0<br>  $$</p>
-<ul>
-<li>其中\(\mathcal{H}_0 \)是一个期望的最小熵阈值</li>
-</ul>
-</li>
-<li><p>经过一系列的数学推导，可得\(\alpha\)的更新目标为：<br>  $$J(\alpha) = \mathbb{E}_{a_t \sim \pi_t} [-\alpha \log \pi_t(a_t \mid s_t) - \alpha \mathcal{H}_0]$$</p>
-</li>
-<li><p>实践：</p>
-<ul>
-<li><p>从实践经验来看，可以设置\(\mathcal{H}_0 = -dim(\mathcal{A})\)，跟动作空间维度相关（注意不是动作的数量，而是动作的维度，单维的离散动作维度应该是1，单维连续动作的维度也应该是1，比如HalfCheetah-v1动作对应六个关节的扭矩控制输入，故而动作维度是6）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">### 连续动作：</span><br><span class="line">target_entropy = - env.action_space.shape[0] </span><br><span class="line">### 离散动作：</span><br><span class="line">target_entropy = -1</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>温度系数自动调整方案不一定优于固定温度系数方案，在不同场景下效果不同，详情见原始论文</p>
-<img src="/Notes/RL/RL——SAC/SAC-Learned-Temperature.png">
-
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="SAC连续动作与离散动作的实现有什么区别"><a href="#SAC连续动作与离散动作的实现有什么区别" class="headerlink" title="SAC连续动作与离散动作的实现有什么区别"></a>SAC连续动作与离散动作的实现有什么区别</h3><h4 id="建模方式"><a href="#建模方式" class="headerlink" title="建模方式"></a>建模方式</h4><ul>
-<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\phi,\sigma_\phi\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算概率密度来使用</p>
-</li>
-<li><p><strong>采样方式</strong>：采样时需要创建分布来采样，由于需要梯度回传，所以需要使用重参数法</p>
-</li>
-<li><p><strong>log_prob的计算</strong>：借助概率密度函数定义完成log值的抽取</p>
-<ul>
-<li><p>连续策略对应的动作采样和对数概率计算：1）重参数法；2）tanh转换；3）对数概率计算</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">def forward(self, x):</span><br><span class="line">    x = F.relu(self.fc1(x))</span><br><span class="line">    mu = self.fc_mu(x)</span><br><span class="line">    std = F.softplus(self.fc_std(x))</span><br><span class="line">    dist = Normal(mu, std)</span><br><span class="line">    normal_sample = dist.rsample()  # rsample()是重参数化采样</span><br><span class="line">    log_prob = dist.log_prob(normal_sample)</span><br><span class="line">    action = torch.tanh(normal_sample)</span><br><span class="line">    # 计算tanh_normal分布的对数概率密度</span><br><span class="line">    log_prob = log_prob - torch.log(1 - torch.tanh(action).pow(2) + 1e-7)</span><br><span class="line">    action = action * self.action_bound</span><br><span class="line">    return action, log_prob</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>这里关于<code>log_prob = log_prob - torch.log(1 - torch.tanh(action).pow(2) + 1e-7)</code>是一个推导得到的，若\(y = tanh(x)\)，那么有\(\log p(y) = \log p(x) - \log(1-(tanh(x))^2)\)</p>
-</li>
-<li><p>使用<code>action = torch.tanh(normal_sample)</code>的原因是想将原来的值放缩到\([-1,1]\)之间，防止原始高斯分布采样到非常离谱的动作</p>
-</li>
-</ul>
-</li>
-<li><p><strong>Critic网络</strong>：连续动作下，需要将动作放到输入侧，输出维度为1；离散动作下，可以像连续时一样处理，也可以不输入动作，同时输出维度为动作维度</p>
-</li>
-</ul>
-<h4 id="计算损失函数"><a href="#计算损失函数" class="headerlink" title="计算损失函数"></a>计算损失函数</h4><ul>
-<li><p><strong>熵+目标的计算(最大化Q值)的计算</strong>：</p>
-<ul>
-<li><p>连续场景下（最大化动作下的Q值，梯度直接包含在重参数法采样的动作中；熵则仅使用对数概率，因为连续分布下，难以积分，虽然状态不同，但多个动作自然一起优化，自然就有期望熵的含义了）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">new_actions, log_prob = self.actor(states) # 重参数法</span><br><span class="line">entropy = -log_prob</span><br><span class="line">q1_value = self.critic_1(states, new_actions)</span><br><span class="line">q2_value = self.critic_2(states, new_actions)</span><br><span class="line">actor_loss = torch.mean(-self.log_alpha.exp() * entropy - torch.min(q1_value, q2_value))</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>离散场景下（用策略输出的分布计算Q值期望；熵也是完整的期望版本）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">probs = self.actor(states)</span><br><span class="line">log_probs = torch.log(probs + 1e-8)</span><br><span class="line"># 直接根据概率计算熵</span><br><span class="line">entropy = -torch.sum(probs * log_probs, dim=1, keepdim=True)  #</span><br><span class="line">q1_value = self.critic_1(states)</span><br><span class="line">q2_value = self.critic_2(states)</span><br><span class="line">min_qvalue = torch.sum(probs * torch.min(q1_value, q2_value), dim=1, keepdim=True)  # 直接根据概率计算期望</span><br><span class="line">actor_loss = torch.mean(-self.log_alpha.exp() * entropy - min_qvalue)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="SAC的连续和离散动作的思考"><a href="#SAC的连续和离散动作的思考" class="headerlink" title="SAC的连续和离散动作的思考"></a>SAC的连续和离散动作的思考</h4><ul>
-<li>SAC的一个核心创新是使用玻尔兹曼分布去作为策略分布，这使得SAC可以拟合多峰情况，但是对于连续动作的场景中，SAC选择了输出一个高斯分布，也就是让高斯趋近于玻尔兹曼分布。高斯是一个单峰的分布，这意味着连续动作的SAC本质上还是单峰（Unimodal）的算法，而不是soft q-learning的多峰（Multi-modal）</li>
-<li>离散情况下，确实可以拟合多峰分布</li>
-</ul>
-<h4 id="SAC必须是随机策略吗？"><a href="#SAC必须是随机策略吗？" class="headerlink" title="SAC必须是随机策略吗？"></a>SAC必须是随机策略吗？</h4><ul>
-<li>是的，确定性策略熵太小，SAC适用于随机策略</li>
-<li>问题一：如果SAC直接像DQN一样按照\(\arg\max_a Q(s,a)\)选择动作而不是玻尔兹曼分布会怎样？<ul>
-<li>回答：确定性动作的熵为0，所以熵不再有用，整个SAC会退化成DQN</li>
-</ul>
-</li>
-<li>问题二：如果DQN像SAC一样做玻尔兹曼分布会怎样？<ul>
-<li>回答：得到的策略不再是最优的，决策到的不再是Q值最大的动作【TODO】</li>
-</ul>
-</li>
-</ul>
-<h4 id="为什么最大熵能带来收益呢？"><a href="#为什么最大熵能带来收益呢？" class="headerlink" title="为什么最大熵能带来收益呢？"></a>为什么最大熵能带来收益呢？</h4><ul>
-<li><strong>所有可能的模型中熵最大的模型是最好的模型</strong>：这意味着在给定的信息下，模型的选择应该尽可能地保持不确定性，即不做不必要的假设。</li>
-<li><strong>熵与正则化</strong>：机器学习/深度学习模型容易过拟合，主要原因是数据不足，建模太复杂等，增加一些正则可以降低过拟合，最大熵可以理解为一种正则</li>
-<li><strong>在普通机器学习中收益来源</strong>：主要是防止过拟合（不做不必要的假设）</li>
-<li><strong>在强化学习中收益来源</strong>：一方面是防止过拟合，另一方面是让探索更加充分</li>
-</ul>
-<h4 id="SAC-vs-AC中添加entropy-loss？"><a href="#SAC-vs-AC中添加entropy-loss？" class="headerlink" title="SAC vs AC中添加entropy loss？"></a>SAC vs AC中添加entropy loss？</h4><ul>
-<li>SAC将原始AC的目标修改了，理论上目标就是让熵和reward一起最优，Critic网络和策略网络学习的目标都包含了最大化熵</li>
-<li>AC 中加入 entropy loss则只是一种正则，在损失函数上对熵进行了一些约束，此时Critic网络学不到熵的信息（此时AC的Actor目标和Critic目标不完全一致）</li>
-</ul>
-<hr>
-<h3 id="DSAC-Distributional-SAC"><a href="#DSAC-Distributional-SAC" class="headerlink" title="DSAC(Distributional SAC)"></a>DSAC(Distributional SAC)</h3><ul>
-<li>背景：SAC是基于值学习的方法，值学习方法往往存在值过估计问题，即算法倾向于高估某些状态-动作对的价值，从而影响学习性能</li>
-<li>DSAC通过引入值分布的方法来解决值过估计问题</li>
-<li>DSAC 还引入了三个重要改进，包括：<ul>
-<li>Expected Value Substituting</li>
-<li>Variance-Based Critic Gradient Adjusting </li>
-<li>Twin Value Distribution Learning</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="附录：新策略一定优于旧策略的证明"><a href="#附录：新策略一定优于旧策略的证明" class="headerlink" title="附录：新策略一定优于旧策略的证明"></a>附录：新策略一定优于旧策略的证明</h3><ul>
-<li>证明目标（Lemma 2 (Soft Policy Improvement)）：<ul>
-<li>若新策略\(\pi_\text{new}\)定义为:<br>  $$<br>  \pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big)<br>  $$</li>
-<li>则有：<br>  $$<br>  Q^{\pi_\text{new}}(s_t, a_t) \ge Q^{\pi_\text{old}}(s_t, a_t), \quad \forall (s_t, a_t) \in \mathcal{S} \times \mathcal{A}<br>  $$</li>
-</ul>
-</li>
-<li>证明：<ul>
-<li>由之前的定义我们有：<br>  $$<br>  \begin{align}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \big( \pi’(.\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, .) - \log Z^{\pi_\text{old}}(s_t)) \big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} \Big[ \log \big( \frac{\pi’(a_t \vert s_t)}{\exp(Q^{\pi_\text{old}}(s_t, a_t) - \log Z^{\pi_\text{old}}(s_t))} \big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} [ \log \pi’(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ]<br>  \end{align}<br>  $$</li>
-<li>于是有:<br>  $$<br>  E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ] \le E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ]<br>  $$</li>
-<li>由于\(\log Z^{\pi_\text{old}}(s_t)\)与策略无关，仅与状态有关，所以可以消掉，于是有：<br>  $$<br>  \begin{align}<br>  E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] &amp;\le E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] \\<br>  - E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] &amp;\ge - E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] \\<br>  E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)] &amp;\ge E_{a_t\sim\pi_\text{old}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{old}(a_t \vert s_t) ] \\<br>  E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)] &amp;\ge V^{\pi_\text{old}}(s_t)\\<br>  \end{align}<br>  $$</li>
-<li>于是，将\(Q^{\pi_\text{old}}(s_t, a_t)\)展开后，并将上面的式子\(V^{\pi_\text{old}}(s_t) \le E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)]\)不断地带入下面的式子有：<br>  $$<br>  \begin{align}<br>  Q^{\pi_\text{old}}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p} [V^{\pi_\text{old}}(s_t)] \\<br>  &amp;\le r(s_t, a_t) + \gamma E_{s_{t+1} \sim p} \big[E_{a_{t+1}\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_{t+1}, a_{t+1}) - \log \pi_\text{new}(a_{t+1} \vert s_{t+1})]\big] \\<br>  &amp;\cdots \\<br>  &amp;\le Q^{\pi_\text{new}}(s_t, a_t)<br>  \end{align} \\<br>  $$<ul>
-<li>不断带入\(V^{\pi_\text{old}}(s_t) \le E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)]\)，最后所有的采样策略都会变成新策略，对应的值也就是\(Q^{\pi_\text{new}}(s_t, a_t)\)了</li>
-</ul>
-</li>
-<li>证毕.</li>
-</ul>
-</li>
-</ul>
-<h3 id="附录：证明tanh变换后的对数概率密度"><a href="#附录：证明tanh变换后的对数概率密度" class="headerlink" title="附录：证明tanh变换后的对数概率密度"></a>附录：证明tanh变换后的对数概率密度</h3><ul>
-<li>为了证明给定的关系式 \(\log p(y) = \log p(x) - \log(1-(\tanh(x))^2)\)，我们需要理解这个关系式的背景。这里 \(p(x)\) 和 \(p(y)\) 分别表示随机变量 \(X\) 和 \(Y\) 的概率密度函数（PDF），其中 \(Y = \tanh(X)\)。</li>
-<li>根据概率论中的变换法则，如果我们有一个随机变量 \(X\) 和一个单调可微的函数 \(g\)，那么新的随机变量 \(Y = g(X)\) 的概率密度函数 \(p_Y(y)\) 可以通过原随机变量 \(X\) 的概率密度函数 \(p_X(x)\) 以及变换函数 \(g\) 的导数来计算。具体来说，有：<br>$$ p_Y(y) = p_X(x) \left| \frac{dx}{dy} \right| $$<ul>
-<li>上面的式子可以通过概率论推导得到:<ul>
-<li>概率累积分布定义：\( F_Y(y) = P(Y \leq y) = P(g(X) \leq y) \)</li>
-<li>如果 \(g\) 是单调增加的，则 \(P(g(X) \leq y) = P(X \leq g^{-1}(y))\)；如果 \(g\) 是单调减少的，则 \(P(g(X) \leq y) = P(X \geq g^{-1}(y))\)。这里假设 \(g\) 是单调增加的，因此：\( F_Y(y) = P(X \leq g^{-1}(y)) = F_X(g^{-1}(y))\)</li>
-<li>所以有：<br>  $$<br>  \begin{align}<br>  p_Y(y) &amp;= \frac{d}{dy} F_Y(y) = \frac{d}{dy} F_X(g^{-1}(y)) \\<br>  &amp;= f_X(g^{-1}(y)) \cdot \frac{d}{dy} g^{-1}(y) = f_X(x) \cdot \frac{d}{dy} x \\<br>  &amp;= f_X(x) \cdot \frac{dx}{dy}<br>  \end{align}<br>  $$<ul>
-<li>其中\(x = g^{-1}(y)\)是反函数，这里的\(\frac{dx}{dy}\)中，实际上\(x\)是\(y\)的函数，即写成\(\frac{dx(y)}{dy}\)更合适</li>
-<li>对于不确定 \(g\) 是否单调的情况，需要加绝对值符号</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>在这个特定的情况下，\(g(x) = \tanh(x)\)，所以 \(y = \tanh(x)\)。为了找到 \(p_Y(y)\)，我们需要计算 \(g\) 的导数，即 \(\tanh(x)\) 的导数：<br>$$ \frac{d}{dx}\tanh(x) = 1 - \tanh^2(x) $$</li>
-<li>因此，我们可以将上述变换法则应用于此情况：<br>$$ p_Y(y) = p_X(x) \left| \frac{dx}{dy} \right| $$</li>
-<li>因为 \(y = \tanh(x)\)，所以 \(x = \tanh^{-1}(y)\)，从而：<br>$$ \frac{dx}{dy} = \frac{d}{dy}\tanh^{-1}(y) = \frac{1}{1-y^2} $$<ul>
-<li>\(\frac{dx}{dy}\)表示x对y求导，也是x对y的斜率（所以时除法），所以有\(\frac{dy}{dx} = 1 - \tanh^2(x) \)推出\(\frac{dx}{dy} = \frac{1}{1 - \tanh^2(x)} = \frac{1}{1 - y^2}\)</li>
-</ul>
-</li>
-<li>代入上面的概率密度变换公式中，我们得到：<br>$$ p_Y(y) = p_X(x) \left| \frac{1}{1-\tanh^2(x)} \right| $$</li>
-<li>由于 \(1 - \tanh^2(x)\) 总是正的（对于所有实数 \(x\)），我们可以去掉绝对值符号：<br>$$ p_Y(y) = \frac{p_X(x)}{1-\tanh^2(x)} $$</li>
-<li>取对数两边，得到：<br>$$ \log p_Y(y) = \log p_X(x) - \log(1-\tanh^2(x)) $$</li>
-<li>这正是我们要证明的等式：<br>$$ \log p(y) = \log p(x) - \log(1-(\tanh(x))^2) $$</li>
-<li>证毕.</li>
 </ul>
 
           
