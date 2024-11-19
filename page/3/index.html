@@ -275,6 +275,162 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——挖矿病毒kdevtmpfsi查杀经历.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Centos——挖矿病毒kdevtmpfsi查杀经历.html" itemprop="url">Centos——挖矿病毒kdevtmpfsi查杀经历</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="挖矿病毒kdevtmpfsi查杀经历"><a href="#挖矿病毒kdevtmpfsi查杀经历" class="headerlink" title="挖矿病毒kdevtmpfsi查杀经历"></a>挖矿病毒kdevtmpfsi查杀经历</h3><h4 id="问题简介"><a href="#问题简介" class="headerlink" title="问题简介"></a>问题简介</h4><ul>
+<li>服务器: 阿里云主机服务器</li>
+<li>系统: Centos7</li>
+<li>表现: kdevtmpfsi进程占用400%(8核心处理器)CPU</li>
+<li>时间: 2020-01-07报警, 2020-01-08处理</li>
+</ul>
+<h4 id="查杀经过"><a href="#查杀经过" class="headerlink" title="查杀经过"></a>查杀经过</h4><ul>
+<li><p>使用<code>clamscan</code>命令搜索所有文件, clamav详情见我之前的博客<a href="/Notes/Linux/Centos%E2%80%94%E2%80%94clamav%E5%AE%89%E8%A3%85%E4%B8%8E%E6%9D%80%E6%AF%92.html">clamav安装与杀毒</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup clamscan / -r --infected -l clamscan.log &gt; clamscan.out &amp;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这一步比较花时间</li>
+</ul>
+</li>
+<li><p>查看扫描结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat clamscan.log | grep FOUND</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<blockquote>
+<p>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/merged/tmp/kdevtmpfsi: Multios.Coinminer.Miner-6781728-2 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/merged/tmp/red2.so: Unix.Trojan.Gafgyt-6981174-0 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/upper/tmp/kdevtmpfsi: Multios.Coinminer.Miner-6781728-2 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/upper/tmp/red2.so: Unix.Trojan.Gafgyt-6981174-0 FOUND</p>
+</blockquote>
+<ul>
+<li><p>删除这四个文件,这里直接到相关目录下查看发现<code>../tmp</code>目录下往往都是病毒文件(与<code>kinsing</code>相关,全部删除)</p>
+</li>
+<li><p><code>top</code>查看CPU信息确定挖矿进程kdevtmpfsi的进程号[pid]</p>
+</li>
+<li><p>确定启动信息中启动命令,并删除(在这里查到的信息是文件已经被删除了)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls /proc/[pid] -ali</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查找父进程进程号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status [pid]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<blockquote>
+<p>● docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope - libcontainer container be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161<br>   Loaded: loaded (/run/systemd/system/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope; static; vendor preset: disabled)<br>  Drop-In: /run/systemd/system/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope.d<br>           └─50-BlockIOAccounting.conf, 50-CPUAccounting.conf, 50-DefaultDependencies.conf, 50-Delegate.conf, 50-Description.conf, 50-MemoryAccounting.conf, 50-Slice.conf<br>   Active: active (running) since Mon 2019-11-11 11:24:17 UTC; 1 months 27 days ago<br>    Tasks: 38<br>   Memory: 2.3G<br>   CGroup: /system.slice/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope<br>           ├─ 4475 redis-server *:6379<br>           ├─ 8528 sh -c /tmp/.ICEd-unix/vJhOU<br>           ├─ 8529 /tmp/.ICEd-unix/vJhOU<br>           └─22822 /tmp/kdevtmpfsi</p>
+</blockquote>
+<p>Warning: Journal has been rotated since unit was started. Log output is incomplete or unavailable.</p>
+<ul>
+<li><p>杀死不需要的相关进程,如上面的<code>4475</code>,<code>8528</code>, <code>8529</code>, <code>22822</code></p>
+</li>
+<li><p>查看是否还有需要杀死的进程,如果有,则杀死该进程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep kinsing</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>top</code>确定挖矿进程已经被杀死</p>
+</li>
+</ul>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>查杀病毒两个小时未发现服务器有明显异常</li>
+<li>第二天出现了,需要进一步查看,重启机器后问题没有再出现</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Transformer.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1751,110 +1907,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种压缩方式总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/General——各种压缩方式总结.html" itemprop="url">General——各种压缩方式总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="tar-gz"><a href="#tar-gz" class="headerlink" title=".tar.gz"></a>.tar.gz</h3><h3 id="tar-bz2"><a href="#tar-bz2" class="headerlink" title=".tar.bz2"></a>.tar.bz2</h3><h3 id="tar-xz"><a href="#tar-xz" class="headerlink" title=".tar.xz"></a>.tar.xz</h3><h3 id="tgz"><a href="#tgz" class="headerlink" title=".tgz"></a>.tgz</h3>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种包的管理总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2171,7 +2223,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——clamav安装与杀毒.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种压缩方式总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -2190,7 +2242,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Centos——clamav安装与杀毒.html" itemprop="url">Centos——clamav安装与杀毒</a></h1>
+                <a class="post-title-link" href="/Notes/Others/General——各种压缩方式总结.html" itemprop="url">General——各种压缩方式总结</a></h1>
         
 
         <div class="post-meta">
@@ -2226,90 +2278,8 @@
       
         
           
-            <p><em>clam是一款Linux上免费的杀毒软件</em></p>
-<hr>
-<h3 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h3><h4 id="命令行安装"><a href="#命令行安装" class="headerlink" title="命令行安装"></a>命令行安装</h4><p><em>命令行安装clamav会自动创建clamav用户和clamav组</em></p>
-<ul>
-<li><p>Centos</p>
-</li>
-<li><p>在Centos7亲测*</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install –y clamav clamav-update</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>ubuntu</p>
-</li>
-<li><p>在Ubuntu16.04上亲测*</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install clamav</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="源码安装"><a href="#源码安装" class="headerlink" title="源码安装"></a>源码安装</h4><p><em>如果因为某些原因无法从命令行安装,可以尝试用源码安装,此时需要首先手动创建相关组和用户</em></p>
-<h5 id="安装前的配置"><a href="#安装前的配置" class="headerlink" title="安装前的配置"></a>安装前的配置</h5><ul>
-<li><p>创建clamav组</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">groupadd clamav</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>创建用户并添加到clamav组</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -g clamav clamav</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h5 id="源码下载和安装"><a href="#源码下载和安装" class="headerlink" title="源码下载和安装"></a>源码下载和安装</h5><ul>
-<li><p>下载</p>
-<ul>
-<li>下载链接: <a href="http://www.clamav.net/downloads" target="_blank" rel="noopener">http://www.clamav.net/downloads</a>, 因为版本可能会有更新,这里我们直接给出网站下载地址,可以随时查看版本信息</li>
-<li>找到软件包下载链接后,使用wget下载即可,比如<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://www.clamav.net/downloads/production/clamav-0.102.0.tar.gz</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>安装</p>
-<ul>
-<li><p>解压</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -xf clamav-0.102.0.tar.gz</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>切换目录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd clamav-0.102.0</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装依赖</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum/apt install gcc openssl openssl-devel</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><h4 id="升级病毒库"><a href="#升级病毒库" class="headerlink" title="升级病毒库"></a>升级病毒库</h4><ul>
-<li><p>升级命令</p>
-<ul>
-<li><p>命令行安装后更新命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">freshclam</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>源码安装后更新命令, 也可以建立软连接后直接使用上面的命令行启动</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/clamav/bin/freshclam</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>建立链接指令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s [source path] [target path]</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="查找病毒文件"><a href="#查找病毒文件" class="headerlink" title="查找病毒文件"></a>查找病毒文件</h4><ul>
-<li><p>常用命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup clamscan / -r --infected -l clamscan.log &gt; clamscan.out &amp;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>-r</code> 指明递归查杀</li>
-<li><code>--infected</code> 表示仅仅输出被感染的部分文件, 否则没有被感染的文件会输出<code>文件名: OK</code>这样无用的信息</li>
-<li><code>-l</code> 指明日志文件路径</li>
-<li><code>/</code> 是查找的目标目录,如果是整个机器查找则使用<code>/</code></li>
-<li>由于查杀病毒需要很长时间,所以建议使用后台进程进行, 如果是远程, 建议使用<code>nohup</code></li>
-<li>由于输出非常多,所以一般我们使用<code>clamscan.out</code>和<code>clamscan.log</code>分别存储输出和日志</li>
-</ul>
-</li>
-<li><p>列出被感染文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat clamscan.out | grep FOUND</span><br></pre></td></tr></table></figure></li>
-</ul>
-
+            <hr>
+<h3 id="tar-gz"><a href="#tar-gz" class="headerlink" title=".tar.gz"></a>.tar.gz</h3><h3 id="tar-bz2"><a href="#tar-bz2" class="headerlink" title=".tar.bz2"></a>.tar.bz2</h3><h3 id="tar-xz"><a href="#tar-xz" class="headerlink" title=".tar.xz"></a>.tar.xz</h3><h3 id="tgz"><a href="#tgz" class="headerlink" title=".tgz"></a>.tgz</h3>
           
         
       
@@ -2348,7 +2318,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/28/">28</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/29/">29</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2396,7 +2366,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">280</span>
+                  <span class="site-state-item-count">283</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

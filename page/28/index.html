@@ -275,6 +275,517 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——SVM-支持向量机.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——SVM-支持向量机.html" itemprop="url">ML——SVM-支持向量机</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
+<li>假设有N样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{N})\)<ul>
+<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{N}, y_{N}))\)</li>
+</ul>
+</li>
+<li>假设\(x_{i}\)等所有向量都为列向量, \(w\)为行向量(这里是为了推到方便,与&lt;&lt;统计学习方法&gt;&gt;一致)<ul>
+<li>实际代码实现时与行列向量无关,取二者的内积<code>np.inner(w,x)</code>即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
+<li>分类超平面<br>$$w^{\star}x + b^{\star} = 0$$<ul>
+<li>分类超平面由\((w, b)\)唯一确定(注意: LR的分类超平面由\((w, b)\)和阈值唯一确定)</li>
+</ul>
+</li>
+<li>分类决策函数<br>$$f(x) = sign(w^{\star}x + b^{\star})$$</li>
+</ul>
+<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><h5 id="间隔定义"><a href="#间隔定义" class="headerlink" title="间隔定义"></a>间隔定义</h5><ul>
+<li>函数间隔定义<ul>
+<li>点\((x_{i}, y_{i})\)到超平面\((w,b)\)的函数间隔为(\(y_{i} \in \{1, -1\})\):<br>$$\hat{\gamma}_{i} = y_{i}(w\cdot x_{i} + b)$$</li>
+<li>所有训练样本\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)到超平面\((w,b)\)的函数间隔为:<br>$$\hat{\gamma} = \min_{i=1,\dots,N}\hat{\gamma}_{i}$$</li>
+</ul>
+</li>
+<li>几何间隔的定义<ul>
+<li>点\((x_{i}, y_{i})\)到超平面\((w,b)\)的几何间隔为:<br>$$\gamma_{i} = y_{i} (\frac{w}{||w||}\cdot x_{i} + \frac{b}{||w||})$$</li>
+<li>进一步推导得:<br>$$\gamma_{i} = \frac {y_{i}(w\cdot x_{i} + b)}{||w||} = \frac{\hat{\gamma}}{||w||}$$</li>
+<li>所有训练样本\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)到超平面\((w,b)\)的几何间隔为:<br>$$\gamma = \min_{i=1,\dots,N}\gamma_{i}$$</li>
+</ul>
+</li>
+</ul>
+<h5 id="确定优化目标-1"><a href="#确定优化目标-1" class="headerlink" title="确定优化目标"></a>确定优化目标</h5><ul>
+<li><p>求解能够<strong>正确划分训练数据集</strong>并且<strong>几何间隔最大的分类超平面</strong>(分离超平面)</p>
+</li>
+<li><p>定义约束优化问题:<br>$$<br>\begin{align}<br>&amp;\max_{w,b} \quad \gamma \\<br>&amp;s.t. \quad y_{i} (\frac{w}{||w||}\cdot x_{i} + \frac{b}{||w||}) \geq \gamma, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+</li>
+<li><p>将\(\gamma = \frac{\hat{\gamma}}{||w||}\)带入并在条件中消去分母上的\(||w||\),得<br>$$<br>\begin{align}<br>&amp;\max_{w,b} \quad\frac{\hat{\gamma}}{||w||} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq \hat{\gamma}, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+</li>
+<li><p>上面的式子中,函数间隔\(\hat{\gamma}\)的值不影响最优化问题的解,于是我们设置\(\hat{\gamma}=1\)</p>
+<ul>
+<li>因为将参数\((w,b)\)同时扩大或缩小为\((\lambda w,\lambda b)\), 函数间隔对应变成\(\lambda \hat{\gamma}\)</li>
+<li>两个等价的优化方法:<ul>
+<li>设置\(\hat{\gamma}=1\)再对原始问题进行最优化得到参数\((w^{\star},b^{\star})\)</li>
+<li>先对原始问题最优化求得参数\((w,b)\),再将参数同时扩大或缩小为\((\lambda w,\lambda b)\),使得\(\lambda \hat{\gamma}=1\)得到的最终参数\((w^{\star},b^{\star}) = (\lambda w,\lambda b)\)等价<br>$$<br>\begin{align}<br>&amp;\max_{w,b}\quad \frac{1}{||w||} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq 1, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>进一步分析,由于最大化\(\frac{1}{||w||}\)与最小化\(\frac{1}{2}||w||^{2}\)等价(这里\(w\)为行向量时,\(||w||^{2} = ww^{T}\)), 最优化问题可等价表示为:<br>$$<br>\begin{align}<br>&amp;\min_{w,b}\quad \frac{1}{2}||w||^{2} \\<br>&amp;s.t.\quad y_{i} (w\cdot x_{i} + b) \geq 1, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+<ul>
+<li>这是一个<strong>凸二次规划问题</strong>(convex quadratic programming),凸优化问题参考<a href="/Notes/Others/Math%E2%80%94%E2%80%94%E5%87%B8%E4%BA%8C%E6%AC%A1%E4%BC%98%E5%8C%96%E9%97%AE%E9%A2%98%E5%92%8C%E6%8B%89%E6%A0%BC%E6%9C%97%E6%97%A5%E5%AF%B9%E5%81%B6%E6%80%A7.html">Math——凸二次优化问题和拉格朗日对偶性</a></li>
+</ul>
+</li>
+</ul>
+<h5 id="优化问题的求解-对偶"><a href="#优化问题的求解-对偶" class="headerlink" title="优化问题的求解(对偶)"></a>优化问题的求解(对偶)</h5><ul>
+<li>首先将SVM优化问题转换为一般凸优化形式<br>$$<br>\begin{align}<br>&amp;\min_{w,b}\quad \frac{1}{2}||w||^{2} \\<br>&amp;s.t.\quad 1 - y_{i} (w\cdot x_{i} + b) \leq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</li>
+<li>由上述优化问题定义拉格朗日函数<br>$$<br>\begin{align}<br>L(w,b,\alpha) = \frac{1}{2}||w||^{2} + \sum_{i=1}^{N}\alpha_{i}(1-y_{i}(w\cdot x_{i} + b))<br>\end{align}<br>$$</li>
+<li>根据拉格朗日对偶性,<br>$$<br>\begin{align}<br>\min_{w,b}\max_{\alpha:\alpha_{i} \geq 0}L(w,b,\alpha) = \max_{\alpha:\alpha_{i} \geq 0}\min_{w,b}L(w,b,\alpha)<br>\end{align}<br>$$<ul>
+<li>左边:原始问题为极小极大问题</li>
+<li>右边:对偶问题为极大极小问题</li>
+</ul>
+</li>
+<li>解对偶问题:</li>
+<li>先求<br>$$<br>\begin{align}<br>\min_{w,b}L(w,b,\alpha)<br>\end{align}<br>$$</li>
+<li>求导数为0得<br>$$<br>\begin{align}<br>\nabla_{w}L(w,b,\alpha) &amp;= w - \sum_{i=1}^{N}\alpha_{i}y_{i}x_{i} = 0 \\<br>\nabla_{b}L(w,b,\alpha) &amp;= \sum_{i=1}^{N}\alpha_{i}y_{i} = 0<br>\end{align}<br>$$</li>
+<li>解得:<br>$$<br>\begin{align}<br>&amp;w = \sum_{i=1}^{N}\alpha_{i}y_{i}x_{i} \\<br>&amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0<br>\end{align}<br>$$</li>
+<li>代入原来的拉格朗日函数有:</li>
+</ul>
+<p>$$<br>\begin{align}<br>\min_{w,b}L(w,b,\alpha) &amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i}(1-y_{i}(\left [\sum_{j=1}^{N}\alpha_{j}y_{j}x_{j}\right]\cdot x_{i} + b)) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\alpha_{i}y_{i}\left [\sum_{j=1}^{N}\alpha_{j}y_{j}x_{j}\right]\cdot x_{i} + \sum_{i=1}^{N}\alpha_{i}y_{i}b + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}y_{i}\alpha_{j}y_{j}(x_{j}\cdot x_{i}) + \sum_{i=1}^{N}\alpha_{i}y_{i}b + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= -\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + 0 + \sum_{i=1}^{N}\alpha_{i}\\<br>&amp;= -\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i}<br>\end{align}<br>$$</p>
+<ul>
+<li><p>上面的\(\min_{w,b}L(w,b,\alpha)\)对\(\alpha\)求极大值有:<br>$$<br>\begin{align}<br>\max_{\alpha} \quad &amp;-\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) + \sum_{i=1}^{N}\alpha_{i} \\<br>s.t. \quad &amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0 \\<br>\quad &amp;\alpha_{i} \geq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+</li>
+<li><p>转换为一般优化问题<br>$$<br>\begin{align}<br>\min_{\alpha} \quad &amp;\frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}\alpha_{i}\alpha_{j}y_{i}y_{j}(x_{i}\cdot x_{j}) - \sum_{i=1}^{N}\alpha_{i} \\<br>s.t. \quad &amp;\sum_{i=1}^{N}\alpha_{i}y_{i} = 0 \\<br>\quad &amp;-\alpha_{i} \leq 0, i = 1,2,\dots,N<br>\end{align}<br>$$</p>
+</li>
+<li><p>假设上面的式子能够求得\(\alpha\)的解为:<br>$$<br>\begin{align}<br>\alpha^{\star} = (\alpha_{1}^{\star}, \alpha_{2}^{\star},\dots, \alpha_{N}^{\star})<br>\end{align}<br>$$</p>
+</li>
+<li><p>根据拉格朗日对偶问题与原始问题的解对应的条件,<a href="/Notes/Others/Math%E2%80%94%E2%80%94%E5%87%B8%E4%BC%98%E5%8C%96%E9%97%AE%E9%A2%98%E5%92%8C%E6%8B%89%E6%A0%BC%E6%9C%97%E6%97%A5%E5%AF%B9%E5%81%B6%E6%80%A7.html">Math——凸优化问题和拉格朗日对偶性</a>,如果上面的式子中存在下标\(j\),满足\(-\alpha_{j}^{\star} &lt; 0\),即满足:<br>$$\exists j \quad \alpha_{j}^{\star} &gt; 0$$</p>
+</li>
+<li><p>那么最终可求得:<br>$$<br>\begin{align}<br>&amp;w^{\star} = \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}x_{i} \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>\(b^{\star}\)的表达式由\(\alpha_{j}^{\star} &gt; 0\),和KKT条件\(\alpha_{j}^{\star}(y_{j}(w^{\star}\cdot x_{j} + b^{\star})-1) = 0\)可解得:<br>$$<br>\begin{align}<br>y_{j}(w^{\star}\cdot x_{j} + b^{\star})-1 = 0 \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>注意到\(y_{j}\in \{-1, 1\}\), 所以\(y_{j}^{2}=1\)<br>$$<br>\begin{align}<br>y_{j}^{2}(w^{\star}\cdot x_{j} + b^{\star})-y_{j} = 0 \\<br>w^{\star}\cdot x_{j} + b^{\star} = y_{j} \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>所以有<br>$$<br>\begin{align}<br>b^{\star} &amp;= y_{j} - w^{\star}\cdot x_{j} \\<br>&amp;= y_{j} - \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x_{j})<br>\end{align}<br>$$</p>
+</li>
+<li><p>综合\(w^{\star}\)和\(b^{\star}\)的表达式,我们有分类超平面为:<br>$$<br>\begin{align}<br>w^{\star}x + b^{\star} &amp;= 0 \\<br>\sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x) + b^{\star} &amp;= 0<br>\end{align}<br>$$</p>
+</li>
+<li><p>分类决策函数为:<br>$$<br>\begin{align}<br>f(x) &amp;= sign(w^{\star}x + b^{\star}) \\<br>f(x) &amp;= sign\left (\sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x) + b^{\star}\right )<br>\end{align}<br>$$</p>
+<ul>
+<li>这就是分线性可分SVM的对偶形式</li>
+<li>分类决策函数只与待预测的样本\(x\)和已有训练数据\(x_{j}\)的输入内积\((x_{j}\cdot x)\)相关<ul>
+<li>注意\(b^{\star}\)是通过原始训练样本算出来的定值,\(b^{\star}, w^{\star}\)的值与待预测的未知样本无关,训练样本确定,参数就确定了, 内积的出现是在加入位置样本后\(w^{\star}\cdot x\)产生的</li>
+</ul>
+</li>
+<li>SVM的对偶形式使得我们可以用核函数来扩展SVM(非线性核函数可使得SVM能解决非线性问题)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="支持向量"><a href="#支持向量" class="headerlink" title="支持向量"></a>支持向量</h3><ul>
+<li>优化问题的推导过程中,又一步,对偶问题与原始问题能够相等的条件是存在下标\(j\),满足\(-\alpha_{j}^{\star} &lt; 0\),即满足:<br>$$\exists j \quad \alpha_{j}^{\star} &gt; 0$$</li>
+<li>上面的\(j\)对应的样本点\((x_{j}, y_{j})\)就是<strong>支持向量</strong><ul>
+<li>支持向量一定在间隔边界上:<br>$$y_{j}(w^{\star}\cdot x_{j}+b^{\star})-1 = 0$$</li>
+<li>或者<br>$$w^{\star}\cdot x_{j}+b^{\star} = \pm 1$$<ul>
+<li>\(y_i\) 的取值为 1 或者 -1</li>
+</ul>
+</li>
+<li>实际上,在训练时参数\((w^{\star}, b^{\star})\)只依赖于\(\alpha_{j} &gt; 0\)的点,即只依赖<strong>支持向量</strong><br>$$<br>\begin{align}<br>&amp;w^{\star} = \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}x_{i} \\<br>&amp;b^{\star} = y_{j} - \sum_{i=1}^{N}\alpha_{i}^{\star}y_{i}(x_{i}\cdot x_{j})<br>\end{align}<br>$$</li>
+<li>所有非支持向量对应的\(\alpha_{i} = 0\),所以对最终参数\((w^{\star}, b^{\star})\)只与<strong>支持向量</strong>相关</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="核函数"><a href="#核函数" class="headerlink" title="核函数"></a>核函数</h3><ul>
+<li>\(\phi(x)\)定义为从<strong>输入空间</strong>到<strong>希尔伯特空间</strong>的映射<br>$$<br>\begin{align}<br>K(x,z) = \phi(x)\phi(z)<br>\end{align}<br>$$</li>
+<li>将SVM对偶形式中的内积\((x_{i}\cdot x_{j})\)用核函数\(K(x_{i},x_{j}) = \phi(x_{i})\phi(x_{j})\)来替代即可在SVM中应用<strong>核技巧</strong></li>
+</ul>
+<h4 id="常用核函数"><a href="#常用核函数" class="headerlink" title="常用核函数"></a>常用核函数</h4><ul>
+<li>多项式核函数<br>$$K(x,z) = (x\cdot z + 1)^{p}$$</li>
+<li>高斯核函数<br>$$K(x,z) = e^{\left( -\frac{||x-z||^{2}}{2\sigma^{2}}\right )}$$</li>
+<li>字符串核函数<br>[待更新]</li>
+</ul>
+<hr>
+<h3 id="序列最小最优化算法-SMO"><a href="#序列最小最优化算法-SMO" class="headerlink" title="序列最小最优化算法(SMO)"></a>序列最小最优化算法(SMO)</h3><ul>
+<li>为什么要用SMO?<ul>
+<li>前面我们的推导将 <strong>SVM的参数求解</strong> 转化为了一个求解<strong>凸二次优化</strong>的问题</li>
+<li>凸二次优化问题有全局最优解(有很多优化算法可以求解凸二次优化问题)</li>
+<li>但是当<strong>样本量太大</strong>时,普通的<strong>凸二次优化算法</strong>会变得<strong>十分低效</strong>,导致<strong>实际操作</strong>中<strong>无法使用</strong></li>
+<li>所以我们需要一个能高效实现的算法 SMO</li>
+</ul>
+</li>
+<li>基本思路<ul>
+<li>如果所有变量的解都满足最优化问题的KKT条件,那么这个最优化问题的解就得到了<ul>
+<li>原因: KKT条件是该最优化问题的<strong>充要条件</strong></li>
+</ul>
+</li>
+<li>否则,存在某些解不满足KKT条件,选择两个变量,固定其他变量,<ul>
+<li>两个变量中其中一个是<strong>最不满足KKT条件的变量</strong>,</li>
+<li>另一个在第一个确定后,自动由约束条件确定下来</li>
+</ul>
+</li>
+<li>针对这两个变量构建二次规划问题的解,这个二次规划问题关于这两个变量的解应该更接近原始二次规划问题的解<ul>
+<li>原因: 因为二次规划问题的目标函数值变得更小</li>
+<li>此时可通过<strong>解析方法</strong>求解(由于只有两个变量,比较简单),整个算法的速度会很快</li>
+</ul>
+</li>
+<li>SMO算法不断的将原问题分解为子问题,迭代更新参数,每次更新两个参数,最终得到近似解</li>
+</ul>
+</li>
+<li>优点:<ul>
+<li>训练速度快</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a>补充说明</h3><h4 id="SVM需要特征归一化"><a href="#SVM需要特征归一化" class="headerlink" title="SVM需要特征归一化"></a>SVM需要特征归一化</h4><p><em>是必要的</em></p>
+<ul>
+<li>因为SVM寻找的是所谓的<strong>间隔</strong>(margin), 就是两个支持向量的间隔</li>
+<li>如果<strong>不归一化</strong>的话, 这个间隔会因为不同特征的单位等, 数值被放大或者缩小, 从而造成<strong>无法评估间隔</strong>, 所以归一化对于SVM很重要</li>
+<li>线性SVM依赖数据表达的距离测度，所以需要对数据先做normalization<ul>
+<li>个人理解: 非线性的SVM其实也应该归一化,不然核函数映射到高位空间后以后还是可能受数值影响?</li>
+</ul>
+</li>
+</ul>
+<h4 id="损失函数自带正则"><a href="#损失函数自带正则" class="headerlink" title="损失函数自带正则"></a>损失函数自带正则</h4><ul>
+<li>由于优化目标中就自带了参数 \(\frac{1}{2}||w||^2\), 所以SVM实际上已经自己带了L2正则化了</li>
+<li>这也是SVM也叫<strong>结构风险最小化</strong>算法的原因<ul>
+<li>结构风险最小化就是模型复杂度最小化</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——awk和xargs命令的使用.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Bash——awk和xargs命令的使用.html" itemprop="url">Bash——awk和xargs命令的使用</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>用于在linux bash中设计处理terminal输出自动删除等问题</em></p>
+<hr>
+<h3 id="使用实例"><a href="#使用实例" class="headerlink" title="使用实例"></a>使用实例</h3><pre><code>sudo docker images | grep &#39;&lt;none&gt;&#39; | awk &#39;{print $3}&#39; | xargs sudo docker rmi </code></pre>
+<p>上面的代码是删除所有名字为<code>&lt;none&gt;</code>的docker镜像</p>
+<hr>
+<h3 id="awk"><a href="#awk" class="headerlink" title="awk"></a>awk</h3><pre><code>awk &#39;{print $3}&#39; //读取每一行的第三列的值</code></pre>
+<hr>
+<h3 id="xargs"><a href="#xargs" class="headerlink" title="xargs"></a>xargs</h3><pre><code>xargs sudo docker rmi //将管道传递过来的所有行添加到后面的命令后面，等价于sudo docker rmi &lt;rows&gt;</code></pre>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Bash——命令分隔符.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Bash——命令分隔符.html" itemprop="url">Bash——命令分隔符</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>在Linux Bash命令中，有<code>;</code>,<code>&amp;&amp;</code>,<code>||</code>三种命令链接方式，本文将介绍他们之间的区别</em></p>
+<hr>
+<h3 id="三种连接方式的区别"><a href="#三种连接方式的区别" class="headerlink" title="三种连接方式的区别"></a>三种连接方式的区别</h3><ul>
+<li><code>;</code><ul>
+<li>各个命令之间相互独立，不管前面的语句是否成功执行，所有命令都将被执行</li>
+</ul>
+</li>
+<li><code>&amp;&amp;</code><ul>
+<li>命令依次被执行，只有当前面的命令执行<strong>成功</strong>后，后面的命令才会被执行</li>
+</ul>
+</li>
+<li><code>||</code><ul>
+<li>命令依次被执行，只有当前面的命令执行<strong>失败</strong>后，后面的命令才会被执行</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——用户管理.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1391,113 +1902,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Maven——maven基础.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/Maven——maven基础.html" itemprop="url">Maven——maven包管理问题</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="Maven基础"><a href="#Maven基础" class="headerlink" title="Maven基础"></a>Maven基础</h3><ul>
-<li>参考链接：<a href="https://blog.csdn.net/qq_14958051/article/details/124601351" target="_blank" rel="noopener">Maven 最全教程，看了必懂，99% 的人都收藏了！</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Maven——maven包管理问题.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1603,255 +2007,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/Web——opencv安装.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/Web——opencv安装.html" itemprop="url">软件安装——opencv安装</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="与Python的关系"><a href="#与Python的关系" class="headerlink" title="与Python的关系"></a>与Python的关系</h3><ul>
-<li><p>opencv的兼容性很差，不同Python版本对应不同的opencv需要对应安装，否则会卡在最后出现错误（卡很久）</p>
-<ul>
-<li><p>比如Python 3.6的opencv-python版本安装为<code>4.5.4.60</code><a href="https://blog.csdn.net/longshaonihaoa/article/details/133301110" target="_blank" rel="noopener">参考链接</a> </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pip install opencv-contrib-python==4.5.4.60</span><br><span class="line">pip install opencv-python==4.5.4.60</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>即使是一些项目配置好依赖的时候，往往也要自己手动指定版本号安装opencv，否则不能成功 </p>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="使用homebrew安装依赖"><a href="#使用homebrew安装依赖" class="headerlink" title="使用homebrew安装依赖"></a>使用homebrew安装依赖</h3><ul>
-<li>homebrew安装一些依赖时，一些包可能会特别慢（特别是gcc等），可以选择一个个分别安装，反而能加快速度，否则可能出现下载失败导致需要全部重新安装的尴尬情况<ul>
-<li>有时候不用VPN会更快，可尝试</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="切换国内镜像"><a href="#切换国内镜像" class="headerlink" title="切换国内镜像"></a>切换国内镜像</h3><ul>
-<li>有时候能让homebrew下载更快<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cd &quot;$(brew --repo)&quot;                                                                          </span><br><span class="line">git remote set-url origin https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git</span><br><span class="line"></span><br><span class="line">cd &quot;$(brew --repo)/Library/Taps/homebrew/homebrew-core&quot;</span><br><span class="line">git remote set-url origin https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git</span><br><span class="line"></span><br><span class="line">cd &quot;$(brew --repo)&quot;/Library/Taps/homebrew/homebrew-cask</span><br><span class="line">git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-cask.git</span><br><span class="line"></span><br><span class="line">brew update</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h3 id="githubusercontent访问失败问题解决"><a href="#githubusercontent访问失败问题解决" class="headerlink" title="githubusercontent访问失败问题解决"></a>githubusercontent访问失败问题解决</h3><h4 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h4><ul>
-<li><p>在安装文件时出现错误</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl: (7) Failed to connect to raw.githubusercontent.com port 443: Connection refused</span><br><span class="line">Error: opencv: Failed to download resource &quot;cmake.rb&quot;</span><br><span class="line">Download failed: https://raw.githubusercontent.com/Homebrew/homebrew-core/82f2aac1cfd7295db3e59240729e5f9d74b0ec51/Formula/c/cmake.rb</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>经尝试，手动打开链接<code>https://raw.githubusercontent.com/Homebrew/homebrew-core/82f2aac1cfd7295db3e59240729e5f9d74b0ec51/Formula/c/cmake.rb</code>也不行</p>
-</li>
-</ul>
-<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
-<li>修改DNS为8.8.8.8即可<ul>
-<li>该修改可能造成一些网站不能访问，慎用（用后即使修改）</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Backup/Backup.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Backup/Backup.html" itemprop="url">Backup——data-backup</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/27/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><span class="page-number current">28</span>
+    <a class="extend prev" rel="prev" href="/page/27/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><span class="page-number current">28</span><a class="page-number" href="/page/29/">29</a><a class="extend next" rel="next" href="/page/29/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1899,7 +2059,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">280</span>
+                  <span class="site-state-item-count">283</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
