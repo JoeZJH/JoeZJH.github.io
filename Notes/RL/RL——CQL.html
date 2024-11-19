@@ -79,18 +79,20 @@
 
 
 
-<meta name="description" content="参考链接：【论文分享】Conservative Q-Learning for Offline Reinforcement Learning     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。  这种差异可能导致学习到的策略在实际应">
+<meta name="description" content="参考链接： 【论文分享】Conservative Q-Learning for Offline Reinforcement Learning   离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现：手打公式     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RL——CQL">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——CQL.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="参考链接：【论文分享】Conservative Q-Learning for Offline Reinforcement Learning     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。  这种差异可能导致学习到的策略在实际应">
+<meta property="og:description" content="参考链接： 【论文分享】Conservative Q-Learning for Offline Reinforcement Learning   离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现：手打公式     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-19T17:23:55.171Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-1.png">
+<meta property="og:updated_time" content="2024-11-19T18:44:48.911Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——CQL">
-<meta name="twitter:description" content="参考链接：【论文分享】Conservative Q-Learning for Offline Reinforcement Learning     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。  这种差异可能导致学习到的策略在实际应">
+<meta name="twitter:description" content="参考链接： 【论文分享】Conservative Q-Learning for Offline Reinforcement Learning   离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现：手打公式     CQL在解决什么问题？ 分布偏移（distribution shift）：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-1.png">
 
 
 
@@ -329,7 +331,11 @@
         <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <ul>
-<li>参考链接：<a href="https://mp.weixin.qq.com/s?__biz=Mzg4MDU2MTM1Mg==&mid=2247485320&idx=1&sn=56be21b854a8d13e0c6d585d6121d035" target="_blank" rel="noopener">【论文分享】Conservative Q-Learning for Offline Reinforcement Learning</a>  </li>
+<li>参考链接：<ul>
+<li><a href="https://mp.weixin.qq.com/s?__biz=Mzg4MDU2MTM1Mg==&mid=2247485320&idx=1&sn=56be21b854a8d13e0c6d585d6121d035" target="_blank" rel="noopener">【论文分享】Conservative Q-Learning for Offline Reinforcement Learning</a>  </li>
+<li><a href="https://hackmd.io/@l-7O3seyTuaQ8JjAyLP2Ng/BJWLxRcXc" target="_blank" rel="noopener">离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现</a>：手打公式</li>
+</ul>
+</li>
 </ul>
 <hr>
 <h3 id="CQL在解决什么问题？"><a href="#CQL在解决什么问题？" class="headerlink" title="CQL在解决什么问题？"></a>CQL在解决什么问题？</h3><ul>
@@ -345,11 +351,23 @@
 <li><strong>OOD问题容易导致值高估（Overestimation of values）问题</strong>：强化学习的迭代公式一般都是找时的动作最大的动作，这本身导致的容易值高估的现象</li>
 </ul>
 <hr>
-<h3 id="CQL相关推导"><a href="#CQL相关推导" class="headerlink" title="CQL相关推导"></a>CQL相关推导</h3><h4 id="常规的策略迭代方法"><a href="#常规的策略迭代方法" class="headerlink" title="常规的策略迭代方法"></a>常规的策略迭代方法</h4><p>$$  $$</p>
-<ul>
-<li>包含了DQN的迭代思路</li>
+<h3 id="CQL相关推导"><a href="#CQL相关推导" class="headerlink" title="CQL相关推导"></a>CQL相关推导</h3><h4 id="一些定义"><a href="#一些定义" class="headerlink" title="一些定义"></a>一些定义</h4><ul>
+<li>数据集\(\mathcal{D}  \sim d^{\pi_{\beta}}(\mathbf{s})\pi_{\beta}(\mathbf{a} \mid \mathbf{s})\)，即数据是行为策略\(\pi_\beta\)与环境交互来得到的</li>
+<li>对于任意\((s_0, a_0) \in \mathcal{D}\)，有经验行为策略（empirical behavior policy）为：<br>$$ \hat{\pi}_\beta(a_0\vert s_0) = \frac{\sum_{(s,a) \in \mathcal{D}}\mathbf{1}(s=s_0,a=a_0)}{\sum_{s\in \mathcal{D}}\mathbf{1}(s=s_0)} $$</li>
 </ul>
-<h4 id="改进一"><a href="#改进一" class="headerlink" title="改进一"></a>改进一</h4><h4 id="改进二"><a href="#改进二" class="headerlink" title="改进二"></a>改进二</h4><h4 id="改进三"><a href="#改进三" class="headerlink" title="改进三"></a>改进三</h4>
+<h4 id="常规的学习方法"><a href="#常规的学习方法" class="headerlink" title="常规的学习方法"></a>常规的学习方法</h4><ul>
+<li>Q-Learning的迭代公式（通过迭代如下Bellman Optimality Operator实现）：<br>$$ \mathcal{B}^{*} Q(\mathbf{s}, \mathbf{a})=r(\mathbf{s}, \mathbf{a})+\gamma \mathbb{E}_{\mathbf{s}^{\prime} \sim P\left(\mathbf{s}^{\prime} \mid \mathbf{s}, \mathbf{a}\right)}\left[\max _{\mathbf{a}^{\prime}} Q\left(\mathbf{s}^{\prime}, \mathbf{a}^{\prime}\right)\right] $$</li>
+<li>Actor-Critic的迭代思路  <img src="/Notes/RL/RL——CQL/CQL-1.png">
+<ul>
+<li>以上公式来自论文，实际上，上式中\(a \sim \pi^k(a|s)\)应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)</li>
+<li>其实AC方法中，包含了DQN的迭代思路，\(a’\)始终取上一轮Q值最大的动作即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进一"><a href="#改进一" class="headerlink" title="改进一"></a>改进一</h4><ul>
+<li>\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \alpha \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$<h4 id="改进二"><a href="#改进二" class="headerlink" title="改进二"></a>改进二</h4></li>
+</ul>
+<h4 id="改进三"><a href="#改进三" class="headerlink" title="改进三"></a>改进三</h4>
       
     </div>
     
@@ -532,7 +550,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#常规的策略迭代方法"><span class="nav-number">2.1.</span> <span class="nav-text">常规的策略迭代方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一"><span class="nav-number">2.2.</span> <span class="nav-text">改进一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二"><span class="nav-number">2.3.</span> <span class="nav-text">改进二</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三"><span class="nav-number">2.4.</span> <span class="nav-text">改进三</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些定义"><span class="nav-number">2.1.</span> <span class="nav-text">一些定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#常规的学习方法"><span class="nav-number">2.2.</span> <span class="nav-text">常规的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一"><span class="nav-number">2.3.</span> <span class="nav-text">改进一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二"><span class="nav-number">2.4.</span> <span class="nav-text">改进二</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三"><span class="nav-number">2.5.</span> <span class="nav-text">改进三</span></a></li></ol></li></ol></div>
             
 
           </div>
