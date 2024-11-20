@@ -1708,7 +1708,7 @@ func String2Slice(s string) (b []byte) {
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——事务深度理解.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/MySQL/MySQL——引擎比较说明.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1727,7 +1727,7 @@ func String2Slice(s string) (b []byte) {
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/MySQL/MySQL——事务深度理解.html" itemprop="url">MySQL——事务深度理解</a></h1>
+                <a class="post-title-link" href="/Notes/MySQL/MySQL——引擎比较说明.html" itemprop="url">MySQL——引擎比较说明</a></h1>
         
 
         <div class="post-meta">
@@ -1764,12 +1764,30 @@ func String2Slice(s string) (b []byte) {
         
           
             <hr>
-<h3 id="autocommit"><a href="#autocommit" class="headerlink" title="@@autocommit"></a>@@autocommit</h3><ul>
-<li>变量 @@autocommit<br>  select @@autocommit;<br>  set @@autocommit = 0;</li>
-<li>@@autocommit 为0时表示不以显示事务开头的语句或者以事务开头(<code>begin;</code> 或者 <code>start transaction;</code>)都会被缓存起来并且在<code>commit;</code>提交前都可以用<code>rollback;</code>回滚</li>
-<li>@@autocommit 为1时表示必须以事务开头的语句才会被缓存，否则一个sql语句将会被当做一个事务提交，将不能使用<code>rollback;</code>语句回滚</li>
+<h3 id="关于引擎"><a href="#关于引擎" class="headerlink" title="关于引擎"></a>关于引擎</h3><ul>
+<li>查看各种引擎 <code>show engines;</code></li>
+<li>查看当前默认引擎 <code>show variables like &#39;%storage_engine%&#39;;</code></li>
+<li>查看指定表的引擎 <code>show create table tableName;</code></li>
+<li>修改指定表的引擎 <code>alter table tableName engine = innodb;</code></li>
+<li>创建表时指定引擎 <code>create table mytable (id int, titlechar(20)) engine = innodb</code></li>
+<li>修改默认存储引擎<br>  <strong>在mysql配置文件（linux下为/etc/my.cnf），在mysqld后面增加default-storage-engine=INNODB即可</strong></li>
 </ul>
-<p><strong>说明：不是所有引擎都支持事务，常用的支持事务的引擎是InnoDB</strong></p>
+<hr>
+<h3 id="不同引擎的事务支持说明"><a href="#不同引擎的事务支持说明" class="headerlink" title="不同引擎的事务支持说明"></a>不同引擎的事务支持说明</h3><p>MySQL数据库有多种引擎，一般使用的是InnoDB（从MySQL5.5.5以后，InnoDB是默认引擎），InnoDB存储引擎提供了具有提交、回滚和崩溃恢复能力的事务安全。但是对比Myisam的存储引擎，InnoDB写的处理效率差一些并且会占用更多的磁盘空间以保留数据和索引。</p>
+<p>其他的引擎不支持事务等，但是存储空间占的比较小，而且操作比较快一些。</p>
+<p>MySQL有多种存储引擎，每种存储引擎有各自的优缺点，可以择优选择使用：MyISAM、InnoDB、MERGE、MEMORY(HEAP)、BDB(BerkeleyDB)、EXAMPLE、FEDERATED、ARCHIVE、CSV、BLACKHOLE。</p>
+<p>虽然MySQL里的存储引擎不只是MyISAM与InnoDB这两个，但常用的就是两个。</p>
+<ul>
+<li>InnoDB支持事务，MyISAM不支持，这一点是非常之重要。事务是一种高级的处理方式，如在一些列增删改中只要哪个出错还可以回滚还原，而MyISAM就不可以了。</li>
+<li>MyISAM适合查询以及插入为主的应用，InnoDB适合频繁修改以及涉及到安全性较高的应用</li>
+<li>InnoDB支持外键，MyISAM不支持</li>
+<li>从MySQL5.5.5以后，InnoDB是默认引擎</li>
+<li>InnoDB不支持FULLTEXT类型的索引</li>
+<li>InnoDB中不保存表的行数，如select count(*) from table时，InnoDB需要扫描一遍整个表来计算有多少行，但是MyISAM只要简单的读出保存好的行数即可。注意的是，当count(*)语句包含where条件时MyISAM也需要扫描整个表</li>
+<li>对于自增长的字段，InnoDB中必须包含只有该字段的索引，但是在MyISAM表中可以和其他字段一起建立联合索引</li>
+<li>清空整个表时，InnoDB是一行一行的删除，效率非常慢。MyISAM则会重建表</li>
+<li>InnoDB支持行锁（某些情况下还是锁整表，如 update table set a=1 where user like ‘%lee%’</li>
+</ul>
 
           
         
