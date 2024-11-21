@@ -529,6 +529,410 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——BCQ.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——BCQ.html" itemprop="url">RL——BCQ</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/369524801" target="_blank" rel="noopener">【笔记】BCQ详解</a><ul>
+<li>原作者的PPT</li>
+</ul>
+</li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/272152582" target="_blank" rel="noopener">BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎</a></li>
+<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/206489894" target="_blank" rel="noopener">【代码速读】（RL）1.BCQ - 一条的文章 - 知乎</a></li>
+</ul>
+<hr>
+<h3 id="BCQ整体介绍"><a href="#BCQ整体介绍" class="headerlink" title="BCQ整体介绍"></a>BCQ整体介绍</h3><ul>
+<li>BCQ（Batch-Constrained deep Q-learning）分为连续版本（<a href="https://proceedings.mlr.press/v97/fujimoto19a/fujimoto19a.pdf" target="_blank" rel="noopener">Off-Policy Deep Reinforcement Learning without Exploration</a>，2019年8月）和离散版本（<a href="https://arxiv.org/pdf/1910.01708" target="_blank" rel="noopener">Benchmarking   Batch Deep Reinforcement Learning Algorithms</a>，2019年10月）两篇文章，一作是同一个作者  </li>
+<li><strong>外推误差(Extrapolation Error)的定义：off-policy值学习中，当前策略真实状态动作访问分布和数据集中的状态动作分布不匹配导致的一种误差</strong><blockquote>
+<p>Extrapolation error is an error in off-policy value learning which is introduced by the mismatch between the dataset and true state-action visitation of the current policy</p>
+</blockquote>
+</li>
+<li>背景：off-policy的策略理论上可以从任意行为策略采样的数据中学习最优策略，但是直接将off-policy策略应用到Offline RL（也称为Batch RL）场景中可能面临，<strong>Absent Data</strong>（状态动作对缺失），<strong>Training Mismatch</strong>（训练预测分布不一致），<strong>Model Bias</strong>（随机MDP的状态转移概率有偏差）等问题</li>
+<li>BCQ的基本思想：采取保守策略，让学到的策略对应的状态动作访问空间尽量只在出现过的数据集上，或者相近的数据上<ul>
+<li>基本方法：主要通过限制\(Q(s’,\pi(s’))\)中的\(s’\)不要偏离数据集太多来实现</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="BCQ连续版本"><a href="#BCQ连续版本" class="headerlink" title="BCQ连续版本"></a>BCQ连续版本</h3><h4 id="关键实验"><a href="#关键实验" class="headerlink" title="关键实验"></a>关键实验</h4><ul>
+<li><p>实验设置：</p>
+<ul>
+<li>第一个实验(Final Buffer)，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
+<li>第二个实验(Concurrent)，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
+<li>第三个实验(Imitation)，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
+</ul>
+</li>
+<li><p>实验结果：</p>
+  <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png" title height="50%" width="50%">
+  <!-- <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png"> -->
+
+<ul>
+<li>第三个实验中使用的样本最好，但是训练得到的离线智能体效果最差，原因分析主要是<strong>外推误差</strong>导致</li>
+<li>三个实验的离线DDPG智能体都有不同情况的Q值高估问题，其中第三个实验的Q值高估问题最为严重（注意图2中看起来高估问题大于图1中，其实不是，是因为图二的量纲较小导致的）</li>
+</ul>
+</li>
+</ul>
+<h4 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h4><ul>
+<li>对于给定的真实MDP和数据集\(\mathcal{B}\)，定义外推误差<br>$$\epsilon_\text{MDP}(s,a) = Q^\pi(s,a) - Q_{\mathcal{B}}^\pi(s,a)$$</li>
+<li>则有外推误差可推导得到如下结论：<img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png" title height="80%" width="80%">
+<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png"> -->
+
+</li>
+</ul>
+<h4 id="训练流程"><a href="#训练流程" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
+<li><p>整体流程概览:</p>
+<img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png" title height="80%" width="80%">
+<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png"> -->
+</li>
+<li><p>训练流程解释：</p>
+<ul>
+<li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
+<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中公式(13)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
+</ul>
+</li>
+</ul>
+<h4 id="Serving步骤"><a href="#Serving步骤" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
+<li>给定一个状态\(s\)</li>
+<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE网络 \(G_w(s)\) 采样\(n\)个动作</li>
+<li>\(\xi_{\phi}(s,a_i,\Phi)\)：将这些状态和动作经过扰动网络，扰动网络输出是在\([-\Phi,\Phi]\)内的，得到的扰动值</li>
+<li>将扰动添加到原始动作上，再将动作经过Q网络，选取能使Q value最大的动作</li>
+<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}_{a_i + \xi_{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
+</ul>
+<hr>
+<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
+<li>整体流程概览:<img src="/Notes/RL/RL——BCQ/Discrete-BCQ-Algorithm.png">
+
+</li>
+</ul>
+<h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
+<li>按照如下策略决策：</li>
+</ul>
+<p>$$ \pi(s) = \mathop{\arg\max}_{a\vert\frac{G_w(a|s)}{\max_\hat{a} G_w(\hat{a}|s)} \gt \tau} Q_\theta(s,a) $$</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——IQL.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——IQL.html" itemprop="url">RL——IQL</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接<ul>
+<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
+<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
+<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
+</ul>
+<hr>
+<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
+<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
+<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
+<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
+<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
+</ul>
+</li>
+<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
+<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
+<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
+</ul>
+</li>
+<li>问题：显示密度模型中的“密度”是什么意思？<ul>
+<li>TODO</li>
+</ul>
+</li>
+</ul>
+<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
+<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
+<li>IQL就是一种Single-step方法</li>
+<li>传统的模仿学习也属于Single-step方法</li>
+</ul>
+<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
+<ul>
+<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
+</ul>
+<hr>
+<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
+<li>思路：按照贝尔曼最优方程迭代</li>
+<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>直接使用上述损失函数存在值高估问题</li>
+<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
+</ul>
+</li>
+</ul>
+<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
+<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
+<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
+<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma E_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
+</ul>
+</li>
+<li>分析：<ul>
+<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
+<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
+<li>上面的方法更像是在对行为策略进行模仿</li>
+</ul>
+</li>
+</ul>
+<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
+<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
+<li>损失函数：<br>  $$<br>  L(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
+<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
+</ul>
+</li>
+<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
+<li>BCQ等方法已经学习过上述目标的改进版本</li>
+<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
+<li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
+<ul>
+<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
+<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
+<li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
+<li>分析：<ul>
+<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
+<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>条件随机变量的期望回归</strong></p>
+<ul>
+<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\arg \min_{m_\tau(x)} E_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
+<li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
+</li>
+</ul>
+</li>
+<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
+<ul>
+<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
+</ul>
+</li>
+<li><p>分位数回归和期望回归的对比</p>
+  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
+<ul>
+<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
+<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
+</ul>
+</li>
+<li><p>问题：为什么使用期望回归而不是分位数回归？</p>
+<ul>
+<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL的损失函数"><a href="#IQL的损失函数" class="headerlink" title="IQL的损失函数"></a>IQL的损失函数</h4><ul>
+<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
+<li>to be continue</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——CQL.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -788,397 +1192,6 @@ $$ -->
 </ul>
 </li>
 </ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——IQL.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——IQL.html" itemprop="url">RL——IQL</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接<ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
-<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
-<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
-</ul>
-<hr>
-<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
-<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
-<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
-<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
-<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
-</ul>
-</li>
-<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
-<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
-<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
-</ul>
-</li>
-<li>问题：显示密度模型中的“密度”是什么意思？<ul>
-<li>TODO</li>
-</ul>
-</li>
-</ul>
-<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
-<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
-<li>IQL就是一种Single-step方法</li>
-<li>传统的模仿学习也属于Single-step方法</li>
-</ul>
-<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
-<ul>
-<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
-</ul>
-<hr>
-<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
-<li>思路：按照贝尔曼最优方程迭代</li>
-<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>直接使用上述损失函数存在值高估问题</li>
-<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
-</ul>
-</li>
-</ul>
-<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
-<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
-<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
-<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma E_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
-</ul>
-</li>
-<li>分析：<ul>
-<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
-<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
-<li>上面的方法更像是在对行为策略进行模仿</li>
-</ul>
-</li>
-</ul>
-<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
-<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
-<li>损失函数：<br>  $$<br>  L(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
-<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
-</ul>
-</li>
-<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
-<li>BCQ等方法已经学习过上述目标的改进版本</li>
-<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
-<li><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：<ul>
-<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
-<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
-</ul>
-</li>
-<li>分析：<ul>
-<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
-<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
-</ul>
-</li>
-<li><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$<ul>
-<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
-</ul>
-</li>
-<li>分位数回归和期望回归的对比<ul>
-<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
-<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
-</ul>
-</li>
-<li>问题：为什么使用期望回归而不是分位数回归？<ul>
-<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
-</ul>
-</li>
-</ul>
-<h4 id="IQL的损失函数"><a href="#IQL的损失函数" class="headerlink" title="IQL的损失函数"></a>IQL的损失函数</h4><ul>
-<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
-<li>to be continue</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——BCQ.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——BCQ.html" itemprop="url">RL——BCQ</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/369524801" target="_blank" rel="noopener">【笔记】BCQ详解</a><ul>
-<li>原作者的PPT</li>
-</ul>
-</li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/272152582" target="_blank" rel="noopener">BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/206489894" target="_blank" rel="noopener">【代码速读】（RL）1.BCQ - 一条的文章 - 知乎</a></li>
-</ul>
-<hr>
-<h3 id="BCQ整体介绍"><a href="#BCQ整体介绍" class="headerlink" title="BCQ整体介绍"></a>BCQ整体介绍</h3><ul>
-<li>BCQ（Batch-Constrained deep Q-learning）分为连续版本（<a href="https://proceedings.mlr.press/v97/fujimoto19a/fujimoto19a.pdf" target="_blank" rel="noopener">Off-Policy Deep Reinforcement Learning without Exploration</a>，2019年8月）和离散版本（<a href="https://arxiv.org/pdf/1910.01708" target="_blank" rel="noopener">Benchmarking   Batch Deep Reinforcement Learning Algorithms</a>，2019年10月）两篇文章，一作是同一个作者  </li>
-<li><strong>外推误差(Extrapolation Error)的定义：off-policy值学习中，当前策略真实状态动作访问分布和数据集中的状态动作分布不匹配导致的一种误差</strong><blockquote>
-<p>Extrapolation error is an error in off-policy value learning which is introduced by the mismatch between the dataset and true state-action visitation of the current policy</p>
-</blockquote>
-</li>
-<li>背景：off-policy的策略理论上可以从任意行为策略采样的数据中学习最优策略，但是直接将off-policy策略应用到Offline RL（也称为Batch RL）场景中可能面临，<strong>Absent Data</strong>（状态动作对缺失），<strong>Training Mismatch</strong>（训练预测分布不一致），<strong>Model Bias</strong>（随机MDP的状态转移概率有偏差）等问题</li>
-<li>BCQ的基本思想：采取保守策略，让学到的策略对应的状态动作访问空间尽量只在出现过的数据集上，或者相近的数据上<ul>
-<li>基本方法：主要通过限制\(Q(s’,\pi(s’))\)中的\(s’\)不要偏离数据集太多来实现</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="BCQ连续版本"><a href="#BCQ连续版本" class="headerlink" title="BCQ连续版本"></a>BCQ连续版本</h3><h4 id="关键实验"><a href="#关键实验" class="headerlink" title="关键实验"></a>关键实验</h4><ul>
-<li><p>实验设置：</p>
-<ul>
-<li>第一个实验(Final Buffer)，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
-<li>第二个实验(Concurrent)，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
-<li>第三个实验(Imitation)，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
-</ul>
-</li>
-<li><p>实验结果：</p>
-  <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png" title height="50%" width="50%">
-  <!-- <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png"> -->
-
-<ul>
-<li>第三个实验中使用的样本最好，但是训练得到的离线智能体效果最差，原因分析主要是<strong>外推误差</strong>导致</li>
-<li>三个实验的离线DDPG智能体都有不同情况的Q值高估问题，其中第三个实验的Q值高估问题最为严重（注意图2中看起来高估问题大于图1中，其实不是，是因为图二的量纲较小导致的）</li>
-</ul>
-</li>
-</ul>
-<h4 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h4><ul>
-<li>对于给定的真实MDP和数据集\(\mathcal{B}\)，定义外推误差<br>$$\epsilon_\text{MDP}(s,a) = Q^\pi(s,a) - Q_{\mathcal{B}}^\pi(s,a)$$</li>
-<li>则有外推误差可推导得到如下结论：<img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png" title height="80%" width="80%">
-<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png"> -->
-
-</li>
-</ul>
-<h4 id="训练流程"><a href="#训练流程" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
-<li><p>整体流程概览:</p>
-<img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png" title height="80%" width="80%">
-<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png"> -->
-</li>
-<li><p>训练流程解释：</p>
-<ul>
-<li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
-<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中公式(13)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
-</ul>
-</li>
-</ul>
-<h4 id="Serving步骤"><a href="#Serving步骤" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
-<li>给定一个状态\(s\)</li>
-<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE网络 \(G_w(s)\) 采样\(n\)个动作</li>
-<li>\(\xi_{\phi}(s,a_i,\Phi)\)：将这些状态和动作经过扰动网络，扰动网络输出是在\([-\Phi,\Phi]\)内的，得到的扰动值</li>
-<li>将扰动添加到原始动作上，再将动作经过Q网络，选取能使Q value最大的动作</li>
-<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}_{a_i + \xi_{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
-</ul>
-<hr>
-<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
-<li>整体流程概览:<img src="/Notes/RL/RL——BCQ/Discrete-BCQ-Algorithm.png">
-
-</li>
-</ul>
-<h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
-<li>按照如下策略决策：</li>
-</ul>
-<p>$$ \pi(s) = \mathop{\arg\max}_{a\vert\frac{G_w(a|s)}{\max_\hat{a} G_w(\hat{a}|s)} \gt \tau} Q_\theta(s,a) $$</p>
 
           
         

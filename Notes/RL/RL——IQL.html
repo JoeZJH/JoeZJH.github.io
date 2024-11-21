@@ -87,10 +87,13 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="参考链接 原始论文：ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning       IQL的基本思想 常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题 采样方面使用了AWR（Advantag">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-21T14:58:18.604Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-1.png">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
+<meta property="og:updated_time" content="2024-11-21T16:11:01.722Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——IQL">
 <meta name="twitter:description" content="参考链接 原始论文：ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning       IQL的基本思想 常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题 采样方面使用了AWR（Advantag">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-1.png">
 
 
 
@@ -405,26 +408,39 @@
 </ul>
 <hr>
 <h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
-<li><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：<ul>
+<li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
+<ul>
 <li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
 <li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
-</ul>
-</li>
+<li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
 <li>分析：<ul>
 <li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
 <li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
 </ul>
 </li>
-<li><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$<ul>
+</ul>
+</li>
+<li><p><strong>条件随机变量的期望回归</strong></p>
+<ul>
+<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\arg \min_{m_\tau(x)} E_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
+<li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
+</li>
+</ul>
+</li>
+<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
+<ul>
 <li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
 </ul>
 </li>
-<li>分位数回归和期望回归的对比<ul>
+<li><p>分位数回归和期望回归的对比</p>
+  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
+<ul>
 <li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
 <li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
 </ul>
 </li>
-<li>问题：为什么使用期望回归而不是分位数回归？<ul>
+<li><p>问题：为什么使用期望回归而不是分位数回归？</p>
+<ul>
 <li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
 </ul>
 </li>
@@ -463,8 +479,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——BCQ.html" rel="next" title="RL——BCQ">
-                <i class="fa fa-chevron-left"></i> RL——BCQ
+              <a href="/Notes/RL/RL——CQL.html" rel="next" title="RL——CQL">
+                <i class="fa fa-chevron-left"></i> RL——CQL
               </a>
             
           </div>
@@ -473,8 +489,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——CQL.html" rel="prev" title="RL——CQL">
-                RL——CQL <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——BCQ.html" rel="prev" title="RL——BCQ">
+                RL——BCQ <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
