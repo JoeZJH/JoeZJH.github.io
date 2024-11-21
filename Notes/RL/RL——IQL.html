@@ -89,7 +89,7 @@
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-1.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
-<meta property="og:updated_time" content="2024-11-21T16:11:01.722Z">
+<meta property="og:updated_time" content="2024-11-21T17:19:00.143Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——IQL">
 <meta name="twitter:description" content="参考链接 原始论文：ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning       IQL的基本思想 常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题 采样方面使用了AWR（Advantag">
@@ -445,9 +445,35 @@
 </ul>
 </li>
 </ul>
-<h4 id="IQL的损失函数"><a href="#IQL的损失函数" class="headerlink" title="IQL的损失函数"></a>IQL的损失函数</h4><ul>
+<h4 id="基于期望回归的Q值学习"><a href="#基于期望回归的Q值学习" class="headerlink" title="基于期望回归的Q值学习"></a>基于期望回归的Q值学习</h4><ul>
 <li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
-<li>to be continue</li>
+<li>其中\(\mathcal{D} \sim \pi_\beta\)，选择合适的\(\tau\)后，可以学到一个大于\(Q^{\pi_\beta}(s,a)\)（行为策略对应的Q值）的\(Q(s,a)\)</li>
+<li>理解：给定\((s,a)\)的情况下，存在许多不同的\((s’,a’)\)样本，当\(\tau &gt; 0.5\)时，相当于是通过这种非对称损失函数降低小于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，增加大于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，从而学到较大的\((s’,a’)\)对应的目标值，极端情况下，学到的是最大值\(r(s, a) + \gamma \max_{(s,a,s’,a’) \sim \mathcal{D}} Q_{\theta’}(s’, a’)\)</li>
+<li>上面的损失函数还存在一些不足，由于环境可能是动态变化的，状态\(s’\)是按照概率\(p(s’|s,a)\)出现，所以以上损失函数还使得Q学到了环境转换的信息。具体来说，学到的Q值高不一定是选到了优秀动作的反应，还可能是因为运气好碰上了转移到一个较好的状态\(s’\)上<ul>
+<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(E_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
+<li>补充问题1：如果是确定性的环境，是否可以直接使用上述损失函数？</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL的Q值学习"><a href="#IQL的Q值学习" class="headerlink" title="IQL的Q值学习"></a>IQL的Q值学习</h4><ul>
+<li>由于基于期望回归的Q值学习引入了状态转移随机偏差，存在问题，所以需要进行改进：</li>
+<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = E_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
+<li>这里可以看出\(V(s)\)学到的是\(max_a Q_{\hat{\theta}}(s,a)\)的思想，即对应V值的贝尔曼最优方程</li>
+</ul>
+</li>
+<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
+<li>由于\(V\)在上一步已经通过期望回归学到了最优形式，这一步不需要继续使用期望回归了</li>
+</ul>
+</li>
+<li>至此，我们已经实现了通过SARSA-style的形式，隐式的学到了近似最优Q值</li>
+</ul>
+<h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
+<li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
+<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = E_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
+<li>其中 \(\beta \ge 0\) 是温度系数。对于较小的超参数值，该目标类似于行为克隆（近似所有样本权重相等的策略梯度，原始策略梯度中，样本权重是温度系数为1的Q值），而对于较大的值，它试图恢复Q函数的最大值（Q值越大，对应的样本权重越大）。正如AWR等先前工作所示，此目标学习一个在分布约束下的最大化Q值的策略</li>
+</ul>
+</li>
+<li>注意，策略学习时Q值收敛以后进行的(Q和V是交替更新)，Q值学习和策略学习是串行的，且Q值学习彻底完成以后才进行策略学习，并不是交替进行</li>
 </ul>
 
       
@@ -479,8 +505,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——CQL.html" rel="next" title="RL——CQL">
-                <i class="fa fa-chevron-left"></i> RL——CQL
+              <a href="/Notes/RL/RL——BCQ.html" rel="next" title="RL——BCQ">
+                <i class="fa fa-chevron-left"></i> RL——BCQ
               </a>
             
           </div>
@@ -489,8 +515,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——BCQ.html" rel="prev" title="RL——BCQ">
-                RL——BCQ <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Others/趣味题——同距运动员.html" rel="prev" title="趣味题——同距运动员">
+                趣味题——同距运动员 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -632,7 +658,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的损失函数"><span class="nav-number">4.2.</span> <span class="nav-text">IQL的损失函数</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于期望回归的Q值学习"><span class="nav-number">4.2.</span> <span class="nav-text">基于期望回归的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的Q值学习"><span class="nav-number">4.3.</span> <span class="nav-text">IQL的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的策略学习"><span class="nav-number">4.4.</span> <span class="nav-text">IQL的策略学习</span></a></li></ol></li></ol></div>
             
 
           </div>
