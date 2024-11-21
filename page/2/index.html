@@ -275,6 +275,847 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a>  <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）  </li>
+</ul>
+<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
+<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
+<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
+</ul>
+</li>
+<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
+<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\arg\max_a Q(s,a)\)来找到最优策略。</li>
+<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
+<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
+<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
+</ul>
+<h5 id="Off-Policy-AC如何对混合策略采样的样本进行重要性采样？"><a href="#Off-Policy-AC如何对混合策略采样的样本进行重要性采样？" class="headerlink" title="Off-Policy AC如何对混合策略采样的样本进行重要性采样？"></a>Off-Policy AC如何对混合策略采样的样本进行重要性采样？</h5><ul>
+<li>在Replay Buffer中记录下每个样本的采样策略（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L194" target="_blank" rel="noopener">代码示例</a>），并在更新时逐个样本计算动作概率比值（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L89-L92" target="_blank" rel="noopener">代码示例</a>），参见：  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 策略记录</span><br><span class="line">memory.append(state, action, reward, policy.detach()) </span><br><span class="line"></span><br><span class="line">## 动作概率比值计算</span><br><span class="line">if off_policy:</span><br><span class="line">    rho = policies[i].detach() / old_policies[i]</span><br><span class="line">else:</span><br><span class="line">    rho = torch.ones(1, action_size)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
+<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
+<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
+</ul>
+</li>
+<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= E_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
+<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
+</ul>
+<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
+<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
+<ul>
+<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
+</ul>
+</li>
+<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
+<ul>
+<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
+<ul>
+<li>上面的Loss求导就可以得到梯度是\(E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
+<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
+<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a>  </li>
+</ul>
+<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
+<li>伪代码：<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
+<ul>
+<li>其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数</li>
+<li><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</li>
+<li><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
+<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods</a>  </li>
+<li>有两个改进包含在名字中，Twin和Delayed</li>
+<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
+</ul>
+<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
+<li>伪代码<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
+<ul>
+<li>\(t \text{mod} d\)表示策略更新比Q值更新慢一些，\(d\)次Q值更新对应一次策略更新</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
+<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
+</ul>
+<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
+<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
+<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
+</ul>
+<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
+<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
+</ul>
+<hr>
+<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
+<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
+<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——TD误差和优势函数的区别.html" itemprop="url">RL——TD误差和优势函数的区别</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
+</ul>
+</li>
+</ul>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
+<li>时间差分误差，TD error</li>
+<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
+<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
+<li>TD error是针对确定的\(s’\)来说的</li>
+</ul>
+<hr>
+<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
+<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = E_{s’\sim P}[\delta_{\theta}(s, a, s’)] = E_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
+<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
+</ul>
+<hr>
+<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
+<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = E_{a\sim \pi} [A_{\theta}(s,a)] = E_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = E_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
+</ul>
+<hr>
+<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
+<li>期望贝尔曼误差<br>$$<br>E_{s\sim \mu} [\epsilon_{\theta}(s)] = E_{s\sim \mu}[E_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  E_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——PPO.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——PPO.html" itemprop="url">RL——PPO</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+<h3 id="PPO方法介绍"><a href="#PPO方法介绍" class="headerlink" title="PPO方法介绍"></a>PPO方法介绍</h3><h4 id="PPO的目标"><a href="#PPO的目标" class="headerlink" title="PPO的目标"></a>PPO的目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
+<ul>
+<li>PPO目标详细推导见<a href="/Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
+</ul>
+<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
+<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
+</ul>
+<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
+<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
+<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
+<li>令\(r(\theta) = \frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)} \)，则有：<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
+<li>对Clip的思考和讨论（以下讨论中，）<ul>
+<li>Clip方法限制变化过大或者过小的策略，使得这些\((s,a)\)样本在梯度回传时不生效（被固定值限制，所以没有梯度回传，从而保证不会使用这些样本去更新）；</li>
+<li>问题：实际上限定住\(r(\theta)\)就能保证更新后的策略不会偏离原始策略太远吗？<ul>
+<li>只有\(\pi_\theta\)中包含策略参数，\(A_{\theta_{\text{old}}}(s,a)\)与策略参数无关，所以使得\(r(\theta)\)失效，就可以让偏离太大的样本不影响当前策略更新</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>关于Clip仅限制了单边的讨论：<ul>
+<li>当\(A_{\theta_{\text{old}}}(a,s) &gt; 0\)时，\(r(\theta)\)在Clip后的生效范围在\(r(\theta) \in [0,1+\epsilon]\)，也就是\(1-\epsilon\)边界会失效</li>
+<li>当\(A_{\theta_{\text{old}}}(a,s) &lt; 0\)时，\(r(\theta)\)在Clip后的生效范围在\(r(\theta) \in [1-\epsilon,+\infty]\)，也就是\(1+\epsilon\)边界会失效</li>
+<li>在on-policy的设定下，我们认为策略新旧策略的比值\(r(\theta)\)不会太大，一般不会出现问题，但是off-policy设定下，可能会出现问题，所以需要再加一层Clip（参考自：<a href="https://huggingface.co/learn/deep-rl-course/unit8/visualize" target="_blank" rel="noopener">Visualize the Clipped Surrogate Objective Function</a>）<br>  \begin{aligned}<br>  \max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\max( \eta A_{\theta_{\text{old}}}(a,s)), \min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>  \end{aligned}<ul>
+<li>其中\(\eta\)是超参数</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="PPO网络更新"><a href="#PPO网络更新" class="headerlink" title="PPO网络更新"></a>PPO网络更新</h4><ul>
+<li>Critic网络更新<br>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma V^{\bar{w}}(s_{t+1}) - V^{w}(s_{t})) ^ 2<br>$$ <ul>
+<li>这里V值拟合的目标是策略\(\pi_\theta\)对应的V值\(V^{\pi_\theta}\)</li>
+<li>\(r_t = r(s_t, a_t)\vert_{a_t \sim \pi_\theta(\cdot|s_t)}\)，训练用的整个轨迹链路都是从策略\(\pi_\theta\)采样得到的</li>
+</ul>
+</li>
+<li>Actor网络更新<br>$$<br>Loss_{\text{actor}} = - E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>$$ <ul>
+<li>其中：\(r(\theta) = \frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)} \)</li>
+</ul>
+</li>
+</ul>
+<h4 id="PPO实践说明"><a href="#PPO实践说明" class="headerlink" title="PPO实践说明"></a>PPO实践说明</h4><ul>
+<li>常用的形式是PPO-Clip形式，实践中效果更好</li>
+<li>PPO-Clip中一般设置\(\epsilon=0.2\)</li>
+<li>PPO原始论文中，每次采样到的数据会作K次epochs，且不同游戏使用的次数不同，在Mujoco中使用\(epochs=10\)，Roboschool中使用\(epochs=15\)，Atari中使用\(epochs=3\)<img src="/Notes/RL/RL——PPO/PPO-Algorithm.png">
+
+</li>
+</ul>
+<h4 id="PPO连续动作实现离散动作的实现主要区别"><a href="#PPO连续动作实现离散动作的实现主要区别" class="headerlink" title="PPO连续动作实现离散动作的实现主要区别"></a>PPO连续动作实现离散动作的实现主要区别</h4><h5 id="模型建模"><a href="#模型建模" class="headerlink" title="模型建模"></a>模型建模</h5><ul>
+<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\theta,\sigma_\theta\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算</p>
+</li>
+<li><p><strong>采样方式</strong>：采样时需要创建分布来采样，由于不需要梯度回传，所以不需要使用重参数法</p>
+</li>
+<li><p><strong>Critic网络</strong>：由于离散连续场景都用V网络，仅仅评估状态下的价值即可，与动作无关，连续动作处理不需要特殊修改</p>
+<h5 id="新旧策略比值计算方式不同"><a href="#新旧策略比值计算方式不同" class="headerlink" title="新旧策略比值计算方式不同"></a>新旧策略比值计算方式不同</h5></li>
+<li><p>离线动作按照推导中的实现即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">def compute_surrogate_obj(self, states, actions, advantage, old_log_probs, actor):  # 计算策略目标</span><br><span class="line">    log_probs = torch.log(actor(states).gather(1, actions))</span><br><span class="line">    ratio = torch.exp(log_probs - old_log_probs)</span><br><span class="line">    return torch.mean(ratio * advantage)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>连续动作需要使用概率密度函数来实现</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def compute_surrogate_obj(self, states, actions, advantage, old_log_probs, actor):</span><br><span class="line">    mu, std = actor(states)</span><br><span class="line">    action_dists = torch.distributions.Normal(mu, std)</span><br><span class="line">    log_probs = action_dists.log_prob(actions) # 返回\log(f(actions)),f为概率密度函数</span><br><span class="line">    ratio = torch.exp(log_probs - old_log_probs) # 这里可以直接用于算概率之间的比值理论是概率密度函数的含义</span><br><span class="line">    return torch.mean(ratio * advantage) # 注意torch内部实现这里的梯度可以回传到actor网络上（基于参数mu,std可以运算得到log_prob，所以梯度可以回传）</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="PPO的训练技巧"><a href="#PPO的训练技巧" class="headerlink" title="PPO的训练技巧"></a>PPO的训练技巧</h3><ul>
+<li>参考：<a href="https://zhuanlan.zhihu.com/p/512327050" target="_blank" rel="noopener">影响PPO算法性能的10个关键技巧（附PPO算法简洁Pytorch实现）</a>  </li>
+<li>TODO：真实训练一下，测试各种优化技巧的收益</li>
+</ul>
+<h4 id="Advantage-Normalization"><a href="#Advantage-Normalization" class="headerlink" title="Advantage Normalization"></a>Advantage Normalization</h4><ul>
+<li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage   Function进行归一化，用于提升PG方法的性能</li>
+<li>具体方法：减去均值除以方差</li>
+<li>实现方案：<ul>
+<li>方案一：Batch Advantage Normalization（BAN），对当前Batch的所有Advantage求均值和方差</li>
+<li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
+</ul>
+</li>
+<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差；<ul>
+<li>理解，方案一和方案二并未限定具体采样的轨迹是多少个，但是主要思路是尽量在更多的样本上统计均值和方差，减少波动，这样效果更好些</li>
+</ul>
+</li>
+<li>关于MBAN，<a href="https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/" target="_blank" rel="noopener">ppo-implementation-details</a>博客中有详细实现  </li>
+<li>问题：GAE中还需要做Advantage Normalization吗？是否是在计算GAE之前做归一化？</li>
+</ul>
+<h4 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h4><ul>
+<li>对状态做归一化</li>
+<li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
+<li>采用滑动增量更新的方式（详细证明见附录）：<ul>
+<li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
+<li>方差中间变量：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)<ul>
+<li>注意这个值除以n才是方差</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>代码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class RunningMeanStd:</span><br><span class="line">    # Dynamically calculate mean and std</span><br><span class="line">    def __init__(self, shape):  # shape:the dimension of input data</span><br><span class="line">        self.n = 0</span><br><span class="line">        self.mean = np.zeros(shape)</span><br><span class="line">        self.S = np.zeros(shape)</span><br><span class="line">        self.std = np.sqrt(self.S)</span><br><span class="line"></span><br><span class="line">    def update(self, x):</span><br><span class="line">        x = np.array(x)</span><br><span class="line">        self.n += 1</span><br><span class="line">        if self.n == 1:</span><br><span class="line">            self.mean = x</span><br><span class="line">            self.std = x</span><br><span class="line">        else:</span><br><span class="line">            old_mean = self.mean.copy()</span><br><span class="line">            self.mean = old_mean + (x - old_mean) / self.n</span><br><span class="line">            self.S = self.S + (x - old_mean) * (x - self.mean)</span><br><span class="line">            self.std = np.sqrt(self.S / self.n )</span><br><span class="line"></span><br><span class="line">class Normalization:</span><br><span class="line">    def __init__(self, shape):</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x, update=True):</span><br><span class="line">        # Whether to update the mean and std,during the evaluating,update=Flase</span><br><span class="line">        if update:  </span><br><span class="line">            self.running_ms.update(x)</span><br><span class="line">        x = (x - self.running_ms.mean) / (self.running_ms.std + 1e-8)</span><br><span class="line"></span><br><span class="line">        return x</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h4><ul>
+<li>与State Normalization的方案，动态维护所有获得过的Reward的Mean和Std，然后再对当前的Reward做Normalization</li>
+<li>问题：是对单次Reward做了Normalization吗？如果Reward已经做了Normalization，GAE中实际上就已经使用了标准化后的Reward了，Advantage是否还需要做呢？</li>
+<li>常常被替换为Reward Scaling</li>
+</ul>
+<h4 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h4><ul>
+<li>相关论文：《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》</li>
+<li>Reward Scaling与Reward Normalization的区别在于，Reward Scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std（不减去均值？）</li>
+<li>Reward Normalization和Reward Scaling二选一即可，建议使用Reward Scaling而不是Reward Normalization即可</li>
+<li>代码实现<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">class RewardScaling:</span><br><span class="line">    def __init__(self, shape, gamma):</span><br><span class="line">        self.shape = shape  # reward shape=1</span><br><span class="line">        self.gamma = gamma  # discount factor</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=self.shape)</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x):</span><br><span class="line">        self.R = self.gamma * self.R + x</span><br><span class="line">        self.running_ms.update(self.R)</span><br><span class="line">        x = x / (self.running_ms.std + 1e-8)  # Only divided std</span><br><span class="line">        return x</span><br><span class="line"></span><br><span class="line">    def reset(self):  # When an episode is done,we should reset &apos;self.R&apos;</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="Policy-Entropy"><a href="#Policy-Entropy" class="headerlink" title="Policy Entropy"></a>Policy Entropy</h4><ul>
+<li>在actor的loss中增加一项策略熵，在最大化收益的同时，最大化策略熵，增加探索性（理解：同时有正则的作用）</li>
+</ul>
+<h4 id="Learning-Rate-Decay"><a href="#Learning-Rate-Decay" class="headerlink" title="Learning Rate Decay"></a>Learning Rate Decay</h4><ul>
+<li>学习率逐步衰减</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">def lr_decay(self, total_steps):</span><br><span class="line">    lr_a_now = self.lr_a * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    lr_c_now = self.lr_c * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    for p in self.optimizer_actor.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_a_now</span><br><span class="line">    for p in self.optimizer_critic.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_c_now</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="Gradient-Clip"><a href="#Gradient-Clip" class="headerlink" title="Gradient Clip"></a>Gradient Clip</h4><ul>
+<li>梯度裁剪</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># Update actor</span><br><span class="line">self.optimizer_actor.zero_grad()</span><br><span class="line">actor_loss.mean().backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5) </span><br><span class="line">self.optimizer_actor.step()</span><br><span class="line"></span><br><span class="line"># Update critic</span><br><span class="line">self.optimizer_critic.zero_grad()</span><br><span class="line">critic_loss.backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5) </span><br><span class="line">self.optimizer_critic.step()</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="Orthogonal-Initialization"><a href="#Orthogonal-Initialization" class="headerlink" title="Orthogonal Initialization"></a>Orthogonal Initialization</h4><ul>
+<li>正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：<ul>
+<li>用均值为0，标准差为1的高斯分布初始化权重矩阵</li>
+<li>对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。</li>
+</ul>
+</li>
+<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"># orthogonal init</span><br><span class="line">def orthogonal_init(layer, gain=1.0):</span><br><span class="line">    nn.init.orthogonal_(layer.weight, gain=gain)</span><br><span class="line">    nn.init.constant_(layer.bias, 0)</span><br><span class="line"></span><br><span class="line">class Actor_Gaussian(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Actor_Gaussian, self).__init__()</span><br><span class="line">        self.max_action = args.max_action</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.mean_layer = nn.Linear(args.hidden_width, args.action_dim)</span><br><span class="line">        self.log_std = nn.Parameter(torch.zeros(1, args.action_dim))  # We use &apos;nn.Paremeter&apos; to train log_std automatically</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.mean_layer, gain=0.01)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        mean = self.max_action * torch.tanh(self.mean_layer(s))  # [-1,1]-&gt;[-max_action,max_action]</span><br><span class="line">        return mean</span><br><span class="line"></span><br><span class="line">    def get_dist(self, s):</span><br><span class="line">        mean = self.forward(s)</span><br><span class="line">        log_std = self.log_std.expand_as(mean)  # To make &apos;log_std&apos; have the same dimension as &apos;mean&apos;</span><br><span class="line">        std = torch.exp(log_std)  # The reason we train the &apos;log_std&apos; is to ensure std=exp(log_std)&gt;0</span><br><span class="line">        dist = Normal(mean, std)  # Get the Gaussian distribution</span><br><span class="line">        return dist</span><br><span class="line"></span><br><span class="line">class Critic(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Critic, self).__init__()</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.fc3 = nn.Linear(args.hidden_width, 1)</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.fc3)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        v_s = self.fc3(s)</span><br><span class="line">        return v_s</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="Adam-Optimizer-Epsilon-Parameter"><a href="#Adam-Optimizer-Epsilon-Parameter" class="headerlink" title="Adam Optimizer Epsilon Parameter"></a>Adam Optimizer Epsilon Parameter</h4><ul>
+<li>实践中，从官方默认值1e-8改成1e-5</li>
+<li>原因？</li>
+</ul>
+<h4 id="Tanh-Activation-Function"><a href="#Tanh-Activation-Function" class="headerlink" title="Tanh Activation Function"></a>Tanh Activation Function</h4><ul>
+<li>将ReLU换成tanh激活函数</li>
+<li>建议PPO算法默认使用激活函数</li>
+<li>原因？</li>
+</ul>
+<hr>
+<h3 id="附录-均值方差滑动更新公式证明"><a href="#附录-均值方差滑动更新公式证明" class="headerlink" title="附录-均值方差滑动更新公式证明"></a>附录-均值方差滑动更新公式证明</h3><h4 id="均值更新推导"><a href="#均值更新推导" class="headerlink" title="均值更新推导"></a>均值更新推导</h4><ul>
+<li>均值更新推导详情：<br>$$<br>\begin{align}<br>\mu_n &amp;= \frac{1}{n}\sum_{i=1}^n x_i \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\cdot\frac{1}{n-1}\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\mu_{n-1} + x_n) \\<br>&amp;= \frac{1}{n}(n\mu_{n-1} + x_n - \mu_{n-1}) \\<br>&amp;= \mu_{n-1} + \frac{1}{n}(x_n - \mu_{n-1})<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="方差更新推导"><a href="#方差更新推导" class="headerlink" title="方差更新推导"></a>方差更新推导</h4><ul>
+<li>将方差中间变量\(S_n\)展开（这里\(S_n\)除以n才是方差）有：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1} + \mu_{n-1} - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1})^2 + 2(\mu_{n-1} - \mu_{n})\sum_{i=1}^{n-1}(x_i - \mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})(\sum_{i=1}^{n-1} x_i - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})((n-1)\mu_{n-1} - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})\cdot 0 + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + ((n-1)\mu_{n-1} -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n\mu_{n} - x_n -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (\mu_{n} - x_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1}) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1} + x_n - \mu_n)\\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\\<br>\end{align}<br>$$</li>
+<li>最终有：\(S_n = S_{n+1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\)</li>
+</ul>
+<hr>
+<h3 id="DPPO-Distributed-PPO"><a href="#DPPO-Distributed-PPO" class="headerlink" title="DPPO(Distributed PPO)"></a>DPPO(Distributed PPO)</h3><ul>
+<li>DPPO是PPO的分布式版本，引入了分布式计算的概念，允许多个计算节点（或智能体）并行地与环境交互，收集数据，并将这些数据用于更新全局模型。</li>
+<li>分布式架构不仅加快了数据收集的速度，还提高了算法处理大规模并行任务的能力，使得学习过程更加高效</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+<hr>
+<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
+<ul>
+<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
+</ul>
+<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
+<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似（近似形式的具体证明见附录）<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
+<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵（Hessian Matrix，又译作黑塞矩阵），（PS：KL散度的海森矩阵就是Fisher矩阵，一般是正定的）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
+<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
+<li>在当前场景中\(H_{ij}\)为<br>$$ H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}} $$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
+<li>可根据拉格朗日乘子法求解以上问题得到如下解（详细推导见附录）：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
+<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
+<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
+<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法（Conjugate Gradient Method,）来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a><ul>
+<li>其中，共轭梯度法伪代码如下<img src="/Notes/RL/RL——TRPO/CG.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
+<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
+<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)</li>
+</ul>
+<h4 id="TRPO训练伪代码"><a href="#TRPO训练伪代码" class="headerlink" title="TRPO训练伪代码"></a>TRPO训练伪代码</h4><ul>
+<li>TRPO伪代码：<img src="/Notes/RL/RL——TRPO/TRPO.png">
+
+</li>
+</ul>
+<hr>
+<h3 id="附录：约束问题的泰勒展开近似推导证明"><a href="#附录：约束问题的泰勒展开近似推导证明" class="headerlink" title="附录：约束问题的泰勒展开近似推导证明"></a>附录：约束问题的泰勒展开近似推导证明</h3><ul>
+<li>近似结果<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$</li>
+<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
+<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵：<br>  $$<br>  H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}}<br>  $$</li>
+</ul>
+<h4 id="泰勒展开回顾"><a href="#泰勒展开回顾" class="headerlink" title="泰勒展开回顾"></a>泰勒展开回顾</h4><ul>
+<li>泰勒展开是一种在数学分析中用于近似函数的方法，特别是当直接计算函数值较为困难时，基本思想是将一个函数在一个点附近用一个多项式来近似表示</li>
+<li>对于一个在点 \(a\) 处具有 \(n+1\) 阶导数的函数 \(f(x)\)，其在 \(a\) 点的泰勒展开可以表示为：<br>$$ f(x) = f(a) + \frac{f’(a)}{1!}(x-a) + \frac{f’’(a)}{2!}(x-a)^2 + \cdots + \frac{f^{(n)}(a)}{n!}(x-a)^n + R_n(x) $$<ul>
+<li>其中，\(R_n(x)\) 是余项，表示的是泰勒多项式与实际函数之间的误差，常表示为：<br>  $$ R_n(x) = o((x-a)^n) $$<ul>
+<li>这里的 \(o\) 表示当 \(x\) 趋向于 \(a\) 时，\(R_n(x)\) 相对于 \((x-a)^n\) 是高阶无穷小</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>泰勒展开在很多领域都有广泛的应用，例如物理学中的近似计算、工程学中的信号处理等。通过选择合适的 (a) 值和 (n) 阶次，可以得到不同精度的近似结果。特别地，当 (a=0) 时，这种特殊的泰勒展开被称为麦克劳林展开。</p>
+<h4 id="目标的泰勒一阶近似推导"><a href="#目标的泰勒一阶近似推导" class="headerlink" title="目标的泰勒一阶近似推导"></a>目标的泰勒一阶近似推导</h4><ul>
+<li>令\(f(\theta)\)为最优化目标，则：<br>$$ f(\theta) = E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
+<li>此时对\(f(\theta)\)在\(\theta = \theta_{\text{old}}\)做泰勒展开有<br>$$ f(\theta) = f(\theta_{\text{old}}) + \nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) + o(\theta^2)$$</li>
+<li>由于\(f(\theta_{\text{old}})\)与\(\theta\)无关，所以最大化\(f(\theta)\)等价于最大化\(\nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) = g^T(\theta-\theta_{old})\)</li>
+</ul>
+<h4 id="约束的泰勒二阶近似推导"><a href="#约束的泰勒二阶近似推导" class="headerlink" title="约束的泰勒二阶近似推导"></a>约束的泰勒二阶近似推导</h4><ul>
+<li>将KL散度在\(\theta = \theta_{\text{old}}\)处二阶展开有<br>$$<br>\begin{align}<br>f(\theta) &amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \\<br>&amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}}) + \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} (\theta - \theta_{\text{old}}) + \frac{1}{2}(\theta - \theta_{\text{old}})^TH(\theta - \theta_{\text{old}}) + o(\theta^3)<br>\end{align}<br>$$<ul>
+<li>显然，第一项\( D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}})=0 \)</li>
+<li>可以证明，第二项为0，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} &amp;= \nabla_\theta \int_a \pi_{\theta_{\text{old}}}(a|s) \log \frac{\pi_{\theta_{\text{old}}}(a|s)}{\pi_{\theta(a|s)}} da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= \nabla_\theta \int \pi_{\theta_{\text{old}}}(a|s) \log (\pi_{\theta_{\text{old}}}(a|s) - \pi_{\theta}(a|s)) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \nabla_\theta \log \pi_{\theta(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{积分求导互换} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \frac{\nabla_\theta \pi_{\theta}(a|s)}{\pi_{\theta}(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{对数概率技巧}  \\<br>  &amp;= - \nabla_\theta  \int \pi_{\theta}(a|s) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \nabla_\theta  1  \\<br>  &amp;= 0<br>  \end{align}<br>  $$</li>
+<li>证毕</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="附录：最优化问题求解的详细推导证明"><a href="#附录：最优化问题求解的详细推导证明" class="headerlink" title="附录：最优化问题求解的详细推导证明"></a>附录：最优化问题求解的详细推导证明</h3><ul>
+<li><p>给定最优化问题<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>对于上述问题，Karush-Kuhn-Tucker (KKT) 条件可以表述为以下几点：</p>
+<ul>
+<li><strong>原始可行性</strong>：解必须满足原始约束。<br>  $$<br>  \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) \leq \delta.<br>  $$</li>
+<li><strong>对偶可行性</strong>：拉格朗日乘子（或对偶变量）必须非负。<br>  $$<br>  \lambda \geq 0.<br>  $$</li>
+<li><strong>互补松弛性</strong>：拉格朗日乘子与对应的不等式约束之间的乘积必须为零。<br>  $$<br>  \lambda \left( \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) - \delta \right) = 0.<br>  $$</li>
+<li><strong>拉格朗日函数的梯度为零</strong>：考虑拉格朗日函数 \(L(\theta, \lambda) = - g^T(\theta-\theta_k) + \lambda \left( \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) - \delta \right)\)，其对 \(\theta\) 的偏导数应等于零。<br>  $$<br>  \nabla_\theta L = - g + \lambda H (\theta - \theta_k) = 0.<br>  $$<ul>
+<li>注意：这里是因为目标是max，需要改成min后才能用\(+\lambda (\cdot)\) 的操作</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>这里，\(H\) 是一个对称矩阵（Hessian矩阵是对称的，因为\(\frac{\partial^2 f}{\partial x \partial y} = \frac{\partial^2 f}{\partial y \partial x}\)），\(\lambda\) 是与约束相关的拉格朗日乘子，\(\delta\) 是给定的常数</p>
+</li>
+<li><p>根据KKT条件中的互补松弛性条件，当 \(\lambda &gt; 0\) 时，这意味着约束 \(\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) \leq \delta\) 是紧的，即：<br>$$<br>\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) = \delta.<br>$$</p>
+<ul>
+<li>注意，这里无法直接求解这个问题，因为这个解问题的解不是唯一的，比如一维情况就是二次方程，解就有正负两个值，实际上，这里的解是一个以\(\theta_k\)为球心的球体（椭球体）构成的集合（一共有\(2^n\)个解？其中n是变量的维度）</li>
+</ul>
+</li>
+<li><p>因此，当 \(\lambda &gt; 0\) 时，\(\theta\) 必须位于约束的边界上。为了确定 \(\theta\) 的具体值，我们需要同时考虑其他KKT条件，尤其是拉格朗日函数的梯度为零的条件：<br>$$<br>- g + \lambda H (\theta - \theta_k) = 0<br>$$</p>
+</li>
+<li><p>从这个方程中，我们可以解出 \(\theta\)：<br>$$<br>\theta - \theta_k = \frac{1}{\lambda} H^{-1} g<br>$$</p>
+</li>
+<li><p>将 \(\theta\) 代入互补松弛条件中可得：<br>$$<br>\frac{1}{2} \left( \frac{1}{\lambda} H^{-1} g \right)^T H \left( \frac{1}{\lambda} H^{-1} g \right) = \delta<br>$$</p>
+</li>
+<li><p>简化后得到：<br>$$<br>\begin{align}<br>\frac{1}{2} \left( \frac{1}{\lambda^2} g^T H^{-1} H H^{-1} g \right) &amp;= \delta \\<br>\frac{1}{2} \left( \frac{1}{\lambda^2} g^T H^{-1} g \right) &amp;= \delta \\<br>\frac{1}{2} \frac{g^T H^{-1} g}{\lambda^2} &amp;= \delta \\<br>\frac{g^T H^{-1} g}{2\delta} &amp;= \lambda^2 \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>最终可求得：<br>$$<br>\lambda = \sqrt{\frac{g^T H^{-1} g}{2\delta}}.<br>$$</p>
+</li>
+<li><p>现在我们已经得到了 \(\lambda\) 的表达式，可以将其代回 \(\theta\) 的表达式中：<br>$$<br>\begin{align}<br>\theta - \theta_k &amp;= \frac{1}{\sqrt{\frac{g^T H^{-1} g}{2\delta}}} H^{-1} g = \sqrt{\frac{2\delta}{g^T H^{-1} g}} H^{-1} g<br>\end{align}<br>$$</p>
+</li>
+<li><p>最终，\(\theta\) 的值为：<br>$$<br>\theta_{k+1} = \theta_k + \sqrt{\frac{2\delta}{g^T H^{-1} g}} H^{-1} g.<br>$$</p>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——SAC.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -641,803 +1482,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——PPO.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——PPO.html" itemprop="url">RL——PPO</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-<h3 id="PPO方法介绍"><a href="#PPO方法介绍" class="headerlink" title="PPO方法介绍"></a>PPO方法介绍</h3><h4 id="PPO的目标"><a href="#PPO的目标" class="headerlink" title="PPO的目标"></a>PPO的目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
-<ul>
-<li>PPO目标详细推导见<a href="/Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
-</ul>
-<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
-<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
-</ul>
-<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
-<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
-<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
-<li>令\(r(\theta) = \frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)} \)，则有：<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>\end{aligned}</li>
-<li>对Clip的思考和讨论（以下讨论中，）<ul>
-<li>Clip方法限制变化过大或者过小的策略，使得这些\((s,a)\)样本在梯度回传时不生效（被固定值限制，所以没有梯度回传，从而保证不会使用这些样本去更新）；</li>
-<li>问题：实际上限定住\(r(\theta)\)就能保证更新后的策略不会偏离原始策略太远吗？<ul>
-<li>只有\(\pi_\theta\)中包含策略参数，\(A_{\theta_{\text{old}}}(s,a)\)与策略参数无关，所以使得\(r(\theta)\)失效，就可以让偏离太大的样本不影响当前策略更新</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>关于Clip仅限制了单边的讨论：<ul>
-<li>当\(A_{\theta_{\text{old}}}(a,s) &gt; 0\)时，\(r(\theta)\)在Clip后的生效范围在\(r(\theta) \in [0,1+\epsilon]\)，也就是\(1-\epsilon\)边界会失效</li>
-<li>当\(A_{\theta_{\text{old}}}(a,s) &lt; 0\)时，\(r(\theta)\)在Clip后的生效范围在\(r(\theta) \in [1-\epsilon,+\infty]\)，也就是\(1+\epsilon\)边界会失效</li>
-<li>在on-policy的设定下，我们认为策略新旧策略的比值\(r(\theta)\)不会太大，一般不会出现问题，但是off-policy设定下，可能会出现问题，所以需要再加一层Clip（参考自：<a href="https://huggingface.co/learn/deep-rl-course/unit8/visualize" target="_blank" rel="noopener">Visualize the Clipped Surrogate Objective Function</a>）<br>  \begin{aligned}<br>  \max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\max( \eta A_{\theta_{\text{old}}}(a,s)), \min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>  \end{aligned}<ul>
-<li>其中\(\eta\)是超参数</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="PPO网络更新"><a href="#PPO网络更新" class="headerlink" title="PPO网络更新"></a>PPO网络更新</h4><ul>
-<li>Critic网络更新<br>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma V^{\bar{w}}(s_{t+1}) - V^{w}(s_{t})) ^ 2<br>$$ <ul>
-<li>这里V值拟合的目标是策略\(\pi_\theta\)对应的V值\(V^{\pi_\theta}\)</li>
-<li>\(r_t = r(s_t, a_t)\vert_{a_t \sim \pi_\theta(\cdot|s_t)}\)，训练用的整个轨迹链路都是从策略\(\pi_\theta\)采样得到的</li>
-</ul>
-</li>
-<li>Actor网络更新<br>$$<br>Loss_{\text{actor}} = - E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(r(\theta)A_{\theta_{\text{old}}}(s,a), clip\left(r(\theta), 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a,s)\right)<br>$$ <ul>
-<li>其中：\(r(\theta) = \frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)} \)</li>
-</ul>
-</li>
-</ul>
-<h4 id="PPO实践说明"><a href="#PPO实践说明" class="headerlink" title="PPO实践说明"></a>PPO实践说明</h4><ul>
-<li>常用的形式是PPO-Clip形式，实践中效果更好</li>
-<li>PPO-Clip中一般设置\(\epsilon=0.2\)</li>
-<li>PPO原始论文中，每次采样到的数据会作K次epochs，且不同游戏使用的次数不同，在Mujoco中使用\(epochs=10\)，Roboschool中使用\(epochs=15\)，Atari中使用\(epochs=3\)<img src="/Notes/RL/RL——PPO/PPO-Algorithm.png">
-
-</li>
-</ul>
-<h4 id="PPO连续动作实现离散动作的实现主要区别"><a href="#PPO连续动作实现离散动作的实现主要区别" class="headerlink" title="PPO连续动作实现离散动作的实现主要区别"></a>PPO连续动作实现离散动作的实现主要区别</h4><h5 id="模型建模"><a href="#模型建模" class="headerlink" title="模型建模"></a>模型建模</h5><ul>
-<li><p><strong>策略网络</strong>：连续动作需要使用\(\mu_\theta,\sigma_\theta\)表示均值和方差，连续分布下，每个动作的概率理论上都是0，但借助概率密度函数的含义，可以通过计算</p>
-</li>
-<li><p><strong>采样方式</strong>：采样时需要创建分布来采样，由于不需要梯度回传，所以不需要使用重参数法</p>
-</li>
-<li><p><strong>Critic网络</strong>：由于离散连续场景都用V网络，仅仅评估状态下的价值即可，与动作无关，连续动作处理不需要特殊修改</p>
-<h5 id="新旧策略比值计算方式不同"><a href="#新旧策略比值计算方式不同" class="headerlink" title="新旧策略比值计算方式不同"></a>新旧策略比值计算方式不同</h5></li>
-<li><p>离线动作按照推导中的实现即可</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">def compute_surrogate_obj(self, states, actions, advantage, old_log_probs, actor):  # 计算策略目标</span><br><span class="line">    log_probs = torch.log(actor(states).gather(1, actions))</span><br><span class="line">    ratio = torch.exp(log_probs - old_log_probs)</span><br><span class="line">    return torch.mean(ratio * advantage)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>连续动作需要使用概率密度函数来实现</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def compute_surrogate_obj(self, states, actions, advantage, old_log_probs, actor):</span><br><span class="line">    mu, std = actor(states)</span><br><span class="line">    action_dists = torch.distributions.Normal(mu, std)</span><br><span class="line">    log_probs = action_dists.log_prob(actions) # 返回\log(f(actions)),f为概率密度函数</span><br><span class="line">    ratio = torch.exp(log_probs - old_log_probs) # 这里可以直接用于算概率之间的比值理论是概率密度函数的含义</span><br><span class="line">    return torch.mean(ratio * advantage) # 注意torch内部实现这里的梯度可以回传到actor网络上（基于参数mu,std可以运算得到log_prob，所以梯度可以回传）</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h3 id="PPO的训练技巧"><a href="#PPO的训练技巧" class="headerlink" title="PPO的训练技巧"></a>PPO的训练技巧</h3><ul>
-<li>参考：<a href="https://zhuanlan.zhihu.com/p/512327050" target="_blank" rel="noopener">影响PPO算法性能的10个关键技巧（附PPO算法简洁Pytorch实现）</a>  </li>
-<li>TODO：真实训练一下，测试各种优化技巧的收益</li>
-</ul>
-<h4 id="Advantage-Normalization"><a href="#Advantage-Normalization" class="headerlink" title="Advantage Normalization"></a>Advantage Normalization</h4><ul>
-<li>最早出自<a href="https://proceedings.mlr.press/v80/tucker18a/tucker18a.pdf" target="_blank" rel="noopener">The Mirage of Action-Dependent Baselines in Reinforcement Learning</a>，对Advantage   Function进行归一化，用于提升PG方法的性能</li>
-<li>具体方法：减去均值除以方差</li>
-<li>实现方案：<ul>
-<li>方案一：Batch Advantage Normalization（BAN），对当前Batch的所有Advantage求均值和方差</li>
-<li>方案二：Mini-Batch Advantage Normalization（MBAN），仅对当前Mini-Batch Advantage Normalization</li>
-</ul>
-</li>
-<li>实践中，BAN效果最好，MBAN效果次之，不使用任何AN效果最差；<ul>
-<li>理解，方案一和方案二并未限定具体采样的轨迹是多少个，但是主要思路是尽量在更多的样本上统计均值和方差，减少波动，这样效果更好些</li>
-</ul>
-</li>
-<li>关于MBAN，<a href="https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/" target="_blank" rel="noopener">ppo-implementation-details</a>博客中有详细实现  </li>
-<li>问题：GAE中还需要做Advantage Normalization吗？是否是在计算GAE之前做归一化？</li>
-</ul>
-<h4 id="State-Normalization"><a href="#State-Normalization" class="headerlink" title="State Normalization"></a>State Normalization</h4><ul>
-<li>对状态做归一化</li>
-<li>State Normalization的核心在于，与环境交互的过程中，维护一个动态的关于所有经历过的所有state的mean和std, 然后对当前的获得的state做normalization。经过normalization后的state符合mean=0,std=1的正态分布，用这样的状态作为神经网络的输入，更有利于神经网络的训练。</li>
-<li>采用滑动增量更新的方式（详细证明见附录）：<ul>
-<li>均值：\(\mu_{\text{new}} = \mu_{\text{old}} + \frac{1}{n}(x-\mu_{\text{old}})\)</li>
-<li>方差中间变量：\(S_{\text{new}} = S_{\text{old}} + (x-\mu_{\text{old}})\cdot(x-\mu_{\text{new}})\)<ul>
-<li>注意这个值除以n才是方差</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>代码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class RunningMeanStd:</span><br><span class="line">    # Dynamically calculate mean and std</span><br><span class="line">    def __init__(self, shape):  # shape:the dimension of input data</span><br><span class="line">        self.n = 0</span><br><span class="line">        self.mean = np.zeros(shape)</span><br><span class="line">        self.S = np.zeros(shape)</span><br><span class="line">        self.std = np.sqrt(self.S)</span><br><span class="line"></span><br><span class="line">    def update(self, x):</span><br><span class="line">        x = np.array(x)</span><br><span class="line">        self.n += 1</span><br><span class="line">        if self.n == 1:</span><br><span class="line">            self.mean = x</span><br><span class="line">            self.std = x</span><br><span class="line">        else:</span><br><span class="line">            old_mean = self.mean.copy()</span><br><span class="line">            self.mean = old_mean + (x - old_mean) / self.n</span><br><span class="line">            self.S = self.S + (x - old_mean) * (x - self.mean)</span><br><span class="line">            self.std = np.sqrt(self.S / self.n )</span><br><span class="line"></span><br><span class="line">class Normalization:</span><br><span class="line">    def __init__(self, shape):</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x, update=True):</span><br><span class="line">        # Whether to update the mean and std,during the evaluating,update=Flase</span><br><span class="line">        if update:  </span><br><span class="line">            self.running_ms.update(x)</span><br><span class="line">        x = (x - self.running_ms.mean) / (self.running_ms.std + 1e-8)</span><br><span class="line"></span><br><span class="line">        return x</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="Reward-Normalization"><a href="#Reward-Normalization" class="headerlink" title="Reward Normalization"></a>Reward Normalization</h4><ul>
-<li>与State Normalization的方案，动态维护所有获得过的Reward的Mean和Std，然后再对当前的Reward做Normalization</li>
-<li>问题：是对单次Reward做了Normalization吗？如果Reward已经做了Normalization，GAE中实际上就已经使用了标准化后的Reward了，Advantage是否还需要做呢？</li>
-<li>常常被替换为Reward Scaling</li>
-</ul>
-<h4 id="Reward-Scaling"><a href="#Reward-Scaling" class="headerlink" title="Reward Scaling"></a>Reward Scaling</h4><ul>
-<li>相关论文：《PPO-Implementation matters in deep policy gradients A case study on PPO and TRPO》</li>
-<li>Reward Scaling与Reward Normalization的区别在于，Reward Scaling是动态计算一个standard deviation of a rolling discounted sum of the rewards，然后只对当前的reward除以这个std（不减去均值？）</li>
-<li>Reward Normalization和Reward Scaling二选一即可，建议使用Reward Scaling而不是Reward Normalization即可</li>
-<li>代码实现<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">class RewardScaling:</span><br><span class="line">    def __init__(self, shape, gamma):</span><br><span class="line">        self.shape = shape  # reward shape=1</span><br><span class="line">        self.gamma = gamma  # discount factor</span><br><span class="line">        self.running_ms = RunningMeanStd(shape=self.shape)</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br><span class="line"></span><br><span class="line">    def __call__(self, x):</span><br><span class="line">        self.R = self.gamma * self.R + x</span><br><span class="line">        self.running_ms.update(self.R)</span><br><span class="line">        x = x / (self.running_ms.std + 1e-8)  # Only divided std</span><br><span class="line">        return x</span><br><span class="line"></span><br><span class="line">    def reset(self):  # When an episode is done,we should reset &apos;self.R&apos;</span><br><span class="line">        self.R = np.zeros(self.shape)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="Policy-Entropy"><a href="#Policy-Entropy" class="headerlink" title="Policy Entropy"></a>Policy Entropy</h4><ul>
-<li>在actor的loss中增加一项策略熵，在最大化收益的同时，最大化策略熵，增加探索性（理解：同时有正则的作用）</li>
-</ul>
-<h4 id="Learning-Rate-Decay"><a href="#Learning-Rate-Decay" class="headerlink" title="Learning Rate Decay"></a>Learning Rate Decay</h4><ul>
-<li>学习率逐步衰减</li>
-<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">def lr_decay(self, total_steps):</span><br><span class="line">    lr_a_now = self.lr_a * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    lr_c_now = self.lr_c * (1 - total_steps / self.max_train_steps)</span><br><span class="line">    for p in self.optimizer_actor.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_a_now</span><br><span class="line">    for p in self.optimizer_critic.param_groups:</span><br><span class="line">        p[&apos;lr&apos;] = lr_c_now</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="Gradient-Clip"><a href="#Gradient-Clip" class="headerlink" title="Gradient Clip"></a>Gradient Clip</h4><ul>
-<li>梯度裁剪</li>
-<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># Update actor</span><br><span class="line">self.optimizer_actor.zero_grad()</span><br><span class="line">actor_loss.mean().backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5) </span><br><span class="line">self.optimizer_actor.step()</span><br><span class="line"></span><br><span class="line"># Update critic</span><br><span class="line">self.optimizer_critic.zero_grad()</span><br><span class="line">critic_loss.backward()</span><br><span class="line">if self.use_grad_clip: # Trick 7: Gradient clip</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5) </span><br><span class="line">self.optimizer_critic.step()</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="Orthogonal-Initialization"><a href="#Orthogonal-Initialization" class="headerlink" title="Orthogonal Initialization"></a>Orthogonal Initialization</h4><ul>
-<li>正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：<ul>
-<li>用均值为0，标准差为1的高斯分布初始化权重矩阵</li>
-<li>对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。</li>
-</ul>
-</li>
-<li>代码<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"># orthogonal init</span><br><span class="line">def orthogonal_init(layer, gain=1.0):</span><br><span class="line">    nn.init.orthogonal_(layer.weight, gain=gain)</span><br><span class="line">    nn.init.constant_(layer.bias, 0)</span><br><span class="line"></span><br><span class="line">class Actor_Gaussian(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Actor_Gaussian, self).__init__()</span><br><span class="line">        self.max_action = args.max_action</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.mean_layer = nn.Linear(args.hidden_width, args.action_dim)</span><br><span class="line">        self.log_std = nn.Parameter(torch.zeros(1, args.action_dim))  # We use &apos;nn.Paremeter&apos; to train log_std automatically</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.mean_layer, gain=0.01)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        mean = self.max_action * torch.tanh(self.mean_layer(s))  # [-1,1]-&gt;[-max_action,max_action]</span><br><span class="line">        return mean</span><br><span class="line"></span><br><span class="line">    def get_dist(self, s):</span><br><span class="line">        mean = self.forward(s)</span><br><span class="line">        log_std = self.log_std.expand_as(mean)  # To make &apos;log_std&apos; have the same dimension as &apos;mean&apos;</span><br><span class="line">        std = torch.exp(log_std)  # The reason we train the &apos;log_std&apos; is to ensure std=exp(log_std)&gt;0</span><br><span class="line">        dist = Normal(mean, std)  # Get the Gaussian distribution</span><br><span class="line">        return dist</span><br><span class="line"></span><br><span class="line">class Critic(nn.Module):</span><br><span class="line">    def __init__(self, args):</span><br><span class="line">        super(Critic, self).__init__()</span><br><span class="line">        self.fc1 = nn.Linear(args.state_dim, args.hidden_width)</span><br><span class="line">        self.fc2 = nn.Linear(args.hidden_width, args.hidden_width)</span><br><span class="line">        self.fc3 = nn.Linear(args.hidden_width, 1)</span><br><span class="line">        if args.use_orthogonal_init:</span><br><span class="line">            print(&quot;------use_orthogonal_init------&quot;)</span><br><span class="line">            orthogonal_init(self.fc1)</span><br><span class="line">            orthogonal_init(self.fc2)</span><br><span class="line">            orthogonal_init(self.fc3)</span><br><span class="line"></span><br><span class="line">    def forward(self, s):</span><br><span class="line">        s = torch.tanh(self.fc1(s))</span><br><span class="line">        s = torch.tanh(self.fc2(s))</span><br><span class="line">        v_s = self.fc3(s)</span><br><span class="line">        return v_s</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="Adam-Optimizer-Epsilon-Parameter"><a href="#Adam-Optimizer-Epsilon-Parameter" class="headerlink" title="Adam Optimizer Epsilon Parameter"></a>Adam Optimizer Epsilon Parameter</h4><ul>
-<li>实践中，从官方默认值1e-8改成1e-5</li>
-<li>原因？</li>
-</ul>
-<h4 id="Tanh-Activation-Function"><a href="#Tanh-Activation-Function" class="headerlink" title="Tanh Activation Function"></a>Tanh Activation Function</h4><ul>
-<li>将ReLU换成tanh激活函数</li>
-<li>建议PPO算法默认使用激活函数</li>
-<li>原因？</li>
-</ul>
-<hr>
-<h3 id="附录-均值方差滑动更新公式证明"><a href="#附录-均值方差滑动更新公式证明" class="headerlink" title="附录-均值方差滑动更新公式证明"></a>附录-均值方差滑动更新公式证明</h3><h4 id="均值更新推导"><a href="#均值更新推导" class="headerlink" title="均值更新推导"></a>均值更新推导</h4><ul>
-<li>均值更新推导详情：<br>$$<br>\begin{align}<br>\mu_n &amp;= \frac{1}{n}\sum_{i=1}^n x_i \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}(\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\cdot\frac{1}{n-1}\sum_{i=1}^{n-1} x_i + x_n) \\<br>&amp;= \frac{1}{n}((n-1)\mu_{n-1} + x_n) \\<br>&amp;= \frac{1}{n}(n\mu_{n-1} + x_n - \mu_{n-1}) \\<br>&amp;= \mu_{n-1} + \frac{1}{n}(x_n - \mu_{n-1})<br>\end{align}<br>$$</li>
-</ul>
-<h4 id="方差更新推导"><a href="#方差更新推导" class="headerlink" title="方差更新推导"></a>方差更新推导</h4><ul>
-<li>将方差中间变量\(S_n\)展开（这里\(S_n\)除以n才是方差）有：<br>$$<br>\begin{align}<br>S_n &amp;= \sum_{i=1}^{n} (x_i - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1} + \mu_{n-1} - \mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= \sum_{i=1}^{n-1} (x_i - \mu_{n-1})^2 + 2(\mu_{n-1} - \mu_{n})\sum_{i=1}^{n-1}(x_i - \mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})(\sum_{i=1}^{n-1} x_i - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})((n-1)\mu_{n-1} - (n-1)\mu_{n-1}) + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + 2(\mu_{n-1} - \mu_{n})\cdot 0 + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)^2 + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n-1)(\mu_{n-1} -\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + ((n-1)\mu_{n-1} -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (n\mu_{n} - x_n -(n-1)\mu_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (\mu_{n} - x_n)(\mu_{n-1} -\mu_n) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1}) + (x_n - \mu_n)^2 \\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(\mu_n - \mu_{n-1} + x_n - \mu_n)\\<br>&amp;= S_{n-1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\\<br>\end{align}<br>$$</li>
-<li>最终有：\(S_n = S_{n+1} + (x_n - \mu_{n})(x_n - \mu_{n-1})\)</li>
-</ul>
-<hr>
-<h3 id="DPPO-Distributed-PPO"><a href="#DPPO-Distributed-PPO" class="headerlink" title="DPPO(Distributed PPO)"></a>DPPO(Distributed PPO)</h3><ul>
-<li>DPPO是PPO的分布式版本，引入了分布式计算的概念，允许多个计算节点（或智能体）并行地与环境交互，收集数据，并将这些数据用于更新全局模型。</li>
-<li>分布式架构不仅加快了数据收集的速度，还提高了算法处理大规模并行任务的能力，使得学习过程更加高效</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——TD误差和优势函数的区别.html" itemprop="url">RL——TD误差和优势函数的区别</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
-</ul>
-</li>
-</ul>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-
-<hr>
-<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
-<li>时间差分误差，TD error</li>
-<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
-<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
-<li>TD error是针对确定的\(s’\)来说的</li>
-</ul>
-<hr>
-<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
-<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = E_{s’\sim P}[\delta_{\theta}(s, a, s’)] = E_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
-<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
-</ul>
-<hr>
-<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
-<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = E_{a\sim \pi} [A_{\theta}(s,a)] = E_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = E_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
-</ul>
-<hr>
-<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
-<li>期望贝尔曼误差<br>$$<br>E_{s\sim \mu} [\epsilon_{\theta}(s)] = E_{s\sim \mu}[E_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  E_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——TRPO.html" itemprop="url">RL——TRPO</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-<hr>
-<h3 id="TRPO"><a href="#TRPO" class="headerlink" title="TRPO"></a>TRPO</h3><h4 id="TRPO目标"><a href="#TRPO目标" class="headerlink" title="TRPO目标"></a>TRPO目标</h4><p>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</p>
-<ul>
-<li>TRPO的目标详细推导见<a href="Notes/RL/RL%E2%80%94%E2%80%94TRPO-PPO-%E7%9B%AE%E6%A0%87%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E6%8E%A8%E5%AF%BC.html">RL——TRPO-PPO-目标函数基础推导</a></li>
-</ul>
-<h4 id="TRPO推导"><a href="#TRPO推导" class="headerlink" title="TRPO推导"></a>TRPO推导</h4><ul>
-<li>TRPO的目标仍然很难直接求解，所以TRPO考虑对目标做进一步的近似（近似形式的具体证明见附录）<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$<ul>
-<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
-<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵（Hessian Matrix，又译作黑塞矩阵），（PS：KL散度的海森矩阵就是Fisher矩阵，一般是正定的）：<br>  $$ H = H[E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right]] $$<ul>
-<li>其中<br>$$ H[f(x,y)] = \begin{bmatrix}<br>\frac{\partial^2f}{\partial x^2} &amp; \frac{\partial^2f}{\partial x\partial y} \\<br>\frac{\partial^2f}{\partial x \partial y} &amp; \frac{\partial^2f}{\partial y^2}<br>\end{bmatrix}<br>$$</li>
-<li>在当前场景中\(H_{ij}\)为<br>$$ H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}} $$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>于是得到进一步优化的目标<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</li>
-<li>可根据拉格朗日乘子法求解以上问题得到如下解（详细推导见附录）：<br>$$ \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g $$</li>
-<li>现实场景中，计算和存储Hessian矩阵的逆矩阵\(H^{-1}\)会耗费大量时间，所以TRPO通过共轭梯度法来避免直接求解\(H^{-1}\)，核心思想就是直接计算\(x = H^{-1}g\)作为参数的更新方向</li>
-<li>设定\(x = H^{-1}g\)，则原始参数更新公式可变为：<br>$$  \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^{T}Hx}}x  $$ </li>
-<li>求解\(x = H^{-1}g\)则可转换为求方程\(Hx = g\)的解，方程\(Hx = g\)的解可通过共轭梯度法（Conjugate Gradient Method,）来求解，方法参见<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E5%85%B1%E8%BD%AD%E6%A2%AF%E5%BA%A6%E6%B3%95%E5%92%8C%E6%9C%80%E9%80%9F%E4%B8%8B%E9%99%8D%E6%B3%95.html">ML——共轭梯度法和最速下降法</a><ul>
-<li>其中，共轭梯度法伪代码如下<img src="/Notes/RL/RL——TRPO/CG.png">
-
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="TRPO更新步长"><a href="#TRPO更新步长" class="headerlink" title="TRPO更新步长"></a>TRPO更新步长</h4><ul>
-<li>当前TRPO求解方案采用了泰勒展开的1阶近似和2阶近似，不是精准求解，新参数不一定能满足KL散度约束限制，所以在更新时，我们可以再进行一次步长搜索，使得更新后的新参数满足KL散度限制，且能够提升目标函数</li>
-<li>线性搜索的具体规则，在\((0,1)\)区间内抽取K个点\(\{\alpha^i\}_{i=1}^K\)</li>
-</ul>
-<h4 id="TRPO训练伪代码"><a href="#TRPO训练伪代码" class="headerlink" title="TRPO训练伪代码"></a>TRPO训练伪代码</h4><ul>
-<li>TRPO伪代码：<img src="/Notes/RL/RL——TRPO/TRPO.png">
-
-</li>
-</ul>
-<hr>
-<h3 id="附录：约束问题的泰勒展开近似推导证明"><a href="#附录：约束问题的泰勒展开近似推导证明" class="headerlink" title="附录：约束问题的泰勒展开近似推导证明"></a>附录：约束问题的泰勒展开近似推导证明</h3><ul>
-<li>近似结果<br>$$<br>\begin{aligned}<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] &amp;\approx g^T(\theta-\theta_{old}) \\<br>E_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta})\right] &amp;\approx \frac{1}{2}(\theta-\theta_{old})^TH(\theta-\theta_{old})<br>\end{aligned}<br>$$</li>
-<li>\(g\)为一阶梯度：<br>  $$ g = \nabla_{\theta}E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \vert_{\theta = \theta_{\text{old}}}$$</li>
-<li>\(H\)为原始KL散度在\(\theta = \theta_{\text{old}} \)处的海森矩阵：<br>  $$<br>  H_{ij} = \frac{\partial}{\partial \theta_i}\frac{\partial}{\partial \theta_j} E_{s \sim \rho_{\pi_{\theta_{\text{old}}}}} \left[D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta})\right] \vert_{\theta = \theta_{\text{old}}}<br>  $$</li>
-</ul>
-<h4 id="泰勒展开回顾"><a href="#泰勒展开回顾" class="headerlink" title="泰勒展开回顾"></a>泰勒展开回顾</h4><ul>
-<li>泰勒展开是一种在数学分析中用于近似函数的方法，特别是当直接计算函数值较为困难时，基本思想是将一个函数在一个点附近用一个多项式来近似表示</li>
-<li>对于一个在点 \(a\) 处具有 \(n+1\) 阶导数的函数 \(f(x)\)，其在 \(a\) 点的泰勒展开可以表示为：<br>$$ f(x) = f(a) + \frac{f’(a)}{1!}(x-a) + \frac{f’’(a)}{2!}(x-a)^2 + \cdots + \frac{f^{(n)}(a)}{n!}(x-a)^n + R_n(x) $$<ul>
-<li>其中，\(R_n(x)\) 是余项，表示的是泰勒多项式与实际函数之间的误差，常表示为：<br>  $$ R_n(x) = o((x-a)^n) $$<ul>
-<li>这里的 \(o\) 表示当 \(x\) 趋向于 \(a\) 时，\(R_n(x)\) 相对于 \((x-a)^n\) 是高阶无穷小</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<p>泰勒展开在很多领域都有广泛的应用，例如物理学中的近似计算、工程学中的信号处理等。通过选择合适的 (a) 值和 (n) 阶次，可以得到不同精度的近似结果。特别地，当 (a=0) 时，这种特殊的泰勒展开被称为麦克劳林展开。</p>
-<h4 id="目标的泰勒一阶近似推导"><a href="#目标的泰勒一阶近似推导" class="headerlink" title="目标的泰勒一阶近似推导"></a>目标的泰勒一阶近似推导</h4><ul>
-<li>令\(f(\theta)\)为最优化目标，则：<br>$$ f(\theta) = E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] $$</li>
-<li>此时对\(f(\theta)\)在\(\theta = \theta_{\text{old}}\)做泰勒展开有<br>$$ f(\theta) = f(\theta_{\text{old}}) + \nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) + o(\theta^2)$$</li>
-<li>由于\(f(\theta_{\text{old}})\)与\(\theta\)无关，所以最大化\(f(\theta)\)等价于最大化\(\nabla_\theta f(\theta)\vert_{\theta=\theta_{\text{old}}}(\theta - \theta_{\text{old}}) = g^T(\theta-\theta_{old})\)</li>
-</ul>
-<h4 id="约束的泰勒二阶近似推导"><a href="#约束的泰勒二阶近似推导" class="headerlink" title="约束的泰勒二阶近似推导"></a>约束的泰勒二阶近似推导</h4><ul>
-<li>将KL散度在\(\theta = \theta_{\text{old}}\)处二阶展开有<br>$$<br>\begin{align}<br>f(\theta) &amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \\<br>&amp;= D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}}) + \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} (\theta - \theta_{\text{old}}) + \frac{1}{2}(\theta - \theta_{\text{old}})^TH(\theta - \theta_{\text{old}}) + o(\theta^3)<br>\end{align}<br>$$<ul>
-<li>显然，第一项\( D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_{\theta_{\text{old}}})=0 \)</li>
-<li>可以证明，第二项为0，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta D_{\text{KL}}(\pi_{\theta_{\text{old}}}, \pi_\theta) \vert_{\theta=\theta_{\text{old}}} &amp;= \nabla_\theta \int_a \pi_{\theta_{\text{old}}}(a|s) \log \frac{\pi_{\theta_{\text{old}}}(a|s)}{\pi_{\theta(a|s)}} da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= \nabla_\theta \int \pi_{\theta_{\text{old}}}(a|s) \log (\pi_{\theta_{\text{old}}}(a|s) - \pi_{\theta}(a|s)) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \nabla_\theta \log \pi_{\theta(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{积分求导互换} \\<br>  &amp;= - \int \pi_{\theta_{\text{old}}}(a|s) \frac{\nabla_\theta \pi_{\theta}(a|s)}{\pi_{\theta}(a|s)} da\vert_{\theta = \theta_{\text{old}}} \quad \text{对数概率技巧}  \\<br>  &amp;= - \nabla_\theta  \int \pi_{\theta}(a|s) da\vert_{\theta = \theta_{\text{old}}} \\<br>  &amp;= - \nabla_\theta  1  \\<br>  &amp;= 0<br>  \end{align}<br>  $$</li>
-<li>证毕</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="附录：最优化问题求解的详细推导证明"><a href="#附录：最优化问题求解的详细推导证明" class="headerlink" title="附录：最优化问题求解的详细推导证明"></a>附录：最优化问题求解的详细推导证明</h3><ul>
-<li><p>给定最优化问题<br>$$<br>\begin{aligned}<br>\theta_{k+1} = \arg\max_\theta &amp;g^T(\theta-\theta_k)\\<br>\text{s.t. } \quad \frac{1}{2}(\theta-\theta_k)^T&amp;H(\theta-\theta_k)≤\delta<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>对于上述问题，Karush-Kuhn-Tucker (KKT) 条件可以表述为以下几点：</p>
-<ul>
-<li><strong>原始可行性</strong>：解必须满足原始约束。<br>  $$<br>  \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) \leq \delta.<br>  $$</li>
-<li><strong>对偶可行性</strong>：拉格朗日乘子（或对偶变量）必须非负。<br>  $$<br>  \lambda \geq 0.<br>  $$</li>
-<li><strong>互补松弛性</strong>：拉格朗日乘子与对应的不等式约束之间的乘积必须为零。<br>  $$<br>  \lambda \left( \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) - \delta \right) = 0.<br>  $$</li>
-<li><strong>拉格朗日函数的梯度为零</strong>：考虑拉格朗日函数 \(L(\theta, \lambda) = - g^T(\theta-\theta_k) + \lambda \left( \frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) - \delta \right)\)，其对 \(\theta\) 的偏导数应等于零。<br>  $$<br>  \nabla_\theta L = - g + \lambda H (\theta - \theta_k) = 0.<br>  $$<ul>
-<li>注意：这里是因为目标是max，需要改成min后才能用\(+\lambda (\cdot)\) 的操作</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>这里，\(H\) 是一个对称矩阵（Hessian矩阵是对称的，因为\(\frac{\partial^2 f}{\partial x \partial y} = \frac{\partial^2 f}{\partial y \partial x}\)），\(\lambda\) 是与约束相关的拉格朗日乘子，\(\delta\) 是给定的常数</p>
-</li>
-<li><p>根据KKT条件中的互补松弛性条件，当 \(\lambda &gt; 0\) 时，这意味着约束 \(\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) \leq \delta\) 是紧的，即：<br>$$<br>\frac{1}{2}(\theta-\theta_k)^TH(\theta-\theta_k) = \delta.<br>$$</p>
-<ul>
-<li>注意，这里无法直接求解这个问题，因为这个解问题的解不是唯一的，比如一维情况就是二次方程，解就有正负两个值，实际上，这里的解是一个以\(\theta_k\)为球心的球体（椭球体）构成的集合（一共有\(2^n\)个解？其中n是变量的维度）</li>
-</ul>
-</li>
-<li><p>因此，当 \(\lambda &gt; 0\) 时，\(\theta\) 必须位于约束的边界上。为了确定 \(\theta\) 的具体值，我们需要同时考虑其他KKT条件，尤其是拉格朗日函数的梯度为零的条件：<br>$$<br>- g + \lambda H (\theta - \theta_k) = 0<br>$$</p>
-</li>
-<li><p>从这个方程中，我们可以解出 \(\theta\)：<br>$$<br>\theta - \theta_k = \frac{1}{\lambda} H^{-1} g<br>$$</p>
-</li>
-<li><p>将 \(\theta\) 代入互补松弛条件中可得：<br>$$<br>\frac{1}{2} \left( \frac{1}{\lambda} H^{-1} g \right)^T H \left( \frac{1}{\lambda} H^{-1} g \right) = \delta<br>$$</p>
-</li>
-<li><p>简化后得到：<br>$$<br>\begin{align}<br>\frac{1}{2} \left( \frac{1}{\lambda^2} g^T H^{-1} H H^{-1} g \right) &amp;= \delta \\<br>\frac{1}{2} \left( \frac{1}{\lambda^2} g^T H^{-1} g \right) &amp;= \delta \\<br>\frac{1}{2} \frac{g^T H^{-1} g}{\lambda^2} &amp;= \delta \\<br>\frac{g^T H^{-1} g}{2\delta} &amp;= \lambda^2 \\<br>\end{align}<br>$$</p>
-</li>
-<li><p>最终可求得：<br>$$<br>\lambda = \sqrt{\frac{g^T H^{-1} g}{2\delta}}.<br>$$</p>
-</li>
-<li><p>现在我们已经得到了 \(\lambda\) 的表达式，可以将其代回 \(\theta\) 的表达式中：<br>$$<br>\begin{align}<br>\theta - \theta_k &amp;= \frac{1}{\sqrt{\frac{g^T H^{-1} g}{2\delta}}} H^{-1} g = \sqrt{\frac{2\delta}{g^T H^{-1} g}} H^{-1} g<br>\end{align}<br>$$</p>
-</li>
-<li><p>最终，\(\theta\) 的值为：<br>$$<br>\theta_{k+1} = \theta_k + \sqrt{\frac{2\delta}{g^T H^{-1} g}} H^{-1} g.<br>$$</p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Soft-Q-Learning.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——Soft-Q-Learning.html" itemprop="url">RL——Soft-Q-Learning</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<ul>
-<li>参考文献<ul>
-<li>原始论文：<a href="https://proceedings.mlr.press/v70/haarnoja17a/haarnoja17a-supp.pdf" target="_blank" rel="noopener">Reinforcement learning with deep energy-based policies.</a>，2017，ICML，UC Berkeley，作者与SAC作者是同一个</li>
-<li><a href="https://zhuanlan.zhihu.com/p/430792032" target="_blank" rel="noopener">Soft Q-learning解读 - 单字卓的文章 - 知乎</a></li>
-<li>读书笔记：<a href="https://stepneverstop.github.io/rl-with-deep-energy-based-policies.html" target="_blank" rel="noopener">Reinforcement Learning with Deep Energy-Based Policies</a></li>
-<li><a href="https://blog.csdn.net/wxc971231/article/details/127260196" target="_blank" rel="noopener">论文理解【RL经典】—— 【SQL】Reinforcement Learning with Deep Energy-Based Policies</a>：非常详细的证明</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="回顾常规的强化学习场景"><a href="#回顾常规的强化学习场景" class="headerlink" title="回顾常规的强化学习场景"></a>回顾常规的强化学习场景</h3><ul>
-<li>目标定义：<br>$$<br>\begin{align}<br>J(\theta) &amp;= E_{\tau\sim \pi_\theta}[R(\tau)] \\<br>&amp;= E_{s_0, a_0,\ldots \sim \pi_\theta}\Big[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t) \Big] \\<br>&amp;= \sum_{t=0}^\infty E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]<br>\end{align}<br>$$<ul>
-<li>第一行是普通PG方法推导的写法，最贴近本质</li>
-<li>第二行是TRPO文章的写法，是第一行的展开形势</li>
-<li>第三行这里\(\sum_{t=0}^T E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]\)的写法是Soft Q-Learning论文和SAC论文提出来的，和之前TRPO等文章写法都不同，这里从第二行到第三行的变换可以理解为积分和求和交换顺序的写法，从状态\(s_0\)开始，\((s_t,a_t)\)都是按照策略\(\pi_\theta\)执行下去可能遇到的概率分布</li>
-</ul>
-</li>
-<li>Q值定义：<br>$$<br>\begin{align}<br>Q^\pi(s_t,a_t) &amp;= E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^lr(s_{t+l}, a_{t+l})] \vert_{(s_t,a_t)}<br>\end{align}<br>$$<ul>
-<li>“\(\vert_{(s_t,a_t)}\)”表示条件概率，一般来说，不引起歧义的情况下，也可以省略”\(\vert_{(s_t,a_t)}\)”</li>
-</ul>
-</li>
-<li>V值定义：<br>$$<br>\begin{align}<br>V^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</li>
-</ul>
-<hr>
-<h3 id="Soft-Q-Learning"><a href="#Soft-Q-Learning" class="headerlink" title="Soft Q-Learning"></a>Soft Q-Learning</h3><ul>
-<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
-<li>这里目标中增加的熵就是Soft名字的来源，这里相对标准的强化学习，仅增加了\(\alpha \mathcal{H}(\pi_\phi(.\vert s_t))\)为额外目标，后续在不引起歧义的情况下，我们也用\(\alpha \mathcal{H}(\pi_\phi(s_{t}))\)来表示，且为了方便，后续推导中常常会视为\(\alpha=1\)，这里可以通过奖励和熵同时乘以\(\frac{1}{\alpha}\)来变换得到</li>
-</ul>
-</li>
-<li>Soft Q值定义<br>$$<br>\begin{align}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))]<br>\end{align}<br>$$<ul>
-<li>对于\(Q_{\text{soft}}^\pi(s_t, a_t)\)来说，已经发生的事件是“\((s_t,a_t)\)”，此时\(a_t\)是确定的动作，对应的熵\(\mathcal{H}(\pi(s_{t}))=0\)</li>
-</ul>
-</li>
-<li>Soft V值定义，同时推导用Soft Q值表示Soft V值<br>$$<br>\begin{align}<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + \alpha\mathcal{H}(\pi(s_{t})) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big]\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] + \alpha\mathcal{H}(\pi(s_{t}))\Big] \\<br>&amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t})) \\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t)] - \alpha E_{a_t \sim \pi} [\log \pi(a_t \vert s_t)]\\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{align}<br>$$</li>
-<li>推导用Soft V值表示Soft Q值<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^{l-1}(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) +\alpha\mathcal{H}(\pi(s_{t+1+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} \Big[E_{a_{t+1},s_{t+2},a_{t+2},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) + \alpha\mathcal{H}(\pi(s_{t+1+l})))\Big]\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>\end{aligned}<br>$$</li>
-</ul>
-<hr>
-<h3 id="Soft贝尔曼期望方程"><a href="#Soft贝尔曼期望方程" class="headerlink" title="Soft贝尔曼期望方程"></a>Soft贝尔曼期望方程</h3><ul>
-<li>通过上面的推导，我们可以得到，<strong>Soft贝尔曼期望方程</strong>为：<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [E_{a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})]] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s), a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</li>
-</ul>
-<hr>
-<h3 id="Soft贝尔曼最优方程"><a href="#Soft贝尔曼最优方程" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h3><ul>
-<li>首先证明，在满足如下策略改进的时候(其中\(\tilde{\pi}\))是新策略，\(\pi\)是旧策略，<br>$$<br>\tilde{\pi}(\cdot | s) \propto \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right), \quad \forall s.<br>$$</li>
-<li>策略的Soft Q值是单调的，即：<br>$$<br>Q_{\text{soft}}^{\tilde{\pi}}(s, a) \geq Q_{\text{soft}}^{\pi_{\text{old}}}(s, a) ; \forall s, a.<br>$$</li>
-<li>策略的Soft Q值是单调性的证明如下：  <img src="/Notes/RL/RL——Soft-Q-Learning/Soft-Q-Learning-Policy-Improvement.png">
-<ul>
-<li>以上式子证明时没有考虑温度系数\(\alpha\)，考虑温度系数\(\alpha\)时在所有的熵\(\mathcal{H}(\pi(\cdot\vert\cdot))\)时前面都加上\(\alpha\)即可</li>
-<li>其中使用到以下不等式  ：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \le \mathcal{H}(\tilde{\pi}(\cdot\vert s)) + E_{a\sim \tilde{\pi}}[Q_{\text{soft}}^\pi(s,a)]<br>  $$</li>
-<li>上面的不等式又使用到以下式子（下面的式子如何推出上面的式子待确认TODO）：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da<br>  $$<ul>
-<li>以上式子证明过程如下：<br>$$<br>\begin{align}<br>\text{right}  &amp;= - \int \pi(\cdot | s) \log \frac{\pi(\cdot | s)}{\tilde{\pi}(\cdot | s)} + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  {\tilde{\pi}(\cdot | s)} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right) \\<br>&amp;= \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \\<br>&amp;= \text{left}<br>\end{align}<br>$$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>其中，由式子<br>$$<br>\begin{align}<br>\mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>\end{align}<br>$$<ul>
-<li>其中\(\tilde{\pi}\)是按照\(\tilde{\pi}(s) = \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da}\)迭代以后的策略</li>
-<li>以上推导没有增加温度系数，默认温度系数为1，实际上，如果增加温度系数，有\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)</li>
-<li>问题：如果策略的熵为0或温度系数为0，此时这个最优形式还能降级到\(\pi^*(s) = \arg\max_a Q(s,a)\)吗？<ul>
-<li>当策略的熵为0时，是可以的，此时策略必须是确定性策略，按照上述公式，动作只能取Q值最大的那一个</li>
-<li>当温度系数为0时，此时Reward和DQN一致，最优解应该是\(\pi^*(s) = \arg\max_a Q(s,a)\)。考虑温度系数的版本\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)，当温度系数\(\alpha\rightarrow 0\)时，策略近似取Q值最大的动作，等价于DQN</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>当策略收敛以后，即经过迭代以后\(\tilde{\pi} = \pi = \pi^*\)，此时有\(D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot)) = 0\)成立，即<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>考虑温度系数后有：<br>$$ \alpha\mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>两边同时除以\(\alpha\)有<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>由于<br>$$<br>V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>$$</li>
-<li>所以有<br>$$<br>\frac{1}{\alpha}V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[\frac{1}{\alpha} Q_{\text{soft}}^\pi(s_t, a_t)] + \mathcal{H}(\pi(s_{t}))<br>$$</li>
-<li>最优的策略\(\pi^*\)对应的V值\(V^{\pi^*}(s)\)为：<br>$$ V_{\text{soft}}^{\pi^*}(s_t) = \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-</ul>
-<hr>
-<h3 id="贝尔曼方程总结"><a href="#贝尔曼方程总结" class="headerlink" title="贝尔曼方程总结"></a>贝尔曼方程总结</h3><h4 id="贝尔曼方程"><a href="#贝尔曼方程" class="headerlink" title="贝尔曼方程"></a>贝尔曼方程</h4><p>$$<br>\begin{align}<br> Q^\pi(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^\pi(s_{t+1})] \\<br> V^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</p>
-<h4 id="贝尔曼最优方程"><a href="#贝尔曼最优方程" class="headerlink" title="贝尔曼最优方程"></a>贝尔曼最优方程</h4><p>$$<br>\begin{align}<br> Q^{\pi^*}(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^{\pi^*}(s_{t+1})] \\<br> V^{\pi^*}(s_t) &amp;= \max_{a_t}[Q^{\pi^*}(s_t, a_t)]<br>\end{align}<br>$$</p>
-<h4 id="Soft贝尔曼方程"><a href="#Soft贝尔曼方程" class="headerlink" title="Soft贝尔曼方程"></a>Soft贝尔曼方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</p>
-<h4 id="Soft贝尔曼最优方程-1"><a href="#Soft贝尔曼最优方程-1" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^{\pi^*}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^{\pi^*}(s_{t+1})] \\<br>V_{\text{soft}}^{\pi^*}(s_t) &amp;= \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da<br>\end{aligned}<br>$$</p>
-<ul>
-<li>待更新</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1624,6 +1668,192 @@
 <h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
 <li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
 <li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  E_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Soft-Q-Learning.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——Soft-Q-Learning.html" itemprop="url">RL——Soft-Q-Learning</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>参考文献<ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v70/haarnoja17a/haarnoja17a-supp.pdf" target="_blank" rel="noopener">Reinforcement learning with deep energy-based policies.</a>，2017，ICML，UC Berkeley，作者与SAC作者是同一个</li>
+<li><a href="https://zhuanlan.zhihu.com/p/430792032" target="_blank" rel="noopener">Soft Q-learning解读 - 单字卓的文章 - 知乎</a></li>
+<li>读书笔记：<a href="https://stepneverstop.github.io/rl-with-deep-energy-based-policies.html" target="_blank" rel="noopener">Reinforcement Learning with Deep Energy-Based Policies</a></li>
+<li><a href="https://blog.csdn.net/wxc971231/article/details/127260196" target="_blank" rel="noopener">论文理解【RL经典】—— 【SQL】Reinforcement Learning with Deep Energy-Based Policies</a>：非常详细的证明</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="回顾常规的强化学习场景"><a href="#回顾常规的强化学习场景" class="headerlink" title="回顾常规的强化学习场景"></a>回顾常规的强化学习场景</h3><ul>
+<li>目标定义：<br>$$<br>\begin{align}<br>J(\theta) &amp;= E_{\tau\sim \pi_\theta}[R(\tau)] \\<br>&amp;= E_{s_0, a_0,\ldots \sim \pi_\theta}\Big[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t) \Big] \\<br>&amp;= \sum_{t=0}^\infty E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]<br>\end{align}<br>$$<ul>
+<li>第一行是普通PG方法推导的写法，最贴近本质</li>
+<li>第二行是TRPO文章的写法，是第一行的展开形势</li>
+<li>第三行这里\(\sum_{t=0}^T E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]\)的写法是Soft Q-Learning论文和SAC论文提出来的，和之前TRPO等文章写法都不同，这里从第二行到第三行的变换可以理解为积分和求和交换顺序的写法，从状态\(s_0\)开始，\((s_t,a_t)\)都是按照策略\(\pi_\theta\)执行下去可能遇到的概率分布</li>
+</ul>
+</li>
+<li>Q值定义：<br>$$<br>\begin{align}<br>Q^\pi(s_t,a_t) &amp;= E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^lr(s_{t+l}, a_{t+l})] \vert_{(s_t,a_t)}<br>\end{align}<br>$$<ul>
+<li>“\(\vert_{(s_t,a_t)}\)”表示条件概率，一般来说，不引起歧义的情况下，也可以省略”\(\vert_{(s_t,a_t)}\)”</li>
+</ul>
+</li>
+<li>V值定义：<br>$$<br>\begin{align}<br>V^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft-Q-Learning"><a href="#Soft-Q-Learning" class="headerlink" title="Soft Q-Learning"></a>Soft Q-Learning</h3><ul>
+<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
+<li>这里目标中增加的熵就是Soft名字的来源，这里相对标准的强化学习，仅增加了\(\alpha \mathcal{H}(\pi_\phi(.\vert s_t))\)为额外目标，后续在不引起歧义的情况下，我们也用\(\alpha \mathcal{H}(\pi_\phi(s_{t}))\)来表示，且为了方便，后续推导中常常会视为\(\alpha=1\)，这里可以通过奖励和熵同时乘以\(\frac{1}{\alpha}\)来变换得到</li>
+</ul>
+</li>
+<li>Soft Q值定义<br>$$<br>\begin{align}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))]<br>\end{align}<br>$$<ul>
+<li>对于\(Q_{\text{soft}}^\pi(s_t, a_t)\)来说，已经发生的事件是“\((s_t,a_t)\)”，此时\(a_t\)是确定的动作，对应的熵\(\mathcal{H}(\pi(s_{t}))=0\)</li>
+</ul>
+</li>
+<li>Soft V值定义，同时推导用Soft Q值表示Soft V值<br>$$<br>\begin{align}<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + \alpha\mathcal{H}(\pi(s_{t})) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big]\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] + \alpha\mathcal{H}(\pi(s_{t}))\Big] \\<br>&amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t})) \\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t)] - \alpha E_{a_t \sim \pi} [\log \pi(a_t \vert s_t)]\\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{align}<br>$$</li>
+<li>推导用Soft V值表示Soft Q值<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^{l-1}(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) +\alpha\mathcal{H}(\pi(s_{t+1+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} \Big[E_{a_{t+1},s_{t+2},a_{t+2},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) + \alpha\mathcal{H}(\pi(s_{t+1+l})))\Big]\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>\end{aligned}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft贝尔曼期望方程"><a href="#Soft贝尔曼期望方程" class="headerlink" title="Soft贝尔曼期望方程"></a>Soft贝尔曼期望方程</h3><ul>
+<li>通过上面的推导，我们可以得到，<strong>Soft贝尔曼期望方程</strong>为：<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [E_{a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})]] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s), a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</li>
+</ul>
+<hr>
+<h3 id="Soft贝尔曼最优方程"><a href="#Soft贝尔曼最优方程" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h3><ul>
+<li>首先证明，在满足如下策略改进的时候(其中\(\tilde{\pi}\))是新策略，\(\pi\)是旧策略，<br>$$<br>\tilde{\pi}(\cdot | s) \propto \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right), \quad \forall s.<br>$$</li>
+<li>策略的Soft Q值是单调的，即：<br>$$<br>Q_{\text{soft}}^{\tilde{\pi}}(s, a) \geq Q_{\text{soft}}^{\pi_{\text{old}}}(s, a) ; \forall s, a.<br>$$</li>
+<li>策略的Soft Q值是单调性的证明如下：  <img src="/Notes/RL/RL——Soft-Q-Learning/Soft-Q-Learning-Policy-Improvement.png">
+<ul>
+<li>以上式子证明时没有考虑温度系数\(\alpha\)，考虑温度系数\(\alpha\)时在所有的熵\(\mathcal{H}(\pi(\cdot\vert\cdot))\)时前面都加上\(\alpha\)即可</li>
+<li>其中使用到以下不等式  ：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \le \mathcal{H}(\tilde{\pi}(\cdot\vert s)) + E_{a\sim \tilde{\pi}}[Q_{\text{soft}}^\pi(s,a)]<br>  $$</li>
+<li>上面的不等式又使用到以下式子（下面的式子如何推出上面的式子待确认TODO）：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da<br>  $$<ul>
+<li>以上式子证明过程如下：<br>$$<br>\begin{align}<br>\text{right}  &amp;= - \int \pi(\cdot | s) \log \frac{\pi(\cdot | s)}{\tilde{\pi}(\cdot | s)} + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  {\tilde{\pi}(\cdot | s)} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right) \\<br>&amp;= \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \\<br>&amp;= \text{left}<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>其中，由式子<br>$$<br>\begin{align}<br>\mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>\end{align}<br>$$<ul>
+<li>其中\(\tilde{\pi}\)是按照\(\tilde{\pi}(s) = \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da}\)迭代以后的策略</li>
+<li>以上推导没有增加温度系数，默认温度系数为1，实际上，如果增加温度系数，有\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)</li>
+<li>问题：如果策略的熵为0或温度系数为0，此时这个最优形式还能降级到\(\pi^*(s) = \arg\max_a Q(s,a)\)吗？<ul>
+<li>当策略的熵为0时，是可以的，此时策略必须是确定性策略，按照上述公式，动作只能取Q值最大的那一个</li>
+<li>当温度系数为0时，此时Reward和DQN一致，最优解应该是\(\pi^*(s) = \arg\max_a Q(s,a)\)。考虑温度系数的版本\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)，当温度系数\(\alpha\rightarrow 0\)时，策略近似取Q值最大的动作，等价于DQN</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当策略收敛以后，即经过迭代以后\(\tilde{\pi} = \pi = \pi^*\)，此时有\(D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot)) = 0\)成立，即<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>考虑温度系数后有：<br>$$ \alpha\mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>两边同时除以\(\alpha\)有<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>由于<br>$$<br>V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>$$</li>
+<li>所以有<br>$$<br>\frac{1}{\alpha}V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[\frac{1}{\alpha} Q_{\text{soft}}^\pi(s_t, a_t)] + \mathcal{H}(\pi(s_{t}))<br>$$</li>
+<li>最优的策略\(\pi^*\)对应的V值\(V^{\pi^*}(s)\)为：<br>$$ V_{\text{soft}}^{\pi^*}(s_t) = \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+</ul>
+<hr>
+<h3 id="贝尔曼方程总结"><a href="#贝尔曼方程总结" class="headerlink" title="贝尔曼方程总结"></a>贝尔曼方程总结</h3><h4 id="贝尔曼方程"><a href="#贝尔曼方程" class="headerlink" title="贝尔曼方程"></a>贝尔曼方程</h4><p>$$<br>\begin{align}<br> Q^\pi(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^\pi(s_{t+1})] \\<br> V^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</p>
+<h4 id="贝尔曼最优方程"><a href="#贝尔曼最优方程" class="headerlink" title="贝尔曼最优方程"></a>贝尔曼最优方程</h4><p>$$<br>\begin{align}<br> Q^{\pi^*}(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^{\pi^*}(s_{t+1})] \\<br> V^{\pi^*}(s_t) &amp;= \max_{a_t}[Q^{\pi^*}(s_t, a_t)]<br>\end{align}<br>$$</p>
+<h4 id="Soft贝尔曼方程"><a href="#Soft贝尔曼方程" class="headerlink" title="Soft贝尔曼方程"></a>Soft贝尔曼方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</p>
+<h4 id="Soft贝尔曼最优方程-1"><a href="#Soft贝尔曼最优方程-1" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^{\pi^*}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^{\pi^*}(s_{t+1})] \\<br>V_{\text{soft}}^{\pi^*}(s_t) &amp;= \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da<br>\end{aligned}<br>$$</p>
+<ul>
+<li>待更新</li>
 </ul>
 
           
@@ -2139,119 +2369,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——多任务学习权重优化.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——多任务学习权重优化.html" itemprop="url">DL——多任务学习权重优化</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="loss归一化"><a href="#loss归一化" class="headerlink" title="loss归一化"></a>loss归一化</h3><hr>
-<h3 id="不确定权重"><a href="#不确定权重" class="headerlink" title="不确定权重"></a>不确定权重</h3><ul>
-<li>Paper: <a href="https://openaccess.thecvf.com/content_cvpr_2018/papers/Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.pdf" target="_blank" rel="noopener">https://openaccess.thecvf.com/content_cvpr_2018/papers/Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.pdf</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/425672909" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/425672909</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/65137250" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/65137250</a></li>
-<li><a href="https://blog.csdn.net/cv_family_z/article/details/78749992" target="_blank" rel="noopener">https://blog.csdn.net/cv_family_z/article/details/78749992</a></li>
-<li><a href="https://mp.weixin.qq.com/s/BOGhU2jMqD82EMkTHGMnuw" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/BOGhU2jMqD82EMkTHGMnuw</a></li>
-<li>回归问题误差：正太分布，分类问题误差：玻尔兹曼分布（<a href="https://www.zhihu.com/question/274174763/answer/672202523%EF%BC%89" target="_blank" rel="noopener">https://www.zhihu.com/question/274174763/answer/672202523）</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2304,7 +2421,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">283</span>
+                  <span class="site-state-item-count">284</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

@@ -529,6 +529,523 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——CQL.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——CQL.html" itemprop="url">RL——CQL</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/hash/0d2b2061826a5df3221116a5085a6052-Abstract.html" target="_blank" rel="noopener">NIPS 2020, Conservative q-learning for offline reinforcement learning</a>  </li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=Mzg4MDU2MTM1Mg==&mid=2247485320&idx=1&sn=56be21b854a8d13e0c6d585d6121d035" target="_blank" rel="noopener">【论文分享】Conservative Q-Learning for Offline Reinforcement Learning</a>     </li>
+<li><a href="https://paperexplained.cn/articles/article/sdetail/10af9066-de83-4d62-8253-282f5e04fb5a/" target="_blank" rel="noopener">Conservative Q-Learning for Offline Reinforcement Learning</a>：手打公式    </li>
+<li><a href="https://hackmd.io/@l-7O3seyTuaQ8JjAyLP2Ng/BJWLxRcXc" target="_blank" rel="noopener">离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现</a>：手打公式    </li>
+<li><a href="https://github.com/aviralkumar2907/CQL" target="_blank" rel="noopener">github.com/aviralkumar2907/CQL</a>：CQL实现源码  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="CQL在解决什么问题？"><a href="#CQL在解决什么问题？" class="headerlink" title="CQL在解决什么问题？"></a>CQL在解决什么问题？</h3><ul>
+<li><strong>分布偏移（distribution shift）</strong>：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。 <ul>
+<li>这种差异可能导致学习到的策略在实际应用中表现不佳，因为该策略是在一个与实际环境不完全相同的数据分布上学习得到的</li>
+<li>离线强化学习中这种问题会放大，特别地，会导致OOD问题</li>
+</ul>
+</li>
+<li><strong>OOD（Out-of-distribution）</strong>：OOD通常指在训练集中没有被观察到过的样本（状态或状态-动作对），实际上，出现频率极低的样本也可以算作一定程度上的OOD样本<ul>
+<li>OOD问题是由于<strong>分布偏移</strong>导致的，理论上，<strong>没有分布偏移问题就不存在OOD问题</strong>，因为模型不会遇到这些未观察过的样本</li>
+</ul>
+</li>
+<li><strong>OOD问题容易导致值高估（Overestimation of values）问题</strong>：强化学习的迭代公式一般都是找时的动作最大的动作，这本身导致的容易值高估的现象</li>
+</ul>
+<hr>
+<h3 id="CQL相关推导"><a href="#CQL相关推导" class="headerlink" title="CQL相关推导"></a>CQL相关推导</h3><h4 id="一些定义"><a href="#一些定义" class="headerlink" title="一些定义"></a>一些定义</h4><ul>
+<li>数据集\(\mathcal{D}  \sim d^{\pi_{\beta}}(\mathbf{s})\pi_{\beta}(\mathbf{a} \mid \mathbf{s})\)，即数据是行为策略\(\pi_\beta\)与环境交互来得到的</li>
+<li>对于任意\((s_0, a_0) \in \mathcal{D}\)，有经验行为策略（empirical behavior policy）为：<br>$$ \hat{\pi}_\beta(a_0\vert s_0) = \frac{\sum_{(s,a) \in \mathcal{D}}\mathbf{1}(s=s_0,a=a_0)}{\sum_{s\in \mathcal{D}}\mathbf{1}(s=s_0)} $$</li>
+</ul>
+<h4 id="回顾贝尔曼算子"><a href="#回顾贝尔曼算子" class="headerlink" title="回顾贝尔曼算子"></a>回顾贝尔曼算子</h4><ul>
+<li>一般的贝尔曼算子(Bellman Operator)，写作\(\mathcal{B}^\pi\)，重复对\(Q(s,a)\)使用\(\mathcal{B}^\pi\)，持续迭代可收敛到策略\(\pi\)对应的Q值\(Q^{\pi}(s,a)\)值:<br>$$<br>\mathcal{B}^\pi Q = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim p(s^\prime \vert s, a), a^\prime \sim \pi(a^\prime\vert s^\prime)}[Q (s^\prime, a^\prime)]<br>$$</li>
+<li>Q-Learning的迭代公式，相当于策略是找Q值最优的那个动作，通过对Q重复使用如下贝尔曼最优算子（Bellman Optimality Operator），写作\(\mathcal{B}^{\pi^*}\)或者\(\mathcal{B}^*\)：<br>$$ \mathcal{B}^{*} Q(\mathbf{s}, \mathbf{a})=r(\mathbf{s}, \mathbf{a})+\gamma \mathbb{E}_{\mathbf{s}^{\prime} \sim P\left(\mathbf{s}^{\prime} \mid \mathbf{s}, \mathbf{a}\right)}\left[\max _{\mathbf{a}^{\prime}} Q\left(\mathbf{s}^{\prime}, \mathbf{a}^{\prime}\right)\right] $$</li>
+<li>在Offline RL中，我们定义新的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，即更新只在固定数据集上进行，即对于给定的数据集\(\mathcal{D} = { (s,a,r,s’)} \sim \pi_\beta\)，\(\hat{\mathcal{B}}^\pi\)的更新都发生在数据集上</li>
+</ul>
+<h4 id="Offline-RL中使用常规方法"><a href="#Offline-RL中使用常规方法" class="headerlink" title="Offline RL中使用常规方法"></a>Offline RL中使用常规方法</h4><ul>
+<li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
+<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \arg \min_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \arg \max_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
+<li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
+<li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
+<li>policy evaluation实际上就是在重复对Q使用贝尔曼算子，只是使用最小化均方误差的形式去实现了</li>
+</ul>
+</li>
+<li>问题：Offline RL场景中直接使用上面的策略迭代会面临<strong>分布偏移问题</strong>，从而导致高估：<ul>
+<li>理解：<strong>1）</strong> 目标Q值的计算应该使用当前策略\(\pi^k\)，但是数据集中只有从数据集\(\mathcal{D}\)中采样到的样本，对应策略\(\pi_\beta\)，极端情况下，策略\(\pi^k\)采样到的动作\(a’ \sim \pi^k\)可能从未在数据集中出现过，此时模型是无法准确评估\(Q(s’,a’)\)的；2）常规的迭代方法中，一般都包含着\(a’ = \mathop{\arg\max}_a Q(s,a)\)或者隐式的包含了\(Q(s, a) = r + \max_{a} Q(s^\prime, a)\)这样的思想，此时预估值\(Q(s’,a’)\)低估不会出现问题，但是\(Q(s’,a’)\)一旦高估，该动作就会被选中作为目标值；3）Offline RL场景中没有机会引入新样本来重新修正\(Q(s’,a’)\)的高估</li>
+<li>在Online RL的场景中，一般不存在该问题，因为一个动作被错误的高估以后，往往会在策略跟环境的交互中选中该动作，从而使得该动作被修正</li>
+</ul>
+</li>
+<li>总结一下：<strong>对于策略\(\pi\)，我们的真实Q值是\(Q^\pi\)，在固定的数据集下学到的是\(\hat{Q}^\pi\)，但该值一般往往会高估，我们的目标是让\(\hat{Q}^\pi\)尽量接近真实值\(Q^\pi\)，那么面临的往往是高估这个问题，CQL算法的核心思想就是解决这个问题</strong></li>
+</ul>
+<h4 id="改进一：打压未知动作的Q值"><a href="#改进一：打压未知动作的Q值" class="headerlink" title="改进一：打压未知动作的Q值"></a>改进一：打压未知动作的Q值</h4><ul>
+<li>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
+<li>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</li>
+<li>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</li>
+<li>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</li>
+<li>这里论文中给出了证明（Theorem 3.1）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png">
+<ul>
+<li>上式说明：<ul>
+<li>当\(supp\ \mu \subset supp\ \pi\)（\(supp\ \mu\)表示支持集），且\(\alpha\)足够大时，\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即对于任意的分布\(\mu\)，只要我们这里\(\alpha\)取得足够大，总能学到一个比真实值\(Q^\pi(s,a)\)小的Q值</li>
+<li>当\(supp\ \mu \subset supp\ \pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，对\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即如果我们的数据集可以反映真实的数据分布，那么数据偏移就不存在了，我们直接令\(\alpha=0\)，退化到常规的贝尔曼算子对应的损失函数即可（注：此时的数据集\(\mathcal{D}\)是从当前策略采样的，故\(\alpha=0\)后的式子就是常规贝尔曼算子对应的损失函数）</li>
+</ul>
+</li>
+<li>在概率论和机器学习中，当我们说两个离散概率分布 \(\mu(a|s)\) 和 \(\pi(a|s)\) 满足 \(supp\ \mu \subset supp\ \pi\)，这意味着 \(\mu(a|s)\) 的支持集（即 \(\mu(a|s)\) 分配了正概率的所有动作 \(a\) 的集合）是 \(\pi(a|s)\) 支持集的子集。换句话说，对于所有 \(\mu(a|s)\) 给予正概率的动作 \(a\)，\(\pi(a|s)\) 也必须给予正概率。简而言之，如果某个动作在 \(\mu(a|s)\) 下是可能发生的（即它有非零的概率），那么在 \(\pi(a|s)\) 下这个动作也是可能发生的。但是，\(\pi(a|s)\) 可能包括一些 \(\mu(a|s)\) 不考虑的动作，这些动作在 \(\pi(a|s)\) 中有正概率但在 \(\mu(a|s)\) 中没有或者为零概率。</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进二：打压补偿"><a href="#改进二：打压补偿" class="headerlink" title="改进二：打压补偿"></a>改进二：打压补偿</h4><ul>
+<li>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \arg \min_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
+<li>这里论文中给出了证明（Theorem 3.2）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
+<ul>
+<li>上式说明：<ul>
+<li>当\(\mu=\pi\)（注意，改进一种不需要这个约束），且\(\alpha\)较大时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
+<li>当\(\mu=\pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
+</ul>
+</li>
+<li>此时虽然不能再保证学到了\(Q^\pi(s,a)\)的逐点下界：\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)</li>
+<li>但可以保证学到了\(Q^\pi(s,a)\)的期望下界：\(\mathbb{E}_{\pi(a|s)}[\hat{Q}^\pi(s,a)] \le V^\pi(s) = \mathbb{E}_{\pi(a|s)}[Q^\pi(s,a)]\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进三：CQL-mathcal-R"><a href="#改进三：CQL-mathcal-R" class="headerlink" title="改进三：CQL(\(\mathcal{R}\))"></a>改进三：CQL(\(\mathcal{R}\))</h4><ul>
+<li>改进二已经说明了在\(\mu=\pi\)时，可以学到一个合适的下界，但是由于改进二中需要对策略\(\mu\)（\(\mu=\pi\)）进行采样，即每次迭代Q值时都需要上一轮的策略\(\pi\)来采样，这样的话，智能交替进行策略评估和策略提升，且策略评估需要迭代足够长的步骤才能收敛，所以非常耗时<ul>
+<li>问题，常规的AC不都是这么实现的吗？其实也没有问题吧</li>
+</ul>
+</li>
+<li>我们可以进一步地优化，考虑到\(\pi\)是使得Q值最大的策略，所以我们使用使得Q值最大的\(\mu\)去拟合<br>$$\hat{Q}^{k+1} = \min_Q \max_\mu \color{red}{\alpha} (\mathbb{E}_{s\sim \mathcal{D}, a\sim \color{red}{\mu(a\vert s)} }[Q(s, a)] - \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)]) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right] + \color{red}{\mathcal{R}(\mu)} $$<ul>
+<li>\(\mathcal{R}(\mu)\)是正则项，一般取\(\mathcal{R}(\mu) = - D_{KL} (\mu| \rho)\)，其中\(\rho\)是一个已知分布</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进四：CQL-mathcal-rho"><a href="#改进四：CQL-mathcal-rho" class="headerlink" title="改进四：CQL(\(\mathcal{\rho}\))"></a>改进四：CQL(\(\mathcal{\rho}\))</h4><ul>
+<li>在CQL(\(\mathcal{R}\))中，求解\(\mu\)相当于要求解下面的优化问题<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{a \sim \mu(a|s)}[Q(s,a)]&amp;\color{red}{-}D_{\mathrm{KL}}(\mu | \rho) \\<br>\text { s.t. } \quad \sum_{a} \mu(a|s)&amp;=1 \\<br>\mu(a|s) &amp;\geq 0, \ \forall \mathbf{a} .<br>\end{align}<br>$$<ul>
+<li>注意：论文附录中错误地将\(-D_{\mathrm{KL}}(\mu | \rho)\)写成了\(+D_{\mathrm{KL}}(\mu | \rho)\)（因为上述公式的本意是最小化KL散度），需要修正过来</li>
+</ul>
+</li>
+<li>上述优化问题的最优解是：<br>$$<br>\mu^{*}(a|s)=\frac{1}{Z} \rho(a|s) \exp (Q(s,a))<br>$$<ul>
+<li>其中\(Z=\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))\)，\(Z\)也被称为归一化因子（normalizing factor）</li>
+<li>以上优化问题求解的详细证明与<a href="https://arxiv.org/pdf/1910.00177.pdf" target="_blank" rel="noopener">AWR论文</a>相似。更一般地，将以上变量\(a\)替换成\(x\)，即\(Q(s,a)\)替换成\(f(x)\)均可成立  </li>
+</ul>
+</li>
+<li>最终我们有CQL(\(\mathcal{\rho}\))的表达形式：<br>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim d^{\pi_\beta}(s)} \left[ \mathbb{E}_{a\sim \rho(a\vert s)} \left[ Q(s, a) \cfrac{\exp(Q(s, a))}{Z} \right ] - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$<ul>
+<li>原始论文中使用\(s\sim d^{\pi_\beta}(s)\)，实际上与\(s \sim \mathcal{D}\)等价，其他形式都是使用\(s \sim \mathcal{D}\)</li>
+<li>论文中，实验时取\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)，实验表格中的CQL(\(\mathcal{\rho}\))就是这个含义</li>
+</ul>
+</li>
+</ul>
+<h4 id="改进五：CQL-mathcal-H"><a href="#改进五：CQL-mathcal-H" class="headerlink" title="改进五：CQL(\(\mathcal{H}\))"></a>改进五：CQL(\(\mathcal{H}\))</h4><ul>
+<li>当CQL(\(\mathcal{\rho}\))中的\(\rho\)是均匀分布时，有最优解：<br>$$<br>\begin{align}<br>\mu^*(a\vert s) &amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))} \\<br>&amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\rho(a\vert s) \sum_a \exp(Q(s, a))} \\<br>&amp;= \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))}<br>\end{align}<br>$$</li>
+<li>将\(\mu^*(a\vert s) = \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))} \)带入CQL(\(\mathcal{R}\))，可得CQL(\(\mathcal{H}\))：<br>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim\mathcal{D}} \left[ \log \sum_a \exp(Q(s, a)) - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$<ul>
+<li>论文中，取\(\rho(a \vert s)\)是均匀分布(即\(\rho(a|s)=\text{Unif}(a)\))时，相当于最大化策略熵，故称此时的更新方式为CQL(\(\mathcal{H}\))</li>
+</ul>
+</li>
+</ul>
+<!-- #### 其他
+$$
+\mathbb{E}\_{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}\left[\frac{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})}-1\right] \geq \max\_{\mathbf{a} \text { s.t. } \hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})>0}\left(\frac{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})}\right) \cdot \varepsilon
+$$ -->
+
+<h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
+<li>伪代码流程<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"></li>
+<li>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \arg\max_a Q(s,a)\)作为最终的策略</li>
+<li>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</li>
+</ul>
+<h4 id="实践说明"><a href="#实践说明" class="headerlink" title="实践说明"></a>实践说明</h4><ul>
+<li>\(\alpha\)的选择：</li>
+<li>\(\alpha\)可以变成可学习的值？</li>
+<li>\(\log\sum_a \exp(Q(s,a))\)的计算：</li>
+<li>CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))谁更好？<ul>
+<li>一般来说 CQL(\(\mathcal{H}\))优于CQL(\(\mathcal{\rho}\))，当动作空间特别大时logsumexp预测方差变得很大，此时使用CQL(\(\mathcal{\rho}\))效果更好</li>
+</ul>
+</li>
+<li>一些超参数的设置：</li>
+</ul>
+<hr>
+<h3 id="一些说明和思考"><a href="#一些说明和思考" class="headerlink" title="一些说明和思考"></a>一些说明和思考</h3><ul>
+<li>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：<ul>
+<li>CQL(\(\mathcal{R}\))：CQL原始形式</li>
+<li>CQL(\(\mathcal{\rho}\))：CQL变体，对任意\(\rho\)均可使用这个表述，包含了后面的CQL(\(\mathcal{H}\))，论文中实验时使用的是\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)</li>
+<li>CQL(\(\mathcal{H}\))：CQL变体，当CQL(\(\mathcal{\rho}\))中\(\rho\)取均匀分布时的更新形式</li>
+</ul>
+</li>
+<li>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</li>
+<li>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</li>
+<li>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？<ul>
+<li>普通AC确实是这样实现的，但是在Offline RL场景，不希望迭代效率过慢？</li>
+</ul>
+</li>
+<li>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?<ul>
+<li>详请见附录推导</li>
+</ul>
+</li>
+<li>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
+<ul>
+<li>具体来说(Theorem 3.6)：CQL算法得到的策略\(\pi^*(a|s)\)是一个策略\(\hat{\pi}_\beta\)的\(\zeta\)-safe policy improvement，即有\(1-\zeta\)的概率可以保证\(J(\pi^*, M) \ge J(\hat{\pi}_\beta, M) - \zeta\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="附录：证明约束优化问题"><a href="#附录：证明约束优化问题" class="headerlink" title="附录：证明约束优化问题"></a>附录：证明约束优化问题</h3><ul>
+<li>目标是求解下面的约束问题<br>$$<br>\begin{align}<br>\max {\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})]&amp;-D_{\mathrm{KL}}(\mu | \rho) \\<br>\text { s.t. } \quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
+<li>需要证明上述式子的最优解为：<br>$$\mu^{*}(\mathbf{x})=\frac{1}{Z} \rho(\mathbf{x}) \exp (f(\mathbf{x}))$$<ul>
+<li>其中\(Z = \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (f(\mathbf{x}))\)</li>
+</ul>
+</li>
+<li>证明前，我们先将上述问题修改成更一般的形式（更一般的形式更常用一些），在更一般的形式下，\(D_{\mathrm{KL}}(\mu | \rho)\)经常会加上温度系数\(\alpha\)或出现在约束中：<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) &amp;\le \epsilon \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
+<li>求解上面的问题可以先转换成构造拉格朗日函数<ul>
+<li>原始问题变形<br>$$<br>\begin{align}<br>\max_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
+<li>拉格朗日函数如下<br>$$<br>\begin{align}<br>L(\mu,\alpha,\beta) &amp;= -\mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})] + \alpha(D_{\mathrm{KL}}(\mu | \rho)-\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log\frac{\mu(\mathbf{x})}{\rho(\mathbf{x})} -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log \mu(\mathbf{x}) - \sum_x \mu(\mathbf{x}) \log \rho(\mathbf{x}) -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li>对上式微分并令微分结果等于0有:<br>$$<br>\begin{align}<br>\frac{\partial L(\mu,\alpha,\beta)}{\partial \mu(x)} &amp;= -\sum_x f(\mathbf{x}) + \alpha \sum_x ( \log \mu(\mathbf{x}) + 1) - \alpha \sum_x \log \rho(\mathbf{x}) + \sum_x \beta \\<br>&amp;= \sum_x (- f(\mathbf{x}) + \alpha \log \mu(\mathbf{x}) + 1 - \alpha \log \rho(\mathbf{x}) + \beta) \\<br>&amp;= 0<br>\end{align}<br>$$<ul>
+<li>上式中求导使用到了\(\frac{\partial \log \mu(x)}{\partial \mu(x)} = \frac{1}{\mu(x)}\)</li>
+</ul>
+</li>
+<li>进一步可以得到<br>$$<br>- f(\mathbf{x}) + \alpha \log \mu(\mathbf{x}) + 1 - \alpha \log \rho(\mathbf{x}) + \beta = 0<br>$$</li>
+<li>即<br>$$<br>\begin{align}<br>\alpha \log \mu(\mathbf{x}) &amp;= f(\mathbf{x}) + \alpha \log \rho(\mathbf{x}) - (\beta + 1) \\<br>\log \mu(\mathbf{x}) &amp;= \frac{1}{\alpha}f(\mathbf{x}) + \log \rho(\mathbf{x}) + \frac{- (\beta + 1)}{\alpha} \\<br>\mu(\mathbf{x}) &amp;= exp(\frac{1}{\alpha}f(\mathbf{x}) + \log \rho(\mathbf{x}) + \frac{- (\beta + 1)}{\alpha}) \\<br>\mu(\mathbf{x}) &amp;= exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\log \rho(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha}) \\<br>\mu(\mathbf{x}) &amp;= \rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha}) \\<br>\end{align}<br>$$</li>
+<li>由于\(exp(\frac{- (\beta + 1)}{\alpha})\)包含拉格朗日乘子，是未知的，所以我们进一步化简，尝试将这部分替换为已知式子，对上述结果最后一步两边同时积分有<br>$$<br>\begin{align}<br>\sum_x \mu(\mathbf{x}) &amp;= \sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha})) \\<br>1 &amp;= exp(\frac{- (\beta + 1)}{\alpha}) \sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x}))) \\<br>exp(\frac{- (\beta + 1)}{\alpha}) &amp;= \frac{1}{\sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})))} \\<br>\end{align}<br>$$</li>
+<li>将\(exp(\frac{- (\beta + 1)}{\alpha}) = \frac{1}{\sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})))}\)的结果带入\(\mu(\mathbf{x}) = \rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha})\)可以解的最终解：<br>$$\mu^{*}(\mathbf{x})=\frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))$$<ul>
+<li>其中\(Z = \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))\)</li>
+</ul>
+</li>
+<li>回到最初的问题：我们令\(\alpha=1\)即可退回到原始问题</li>
+</ul>
+<hr>
+<h3 id="附录：证明logsumexp公式"><a href="#附录：证明logsumexp公式" class="headerlink" title="附录：证明logsumexp公式"></a>附录：证明logsumexp公式</h3><ul>
+<li><p>参考：<a href="https://zhuanlan.zhihu.com/p/546193376" target="_blank" rel="noopener">CQL算法logsumexp公式推导</a>  </p>
+</li>
+<li><p>当CQL(\(\mathcal{\rho}\))中的\(\rho\)是均匀分布时，有最优解：<br>$$<br>\begin{align}<br>\mu^*(a\vert s) &amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))} \\<br>&amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\rho(a\vert s) \sum_a \exp(Q(s, a))} \\<br>&amp;= \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))}<br>\end{align}<br>$$</p>
+</li>
+<li><p>带入CQL(\(\mathcal{R}\))形式有<br>$$<br>\begin{align}<br>\mathbb{E}_{a \sim \mu^*} [Q(s, a)] - D_{\mathrm{KL}}(\mu^* | \rho) &amp;= \mathbb{E}_{a \sim \mu^*} \left[ \exp(Q(s, a))  - \log(\mu^*) + \log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[Q(s, a)  - \log(\cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))} ) +\log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[Q(s, a)  - \log(\exp(Q(s, a))) + \log(\sum_a \exp(Q(s, a))) +\log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[\log(\sum_a \exp(Q(s, a))) + \log(\rho)\right]\\<br>\end{align}<br>$$</p>
+</li>
+<li><p>显然\(\log(\sum_a \exp(Q(s, a))) + \log(\rho)\)此时与策略\(\mu^*\)无关，期望可以消掉，同时\(\rho\)是均匀分布时，有\(\rho(a|s) = \frac{1}{|A|}\)，\(\log(\rho) = -\log(|A|)\)，于是有：<br>$$<br>\begin{align}<br>\mathbb{E}_{a \sim \mu^*} [Q(s, a)] - D_{\mathrm{KL}}(\mu^* | \rho) &amp;= \log \sum_a \exp(Q(s, a)) -\log(|A|)<br>\end{align}<br>$$</p>
+<ul>
+<li>注意，这里需要的是一个\(max_Q f(Q)\)的形式，而\(-\log(|A|)\)这个值是个常数，与优化目标Q无关，可以消去</li>
+</ul>
+</li>
+<li><p>补充问题：为什么CQL(\(\mathcal{\rho}\))中可以直接消掉\(\mathcal{R}(\mu)\)，但是CQL(\(\mathcal{H}\))中不行？</p>
+<ul>
+<li>理论上，CQL(\(\mathcal{\rho}\))中不能直接消掉\(\mathcal{R}(\mu)\)，CQL(\(\mathcal{H}\))中推导才是对的，论文中没有提这一点</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——IQL.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——IQL.html" itemprop="url">RL——IQL</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接<ul>
+<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
+<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
+<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
+</ul>
+<hr>
+<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
+<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
+<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
+<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
+<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
+</ul>
+</li>
+<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
+<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
+<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
+</ul>
+</li>
+<li>问题：显示密度模型中的“密度”是什么意思？<ul>
+<li>TODO</li>
+</ul>
+</li>
+</ul>
+<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
+<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
+<li>IQL就是一种Single-step方法</li>
+<li>传统的模仿学习也属于Single-step方法</li>
+</ul>
+<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
+<ul>
+<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
+</ul>
+<hr>
+<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
+<li>思路：按照贝尔曼最优方程迭代</li>
+<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>直接使用上述损失函数存在值高估问题</li>
+<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
+</ul>
+</li>
+</ul>
+<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
+<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
+<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
+<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma E_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
+</ul>
+</li>
+<li>分析：<ul>
+<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
+<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
+<li>上面的方法更像是在对行为策略进行模仿</li>
+</ul>
+</li>
+</ul>
+<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
+<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
+<li>损失函数：<br>  $$<br>  L(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
+<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
+</ul>
+</li>
+<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
+<li>BCQ等方法已经学习过上述目标的改进版本</li>
+<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
+<li><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：<ul>
+<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
+<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
+</ul>
+</li>
+<li>分析：<ul>
+<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
+<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
+</ul>
+</li>
+<li><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$<ul>
+<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
+</ul>
+</li>
+<li>分位数回归和期望回归的对比<ul>
+<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
+<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
+</ul>
+</li>
+<li>问题：为什么使用期望回归而不是分位数回归？<ul>
+<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL的损失函数"><a href="#IQL的损失函数" class="headerlink" title="IQL的损失函数"></a>IQL的损失函数</h4><ul>
+<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
+<li>to be continue</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——BCQ.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -662,212 +1179,6 @@
 <li>按照如下策略决策：</li>
 </ul>
 <p>$$ \pi(s) = \mathop{\arg\max}_{a\vert\frac{G_w(a|s)}{\max_\hat{a} G_w(\hat{a}|s)} \gt \tau} Q_\theta(s,a) $$</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——CQL.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——CQL.html" itemprop="url">RL——CQL</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://mp.weixin.qq.com/s?__biz=Mzg4MDU2MTM1Mg==&mid=2247485320&idx=1&sn=56be21b854a8d13e0c6d585d6121d035" target="_blank" rel="noopener">【论文分享】Conservative Q-Learning for Offline Reinforcement Learning</a>   </li>
-<li><a href="https://paperexplained.cn/articles/article/sdetail/10af9066-de83-4d62-8253-282f5e04fb5a/" target="_blank" rel="noopener">Conservative Q-Learning for Offline Reinforcement Learning</a>：手打公式  </li>
-<li><a href="https://hackmd.io/@l-7O3seyTuaQ8JjAyLP2Ng/BJWLxRcXc" target="_blank" rel="noopener">离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现</a>：手打公式  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="CQL在解决什么问题？"><a href="#CQL在解决什么问题？" class="headerlink" title="CQL在解决什么问题？"></a>CQL在解决什么问题？</h3><ul>
-<li><strong>分布偏移（distribution shift）</strong>：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。 <ul>
-<li>这种差异可能导致学习到的策略在实际应用中表现不佳，因为该策略是在一个与实际环境不完全相同的数据分布上学习得到的</li>
-<li>离线强化学习中这种问题会放大，特别地，会导致OOD问题</li>
-</ul>
-</li>
-<li><strong>OOD（Out-of-distribution）</strong>：OOD通常指在训练集中没有被观察到过的样本（状态或状态-动作对），实际上，出现频率极低的样本也可以算作一定程度上的OOD样本<ul>
-<li>OOD问题是由于<strong>分布偏移</strong>导致的，理论上，<strong>没有分布偏移问题就不存在OOD问题</strong>，因为模型不会遇到这些未观察过的样本</li>
-</ul>
-</li>
-<li><strong>OOD问题容易导致值高估（Overestimation of values）问题</strong>：强化学习的迭代公式一般都是找时的动作最大的动作，这本身导致的容易值高估的现象</li>
-</ul>
-<hr>
-<h3 id="CQL相关推导"><a href="#CQL相关推导" class="headerlink" title="CQL相关推导"></a>CQL相关推导</h3><h4 id="一些定义"><a href="#一些定义" class="headerlink" title="一些定义"></a>一些定义</h4><ul>
-<li>数据集\(\mathcal{D}  \sim d^{\pi_{\beta}}(\mathbf{s})\pi_{\beta}(\mathbf{a} \mid \mathbf{s})\)，即数据是行为策略\(\pi_\beta\)与环境交互来得到的</li>
-<li>对于任意\((s_0, a_0) \in \mathcal{D}\)，有经验行为策略（empirical behavior policy）为：<br>$$ \hat{\pi}_\beta(a_0\vert s_0) = \frac{\sum_{(s,a) \in \mathcal{D}}\mathbf{1}(s=s_0,a=a_0)}{\sum_{s\in \mathcal{D}}\mathbf{1}(s=s_0)} $$</li>
-</ul>
-<h4 id="回顾贝尔曼算子"><a href="#回顾贝尔曼算子" class="headerlink" title="回顾贝尔曼算子"></a>回顾贝尔曼算子</h4><ul>
-<li>一般的贝尔曼算子(Bellman Operator)，写作\(\mathcal{B}^\pi\)，重复对\(Q(s,a)\)使用\(\mathcal{B}^\pi\)，持续迭代可收敛到策略\(\pi\)对应的Q值\(Q^{\pi}(s,a)\)值:<br>$$<br>\mathcal{B}^\pi Q = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim p(s^\prime \vert s, a), a^\prime \sim \pi(a^\prime\vert s^\prime)}[Q (s^\prime, a^\prime)]<br>$$</li>
-<li>Q-Learning的迭代公式，相当于策略是找Q值最优的那个动作，通过对Q重复使用如下贝尔曼最优算子（Bellman Optimality Operator），写作\(\mathcal{B}^{\pi^*}\)或者\(\mathcal{B}^*\)：<br>$$ \mathcal{B}^{*} Q(\mathbf{s}, \mathbf{a})=r(\mathbf{s}, \mathbf{a})+\gamma \mathbb{E}_{\mathbf{s}^{\prime} \sim P\left(\mathbf{s}^{\prime} \mid \mathbf{s}, \mathbf{a}\right)}\left[\max _{\mathbf{a}^{\prime}} Q\left(\mathbf{s}^{\prime}, \mathbf{a}^{\prime}\right)\right] $$</li>
-<li>在Offline RL中，我们定义新的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，即更新只在固定数据集上进行，即对于给定的数据集\(\mathcal{D} = { (s,a,r,s’)} \sim \pi_\beta\)，\(\hat{\mathcal{B}}^\pi\)的更新都发生在数据集上</li>
-</ul>
-<h4 id="Offline-RL中使用常规方法"><a href="#Offline-RL中使用常规方法" class="headerlink" title="Offline RL中使用常规方法"></a>Offline RL中使用常规方法</h4><ul>
-<li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
-<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \arg \min_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \arg \max_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
-<li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
-<li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
-<li>policy evaluation实际上就是在重复对Q使用贝尔曼算子，只是使用最小化均方误差的形式去实现了</li>
-</ul>
-</li>
-<li>问题：Offline RL场景中直接使用上面的策略迭代会面临<strong>分布偏移问题</strong>，从而导致高估：<ul>
-<li>理解：<strong>1）</strong> 目标Q值的计算应该使用当前策略\(\pi^k\)，但是数据集中只有从数据集\(\mathcal{D}\)中采样到的样本，对应策略\(\pi_\beta\)，极端情况下，策略\(\pi^k\)采样到的动作\(a’ \sim \pi^k\)可能从未在数据集中出现过，此时模型是无法准确评估\(Q(s’,a’)\)的；2）常规的迭代方法中，一般都包含着\(a’ = \mathop{\arg\max}_a Q(s,a)\)或者隐式的包含了\(Q(s, a) = r + \max_{a} Q(s^\prime, a)\)这样的思想，此时预估值\(Q(s’,a’)\)低估不会出现问题，但是\(Q(s’,a’)\)一旦高估，该动作就会被选中作为目标值；3）Offline RL场景中没有机会引入新样本来重新修正\(Q(s’,a’)\)的高估</li>
-<li>在Online RL的场景中，一般不存在该问题，因为一个动作被错误的高估以后，往往会在策略跟环境的交互中选中该动作，从而使得该动作被修正</li>
-</ul>
-</li>
-<li>总结一下：<strong>对于策略\(\pi\)，我们的真实Q值是\(Q^\pi\)，在固定的数据集下学到的是\(\hat{Q}^\pi\)，但该值一般往往会高估，我们的目标是让\(\hat{Q}^\pi\)尽量接近真实值\(Q^\pi\)，那么面临的往往是高估这个问题，CQL算法的核心思想就是解决这个问题</strong></li>
-</ul>
-<h4 id="改进一：打压未知动作的Q值"><a href="#改进一：打压未知动作的Q值" class="headerlink" title="改进一：打压未知动作的Q值"></a>改进一：打压未知动作的Q值</h4><ul>
-<li>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</li>
-<li>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</li>
-<li>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</li>
-<li>这里论文中给出了证明（Theorem 3.1）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png">
-<ul>
-<li>上式说明：<ul>
-<li>当\(supp\ \mu \subset supp\ \pi\)（\(supp\ \mu\)表示支持集），且\(\alpha\)足够大时，\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即对于任意的分布\(\mu\)，只要我们这里\(\alpha\)取得足够大，总能学到一个比真实值\(Q^\pi(s,a)\)小的Q值</li>
-<li>当\(supp\ \mu \subset supp\ \pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，对\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即如果我们的数据集可以反映真实的数据分布，那么数据偏移就不存在了，我们直接令\(\alpha=0\)，退化到常规的贝尔曼算子对应的损失函数即可（注：此时的数据集\(\mathcal{D}\)是从当前策略采样的，故\(\alpha=0\)后的式子就是常规贝尔曼算子对应的损失函数）</li>
-</ul>
-</li>
-<li>在概率论和机器学习中，当我们说两个离散概率分布 \(\mu(a|s)\) 和 \(\pi(a|s)\) 满足 \(supp\ \mu \subset supp\ \pi\)，这意味着 \(\mu(a|s)\) 的支持集（即 \(\mu(a|s)\) 分配了正概率的所有动作 \(a\) 的集合）是 \(\pi(a|s)\) 支持集的子集。换句话说，对于所有 \(\mu(a|s)\) 给予正概率的动作 \(a\)，\(\pi(a|s)\) 也必须给予正概率。简而言之，如果某个动作在 \(\mu(a|s)\) 下是可能发生的（即它有非零的概率），那么在 \(\pi(a|s)\) 下这个动作也是可能发生的。但是，\(\pi(a|s)\) 可能包括一些 \(\mu(a|s)\) 不考虑的动作，这些动作在 \(\pi(a|s)\) 中有正概率但在 \(\mu(a|s)\) 中没有或者为零概率。</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进二：打压补偿"><a href="#改进二：打压补偿" class="headerlink" title="改进二：打压补偿"></a>改进二：打压补偿</h4><ul>
-<li>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \arg \min_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>这里论文中给出了证明（Theorem 3.2）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
-<ul>
-<li>上式说明：<ul>
-<li>当\(\mu=\pi\)（注意，改进一种不需要这个约束），且\(\alpha\)较大时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
-<li>当\(\mu=\pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
-</ul>
-</li>
-<li>此时虽然不能再保证学到了\(Q^\pi(s,a)\)的逐点下界：\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)</li>
-<li>但可以保证学到了\(Q^\pi(s,a)\)的期望下界：\(\mathbb{E}_{\pi(a|s)}[\hat{Q}^\pi(s,a)] \le V^\pi(s) = \mathbb{E}_{\pi(a|s)}[Q^\pi(s,a)]\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进三：CQL-mathcal-R"><a href="#改进三：CQL-mathcal-R" class="headerlink" title="改进三：CQL(\(\mathcal{R}\))"></a>改进三：CQL(\(\mathcal{R}\))</h4><ul>
-<li>改进二已经说明了在\(\mu=\pi\)时，可以学到一个合适的下界，但是由于需要限定\(\mu=\pi\)，这导致了收敛比较难？</li>
-<li>我们可以进一步地优化，考虑到\(\pi\)是使得Q值最大的策略，所以我们使用使得Q值最大的\(\mu\)去拟合<br>$$\hat{Q}^{k+1} = \min_Q \max_\mu \color{red}{\alpha} (\mathbb{E}_{s\sim \mathcal{D}, a\sim \color{red}{\mu(a\vert s)} }[Q(s, a)] - \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)]) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right] + \color{red}{\mathcal{R}(\mu)} $$<ul>
-<li>\(\mathcal{R}(\mu)\)是正则项，一般取\(\mathcal{R}(\mu) = - D_{KL} (\mu, \rho)\)，其中\(\rho\)是一个已知分布</li>
-</ul>
-</li>
-</ul>
-<p>$$<br>\max <em>{\mu} \mathbb{E}</em>{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})]+D_{\mathrm{KL}}(\mu | \rho) \text { s.t. } \quad \sum_{\mathbf{x}} \mu(\mathbf{x})=1, \mu(\mathbf{x}) \geq 0 \forall \mathbf{x} .<br>$$</p>
-<h4 id="改进四：CQL-mathcal-H"><a href="#改进四：CQL-mathcal-H" class="headerlink" title="改进四：CQL(\(\mathcal{H}\))"></a>改进四：CQL(\(\mathcal{H}\))</h4><p>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim\mathcal{D}} \left[ \log \sum_a \exp(Q(s, a)) - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$</p>
-<h4 id="改进五：CQL-mathcal-rho"><a href="#改进五：CQL-mathcal-rho" class="headerlink" title="改进五：CQL(\(\mathcal{\rho}\))"></a>改进五：CQL(\(\mathcal{\rho}\))</h4><p>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim d^{\pi_\beta}(s)} \left[ \mathbb{E}_{a\sim \rho(a\vert s)} \left[ Q(s, a) \cfrac{\exp(Q(s, a))}{Z} \right ] - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$<br>    * 原始论文中使用\(s\sim d^{\pi_\beta}(s)\)，实际上与\(s \sim \mathcal{D}\)等价，其他形式都是使用\(s \sim \mathcal{D}\)</p>
-<p>$$<br>\mu^{*}(\mathbf{x})=\frac{1}{Z} \rho(\mathbf{x}) \exp (f(\mathbf{x}))<br>$$</p>
-<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><p>$$<br>\mathbb{E}<em>{\pi</em>{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}\left[\frac{\pi_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}<em>{\beta}(\mathbf{a} \mid \mathbf{s})}-1\right] \geq \max _{\mathbf{a} \text { s.t. } \hat{\pi}</em>{\beta}(\mathbf{a} \mid \mathbf{s})&gt;0}\left(\frac{\pi_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}_{\beta}(\mathbf{a} \mid \mathbf{s})}\right) \cdot \varepsilon<br>$$</p>
-<h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
-<li>伪代码流程<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"></li>
-<li>如果是Q-learning模式：\(\mu\)可以作为最终的策略</li>
-<li>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</li>
-</ul>
-<hr>
-<h3 id="一些说明和思考"><a href="#一些说明和思考" class="headerlink" title="一些说明和思考"></a>一些说明和思考</h3><ul>
-<li>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))</li>
-<li>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</li>
-<li>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</li>
-</ul>
 
           
         
@@ -1589,236 +1900,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a>  <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
-<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）  </li>
-</ul>
-<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
-<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
-</ul>
-</li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
-<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
-<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
-<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
-</ul>
-</li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
-<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
-<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
-</ul>
-</li>
-<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
-<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\arg\max_a Q(s,a)\)来找到最优策略。</li>
-<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
-<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
-<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
-</ul>
-<h5 id="Off-Policy-AC如何对混合策略采样的样本进行重要性采样？"><a href="#Off-Policy-AC如何对混合策略采样的样本进行重要性采样？" class="headerlink" title="Off-Policy AC如何对混合策略采样的样本进行重要性采样？"></a>Off-Policy AC如何对混合策略采样的样本进行重要性采样？</h5><ul>
-<li>在Replay Buffer中记录下每个样本的采样策略（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L194" target="_blank" rel="noopener">代码示例</a>），并在更新时逐个样本计算动作概率比值（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L89-L92" target="_blank" rel="noopener">代码示例</a>），参见：  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 策略记录</span><br><span class="line">memory.append(state, action, reward, policy.detach()) </span><br><span class="line"></span><br><span class="line">## 动作概率比值计算</span><br><span class="line">if off_policy:</span><br><span class="line">    rho = policies[i].detach() / old_policies[i]</span><br><span class="line">else:</span><br><span class="line">    rho = torch.ones(1, action_size)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
-<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
-<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
-</ul>
-</li>
-<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= E_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
-<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
-</ul>
-<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
-<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
-<ul>
-<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
-</ul>
-</li>
-<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
-</li>
-<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
-<ul>
-<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
-<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
-</ul>
-</li>
-<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
-<ul>
-<li>上面的Loss求导就可以得到梯度是\(E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
-<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
-<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a>  </li>
-</ul>
-<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
-<li>伪代码：<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
-<ul>
-<li>其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数</li>
-<li><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</li>
-<li><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
-<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods</a>  </li>
-<li>有两个改进包含在名字中，Twin和Delayed</li>
-<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
-</ul>
-<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
-<li>伪代码<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
-<ul>
-<li>\(t \text{mod} d\)表示策略更新比Q值更新慢一些，\(d\)次Q值更新对应一次策略更新</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
-<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
-</ul>
-<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
-<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
-<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
-</ul>
-<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
-<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
-</ul>
-<hr>
-<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
-<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
-<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1871,7 +1952,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">283</span>
+                  <span class="site-state-item-count">284</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
