@@ -89,7 +89,8 @@
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-1.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
-<meta property="og:updated_time" content="2024-11-21T17:41:31.030Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-Algorithm.png">
+<meta property="og:updated_time" content="2024-11-23T02:57:21.668Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——IQL">
 <meta name="twitter:description" content="参考链接 原始论文：ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning       IQL的基本思想 常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题 采样方面使用了AWR（Advantag">
@@ -474,10 +475,46 @@
 </ul>
 </li>
 <li>注意，策略学习时Q值收敛以后进行的(Q和V是交替更新)，Q值学习和策略学习是串行的，且Q值学习彻底完成以后才进行策略学习，并不是交替进行</li>
+<li>思考：使用期望回归学到的V值是\(V^{\pi^*} = max_a Q_{\hat{\theta}}(s,a)\)，为什么可以用最优的V值来更新策略\(Q_{\theta’}(s, a) - V_\psi(s)\)？<ul>
+<li>这种做法是可以的，符合优势函数的定义，因为优势函数的定义也是\(A^\pi(s,a) = Q^\pi(s,a) - V^\pi(s)\)</li>
+<li>虽然此时的V值是\(max_a Q_{\hat{\theta}}(s,a)\)，但是\(Q_{\theta’}(s, a) - V_\psi(s)\)依然可以对动作的好坏进行区分。实际上，只要可以保证动作越好，优势函数越大即可，即使所有动作都是负的或者都是正的也没问题，因为策略的实现是一个softmax，大家都降低的时候，降的少的动作上对一个的概率自然会提升</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL更新总结"><a href="#IQL更新总结" class="headerlink" title="IQL更新总结"></a>IQL更新总结</h4><ul>
+<li>伪代码  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png">
+<ul>
+<li>说明，这里面最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标</li>
+<li>作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a>  </li>
+</ul>
+</li>
 </ul>
 <hr>
 <h3 id="附录：为什么AWR和策略梯度法损失函数不同？"><a href="#附录：为什么AWR和策略梯度法损失函数不同？" class="headerlink" title="附录：为什么AWR和策略梯度法损失函数不同？"></a>附录：为什么AWR和策略梯度法损失函数不同？</h3><ul>
-<li>AWR是\(exp(\beta(Q(s,a)-V(s)))\log\pi(a|s)\)，策略梯度法是\((Q(s,a)-V(s))\log\pi(a|s)\)</li>
+<li>副标题：不同AC框架算法策略更新公式对比分析，为什么相同的目标推导出来完全不同的更新公式？</li>
+<li>问题补充：<ul>
+<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
+<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
+<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
+<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
+<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R^{\mathcal{D}}(s,a)-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
+</ul>
+</li>
+<li>基本推导思路总结：<ul>
+<li><strong>策略梯度法</strong>：推导是直接从最初目标出发，视图求最初目标相对策略的梯度</li>
+<li><strong>PPO</strong>：更新公式是从策略提升的视角出发得到梯度提升的目标，通过限制策略变化幅度和重要性采样分别将未知策略的状态和动作采样的问题切换到已知策略</li>
+<li><strong>DDPG</strong>：直接以最大化Q值为目标来更新，可直接传导策略梯度</li>
+<li><strong>SAC</strong>：的目标中增加了熵，可以看成是DDPG的增加熵的版本</li>
+<li><strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>：更新公式都是相同的形式，是从策略提升的视角出发得到梯度提升的目标，并对该目标进行推导，得到最终的最优策略形式，再带入最优策略形式，从而得到更新公式</li>
+</ul>
+</li>
+<li>也就是说，<strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>这三个方法的目标是为了<strong>策略提升量最大化</strong>，而<strong>策略梯度法</strong>的目标是为了原始目标最大化（梯度提升法）</li>
+</ul>
+<hr>
+<h3 id="TODO"><a href="#TODO" class="headerlink" title="TODO"></a>TODO</h3><ul>
+<li>做一个分析，将所有算法的伪代码都展开到PPT图片中，方便查看</li>
 </ul>
 
       
@@ -509,8 +546,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——CQL.html" rel="next" title="RL——CQL">
-                <i class="fa fa-chevron-left"></i> RL——CQL
+              <a href="/Notes/RL/RL——BCQ.html" rel="next" title="RL——BCQ">
+                <i class="fa fa-chevron-left"></i> RL——BCQ
               </a>
             
           </div>
@@ -519,8 +556,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——BCQ.html" rel="prev" title="RL——BCQ">
-                RL——BCQ <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——CQL.html" rel="prev" title="RL——CQL">
+                RL——CQL <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -662,7 +699,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于期望回归的Q值学习"><span class="nav-number">4.2.</span> <span class="nav-text">基于期望回归的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的Q值学习"><span class="nav-number">4.3.</span> <span class="nav-text">IQL的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的策略学习"><span class="nav-number">4.4.</span> <span class="nav-text">IQL的策略学习</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：为什么AWR和策略梯度法损失函数不同？"><span class="nav-number">5.</span> <span class="nav-text">附录：为什么AWR和策略梯度法损失函数不同？</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于期望回归的Q值学习"><span class="nav-number">4.2.</span> <span class="nav-text">基于期望回归的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的Q值学习"><span class="nav-number">4.3.</span> <span class="nav-text">IQL的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的策略学习"><span class="nav-number">4.4.</span> <span class="nav-text">IQL的策略学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL更新总结"><span class="nav-number">4.5.</span> <span class="nav-text">IQL更新总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：为什么AWR和策略梯度法损失函数不同？"><span class="nav-number">5.</span> <span class="nav-text">附录：为什么AWR和策略梯度法损失函数不同？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TODO"><span class="nav-number">6.</span> <span class="nav-text">TODO</span></a></li></ol></div>
             
 
           </div>

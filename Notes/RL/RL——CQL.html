@@ -91,7 +91,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
-<meta property="og:updated_time" content="2024-11-21T15:05:58.987Z">
+<meta property="og:updated_time" content="2024-11-23T02:56:20.922Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——CQL">
 <meta name="twitter:description" content="参考链接： 原始论文：NIPS 2020, Conservative q-learning for offline reinforcement learning   【论文分享】Conservative Q-Learning for Offline Reinforcement Learning      Conservative Q-Learning for Offline Reinforc">
@@ -517,6 +517,14 @@ $$ -->
 <li>回到最初的问题：我们令\(\alpha=1\)即可退回到原始问题</li>
 </ul>
 <hr>
+<h3 id="附录：最优策略形式的使用方式"><a href="#附录：最优策略形式的使用方式" class="headerlink" title="附录：最优策略形式的使用方式"></a>附录：最优策略形式的使用方式</h3><ul>
+<li>到这里以后，已经得到了最优策略的一般形式，但是求解归一化值本身复杂度较高，难以直接使用（为什么不能直接使用？），如果想要用神经网络去表示策略，实际上还可以进一步推导</li>
+<li>不同的算法，目标函数不同，推导得到的结果也不同。</li>
+<li>对于CQL来说，由于目标是两步min max，需要进一步将最优解带入原始目标进行求解</li>
+<li>对于<a href="https://arxiv.org/pdf/1910.00177.pdf" target="_blank" rel="noopener">AWR</a>，<a href="https://arxiv.org/pdf/2006.09359" target="_blank" rel="noopener">AWAC</a>和IQL(复用了AWR方法)等论文，这里会直接使用一个神经网络去拟合策略，并尝试求这个策略的参数更新公式<br>$$<br>\begin{align}<br>\theta^* &amp;= \mathop{\arg\min}_{\theta} D_{\mathrm{KL}}(\mu^*(\mathbf{x}) | \pi_\theta(\mathbf{x})) \\<br>&amp;= \mathop{\arg\min}_{\theta}  D_{\mathrm{KL}}\Big( \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) | \pi_\theta(\mathbf{x})\Big) \\<br>&amp;= \mathop{\arg\min}_{\theta}  \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{ \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))} {\pi_\theta(\mathbf{x})} \\<br>&amp;= \mathop{\arg\min}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\min}_{\theta} - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \quad \quad \text{Z与策略参数\theta无关，可以消掉} \\<br>&amp;= \mathop{\arg\max}_{\theta} \mathbb{E}_{\mathbf{x} \sim \rho(\mathbf{x})} \Big[\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \Big] \\<br>\end{align}<br>$$</li>
+<li>此时，最优解求解目标变成了从已知策略\(\rho(\mathbf{x} )\)中采样，并最大化\(\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x})\)即可，此时的目标是可以直接对策略求梯度的，非常容易迭代</li>
+</ul>
+<hr>
 <h3 id="附录：证明logsumexp公式"><a href="#附录：证明logsumexp公式" class="headerlink" title="附录：证明logsumexp公式"></a>附录：证明logsumexp公式</h3><ul>
 <li><p>参考：<a href="https://zhuanlan.zhihu.com/p/546193376" target="_blank" rel="noopener">CQL算法logsumexp公式推导</a>  </p>
 </li>
@@ -565,8 +573,8 @@ $$ -->
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/Hadoop/Hadoop——hdfs+dfs和hadoop+fs的区别.html" rel="next" title="Hadoop——hdfs+dfs和hadoop+fs的区别">
-                <i class="fa fa-chevron-left"></i> Hadoop——hdfs+dfs和hadoop+fs的区别
+              <a href="/Notes/RL/RL——IQL.html" rel="next" title="RL——IQL">
+                <i class="fa fa-chevron-left"></i> RL——IQL
               </a>
             
           </div>
@@ -575,8 +583,8 @@ $$ -->
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——IQL.html" rel="prev" title="RL——IQL">
-                RL——IQL <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Others/趣味题——同距运动员.html" rel="prev" title="趣味题——同距运动员">
+                趣味题——同距运动员 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -718,7 +726,7 @@ $$ -->
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些定义"><span class="nav-number">2.1.</span> <span class="nav-text">一些定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回顾贝尔曼算子"><span class="nav-number">2.2.</span> <span class="nav-text">回顾贝尔曼算子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL中使用常规方法"><span class="nav-number">2.3.</span> <span class="nav-text">Offline RL中使用常规方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一：打压未知动作的Q值"><span class="nav-number">2.4.</span> <span class="nav-text">改进一：打压未知动作的Q值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二：打压补偿"><span class="nav-number">2.5.</span> <span class="nav-text">改进二：打压补偿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三：CQL-mathcal-R"><span class="nav-number">2.6.</span> <span class="nav-text">改进三：CQL(\(\mathcal{R}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进四：CQL-mathcal-rho"><span class="nav-number">2.7.</span> <span class="nav-text">改进四：CQL(\(\mathcal{\rho}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进五：CQL-mathcal-H"><span class="nav-number">2.8.</span> <span class="nav-text">改进五：CQL(\(\mathcal{H}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CQL伪代码"><span class="nav-number">2.9.</span> <span class="nav-text">CQL伪代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实践说明"><span class="nav-number">2.10.</span> <span class="nav-text">实践说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些说明和思考"><span class="nav-number">3.</span> <span class="nav-text">一些说明和思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明约束优化问题"><span class="nav-number">4.</span> <span class="nav-text">附录：证明约束优化问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明logsumexp公式"><span class="nav-number">5.</span> <span class="nav-text">附录：证明logsumexp公式</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些定义"><span class="nav-number">2.1.</span> <span class="nav-text">一些定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回顾贝尔曼算子"><span class="nav-number">2.2.</span> <span class="nav-text">回顾贝尔曼算子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL中使用常规方法"><span class="nav-number">2.3.</span> <span class="nav-text">Offline RL中使用常规方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一：打压未知动作的Q值"><span class="nav-number">2.4.</span> <span class="nav-text">改进一：打压未知动作的Q值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二：打压补偿"><span class="nav-number">2.5.</span> <span class="nav-text">改进二：打压补偿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三：CQL-mathcal-R"><span class="nav-number">2.6.</span> <span class="nav-text">改进三：CQL(\(\mathcal{R}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进四：CQL-mathcal-rho"><span class="nav-number">2.7.</span> <span class="nav-text">改进四：CQL(\(\mathcal{\rho}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进五：CQL-mathcal-H"><span class="nav-number">2.8.</span> <span class="nav-text">改进五：CQL(\(\mathcal{H}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CQL伪代码"><span class="nav-number">2.9.</span> <span class="nav-text">CQL伪代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实践说明"><span class="nav-number">2.10.</span> <span class="nav-text">实践说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些说明和思考"><span class="nav-number">3.</span> <span class="nav-text">一些说明和思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明约束优化问题"><span class="nav-number">4.</span> <span class="nav-text">附录：证明约束优化问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：最优策略形式的使用方式"><span class="nav-number">5.</span> <span class="nav-text">附录：最优策略形式的使用方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明logsumexp公式"><span class="nav-number">6.</span> <span class="nav-text">附录：证明logsumexp公式</span></a></li></ol></div>
             
 
           </div>
