@@ -91,7 +91,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
-<meta property="og:updated_time" content="2024-11-23T02:56:20.922Z">
+<meta property="og:updated_time" content="2024-11-23T11:46:20.468Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——CQL">
 <meta name="twitter:description" content="参考链接： 原始论文：NIPS 2020, Conservative q-learning for offline reinforcement learning   【论文分享】Conservative Q-Learning for Offline Reinforcement Learning      Conservative Q-Learning for Offline Reinforc">
@@ -452,7 +452,8 @@ $$
 $$ -->
 
 <h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
-<li>伪代码流程<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"></li>
+<li>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="70%" width="70%">
+<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> --></li>
 <li>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \arg\max_a Q(s,a)\)作为最终的策略</li>
 <li>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</li>
 </ul>
@@ -518,9 +519,16 @@ $$ -->
 </ul>
 <hr>
 <h3 id="附录：最优策略形式的使用方式"><a href="#附录：最优策略形式的使用方式" class="headerlink" title="附录：最优策略形式的使用方式"></a>附录：最优策略形式的使用方式</h3><ul>
-<li>到这里以后，已经得到了最优策略的一般形式，但是求解归一化值本身复杂度较高，难以直接使用（为什么不能直接使用？），如果想要用神经网络去表示策略，实际上还可以进一步推导</li>
-<li>不同的算法，目标函数不同，推导得到的结果也不同。</li>
-<li>对于CQL来说，由于目标是两步min max，需要进一步将最优解带入原始目标进行求解</li>
+<li>从上面的证明，我们已经得到了最优策略的一般形式\(\mu^{*}(\mathbf{x})=\frac{\rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))}{\sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))} \)，但这个形式难以直接使用<ul>
+<li>难以直接使用的原因（个人理解）：<ul>
+<li>离线强化场景中\(\rho\)未知，无法直接使用；</li>
+<li>在线强化学习场景中，难以用于状态维度高或动作空间大（包括连续状态或动作）的场景。状态和动作空间有限时，\(\rho\)是上一布步的策略或者历史混合策略\(f(\mathbf{x})\)一般是\(A^\rho(s,a)\)，理论上如果按照on-policy更新或者记录policy和样本以后按照off-policy更新均可，但是实际更新时，这种非参数化的策略，不同状态的策略是隔离的（没有状态泛化能力），针对每个状态都要更行才能做到该状态上的策略迭代\(\mu^{*}(\mathbf{a|s})=\frac{\rho(\mathbf{a|s}) \exp (\frac{1}{\alpha}f(\mathbf{a|s}))}{\sum_{\mathbf{a}} \rho(\mathbf{a|s}) \exp (\frac{1}{\alpha}f(\mathbf{a|s}))} \)，相当于每次迭代需要收集大量的样本才能足够更新各个状态上的效果，否则在下一轮中遇到其他状态时，这里相当于没有被更新。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>一般来说，可以用神经网络去表示策略，实际上还可以进一步推导，不同的算法，目标函数不同，推导得到的结果也不同。</li>
+<li>对于CQL来说，由于目标是两步min max，需要进一步将最优解带入原始目标得到最终的目标</li>
 <li>对于<a href="https://arxiv.org/pdf/1910.00177.pdf" target="_blank" rel="noopener">AWR</a>，<a href="https://arxiv.org/pdf/2006.09359" target="_blank" rel="noopener">AWAC</a>和IQL(复用了AWR方法)等论文，这里会直接使用一个神经网络去拟合策略，并尝试求这个策略的参数更新公式<br>$$<br>\begin{align}<br>\theta^* &amp;= \mathop{\arg\min}_{\theta} D_{\mathrm{KL}}(\mu^*(\mathbf{x}) | \pi_\theta(\mathbf{x})) \\<br>&amp;= \mathop{\arg\min}_{\theta}  D_{\mathrm{KL}}\Big( \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) | \pi_\theta(\mathbf{x})\Big) \\<br>&amp;= \mathop{\arg\min}_{\theta}  \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{ \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))} {\pi_\theta(\mathbf{x})} \\<br>&amp;= \mathop{\arg\min}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\min}_{\theta} - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \quad \quad \text{Z与策略参数\theta无关，可以消掉} \\<br>&amp;= \mathop{\arg\max}_{\theta} \mathbb{E}_{\mathbf{x} \sim \rho(\mathbf{x})} \Big[\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \Big] \\<br>\end{align}<br>$$</li>
 <li>此时，最优解求解目标变成了从已知策略\(\rho(\mathbf{x} )\)中采样，并最大化\(\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x})\)即可，此时的目标是可以直接对策略求梯度的，非常容易迭代</li>
 </ul>
@@ -539,7 +547,7 @@ $$ -->
 </li>
 <li><p>补充问题：为什么CQL(\(\mathcal{\rho}\))中可以直接消掉\(\mathcal{R}(\mu)\)，但是CQL(\(\mathcal{H}\))中不行？</p>
 <ul>
-<li>理论上，CQL(\(\mathcal{\rho}\))中不能直接消掉\(\mathcal{R}(\mu)\)，CQL(\(\mathcal{H}\))中推导才是对的，论文中没有提这一点</li>
+<li>理论上，CQL(\(\mathcal{\rho}\))中不能直接消掉\(\mathcal{R}(\mu)\)，CQL(\(\mathcal{H}\))中推导才是对的，论文中没有提这一点，实际上，把\(\mathcal{R}(\mu)\)从目标挪到约束上\(\mathcal{R}(\mu) \le \epsilon\)，最终推导的结果可以没有\(\mathcal{R}(\mu)\)，指数权重上会有个温度系数（因为新增约束引入的拉格朗日乘子）</li>
 </ul>
 </li>
 </ul>
