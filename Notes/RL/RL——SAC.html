@@ -90,7 +90,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-2V-2Q-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——SAC/SAC-Learned-Temperature.png">
-<meta property="og:updated_time" content="2024-11-21T01:10:28.623Z">
+<meta property="og:updated_time" content="2024-11-23T15:03:21.233Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——SAC">
 <meta name="twitter:description" content="参考链接： 强化学习之图解SAC算法       Soft Actor Critic算法论文公式详解        SAC 原始论文： 论文1（2V+2Q+1策略, 2018，UC Berkeley）：Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Ac">
@@ -350,11 +350,11 @@
 </li>
 </ul>
 <h4 id="相关推导"><a href="#相关推导" class="headerlink" title="相关推导"></a>相关推导</h4><ul>
-<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
+<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(\cdot \vert s_t))] $$<ul>
 <li>这里目标中增加的熵就是Soft名字的来源</li>
 </ul>
 </li>
-<li>Q值V值定义<br>$$<br>\begin{aligned}<br>Q(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V(s_{t+1})] \\<br>V(s_t) &amp;= E_{a_t \sim \pi} [Q(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>\end{aligned}<br>$$</li>
+<li>Q值V值定义<br>$$<br>\begin{aligned}<br>Q(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(\cdot|s_t,a_t)} [V(s_{t+1})] \\<br>V(s_t) &amp;= E_{a_t \sim \pi} [Q(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>\end{aligned}<br>$$</li>
 </ul>
 <h4 id="SAC-2V-2Q-1策略"><a href="#SAC-2V-2Q-1策略" class="headerlink" title="SAC(2V+2Q+1策略)"></a>SAC(2V+2Q+1策略)</h4><ul>
 <li>原始论文：<a href="https://arxiv.org/pdf/1801.01290" target="_blank" rel="noopener">Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor</a>       <ul>
@@ -377,10 +377,10 @@
 </li>
 </ul>
 <h5 id="Soft-Policy-Evaluation"><a href="#Soft-Policy-Evaluation" class="headerlink" title="Soft Policy Evaluation"></a>Soft Policy Evaluation</h5><ul>
-<li>V值更新：<br>  $$<br>  \begin{aligned}<br>  J_V(\psi) &amp;= E_{s_t \sim \mathcal{D}} [\frac{1}{2} \big(V_\psi(s_t) - E[Q_w(s_t, a_t) - \log \pi_\phi(a_t \vert s_t)] \big)^2] \\<br>  \nabla_\psi J_V(\psi) &amp;= \nabla_\psi V_\psi(s_t)\big( V_\psi(s_t) - Q_w(s_t, a_t) + \log \pi_\phi (a_t \vert s_t) \big)<br>  \end{aligned}<br>  $$</li>
-<li>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_\pi(s)}[V_{\bar{\psi}}(s_{t+1})]) \big)^2] \\<br>  \nabla_w J_Q(w) &amp;= \nabla_w Q_w(s_t, a_t) \big( Q_w(s_t, a_t) - r(s_t, a_t) - \gamma V_{\bar{\psi}}(s_{t+1})\big)<br>  \end{aligned}<br>  $$<ul>
+<li>V值更新：<br>  $$<br>  \begin{aligned}<br>  J_V(\psi) &amp;= E_{s_t \sim \mathcal{D}} [\frac{1}{2} \big(V_\psi(s_t) - \mathbb{E}_{a_t \sim \pi_\phi}[Q_\theta(s_t, a_t) - \log \pi_\phi(a_t \vert s_t)] \big)^2] \\<br>  \nabla_\psi J_V(\psi) &amp;= \nabla_\psi V_\psi(s_t)\big( V_\psi(s_t) - Q_\theta(s_t, a_t) + \log \pi_\phi (a_t \vert s_t) \big)<br>  \end{aligned}<br>  $$</li>
+<li>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(\theta) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_\theta(s_t, a_t) - (r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(\cdot|s_t,a_t)}[V_{\bar{\psi}}(s_{t+1})]) \big)^2] \\<br>  \nabla_\theta J_Q(\theta) &amp;= \nabla_\theta Q_\theta(s_t, a_t) \big( Q_\theta(s_t, a_t) - r(s_t, a_t) - \gamma V_{\bar{\psi}}(s_{t+1})\big)<br>  \end{aligned}<br>  $$<ul>
 <li><strong>策略评估（Q值和V值的更新过程统称为策略评估过程）的收敛性证明</strong>：<ul>
-<li>定义回报为\(r_\pi(s_t, a_t) \triangleq r(s_t, a_t) + \alpha E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[\mathcal{H}(\pi(\cdot\vert s_{t+1}))]\)（注意：其中\(p(s_{t+1}|s_t,a_t)\)在论文中常简写为\(p\)）</li>
+<li>定义回报为\(r_\pi(s_t, a_t) \triangleq r(s_t, a_t) + \alpha E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[\mathcal{H}(\pi(\cdot\vert s_{t+1}))]\)（注意：其中\(p(s_{t+1}|s_t,a_t)\)在论文中常简写为\(p\)或\(p(\cdot|s_t,a_t)\)，在不影响理解的情况下，可以混用）</li>
 <li>则有：\(Q(s_t, a_t) = r_\pi(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t), a_{t+1}\sim\pi}[Q(s_{t+1},a_{t+1})]\)</li>
 <li>此时有贝尔曼算子（Bellman backup operator） \(\mathcal{T}^\pi\)为：\(\mathcal{T}^\pi Q(s_t, a_t) \triangleq r(s_t, a_t) + \gamma E_{s_{t+1}\sim p(s_{t+1}|s_t,a_t)}[V(s_{t+1})]\)<ul>
 <li>其中\(V(s_{t}) = E_{a_t \sim \pi}[Q(s_t, a_t) - log\pi(a_t|s_t)]\)</li>
@@ -404,20 +404,25 @@
 </li>
 </ul>
 <h5 id="Soft-Policy-Improvement"><a href="#Soft-Policy-Improvement" class="headerlink" title="Soft Policy Improvement"></a>Soft Policy Improvement</h5><ul>
-<li><p>策略更新目标推导（新策略本质是在拟合函数Q的玻尔兹曼分布，后续有相关证明这种方式得到的新策略一定优于旧策略）：<br>  $$<br>  \begin{aligned}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi’(.\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, .) - \log Z^{\pi_\text{old}}(s_t)) \big) \Big] \\[6pt]<br>  \text{目标函数: } J_\pi(\phi) &amp;= E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi_\phi(. \vert s_t) | \exp(Q_w(s_t, .) - \log Z_w(s_t)) \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi} \Big[ \log \big( \frac{\pi_\phi(a_t \vert s_t)}{\exp(Q_w(s_t, a_t) - \log Z_w(s_t))} \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi} [ \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) + \log Z_w(s_t) ]<br>  \end{aligned}<br>  $$</p>
+<li><p>策略更新目标推导（新策略本质是在拟合函数Q的玻尔兹曼分布，后续有相关证明这种方式得到的新策略一定优于旧策略）：<br>  $$<br>  \begin{aligned}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \Big( \pi’(\cdot\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, \cdot))}{Z^{\pi_\text{old}}(s_t)} \Big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi’(\cdot\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, \cdot) - \log Z^{\pi_\text{old}}(s_t)) \big) \Big] \\[6pt]<br>  \text{目标函数: } J_\pi(\phi) &amp;= E_{s_t \sim \mathcal{D}} \Big[ D_\text{KL} \big( \pi_\phi(\cdot\vert s_t) | \exp(Q_\theta(s_t, \cdot) - \log Z_w(s_t)) \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi_\phi} \Big[ \log \big( \frac{\pi_\phi(a_t \vert s_t)}{\exp(Q_\theta(s_t, a_t) - \log Z_w(s_t))} \big) \Big] \\[6pt]<br>  &amp;= E_{s_t \sim \mathcal{D}, a_t\sim\pi_\phi} [ \log \pi_\phi(a_t \vert s_t) - Q_\theta(s_t, a_t) + \log Z_w(s_t) ]<br>  \end{aligned}<br>  $$</p>
 <ul>
 <li>Lemma 2 (Soft Policy Improvement)，详细证明见附录：<ul>
-<li>若新策略\(\pi_\text{new}\)定义为\(<br>\pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big)\)</li>
+<li>若新策略\(\pi_\text{new}\)定义为\(<br>\pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(\cdot\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, \cdot))}{Z^{\pi_\text{old}}(s_t)} \Big)\)</li>
 <li>则有\(Q^{\pi_\text{new}}(s_t, a_t) \ge Q^{\pi_\text{old}}(s_t, a_t), \quad \forall (s_t, a_t) \in \mathcal{S} \times \mathcal{A}\)</li>
 </ul>
 </li>
 </ul>
 </li>
-<li><p>由于\(\log Z_w(s_t)\)与参数\(\phi\)无关，梯度为0，故而可以消掉\(\log Z_w(s_t)\)，最终得到<strong>SAC离散策略的的更新目标</strong>：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi_\phi} [ \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) ]<br>  $$</p>
+<li><p>由于\(\log Z_w(s_t)\)与参数\(\phi\)无关，梯度为0，故而可以消掉\(\log Z_w(s_t)\)，最终得到<strong>SAC离散策略的的更新目标</strong>（实现时，离散版本是可以直接按照动作概率加权求和得到期望的）：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi_\phi} [ \log \pi_\phi(a_t \vert s_t) - Q_\theta(s_t, a_t) ]<br>  $$</p>
 </li>
 <li><p><strong>SAC连续动作的策略更新目标</strong>，首先需要采用重参数法建模连续动作\(a_t = f_\phi(\epsilon_t; s_t)\)，然后有：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t))]<br>  $$</p>
 <ul>
-<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数</li>
+<li>\(f_\phi(\epsilon_t;s_t)\)是中按照策略\(\pi_\phi\)输出的均值方差通过采样（重参数化技术）得到的，可以回传梯度</li>
+<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数，也可以回传梯度，注意这里的梯度回传包含了\(\pi_\phi\)和\(f_\phi\)都需要回传回去，由于只需要定义一个\(f_\phi\)后，\(\pi_\phi\)自然也就被定义出来了，无需重新定义参数，所以\(\pi_\phi\)和\(f_\phi\)共用了参数</li>
+<li>上述损失函数的近似梯度（移除期望）可以是：<br>$$ \hat{\nabla}_\phi J_\pi(\phi) = \nabla_\phi \log \pi_\phi(\mathbf{a_t} \vert s_t) + (\nabla_{\mathbf{a_t}} \log \pi_\phi(\mathbf{a_t} \vert s_t) - \nabla_{\mathbf{a_t}} Q(s_t, \mathbf{a_t})) \nabla_\phi f_\phi(\epsilon_t; s_t) $$<ul>
+<li>论文中伪代码没有显示指定\(\nabla_{\mathbf{a_t}} Q(s_t, \mathbf{a_t})\)中的Q是什么值，实际上实现时，使用的是Twin Q的最小值</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -442,13 +447,19 @@
 </li>
 <li><p>训练流程</p>
 <img src="/Notes/RL/RL——SAC/SAC-4Q-Algorithm.png"></li>
-<li><p>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(w) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_w(s_t, a_t) - (r(s_t, a_t) + \gamma (Q_\bar{w}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_t \vert s_t))) \big)^2] \\<br>  \end{aligned}<br>  $$</p>
+<li><p>Q值更新：<br>  $$<br>  \begin{aligned}<br>  J_Q(\theta) &amp;= E_{(s_t, a_t) \sim \mathcal{D}} [\frac{1}{2}\big( Q_\theta(s_t, a_t) - (r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim p, a_{t+1} \sim \pi_\phi}(Q_\bar{\theta}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_{t+1} \vert s_{t+1}))) \big)^2] \\<br>  \end{aligned}<br>  $$</p>
+<ul>
+<li>论文中没有明确，但实际实现时，\(Q_\bar{\theta}(s_{t+1}, a_{t+1})\)使用的是Twin Q中的较小值</li>
+</ul>
 </li>
 <li><p>策略更新（在前一篇文章的基础上，增加\(\alpha\)即可）：</p>
 <ul>
-<li><strong>SAC离散策略的的更新目标</strong>：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi} [ \alpha \log \pi_\phi(a_t \vert s_t) - Q_w(s_t, a_t) ]<br>  $$</li>
-<li><strong>SAC连续动作的策略更新目标</strong>，首先需要采用重参数法建模连续动作\(a_t = f_\phi(\epsilon_t; s_t)\)，然后有：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\alpha \log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t))]<br>  $$<ul>
-<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数</li>
+<li><strong>SAC离散策略的的更新目标</strong>：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, a_t\sim\pi_\phi} [ \alpha \log \pi_\phi(a_t \vert s_t) - Q_\theta(s_t, a_t) ]<br>  $$</li>
+<li><strong>SAC连续动作的策略更新目标</strong>，首先需要采用重参数法建模连续动作\(a_t = f_\phi(\epsilon_t; s_t)\)，然后有：<br>  $$<br>  J_\pi(\phi) = E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\alpha \log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t))]<br>  $$</li>
+<li>\(f_\phi(\epsilon_t;s_t)\)是中按照策略\(\pi_\phi\)输出的均值方差通过采样（重参数化技术）得到的，可以回传梯度</li>
+<li>\(\log \pi_\phi(f_\phi(\epsilon_t;s_t)\vert s_t)\)是概率密度函数\(\pi_\phi(\cdot|s_t)\)的对数，也可以回传梯度，注意这里的梯度回传包含了\(\pi_\phi\)和\(f_\phi\)都需要回传回去，由于只需要定义一个\(f_\phi\)后，\(\pi_\phi\)自然也就被定义出来了，无需重新定义参数，所以\(\pi_\phi\)和\(f_\phi\)共用了参数</li>
+<li>上述损失函数的近似梯度（移除期望）可以是：<br>$$ \hat{\nabla}_\phi J_\pi(\phi) = \nabla_\phi \alpha \log \pi_\phi(\mathbf{a_t} \vert s_t) + (\nabla_{\mathbf{a_t}} \alpha \log \pi_\phi(\mathbf{a_t} \vert s_t) - \nabla_{\mathbf{a_t}} Q(s_t, \mathbf{a_t})) \nabla_\phi f_\phi(\epsilon_t; s_t) $$<ul>
+<li>论文中伪代码没有显示指定\(\nabla_{\mathbf{a_t}} Q(s_t, \mathbf{a_t})\)中的Q是什么值，实际上实现时，使用的是Twin Q的最小值</li>
 </ul>
 </li>
 </ul>
@@ -550,12 +561,12 @@
 <hr>
 <h3 id="附录：新策略一定优于旧策略的证明"><a href="#附录：新策略一定优于旧策略的证明" class="headerlink" title="附录：新策略一定优于旧策略的证明"></a>附录：新策略一定优于旧策略的证明</h3><ul>
 <li>证明目标（Lemma 2 (Soft Policy Improvement)）：<ul>
-<li>若新策略\(\pi_\text{new}\)定义为:<br>  $$<br>  \pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big)<br>  $$</li>
+<li>若新策略\(\pi_\text{new}\)定义为:<br>  $$<br>  \pi_\text{new} = \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(\cdot\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, \cdot))}{Z^{\pi_\text{old}}(s_t)} \Big)<br>  $$</li>
 <li>则有：<br>  $$<br>  Q^{\pi_\text{new}}(s_t, a_t) \ge Q^{\pi_\text{old}}(s_t, a_t), \quad \forall (s_t, a_t) \in \mathcal{S} \times \mathcal{A}<br>  $$</li>
 </ul>
 </li>
 <li>证明：<ul>
-<li>由之前的定义我们有：<br>  $$<br>  \begin{align}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(.\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, .))}{Z^{\pi_\text{old}}(s_t)} \Big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \big( \pi’(.\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, .) - \log Z^{\pi_\text{old}}(s_t)) \big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} \Big[ \log \big( \frac{\pi’(a_t \vert s_t)}{\exp(Q^{\pi_\text{old}}(s_t, a_t) - \log Z^{\pi_\text{old}}(s_t))} \big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} [ \log \pi’(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ]<br>  \end{align}<br>  $$</li>
+<li>由之前的定义我们有：<br>  $$<br>  \begin{align}<br>  \pi_\text{new}<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \Big( \pi’(\cdot\vert s_t) | \frac{\exp(Q^{\pi_\text{old}}(s_t, \cdot))}{Z^{\pi_\text{old}}(s_t)} \Big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} D_\text{KL} \big( \pi’(\cdot\vert s_t) | \exp(Q^{\pi_\text{old}}(s_t, \cdot) - \log Z^{\pi_\text{old}}(s_t)) \big) \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} \Big[ \log \big( \frac{\pi’(a_t \vert s_t)}{\exp(Q^{\pi_\text{old}}(s_t, a_t) - \log Z^{\pi_\text{old}}(s_t))} \big) \Big] \\[6pt]<br>  &amp;= \arg\min_{\pi’ \in \Pi} E_{a_t\sim\pi’} [ \log \pi’(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ]<br>  \end{align}<br>  $$</li>
 <li>于是有:<br>  $$<br>  E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ] \le E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t) + \log Z^{\pi_\text{old}}(s_t) ]<br>  $$</li>
 <li>由于\(\log Z^{\pi_\text{old}}(s_t)\)与策略无关，仅与状态有关，所以可以消掉，于是有：<br>  $$<br>  \begin{align}<br>  E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] &amp;\le E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] \\<br>  - E_{a_t\sim\pi_\text{new}} [ \log \pi_\text{new}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] &amp;\ge - E_{a_t\sim\pi_\text{old}} [ \log \pi_\text{old}(a_t \vert s_t) - Q^{\pi_\text{old}}(s_t, a_t)] \\<br>  E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)] &amp;\ge E_{a_t\sim\pi_\text{old}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{old}(a_t \vert s_t) ] \\<br>  E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)] &amp;\ge V^{\pi_\text{old}}(s_t)\\<br>  \end{align}<br>  $$</li>
 <li>于是，将\(Q^{\pi_\text{old}}(s_t, a_t)\)展开后，并将上面的式子\(V^{\pi_\text{old}}(s_t) \le E_{a_t\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_t, a_t) - \log \pi_\text{new}(a_t \vert s_t)]\)不断地带入下面的式子有：<br>  $$<br>  \begin{align}<br>  Q^{\pi_\text{old}}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p} [V^{\pi_\text{old}}(s_t)] \\<br>  &amp;\le r(s_t, a_t) + \gamma E_{s_{t+1} \sim p} \big[E_{a_{t+1}\sim\pi_\text{new}} [Q^{\pi_\text{old}}(s_{t+1}, a_{t+1}) - \log \pi_\text{new}(a_{t+1} \vert s_{t+1})]\big] \\<br>  &amp;\cdots \\<br>  &amp;\le Q^{\pi_\text{new}}(s_t, a_t)<br>  \end{align} \\<br>  $$<ul>
@@ -623,8 +634,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="next" title="RL——TRPO">
-                <i class="fa fa-chevron-left"></i> RL——TRPO
+              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="next" title="RL——TD误差和优势函数的区别">
+                <i class="fa fa-chevron-left"></i> RL——TD误差和优势函数的区别
               </a>
             
           </div>
@@ -633,8 +644,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——TD误差和优势函数的区别.html" rel="prev" title="RL——TD误差和优势函数的区别">
-                RL——TD误差和优势函数的区别 <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——DDPG和TD3.html" rel="prev" title="RL——DDPG和TD3">
+                RL——DDPG和TD3 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

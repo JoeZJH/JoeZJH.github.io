@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——MCMC采样.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——MCMC采样.html" itemprop="url">ML——MCMC采样</a></h1>
         
 
         <div class="post-meta">
@@ -330,62 +330,150 @@
       
         
           
-            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
-<hr>
-<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
-<li>学得的模型能适用于训练过程中从未观察到的数据</li>
-<li>也就是说:测试集未知</li>
+            <p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
+<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
 </ul>
-<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
-<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
-<li>也就是说:测试集就是训练时观察到的未标记数据</li>
-</ul>
 <hr>
-<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
-<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
-<li>都是迭代扩充标记数据集的算法:<ul>
-<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
+<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
+<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
+</ul>
+<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
+<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
+</ul>
+<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
+<ul>
+<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
+<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
+<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
 </ul>
 </li>
 </ul>
-<hr>
-<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
-<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
-<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
+<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
+<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
+<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
+<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
+<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
+<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
 </ul>
-<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
-<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
-<li>半监督学习和主动学习的测试集都是未知数据</li>
-<li>半监督学习是基于”开放世界”假设的</li>
-<li>直推学习是基于”封闭世界”假设的</li>
+</li>
+<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
 </ul>
 <hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
-
-<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
-<thead>
-<tr>
-<th align="left">学习算法</th>
-<th align="center">是否需要专家知识(人工)</th>
-<th align="center">是否具有泛化性</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">半监督学习</td>
-<td align="center">否</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">主动学习</td>
-<td align="center">是</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">直推学习</td>
-<td align="center">否</td>
-<td align="center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
-</tr>
-</tbody></table>
+<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
+<li>对于原始目标分布\(p(x)\)</li>
+<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
+<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
+</ul>
+</li>
+<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
+<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
+</ul>
+</li>
+</ul>
+<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li>随机选取初始样本x^{0}</li>
+<li>for t = 1,2,3,…:<ul>
+<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
+<li>均匀分布采样\(u \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
+</ul>
+</li>
+<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+</ul>
+</li>
+<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></li>
+</ul>
+<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
+<li>MH采样基于拒绝采样来逼近平稳分布</li>
+<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
+<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
+<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
+<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
+</ul>
+</li>
+</ul>
+<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
+<li><p>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</p>
+</li>
+<li><p><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$</p>
+<ul>
+<li>上式为细致平稳分布条件(detailed balance condition)</li>
+<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
+</ul>
+</li>
+<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
+</ul>
+</li>
+<li><p>在MH采样法中</p>
+<ul>
+<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
+<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
+<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
+<li>即可</li>
+</ul>
+</li>
+<li><p>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率</p>
+<ul>
+<li>使用原始接受率的方法称为一般MCMC方法</li>
+<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
+</ul>
+</li>
+<li><p>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$</p>
+<ul>
+<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li><p>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</p>
+</li>
+</ul>
+<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
+<ul>
+<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
+<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
+</ul>
+<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
+<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
+</ul>
+<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li><p>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</p>
+</li>
+<li><p>for t = 1,2,3,…:</p>
+<ul>
+<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
+<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
+</ul>
+</li>
+<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
+</ul>
+</li>
+<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
+<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
+</ul>
+</li>
+<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
+</li>
+</ul>
 
           
         
@@ -491,6 +579,126 @@
           
             <h3 id="KL散度"><a href="#KL散度" class="headerlink" title="KL散度"></a>KL散度</h3><h3 id="TV距离"><a href="#TV距离" class="headerlink" title="TV距离"></a>TV距离</h3><ul>
 <li>参考链接：<a href="https://zhuanlan.zhihu.com/p/352946799" target="_blank" rel="noopener">Total Variation Distance 总变差</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——参数化模型与非参数化模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——参数化模型与非参数化模型.html" itemprop="url">ML——参数化模型与非参数化模型</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍非参数化模型（Non-parametric models）和参数化模型（Parametric models）</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="参数化模型"><a href="#参数化模型" class="headerlink" title="参数化模型"></a>参数化模型</h3><h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><p><strong>参数化模型</strong>指的是那些依赖于固定数量参数的模型，这些参数可以通过训练数据学习得到。参数化模型的特点是一旦参数确定，模型的复杂度也就固定了。</p>
+<h4 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h4><p>参数化模型的例子包括线性回归、逻辑回归、支持向量机（SVM）和神经网络等</p>
+<h3 id="非参数化模型"><a href="#非参数化模型" class="headerlink" title="非参数化模型"></a>非参数化模型</h3><h4 id="定义-1"><a href="#定义-1" class="headerlink" title="定义"></a>定义</h4><p><strong>非参数化模型</strong>则不对模型形式做出严格的假设，也不依赖于固定数量的参数。这类模型通常具有更大的灵活性，可以根据数据的复杂性来适应模型的复杂度。</p>
+<h4 id="举例-1"><a href="#举例-1" class="headerlink" title="举例"></a>举例</h4><p>非参数化模型的例子包括高斯过程回归、决策树、k-最近邻（k-NN）算法、核方法以及各种基于模型的集成方法如随机森林和提升树（Boosting Trees）等</p>
+<h3 id="其他说明"><a href="#其他说明" class="headerlink" title="其他说明"></a>其他说明</h3><ul>
+<li><blockquote>
+<p>尽管神经网络可以拥有大量的参数，使得它们具有高度的灵活性和强大的表达能力，但这些特点并不使其成为非参数化模型。非参数化模型指的是不对模型形式做出严格假设的模型，其参数的数量和模型的复杂度可以随着数据量的增加而增加。因此，即使神经网络在实际应用中可以非常复杂，它们仍然是基于固定参数数量的参数化模型。</p>
+</blockquote>
+</li>
+<li>神经网络越来越复杂，现在参数量已经非常大，实际上可以看做是非参数模型？</li>
 </ul>
 
           
@@ -769,126 +977,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——参数化模型与非参数化模型.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——参数化模型与非参数化模型.html" itemprop="url">ML——参数化模型与非参数化模型</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍非参数化模型（Non-parametric models）和参数化模型（Parametric models）</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="参数化模型"><a href="#参数化模型" class="headerlink" title="参数化模型"></a>参数化模型</h3><h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><p><strong>参数化模型</strong>指的是那些依赖于固定数量参数的模型，这些参数可以通过训练数据学习得到。参数化模型的特点是一旦参数确定，模型的复杂度也就固定了。</p>
-<h4 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h4><p>参数化模型的例子包括线性回归、逻辑回归、支持向量机（SVM）和神经网络等</p>
-<h3 id="非参数化模型"><a href="#非参数化模型" class="headerlink" title="非参数化模型"></a>非参数化模型</h3><h4 id="定义-1"><a href="#定义-1" class="headerlink" title="定义"></a>定义</h4><p><strong>非参数化模型</strong>则不对模型形式做出严格的假设，也不依赖于固定数量的参数。这类模型通常具有更大的灵活性，可以根据数据的复杂性来适应模型的复杂度。</p>
-<h4 id="举例-1"><a href="#举例-1" class="headerlink" title="举例"></a>举例</h4><p>非参数化模型的例子包括高斯过程回归、决策树、k-最近邻（k-NN）算法、核方法以及各种基于模型的集成方法如随机森林和提升树（Boosting Trees）等</p>
-<h3 id="其他说明"><a href="#其他说明" class="headerlink" title="其他说明"></a>其他说明</h3><ul>
-<li><blockquote>
-<p>尽管神经网络可以拥有大量的参数，使得它们具有高度的灵活性和强大的表达能力，但这些特点并不使其成为非参数化模型。非参数化模型指的是不对模型形式做出严格假设的模型，其参数的数量和模型的复杂度可以随着数据量的增加而增加。因此，即使神经网络在实际应用中可以非常复杂，它们仍然是基于固定参数数量的参数化模型。</p>
-</blockquote>
-</li>
-<li>神经网络越来越复杂，现在参数量已经非常大，实际上可以看做是非参数模型？</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型性能评估之MAP.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -947,6 +1035,175 @@
             <p><em>MAP(Mean Average Precision)</em></p>
 <ul>
 <li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——样本不均衡问题处理.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——样本不均衡问题处理.html" itemprop="url">ML——样本不均衡问题处理</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://mp.weixin.qq.com/s/783o94jPRgfkoxbm5n7JYQ" target="_blank" rel="noopener">一文解决样本不均衡（全）</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="样本不均衡问题描述"><a href="#样本不均衡问题描述" class="headerlink" title="样本不均衡问题描述"></a>样本不均衡问题描述</h3><ul>
+<li>问题描述：机器学习中的样本不均衡问题，是指在分类任务中不同类别的训练样例数量存在显著差异的情况。</li>
+<li>场景：包括金融欺诈检测、医疗诊断、网络入侵检测等领域</li>
+</ul>
+<hr>
+<h3 id="样本不均衡的影响"><a href="#样本不均衡的影响" class="headerlink" title="样本不均衡的影响"></a>样本不均衡的影响</h3><ul>
+<li><strong>模型偏向性</strong>：模型倾向于预测label为多数类，因为这样做可以最大化准确率，即使对少数类的预测几乎总是错误的</li>
+<li><strong>过拟合风险</strong>：由于少数类样本数量少，模型容易过拟合这些样本，导致模型在新数据上泛化性差</li>
+<li>总结：<strong>样本不均衡带来的根本影响</strong>是模型会学习到训练集中<strong>样本比例</strong>的这种先验性信息，以致于实际预测时就会对多数类别有侧重（可能导致多数类精度更好，而少数类比较差）通过解决样本不均衡，可以减少模型学习样本比例的先验信息，以获得能学习到辨别好坏本质特征的模型</li>
+</ul>
+<hr>
+<h3 id="哪些情况下需要解决样本不均衡问题"><a href="#哪些情况下需要解决样本不均衡问题" class="headerlink" title="哪些情况下需要解决样本不均衡问题"></a>哪些情况下需要解决样本不均衡问题</h3><ul>
+<li></li>
+</ul>
+<hr>
+<h3 id="评估指标"><a href="#评估指标" class="headerlink" title="评估指标"></a>评估指标</h3><ul>
+<li>不能使用：准确率（Accuracy）</li>
+<li>建议使用：F1分数、精确率（Precision）、召回率（Recall）和AUC等</li>
+</ul>
+<hr>
+<h3 id="解决样本不均衡的方法"><a href="#解决样本不均衡的方法" class="headerlink" title="解决样本不均衡的方法"></a>解决样本不均衡的方法</h3><h4 id="数据层面的方法"><a href="#数据层面的方法" class="headerlink" title="数据层面的方法"></a>数据层面的方法</h4><ul>
+<li><strong>过采样（Over-sampling）</strong>：通过增加少数类样本的数量来缓解不均衡问题。常见的方法包括：<ul>
+<li><strong>随机过采样</strong>：简单地复制少数类样本，容易导致过拟合</li>
+<li><strong>数据增强（Data Augmentation）</strong>：通过变换现有样本生成新的样本，适用于图像（翻转，拉伸等）、文本等数据类型</li>
+<li><strong>SMOTE（Synthetic Minority Over-sampling Technique）</strong>：通过在少数类样本间插值生成新的合成样本，一定程度上可以避免过拟合，但生成的数据置信度也存在问题</li>
+<li><strong>ADASYN（Adaptive Synthetic Sampling）</strong>：通过生成少数类别样本改善不均衡问题，与传统的过采样技术（如SMOTE）相比，ADASYN更注重类间距离和局部密度，尤其是对于少数类中的困难样本或噪声敏感区域，它可以更加精细地调整采样策略，详情可参考：<a href="https://zhuanlan.zhihu.com/p/713121245" target="_blank" rel="noopener">不平衡学习的自适应合成采样方法ADASYN（Matlab代码实现）</a></li>
+</ul>
+</li>
+<li><strong>欠采样（Under-sampling）</strong>：通过减少多数类样本的数量来达到平衡。常用的方法有：<ul>
+<li><strong>随机欠采样</strong>：随机删除多数类样本，但可能丢失重要信息</li>
+<li><strong>Tomek Links</strong>：移除位于类别边界附近的样本对，有助于清理噪声</li>
+<li><strong>ENN（Edited Nearest Neighbors Rule）</strong>：移除与最近邻居类别不同的样本</li>
+<li><strong>NearMiss</strong>：选择与少数类样本最接近的多数类样本</li>
+</ul>
+</li>
+<li><strong>组合采样</strong>：结合过采样和欠采样的方法</li>
+</ul>
+<h4 id="模型层面的方法"><a href="#模型层面的方法" class="headerlink" title="模型层面的方法"></a>模型层面的方法</h4><ul>
+<li><strong>成本敏感学习（Cost-sensitive Learning）</strong>：为不同类别的错误分配不同的固定权重，使模型更加关注少数类的预测</li>
+<li><strong>集成学习（Ensemble Learning）</strong>：使用集成学习的方法降低过拟合问题（比如多个模型进行投票或加权平均）</li>
+</ul>
+<h4 id="损失函数层面"><a href="#损失函数层面" class="headerlink" title="损失函数层面"></a>损失函数层面</h4><ul>
+<li><strong>损失函数优化</strong>：比如使用Focal Loss等</li>
+</ul>
+<h4 id="异常检测"><a href="#异常检测" class="headerlink" title="异常检测"></a>异常检测</h4><ul>
+<li><strong>异常检测（Anomaly Detection）</strong>：将少数类视为异常点（特别是少数类样本非常稀少的情况），使用异常检测算法进行识别，常见的异常检测算法通常包括统计方法、距离检测（K近邻方法）、聚类方法（K-Means）、分类模型（one-class SVM）、自编码器、孤立森林等<ul>
+<li>其中K近邻方法可以用于回归或者分类场景，还可以直接用于异常检测（距离过大的点认为是异常）</li>
+<li>K-Means方法作异常检测时，原理聚类中心的样本视为异常值</li>
+<li>自编码器方法：通过训练一个自编码器来重建数据，重建误差大的数据点被视为异常点</li>
+<li>孤立森林（Isolation Forest）：通过随机挑选特征、随机挑选分割点构建多棵孤立树，在所有孤立树中的平均路径长度的数据点被视为异常点（孤立森林的核心思想是异常点通常更容易被孤立，即在随机分割数据空间时，异常点往往比正常点更快地被单独分隔出来）</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="实践建议"><a href="#实践建议" class="headerlink" title="实践建议"></a>实践建议</h3><ul>
+<li><strong>评估指标的选择</strong>：在不均衡数据集上，不能使用准确率（Accuracy），建议使用均衡指标（F1-Score，AUC等）</li>
+<li><strong>模型选择</strong>：选择对不均衡数据的适应性较好的模型，如决策树和随机森林等，可以多使用一些简单的模型，再进行Bagging来减少过拟合</li>
+<li>具体情况具体分析，很多时候不需要特别的进行处理，另外如果真的进行采样，会导致预估均值有偏差，在CTR等对预估绝对值有要求的场景中，还需要校准</li>
 </ul>
 
           
@@ -1142,7 +1399,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——样本不均衡问题处理.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1161,7 +1418,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——样本不均衡问题处理.html" itemprop="url">ML——样本不均衡问题处理</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
         
 
         <div class="post-meta">
@@ -1197,71 +1454,56 @@
       
         
           
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://mp.weixin.qq.com/s/783o94jPRgfkoxbm5n7JYQ" target="_blank" rel="noopener">一文解决样本不均衡（全）</a></li>
+            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
+<hr>
+<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
+<li>训练集: 用于模型训练</li>
+<li>验证集: 用于模型选择</li>
+<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
+</ul>
+<hr>
+<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
+<li>训练集: 用于模型拟合的数据样本</li>
+<li>验证集: 用于模型的选择<ul>
+<li>不参与训练过程</li>
+<li>可用于超参数的调整</li>
+<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
+<li>可多次使用</li>
+</ul>
+</li>
+<li>测试集: 用于模型的评估 <ul>
+<li>不参与训练过程</li>
+<li>不可用于超参数的调整</li>
+<li>只可以使用一次</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="样本不均衡问题描述"><a href="#样本不均衡问题描述" class="headerlink" title="样本不均衡问题描述"></a>样本不均衡问题描述</h3><ul>
-<li>问题描述：机器学习中的样本不均衡问题，是指在分类任务中不同类别的训练样例数量存在显著差异的情况。</li>
-<li>场景：包括金融欺诈检测、医疗诊断、网络入侵检测等领域</li>
+<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
+<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
+<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
+<li>此时从验证集中划分一部分验证集</li>
+</ul>
+<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
+<li>需要训练集用于训练,验证集用于模型选择</li>
+<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
+</ul>
+<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
+<hr>
+<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
+<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
+<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
 </ul>
 <hr>
-<h3 id="样本不均衡的影响"><a href="#样本不均衡的影响" class="headerlink" title="样本不均衡的影响"></a>样本不均衡的影响</h3><ul>
-<li><strong>模型偏向性</strong>：模型倾向于预测label为多数类，因为这样做可以最大化准确率，即使对少数类的预测几乎总是错误的</li>
-<li><strong>过拟合风险</strong>：由于少数类样本数量少，模型容易过拟合这些样本，导致模型在新数据上泛化性差</li>
-<li>总结：<strong>样本不均衡带来的根本影响</strong>是模型会学习到训练集中<strong>样本比例</strong>的这种先验性信息，以致于实际预测时就会对多数类别有侧重（可能导致多数类精度更好，而少数类比较差）通过解决样本不均衡，可以减少模型学习样本比例的先验信息，以获得能学习到辨别好坏本质特征的模型</li>
+<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
+<li>用来调超参数的一部分正好称为验证集</li>
+<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
 </ul>
 <hr>
-<h3 id="哪些情况下需要解决样本不均衡问题"><a href="#哪些情况下需要解决样本不均衡问题" class="headerlink" title="哪些情况下需要解决样本不均衡问题"></a>哪些情况下需要解决样本不均衡问题</h3><ul>
-<li></li>
-</ul>
-<hr>
-<h3 id="评估指标"><a href="#评估指标" class="headerlink" title="评估指标"></a>评估指标</h3><ul>
-<li>不能使用：准确率（Accuracy）</li>
-<li>建议使用：F1分数、精确率（Precision）、召回率（Recall）和AUC等</li>
-</ul>
-<hr>
-<h3 id="解决样本不均衡的方法"><a href="#解决样本不均衡的方法" class="headerlink" title="解决样本不均衡的方法"></a>解决样本不均衡的方法</h3><h4 id="数据层面的方法"><a href="#数据层面的方法" class="headerlink" title="数据层面的方法"></a>数据层面的方法</h4><ul>
-<li><strong>过采样（Over-sampling）</strong>：通过增加少数类样本的数量来缓解不均衡问题。常见的方法包括：<ul>
-<li><strong>随机过采样</strong>：简单地复制少数类样本，容易导致过拟合</li>
-<li><strong>数据增强（Data Augmentation）</strong>：通过变换现有样本生成新的样本，适用于图像（翻转，拉伸等）、文本等数据类型</li>
-<li><strong>SMOTE（Synthetic Minority Over-sampling Technique）</strong>：通过在少数类样本间插值生成新的合成样本，一定程度上可以避免过拟合，但生成的数据置信度也存在问题</li>
-<li><strong>ADASYN（Adaptive Synthetic Sampling）</strong>：通过生成少数类别样本改善不均衡问题，与传统的过采样技术（如SMOTE）相比，ADASYN更注重类间距离和局部密度，尤其是对于少数类中的困难样本或噪声敏感区域，它可以更加精细地调整采样策略，详情可参考：<a href="https://zhuanlan.zhihu.com/p/713121245" target="_blank" rel="noopener">不平衡学习的自适应合成采样方法ADASYN（Matlab代码实现）</a></li>
-</ul>
-</li>
-<li><strong>欠采样（Under-sampling）</strong>：通过减少多数类样本的数量来达到平衡。常用的方法有：<ul>
-<li><strong>随机欠采样</strong>：随机删除多数类样本，但可能丢失重要信息</li>
-<li><strong>Tomek Links</strong>：移除位于类别边界附近的样本对，有助于清理噪声</li>
-<li><strong>ENN（Edited Nearest Neighbors Rule）</strong>：移除与最近邻居类别不同的样本</li>
-<li><strong>NearMiss</strong>：选择与少数类样本最接近的多数类样本</li>
-</ul>
-</li>
-<li><strong>组合采样</strong>：结合过采样和欠采样的方法</li>
-</ul>
-<h4 id="模型层面的方法"><a href="#模型层面的方法" class="headerlink" title="模型层面的方法"></a>模型层面的方法</h4><ul>
-<li><strong>成本敏感学习（Cost-sensitive Learning）</strong>：为不同类别的错误分配不同的固定权重，使模型更加关注少数类的预测</li>
-<li><strong>集成学习（Ensemble Learning）</strong>：使用集成学习的方法降低过拟合问题（比如多个模型进行投票或加权平均）</li>
-</ul>
-<h4 id="损失函数层面"><a href="#损失函数层面" class="headerlink" title="损失函数层面"></a>损失函数层面</h4><ul>
-<li><strong>损失函数优化</strong>：比如使用Focal Loss等</li>
-</ul>
-<h4 id="异常检测"><a href="#异常检测" class="headerlink" title="异常检测"></a>异常检测</h4><ul>
-<li><strong>异常检测（Anomaly Detection）</strong>：将少数类视为异常点（特别是少数类样本非常稀少的情况），使用异常检测算法进行识别，常见的异常检测算法通常包括统计方法、距离检测（K近邻方法）、聚类方法（K-Means）、分类模型（one-class SVM）、自编码器、孤立森林等<ul>
-<li>其中K近邻方法可以用于回归或者分类场景，还可以直接用于异常检测（距离过大的点认为是异常）</li>
-<li>K-Means方法作异常检测时，原理聚类中心的样本视为异常值</li>
-<li>自编码器方法：通过训练一个自编码器来重建数据，重建误差大的数据点被视为异常点</li>
-<li>孤立森林（Isolation Forest）：通过随机挑选特征、随机挑选分割点构建多棵孤立树，在所有孤立树中的平均路径长度的数据点被视为异常点（孤立森林的核心思想是异常点通常更容易被孤立，即在随机分割数据空间时，异常点往往比正常点更快地被单独分隔出来）</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="实践建议"><a href="#实践建议" class="headerlink" title="实践建议"></a>实践建议</h3><ul>
-<li><strong>评估指标的选择</strong>：在不均衡数据集上，不能使用准确率（Accuracy），建议使用均衡指标（F1-Score，AUC等）</li>
-<li><strong>模型选择</strong>：选择对不均衡数据的适应性较好的模型，如决策树和随机森林等，可以多使用一些简单的模型，再进行Bagging来减少过拟合</li>
-<li>具体情况具体分析，很多时候不需要特别的进行处理，另外如果真的进行采样，会导致预估均值有偏差，在CTR等对预估绝对值有要求的场景中，还需要校准</li>
+<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
+<li>训练集：测试集 = 7：3</li>
+<li>训练集：验证集：测试集 = 6：2：2</li>
+<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
 </ul>
 
           
@@ -1563,160 +1805,6 @@
 <li>可以证明\(G\)此时是正定的</li>
 <li>\(0\leq \alpha \leq 1\)</li>
 <li>这样得到的一类拟牛顿法都称为Broyden类算法</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
-<hr>
-<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
-<li>训练集: 用于模型训练</li>
-<li>验证集: 用于模型选择</li>
-<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
-</ul>
-<hr>
-<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
-<li>训练集: 用于模型拟合的数据样本</li>
-<li>验证集: 用于模型的选择<ul>
-<li>不参与训练过程</li>
-<li>可用于超参数的调整</li>
-<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
-<li>可多次使用</li>
-</ul>
-</li>
-<li>测试集: 用于模型的评估 <ul>
-<li>不参与训练过程</li>
-<li>不可用于超参数的调整</li>
-<li>只可以使用一次</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
-<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
-<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
-<li>此时从验证集中划分一部分验证集</li>
-</ul>
-<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
-<li>需要训练集用于训练,验证集用于模型选择</li>
-<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
-</ul>
-<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
-<hr>
-<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
-<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
-<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
-</ul>
-<hr>
-<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
-<li>用来调超参数的一部分正好称为验证集</li>
-<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
-</ul>
-<hr>
-<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
-<li>训练集：测试集 = 7：3</li>
-<li>训练集：验证集：测试集 = 6：2：2</li>
-<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
 </ul>
 
           
