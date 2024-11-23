@@ -943,7 +943,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -962,7 +962,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——HMM-MEMM-CRF.html" itemprop="url">ML——HMM-MEMM-CRF</a></h1>
         
 
         <div class="post-meta">
@@ -998,33 +998,97 @@
       
         
           
-            <p><em>本文介绍AUC和GAUC</em></p>
+            <p><em>本文主要区分隐马尔可夫模型(HMM),最大熵马尔可夫模型(MEMM),和条件随机场(CRF)</em></p>
 <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
 <hr>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
+<h3 id="HMM"><a href="#HMM" class="headerlink" title="HMM"></a>HMM</h3><ul>
+<li>生成式模型</li>
+<li>有向图模型,贝叶斯网络</li>
 </ul>
-<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
-
-<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
-<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
-</li>
-<li><p>推导思路：</p>
-<ul>
-<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
-<li>对所有正样本的概率求均值</li>
+<h4 id="模型描述"><a href="#模型描述" class="headerlink" title="模型描述"></a>模型描述</h4><ul>
+<li>模型参数: \(\lambda = (A, B, \pi)\)<ul>
+<li>A为状态转移矩阵</li>
+<li>B为观测概率矩阵</li>
+<li>\(\pi\)为初始状态概率向量</li>
 </ul>
 </li>
-<li><p>SQL实现</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+<li>HMM对</li>
+</ul>
+<h4 id="假设"><a href="#假设" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>观测序列之间独立</li>
+<li>当前状态仅仅依赖于上一个状态</li>
+</ul>
+<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>概率计算问题: 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),计算在给定模型下观测序列出现的概率\(P(O|\lambda)\)</li>
+<li>学习问题: 已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),估计模型参数\(\lambda = (A, B, \pi)\),使得在该模型下观测序列出现的概率\(P(O|\lambda)\)最大.(极大似然法,EM算法)</li>
+<li>预测问题(解码问题): 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O;\lambda)\)最大,(维特比算法)</li>
+</ul>
+<h4 id="序列标注问题"><a href="#序列标注问题" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
+<li>序列标注问题是已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O)\)最大</li>
+<li>实际上序列标注问题包括学习问题和预测问题两个问题:<ul>
+<li>学习问题: 根据观测序列确定模型参数\(\lambda = (A, B, \pi)\), 极大似然法或EM算法(EM算法会同时估计得到最优状态序列(隐变量))</li>
+<li>预测问题: 根据模型参数和观测序列确定最优状态序列\(I=(i_{1}, i_{2},,,i_{n})\),维特比算法</li>
+</ul>
 </li>
-<li><p>SQL实现（分场景+pcoc实现）</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
-
+</ul>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>算法成熟</li>
+<li>效率高, 模型简单, 容易训练</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>序列标注问题中,当前状态(标注)往往不仅仅和前一个状态相关,还可能和观察序列相关(这里指的是整个序列)</li>
+<li>也就是说每个状态可能还与整个观察序列的(除了当前观察值以外的)其他观察值(观察序列上下文)相关</li>
+</ul>
+<hr>
+<h3 id="MEMM"><a href="#MEMM" class="headerlink" title="MEMM"></a>MEMM</h3><ul>
+<li>判别式模型</li>
+<li>有向图模型,贝叶斯网络</li>
+</ul>
+<h4 id="假设-1"><a href="#假设-1" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
+<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是MEMM,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
+</ul>
+<h4 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>MEMM似乎只用于序列标注,也就是在已知观测序列的情况下,寻找最优的状态序列</li>
+<li><em>有其他应用的话再添加</em></li>
+</ul>
+<h4 id="序列标注问题-1"><a href="#序列标注问题-1" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
+<li>用于序列标注时,一般也包括两个问题: 学习问题和预测问题<ul>
+<li>学习问题: 根据观测序列确定模型参数(每条边的(概率)值和初始状态?)</li>
+<li>预测问题: 根据模型和观测序列确定维特比算法</li>
+</ul>
 </li>
+</ul>
+<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>解决了观测独立性问题(观测独立性是只当前观测序列只与当前状态相关)[问题: 在MEMM中并不关心观测序列由谁影响,而是关心观测序列如何影响了状态序列]</li>
+</ul>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>标签偏置(labeling bias)问题<ul>
+<li>MEMM中概率最大路径往往容易出现在转移少的状态中</li>
+<li>MEMM归一化在加和函数\(\sum\)计算内部,而CRF的归一化在加和函数\(\sum\)的外部,这使得MEMM只会关注加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]的局部特征,而不是的整体特征,所以MEMM存在偏置问题</li>
+</ul>
+</li>
+<li>比HMM复杂</li>
+</ul>
+<hr>
+<h3 id="CRF"><a href="#CRF" class="headerlink" title="CRF"></a>CRF</h3><ul>
+<li>判别式模型</li>
+<li>无向图模型,马尔科夫网络</li>
+</ul>
+<h4 id="假设-2"><a href="#假设-2" class="headerlink" title="假设"></a>假设</h4><ul>
+<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
+<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是线性CRFs,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
+<li>与MEMM的区别就是无向图模型与有向图模型的区别</li>
+</ul>
+<h4 id="问题-2"><a href="#问题-2" class="headerlink" title="问题"></a>问题</h4><h4 id="序列标注问题-2"><a href="#序列标注问题-2" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>模型复杂,能建模更多可能的特征</li>
+<li>全局归一化(这里与MEMM的区别是,MEMM归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)计算内部,而CRF的归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)的外部)</li>
+</ul>
+<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>模型复杂,速度慢</li>
 </ul>
 
           
@@ -1391,7 +1455,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——主动学习-半监督学习-直推学习.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——AUC和GAUC.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1410,7 +1474,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——主动学习-半监督学习-直推学习.html" itemprop="url">ML——主动学习-半监督学习-直推学习</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——AUC和GAUC.html" itemprop="url">ML——AUC和GAUC</a></h1>
         
 
         <div class="post-meta">
@@ -1446,62 +1510,34 @@
       
         
           
-            <p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
+            <p><em>本文介绍AUC和GAUC</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
 <hr>
-<h3 id="补充知识"><a href="#补充知识" class="headerlink" title="补充知识"></a>补充知识</h3><h4 id="“开放世界”假设"><a href="#“开放世界”假设" class="headerlink" title="“开放世界”假设"></a>“开放世界”假设</h4><ul>
-<li>学得的模型能适用于训练过程中从未观察到的数据</li>
-<li>也就是说:测试集未知</li>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/84350940" target="_blank" rel="noopener">图解AUC和GAUC-知乎</a></li>
 </ul>
-<h4 id="“封闭世界”假设"><a href="#“封闭世界”假设" class="headerlink" title="“封闭世界”假设"></a>“封闭世界”假设</h4><ul>
-<li>学得的模型仅仅能适用于训练过程中观察到的未标记样本</li>
-<li>也就是说:测试集就是训练时观察到的未标记数据</li>
-</ul>
-<hr>
-<h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><ul>
-<li>都是用于解决有少量标注数据和海量未标注数据的问题的算法</li>
-<li>都是迭代扩充标记数据集的算法:<ul>
-<li>每次迭代时添加如一部分新的标记数据(由未标记数据标记产生的)</li>
+<h3 id="编程实现"><a href="#编程实现" class="headerlink" title="编程实现"></a>编程实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def calculate_auc(ground_truth, predictions):</span><br><span class="line">    # 将预测结果和真实标签按照预测结果从大到小的顺序进行排序</span><br><span class="line">    sorted_predictions = [p for _, p in sorted(zip(predictions, ground_truth), reverse=True)]</span><br><span class="line">    print(sorted_predictions)</span><br><span class="line">    # 统计正样本和负样本的数量</span><br><span class="line">    positive_count = sum(ground_truth)</span><br><span class="line">    negative_count = len(ground_truth) - positive_count</span><br><span class="line"></span><br><span class="line">    neg_found_count = 0</span><br><span class="line">    pos_gt_neg_count = 0</span><br><span class="line">    # 计算正样本大于负样本的数量之和</span><br><span class="line">    for label in sorted_predictions:</span><br><span class="line">        if label == 1:</span><br><span class="line">            pos_gt_neg_count += negative_count - neg_found_count</span><br><span class="line">        else:</span><br><span class="line">            neg_found_count += 1</span><br><span class="line"></span><br><span class="line">    # 计算AUC</span><br><span class="line">    auc = 1.0 * pos_gt_neg_count / (positive_count * negative_count)</span><br><span class="line"></span><br><span class="line">    return auc</span><br><span class="line"></span><br><span class="line"># 真实标签</span><br><span class="line">ground_truth = [1, 0, 1, 0, 1, 1]</span><br><span class="line"># 预测结果</span><br><span class="line">predictions = [0.5, 0.3, 0.1, 0.2, 0.8, 0.9]</span><br><span class="line"></span><br><span class="line"># 计算AUC</span><br><span class="line">auc = calculate_auc(ground_truth, predictions)</span><br><span class="line"></span><br><span class="line">print(&quot;AUC:&quot;, auc)</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL实现"><a href="#SQL实现" class="headerlink" title="SQL实现"></a>SQL实现</h3><ul>
+<li><p>详情见：<a href="https://tracholar.github.io/machine-learning/2018/01/26/auc.html" target="_blank" rel="noopener">深入理解AUC</a></p>
+</li>
+<li><p>推导思路：</p>
+<ul>
+<li>统计每个正样本大于负样本的概率（排在该正样本后面的负样本数/总的负样本数）</li>
+<li>对所有正样本的概率求均值</li>
 </ul>
 </li>
-</ul>
-<hr>
-<h3 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h3><h4 id="主动学习"><a href="#主动学习" class="headerlink" title="主动学习"></a>主动学习</h4><ul>
-<li>主动学习添加了专家知识(人工确认或者打标签),每次迭代时加入的新的标记数据都是由专家打出来的标签</li>
-<li>半监督学习和直推学习都是全自动的(无需人工干预),主动学习是半自动的</li>
-</ul>
-<h4 id="半监督学习与直推学习"><a href="#半监督学习与直推学习" class="headerlink" title="半监督学习与直推学习"></a>半监督学习与直推学习</h4><ul>
-<li>直推学习将当前的为标签数据看成是最终的测试数据</li>
-<li>半监督学习和主动学习的测试集都是未知数据</li>
-<li>半监督学习是基于”开放世界”假设的</li>
-<li>直推学习是基于”封闭世界”假设的</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="总体概览"><a href="#总体概览" class="headerlink" title="总体概览"></a>总体概览</h4>
+<li><p>SQL实现</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc</span><br><span class="line">from(</span><br><span class="line">    select</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry</span><br><span class="line">    from(</span><br><span class="line">        select y, row_number() over(order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>SQL实现（分场景+pcoc实现）</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">select </span><br><span class="line">    scene,</span><br><span class="line">    (ry - 0.5*n1*(n1+1))/n0/n1 as auc,</span><br><span class="line">    n1/(n1+n0) as ctr,</span><br><span class="line">    pctr,</span><br><span class="line">    pctr/(n1/(n1+n0)) as pcoc,</span><br><span class="line">from(</span><br><span class="line">    select </span><br><span class="line">        scene,</span><br><span class="line">        sum(if(y=0, 1, 0)) as n0,</span><br><span class="line">        sum(if(y=1, 1, 0)) as n1,</span><br><span class="line">        sum(if(y=1, r, 0)) as ry,</span><br><span class="line">        avg(score) as pctr</span><br><span class="line">    from(</span><br><span class="line">        select scene, score, y, row_number() over(partition by scene order by score asc) as r</span><br><span class="line">        from(</span><br><span class="line">            select scene, y, score</span><br><span class="line">            from some.table</span><br><span class="line">        )A</span><br><span class="line">    )B</span><br><span class="line">)C</span><br></pre></td></tr></table></figure>
 
-<h4 id="表格概览"><a href="#表格概览" class="headerlink" title="表格概览"></a>表格概览</h4><table>
-<thead>
-<tr>
-<th align="left">学习算法</th>
-<th align="center">是否需要专家知识(人工)</th>
-<th align="center">是否具有泛化性</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">半监督学习</td>
-<td align="center">否</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">主动学习</td>
-<td align="center">是</td>
-<td align="center">是(“开放世界”假设)</td>
-</tr>
-<tr>
-<td align="left">直推学习</td>
-<td align="center">否</td>
-<td align="center">不具有,测试集是已知的未标记数据(“封闭世界假设”)</td>
-</tr>
-</tbody></table>
+</li>
+</ul>
 
           
         
@@ -1550,7 +1586,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——HMM-MEMM-CRF.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——MCMC采样.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1569,7 +1605,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——HMM-MEMM-CRF.html" itemprop="url">ML——HMM-MEMM-CRF</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——MCMC采样.html" itemprop="url">ML——MCMC采样</a></h1>
         
 
         <div class="post-meta">
@@ -1605,97 +1641,149 @@
       
         
           
-            <p><em>本文主要区分隐马尔可夫模型(HMM),最大熵马尔可夫模型(MEMM),和条件随机场(CRF)</em></p>
+            <p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
 <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
-<hr>
-<h3 id="HMM"><a href="#HMM" class="headerlink" title="HMM"></a>HMM</h3><ul>
-<li>生成式模型</li>
-<li>有向图模型,贝叶斯网络</li>
-</ul>
-<h4 id="模型描述"><a href="#模型描述" class="headerlink" title="模型描述"></a>模型描述</h4><ul>
-<li>模型参数: \(\lambda = (A, B, \pi)\)<ul>
-<li>A为状态转移矩阵</li>
-<li>B为观测概率矩阵</li>
-<li>\(\pi\)为初始状态概率向量</li>
-</ul>
-</li>
-<li>HMM对</li>
-</ul>
-<h4 id="假设"><a href="#假设" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>观测序列之间独立</li>
-<li>当前状态仅仅依赖于上一个状态</li>
-</ul>
-<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>概率计算问题: 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),计算在给定模型下观测序列出现的概率\(P(O|\lambda)\)</li>
-<li>学习问题: 已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),估计模型参数\(\lambda = (A, B, \pi)\),使得在该模型下观测序列出现的概率\(P(O|\lambda)\)最大.(极大似然法,EM算法)</li>
-<li>预测问题(解码问题): 给定模型\(\lambda = (A, B, \pi)\)和观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O;\lambda)\)最大,(维特比算法)</li>
-</ul>
-<h4 id="序列标注问题"><a href="#序列标注问题" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>序列标注问题是已知观测序列\(O=(o_{1}, o_{2},,,o_{n})\),求状态序列\(I=(i_{1}, i_{2},,,i_{n})\),使得\(P(I|O)\)最大</li>
-<li>实际上序列标注问题包括学习问题和预测问题两个问题:<ul>
-<li>学习问题: 根据观测序列确定模型参数\(\lambda = (A, B, \pi)\), 极大似然法或EM算法(EM算法会同时估计得到最优状态序列(隐变量))</li>
-<li>预测问题: 根据模型参数和观测序列确定最优状态序列\(I=(i_{1}, i_{2},,,i_{n})\),维特比算法</li>
-</ul>
-</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>算法成熟</li>
-<li>效率高, 模型简单, 容易训练</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>序列标注问题中,当前状态(标注)往往不仅仅和前一个状态相关,还可能和观察序列相关(这里指的是整个序列)</li>
-<li>也就是说每个状态可能还与整个观察序列的(除了当前观察值以外的)其他观察值(观察序列上下文)相关</li>
+<ul>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
+<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
 </ul>
 <hr>
-<h3 id="MEMM"><a href="#MEMM" class="headerlink" title="MEMM"></a>MEMM</h3><ul>
-<li>判别式模型</li>
-<li>有向图模型,贝叶斯网络</li>
+<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
+<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
 </ul>
-<h4 id="假设-1"><a href="#假设-1" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是MEMM,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
+<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
+<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
 </ul>
-<h4 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h4><ul>
-<li>MEMM似乎只用于序列标注,也就是在已知观测序列的情况下,寻找最优的状态序列</li>
-<li><em>有其他应用的话再添加</em></li>
-</ul>
-<h4 id="序列标注问题-1"><a href="#序列标注问题-1" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><ul>
-<li>用于序列标注时,一般也包括两个问题: 学习问题和预测问题<ul>
-<li>学习问题: 根据观测序列确定模型参数(每条边的(概率)值和初始状态?)</li>
-<li>预测问题: 根据模型和观测序列确定维特比算法</li>
+<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
+<ul>
+<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
+<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
+<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
 </ul>
 </li>
 </ul>
-<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>解决了观测独立性问题(观测独立性是只当前观测序列只与当前状态相关)[问题: 在MEMM中并不关心观测序列由谁影响,而是关心观测序列如何影响了状态序列]</li>
-</ul>
-<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>标签偏置(labeling bias)问题<ul>
-<li>MEMM中概率最大路径往往容易出现在转移少的状态中</li>
-<li>MEMM归一化在加和函数\(\sum\)计算内部,而CRF的归一化在加和函数\(\sum\)的外部,这使得MEMM只会关注加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]的局部特征,而不是的整体特征,所以MEMM存在偏置问题</li>
+<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
+<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
+<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
+<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
+<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
+<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
 </ul>
 </li>
-<li>比HMM复杂</li>
+<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
 </ul>
 <hr>
-<h3 id="CRF"><a href="#CRF" class="headerlink" title="CRF"></a>CRF</h3><ul>
-<li>判别式模型</li>
-<li>无向图模型,马尔科夫网络</li>
+<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
+<li>对于原始目标分布\(p(x)\)</li>
+<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
+<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
 </ul>
-<h4 id="假设-2"><a href="#假设-2" class="headerlink" title="假设"></a>假设</h4><ul>
-<li>当前状态仅依赖于上一状态和<strong>当前观测值</strong>(或<strong>所有观测值</strong>)</li>
-<li>(问题: 为什么有些书上画出的图是当前状态依赖上一状态和<strong>所有观测值</strong>?,这里应该是<strong>当前观测值</strong>和<strong>所有观测值</strong>两种情况都是线性CRFs,&lt;&lt;百面&gt;&gt;画的是<strong>所有观测值的情况</strong>)</li>
-<li>与MEMM的区别就是无向图模型与有向图模型的区别</li>
+</li>
+<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
+<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
 </ul>
-<h4 id="问题-2"><a href="#问题-2" class="headerlink" title="问题"></a>问题</h4><h4 id="序列标注问题-2"><a href="#序列标注问题-2" class="headerlink" title="序列标注问题"></a>序列标注问题</h4><h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>模型复杂,能建模更多可能的特征</li>
-<li>全局归一化(这里与MEMM的区别是,MEMM归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)计算内部,而CRF的归一化在加和函数[原始建模问题概率值\((y_{1…n}|x_{1…n})\)]\(\sum\)的外部)</li>
+</li>
 </ul>
-<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型复杂,速度慢</li>
+<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li>随机选取初始样本x^{0}</li>
+<li>for t = 1,2,3,…:<ul>
+<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
+<li>均匀分布采样\(u \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
+</ul>
+</li>
+<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+</ul>
+</li>
+<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></li>
+</ul>
+<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
+<li>MH采样基于拒绝采样来逼近平稳分布</li>
+<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
+<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
+<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
+<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
+</ul>
+</li>
+</ul>
+<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
+<li><p>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</p>
+</li>
+<li><p><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$</p>
+<ul>
+<li>上式为细致平稳分布条件(detailed balance condition)</li>
+<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
+</ul>
+</li>
+<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
+</ul>
+</li>
+<li><p>在MH采样法中</p>
+<ul>
+<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
+<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
+<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
+<li>即可</li>
+</ul>
+</li>
+<li><p>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率</p>
+<ul>
+<li>使用原始接受率的方法称为一般MCMC方法</li>
+<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
+</ul>
+</li>
+<li><p>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$</p>
+<ul>
+<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li><p>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</p>
+</li>
+</ul>
+<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
+<ul>
+<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
+<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
+</ul>
+<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
+<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
+</ul>
+<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li><p>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</p>
+</li>
+<li><p>for t = 1,2,3,…:</p>
+<ul>
+<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
+<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
+</ul>
+</li>
+<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
+</ul>
+</li>
+<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
+<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
+</ul>
+</li>
+<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
+</li>
 </ul>
 
           
