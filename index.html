@@ -641,7 +641,7 @@
 <li><p>训练流程解释：</p>
 <ul>
 <li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
-<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中公式(13)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
+<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中\(\color{red}{\text{公式(13)}}\)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
 </ul>
 </li>
 </ul>
@@ -802,7 +802,7 @@
 </ul>
 <h4 id="Offline-RL中使用常规方法"><a href="#Offline-RL中使用常规方法" class="headerlink" title="Offline RL中使用常规方法"></a>Offline RL中使用常规方法</h4><ul>
 <li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
-<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \arg \min_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \arg \max_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
+<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \mathop{\arg\min}_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \mathop{\arg\max}_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
 <li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
 <li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
 <li>policy evaluation实际上就是在重复对Q使用贝尔曼算子，只是使用最小化均方误差的形式去实现了</li>
@@ -816,12 +816,18 @@
 <li>总结一下：<strong>对于策略\(\pi\)，我们的真实Q值是\(Q^\pi\)，在固定的数据集下学到的是\(\hat{Q}^\pi\)，但该值一般往往会高估，我们的目标是让\(\hat{Q}^\pi\)尽量接近真实值\(Q^\pi\)，那么面临的往往是高估这个问题，CQL算法的核心思想就是解决这个问题</strong></li>
 </ul>
 <h4 id="改进一：打压未知动作的Q值"><a href="#改进一：打压未知动作的Q值" class="headerlink" title="改进一：打压未知动作的Q值"></a>改进一：打压未知动作的Q值</h4><ul>
-<li>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</li>
-<li>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</li>
-<li>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</li>
-<li>这里论文中给出了证明（Theorem 3.1）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png">
+<li><p>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
+</li>
+<li><p>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</p>
+</li>
+<li><p>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</p>
+</li>
+<li><p>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</p>
+</li>
+<li><p>这里论文中给出了证明（Theorem 3.1）：</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png"> -->
+
 <ul>
 <li>上式说明：<ul>
 <li>当\(supp\ \mu \subset supp\ \pi\)（\(supp\ \mu\)表示支持集），且\(\alpha\)足够大时，\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即对于任意的分布\(\mu\)，只要我们这里\(\alpha\)取得足够大，总能学到一个比真实值\(Q^\pi(s,a)\)小的Q值</li>
@@ -833,9 +839,12 @@
 </li>
 </ul>
 <h4 id="改进二：打压补偿"><a href="#改进二：打压补偿" class="headerlink" title="改进二：打压补偿"></a>改进二：打压补偿</h4><ul>
-<li>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \arg \min_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>这里论文中给出了证明（Theorem 3.2）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
+<li><p>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \mathop{\arg\min}_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
+</li>
+<li><p>这里论文中给出了证明（Theorem 3.2）：</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png"> -->
+
 <ul>
 <li>上式说明：<ul>
 <li>当\(\mu=\pi\)（注意，改进一种不需要这个约束），且\(\alpha\)较大时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
@@ -886,10 +895,14 @@ $$
 $$ -->
 
 <h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
-<li>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="70%" width="70%">
-<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> --></li>
-<li>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \arg\max_a Q(s,a)\)作为最终的策略</li>
-<li>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</li>
+<li><p>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))：</p>
+<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="60%" width="60%">
+<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> -->
+</li>
+<li><p>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \mathop{\arg\max}_a Q(s,a)\)作为最终的策略</p>
+</li>
+<li><p>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</p>
+</li>
 </ul>
 <h4 id="实践说明"><a href="#实践说明" class="headerlink" title="实践说明"></a>实践说明</h4><ul>
 <li>\(\alpha\)的选择：</li>
@@ -903,23 +916,31 @@ $$ -->
 </ul>
 <hr>
 <h3 id="一些说明和思考"><a href="#一些说明和思考" class="headerlink" title="一些说明和思考"></a>一些说明和思考</h3><ul>
-<li>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：<ul>
+<li><p>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：</p>
+<ul>
 <li>CQL(\(\mathcal{R}\))：CQL原始形式</li>
 <li>CQL(\(\mathcal{\rho}\))：CQL变体，对任意\(\rho\)均可使用这个表述，包含了后面的CQL(\(\mathcal{H}\))，论文中实验时使用的是\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)</li>
 <li>CQL(\(\mathcal{H}\))：CQL变体，当CQL(\(\mathcal{\rho}\))中\(\rho\)取均匀分布时的更新形式</li>
 </ul>
 </li>
-<li>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</li>
-<li>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</li>
-<li>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？<ul>
+<li><p>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</p>
+</li>
+<li><p>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</p>
+</li>
+<li><p>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？</p>
+<ul>
 <li>普通AC确实是这样实现的，但是在Offline RL场景，不希望迭代效率过慢？</li>
 </ul>
 </li>
-<li>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?<ul>
+<li><p>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?</p>
+<ul>
 <li>详请见附录推导</li>
 </ul>
 </li>
-<li>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
+<li><p>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png"> -->
+
 <ul>
 <li>具体来说(Theorem 3.6)：CQL算法得到的策略\(\pi^*(a|s)\)是一个策略\(\hat{\pi}_\beta\)的\(\zeta\)-safe policy improvement，即有\(1-\zeta\)的概率可以保证\(J(\pi^*, M) \ge J(\hat{\pi}_\beta, M) - \zeta\)</li>
 </ul>
@@ -934,7 +955,7 @@ $$ -->
 </li>
 <li>证明前，我们先将上述问题修改成更一般的形式（更一般的形式更常用一些），在更一般的形式下，\(D_{\mathrm{KL}}(\mu | \rho)\)经常会加上温度系数\(\alpha\)或出现在约束中：<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) &amp;\le \epsilon \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
 <li>求解上面的问题可以先转换成构造拉格朗日函数<ul>
-<li>原始问题变形<br>$$<br>\begin{align}<br>\max_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
+<li>原始问题变形<br>$$<br>\begin{align}<br>\min_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
 <li>拉格朗日函数如下<br>$$<br>\begin{align}<br>L(\mu,\alpha,\beta) &amp;= -\mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})] + \alpha(D_{\mathrm{KL}}(\mu | \rho)-\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log\frac{\mu(\mathbf{x})}{\rho(\mathbf{x})} -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log \mu(\mathbf{x}) - \sum_x \mu(\mathbf{x}) \log \rho(\mathbf{x}) -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>\end{align}<br>$$</li>
 </ul>
 </li>
@@ -1131,7 +1152,7 @@ $$ -->
 <hr>
 <h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
 <li>思路：按照贝尔曼最优方程迭代</li>
-<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
 <li>分析：<ul>
 <li>直接使用上述损失函数存在值高估问题</li>
 <li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
@@ -1140,8 +1161,8 @@ $$ -->
 </ul>
 <h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
 <li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
-<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
-<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma E_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
+<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
+<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma \mathbb{E}_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
 </ul>
 </li>
 <li>分析：<ul>
@@ -1153,7 +1174,7 @@ $$ -->
 </ul>
 <h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
 <li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
-<li>损失函数：<br>  $$<br>  L(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>损失函数：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
 <li>分析：<ul>
 <li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
 <li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
@@ -1169,7 +1190,7 @@ $$ -->
 <h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
 <li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
 <ul>
-<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
+<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
 <li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
 <li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
 <li>分析：<ul>
@@ -1181,12 +1202,12 @@ $$ -->
 </li>
 <li><p><strong>条件随机变量的期望回归</strong></p>
 <ul>
-<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\arg \min_{m_\tau(x)} E_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
+<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\mathop{\arg\min}_{m_\tau(x)} \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
 <li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
 </li>
 </ul>
 </li>
-<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \arg \min_{m_\tau} E_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
+<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
 <ul>
 <li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
 </ul>
@@ -1205,22 +1226,22 @@ $$ -->
 </li>
 </ul>
 <h4 id="基于期望回归的Q值学习"><a href="#基于期望回归的Q值学习" class="headerlink" title="基于期望回归的Q值学习"></a>基于期望回归的Q值学习</h4><ul>
-<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = E_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
+<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
 <li>其中\(\mathcal{D} \sim \pi_\beta\)，选择合适的\(\tau\)后，可以学到一个大于\(Q^{\pi_\beta}(s,a)\)（行为策略对应的Q值）的\(Q(s,a)\)</li>
 <li>理解：给定\((s,a)\)的情况下，存在许多不同的\((s’,a’)\)样本，当\(\tau &gt; 0.5\)时，相当于是通过这种非对称损失函数降低小于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，增加大于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，从而学到较大的\((s’,a’)\)对应的目标值，极端情况下，学到的是最大值\(r(s, a) + \gamma \max_{(s,a,s’,a’) \sim \mathcal{D}} Q_{\theta’}(s’, a’)\)</li>
 <li>上面的损失函数还存在一些不足，由于环境可能是动态变化的，状态\(s’\)是按照概率\(p(s’|s,a)\)出现，所以以上损失函数还使得Q学到了环境转换的信息。具体来说，学到的Q值高不一定是选到了优秀动作的反应，还可能是因为运气好碰上了转移到一个较好的状态\(s’\)上<ul>
-<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(E_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
+<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(\mathbb{E}_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
 <li>补充问题1：如果是确定性的环境，是否可以直接使用上述损失函数？</li>
 </ul>
 </li>
 </ul>
 <h4 id="IQL的Q值学习"><a href="#IQL的Q值学习" class="headerlink" title="IQL的Q值学习"></a>IQL的Q值学习</h4><ul>
 <li>由于基于期望回归的Q值学习引入了状态转移随机偏差，存在问题，所以需要进行改进：</li>
-<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = E_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
+<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = \mathbb{E}_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
 <li>这里可以看出\(V(s)\)学到的是\(max_a Q_{\hat{\theta}}(s,a)\)的思想，即对应V值的贝尔曼最优方程</li>
 </ul>
 </li>
-<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = E_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
+<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
 <li>由于\(V\)在上一步已经通过期望回归学到了最优形式，这一步不需要继续使用期望回归了</li>
 </ul>
 </li>
@@ -1228,7 +1249,7 @@ $$ -->
 </ul>
 <h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
 <li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
-<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = E_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
+<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = \mathbb{E}_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
 <li>其中 \(\beta \ge 0\) 是温度系数。对于较小的超参数值，该目标类似于行为克隆（近似所有样本权重相等的策略梯度，原始策略梯度中，样本权重是温度系数为1的Q值），而对于较大的值，它试图恢复Q函数的最大值（Q值越大，对应的样本权重越大）。正如AWR等先前工作所示，此目标学习一个在分布约束下的最大化Q值的策略</li>
 </ul>
 </li>
@@ -1240,7 +1261,7 @@ $$ -->
 </li>
 </ul>
 <h4 id="IQL更新总结"><a href="#IQL更新总结" class="headerlink" title="IQL更新总结"></a>IQL更新总结</h4><ul>
-<li>伪代码如下（说明：伪代码中最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标， 作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a> ）：  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png" title height="30%" width="30%">
+<li>伪代码如下（说明：伪代码中最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标， 作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a> ）：  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png" title height="80%" width="80%">
   <!-- <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png"> -->
 
 
@@ -1250,13 +1271,13 @@ $$ -->
 <h3 id="附录：为什么AWR和策略梯度法损失函数不同？"><a href="#附录：为什么AWR和策略梯度法损失函数不同？" class="headerlink" title="附录：为什么AWR和策略梯度法损失函数不同？"></a>附录：为什么AWR和策略梯度法损失函数不同？</h3><ul>
 <li>副标题：不同AC框架算法策略更新公式对比分析，为什么相同的目标推导出来完全不同的更新公式？</li>
 <li>问题补充：<ul>
-<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
-<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
-<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
-<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}E_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
-<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R^{\mathcal{D}}(s,a)-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
-<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
-<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} E_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
+<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
+<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
+<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
+<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}\mathbb{E}_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
+<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R^{\mathcal{D}}(s,a)-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
 </ul>
 </li>
 <li>基本推导思路总结：<ul>
@@ -1685,7 +1706,7 @@ $$ -->
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1704,7 +1725,7 @@ $$ -->
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——AC、A2C和A3C.html" itemprop="url">RL——AC、A2C和A3C</a></h1>
+                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
         
 
         <div class="post-meta">
@@ -1740,99 +1761,133 @@ $$ -->
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a>  <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）  </li>
+</ul>
+<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
+<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
+<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
+</ul>
+</li>
+<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
+<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\mathop{\arg\max}_a Q(s,a)\)来找到最优策略。</li>
+<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
+<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
+<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
+</ul>
+<h5 id="Off-Policy-AC如何对混合策略采样的样本进行重要性采样？"><a href="#Off-Policy-AC如何对混合策略采样的样本进行重要性采样？" class="headerlink" title="Off-Policy AC如何对混合策略采样的样本进行重要性采样？"></a>Off-Policy AC如何对混合策略采样的样本进行重要性采样？</h5><ul>
+<li>在Replay Buffer中记录下每个样本的采样策略（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L194" target="_blank" rel="noopener">代码示例</a>），并在更新时逐个样本计算动作概率比值（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L89-L92" target="_blank" rel="noopener">代码示例</a>），参见：  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 策略记录</span><br><span class="line">memory.append(state, action, reward, policy.detach()) </span><br><span class="line"></span><br><span class="line">## 动作概率比值计算</span><br><span class="line">if off_policy:</span><br><span class="line">    rho = policies[i].detach() / old_policies[i]</span><br><span class="line">else:</span><br><span class="line">    rho = torch.ones(1, action_size)</span><br></pre></td></tr></table></figure>
 
-<hr>
-<h3 id="策略梯度法的推导结论"><a href="#策略梯度法的推导结论" class="headerlink" title="策略梯度法的推导结论"></a>策略梯度法的推导结论</h3><ul>
-<li>策略梯度法推导结论是<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= E_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) R(\tau)  \right] \\<br>  &amp; = E_{\tau \sim p_\theta(\tau)} \left[\sum_t \psi_t \nabla_\theta \log \pi_\theta(a_t|s_t) \right] \\<br>  \end{align}<br>  $$<ul>
-<li>推导详情见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
-<li>\(\psi_t\)来替换\(R(\tau)\)的理由是可以考虑用一个与时间相关的变量来替换与时间无关的累计收益</li>
-</ul>
-</li>
-<li>进一步地，其中的\(\psi_t\)可以换成不同的形式，包括：<ul>
-<li>\(\sum_{t’=0}^T \gamma^t r_{t’}\)：完成的轨迹收益</li>
-<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)：从第\(t\)步开始的轨迹收益，理由是策略主要影响的是\(t\)步开始收益，对前面步骤的收益影响不大</li>
-<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’} - b(s_t)\)：进一步降低方差，详细证明见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
-<li>\(Q^{\pi_\theta}(s_t,a_t)\)：动作价值函数，是\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)的估计值</li>
-<li>\(A^{\pi_\theta}(s_t,a_t)\)：优势函数，仅考虑当前状态\(s_t\)下不同动作带来的收益，忽略状态本身的价值</li>
-<li>\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)：V值的TD-Error形式，即贝尔曼残差，本质等价于优势函数</li>
-</ul>
-</li>
-<li>问题：将\(\psi_t\)换成\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)可以吗？<ul>
-<li>答案是不可以。理由是\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数\(A(s,a)\)，也不是\(Q(s,a)\)没有别的含义，只有Q值自身更新时的TD-Error</li>
-<li>证明：如果\(a_{t+1} \sim \pi_\theta\)，则\(Q^{\pi_\theta}(s_{t+1}, a_{t+1}) = V^{\pi_\theta}(s_{t+1})\)；但是因为\(Q^{\pi_\theta}(s_{t}, a_t) \neq V^{\pi_\theta}(s_{t})\)（因为\(a_t\)是已经发生的事实），故而\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数，也能等价于优势函数</li>
-<li>改进：如果非要用Q值来作为Actor Critic的价值网络，则需要求解策略\(\pi_{\theta^*} = \arg\max_{\pi_\theta} E_{a_t \sim \pi_\theta(\cdot|s_t)} [Q(s_t, a_t)]\)，比如DDPG就是如此</li>
-</ul>
 </li>
 </ul>
-<hr>
-<h3 id="AC算法"><a href="#AC算法" class="headerlink" title="AC算法"></a>AC算法</h3><ul>
-<li>普通AC（Actor Critic）算法一般是直接使用\(Q(s_t,a_t)\)来替换\(\psi_t\)</li>
+<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
+<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
+<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
 </ul>
-<h4 id="Critic网络的更新"><a href="#Critic网络的更新" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
+</li>
+<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= \mathbb{E}_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
+<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
+</ul>
+<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
+<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
 <ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^{w}\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
 </ul>
-<h4 id="Actor网络的更新"><a href="#Actor网络的更新" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum Q^{w}(s_{t}, a_t) \log \pi_\theta(a_t|s_t) \\<br>Q^{w}(s_{t}, a_t) &amp;= \text{Stop_Gradient}(Q^{w}(s_{t}, a_t))<br>\end{align}<br>$$</p>
+</li>
+<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= \mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
 <ul>
-<li>这里面的\(Q^{w}(s_{t}, a_t)\)是不参与Actor参数的更新的</li>
-<li>\(a_t \sim \pi_\theta(\cdot|s_t)\)</li>
+<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
 </ul>
-<h4 id="AC算法的问题"><a href="#AC算法的问题" class="headerlink" title="AC算法的问题"></a>AC算法的问题</h4><ul>
-<li>AC算法虽然是直接优化策略的，但是由于它是on-policy的，样本利用率很低，导致训练缓慢</li>
-</ul>
-<hr>
-<h3 id="A2C算法"><a href="#A2C算法" class="headerlink" title="A2C算法"></a>A2C算法</h3><ul>
-<li>A2C（Advantage Actor Critic）算法是使用\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)来替换\(\psi_t\)的方法</li>
-<li>很多书籍里面会直接使用A2C算法</li>
-</ul>
-<h4 id="Critic网络的更新-1"><a href="#Critic网络的更新-1" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma V^{\bar{w}}(s_{t+1}) - V^{w}(s_{t})) ^ 2<br>$$ </p>
+</li>
+<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
 <ul>
-<li>这里V值拟合的目标是策略\(\pi_\theta\)对应的V值\(V^{\pi_\theta}\)</li>
+<li>上面的Loss求导就可以得到梯度是\(\mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
+<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
 </ul>
-<h4 id="Actor网络的更新-1"><a href="#Actor网络的更新-1" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum \delta \log \pi_\theta(a_t|s_t) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
-<ul>
-<li>这里面的\(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t})\)是不参与Actor参数的更新的</li>
-</ul>
-<h4 id="A2C算法的问题"><a href="#A2C算法的问题" class="headerlink" title="A2C算法的问题"></a>A2C算法的问题</h4><ul>
-<li>A2C算法是同步更新的，需要每个Worker都收集完成数据才能执行一次更新，很多时候数据交互完成的时间是很不一致的，训练也较慢</li>
+</li>
 </ul>
 <hr>
-<h3 id="A3C算法"><a href="#A3C算法" class="headerlink" title="A3C算法"></a>A3C算法</h3><ul>
-<li>A3C（Asynchronous Advantage Actor Critic），是Actor Critic方法的异步版本</li>
+<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
+<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a>  </li>
 </ul>
-<h4 id="A3C的主要优化点"><a href="#A3C的主要优化点" class="headerlink" title="A3C的主要优化点"></a>A3C的主要优化点</h4><h5 id="异步训练框架优化："><a href="#异步训练框架优化：" class="headerlink" title="异步训练框架优化："></a>异步训练框架优化：</h5><ul>
-<li>一个全局网络（包括V网络和Actor网络）和多个相互独立的Local网络（即Worker）</li>
-<li>训练时：使用多个Worker并行的和环境分别交互，各自收集数据、计算梯度、异步更新全局网络参数</li>
-<li>inference时：仅适用全局网络中的Actor网络就可以</li>
-</ul>
-<h5 id="策略更新损失增加熵"><a href="#策略更新损失增加熵" class="headerlink" title="策略更新损失增加熵"></a>策略更新损失增加熵</h5><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum \delta \log \pi_\theta(a_t|s_t) + c H(\pi_\theta(a|s)) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
-<ul>
-<li>增加熵相当于是一种正则，与SAC思想相似</li>
+<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
+<li><p>伪代码如下（其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数）：</p>
+<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png" title height="60%" width="60%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png"> -->
+</li>
+<li><p><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</p>
+</li>
+<li><p><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</p>
+</li>
 </ul>
 <hr>
-<h3 id="AC-A2C-A3C的区别"><a href="#AC-A2C-A3C的区别" class="headerlink" title="AC/A2C/A3C的区别"></a>AC/A2C/A3C的区别</h3><ul>
-<li>AC（Actor-Critic）、A2C（Advantage Actor-Critic）和A3C（Asynchronous Advantage Actor-Critic）三者可以从名字上看出来算法的区别</li>
+<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
+<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods</a>  </li>
+<li>有两个改进包含在名字中，Twin和Delayed</li>
+<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
 </ul>
-<h4 id="AC（Actor-Critic）"><a href="#AC（Actor-Critic）" class="headerlink" title="AC（Actor-Critic）"></a>AC（Actor-Critic）</h4><ul>
-<li>Actor-Critic 方法结合了值函数方法和策略梯度方法的优点。它由两部分组成：一个称为“actor”的网络负责学习采取什么行动；另一个称为“critic”的网络评估采取的动作的好坏，即这个动作的价值</li>
+<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
+<li>伪代码如下（其中，\(t \ \text{mod} \ d\) 表示策略更新比Q值更新慢一些，\(d\) 次Q值更新对应一次策略更新）：<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png" title height="40%" width="40%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png"> -->
+
+
+</li>
 </ul>
-<h4 id="A2C（Advantage-Actor-Critic）"><a href="#A2C（Advantage-Actor-Critic）" class="headerlink" title="A2C（Advantage Actor-Critic）"></a>A2C（Advantage Actor-Critic）</h4><ul>
-<li><strong>关键词：Advantage</strong></li>
-<li>A2C 是 Actor-Critic 方法的一个变种，它引入了优势函数（advantage function）的概念来代替直接使用价值函数</li>
-<li>优势函数 (A(s, a)) 定义为执行特定动作相对于遵循当前策略下的平均行为所能获得的优势或劣势。这种方法有助于更准确地估计哪些动作比其他动作更好，从而提高学习效率</li>
+<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
+<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
 </ul>
-<ul>
-<li><strong>更新方式</strong>：A2C 使用同步的方式更新参数，可以考虑使用多个网Actor分别于环境进行交互，然后共同的样本一起<strong>同步更新主网络</strong>，这意味着所有代理（agents）共享同一个模型，并且在每个训练步骤结束时同步更新模型权重</li>
+<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
+<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
+<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
 </ul>
-<h4 id="A3C（Asynchronous-Advantage-Actor-Critic）"><a href="#A3C（Asynchronous-Advantage-Actor-Critic）" class="headerlink" title="A3C（Asynchronous Advantage Actor-Critic）"></a>A3C（Asynchronous Advantage Actor-Critic）</h4><ul>
-<li><strong>关键词：Asynchronous</strong></li>
-<li>A3C 是 A2C 的异步版本，它允许多个代理同时在不同的环境中学习</li>
-<li><strong>更新方式</strong>：每个代理都有自己的环境副本和局部模型副本，它们独立地探索环境并收集经验。然后，这些经验被用来异步地更新全局模型，这样可以增加数据多样性并加快学习速度</li>
-<li><strong>优点</strong>：通过异步更新，A3C 可以有效利用多核处理器的能力，实现更快的学习速度和更好的性能</li>
+<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
+<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
+</ul>
+<hr>
+<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
+<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
+<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
 </ul>
 
           

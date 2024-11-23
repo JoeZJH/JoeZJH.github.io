@@ -89,7 +89,7 @@
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
-<meta property="og:updated_time" content="2024-11-10T13:21:01.754Z">
+<meta property="og:updated_time" content="2024-11-23T16:09:17.774Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——DDPG和TD3">
 <meta name="twitter:description" content="参考链接： 强化学习之图解PPO算法和TD3算法           DPG 原始论文：Deterministic Policy Gradient Algorithms（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）    Stochastic Actor-Critic Algorithms Critic网络损失函数$$Loss_{\text{cri">
@@ -349,7 +349,7 @@
 <li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
 </ul>
 </li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
 <li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
 <li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
 </ul>
@@ -363,13 +363,13 @@
 <li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
 </ul>
 </li>
-<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = E_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
 <li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
 <li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
 </ul>
 </li>
 <li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
-<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\arg\max_a Q(s,a)\)来找到最优策略。</li>
+<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\mathop{\arg\max}_a Q(s,a)\)来找到最优策略。</li>
 <li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
 <li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
 <li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
@@ -391,7 +391,7 @@
 <li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
 </ul>
 </li>
-<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= E_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
+<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= \mathbb{E}_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
 <li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
 </ul>
 <h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
@@ -400,7 +400,7 @@
 <li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
 </ul>
 </li>
-<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
+<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= \mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
 </li>
 <li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
 <ul>
@@ -408,9 +408,9 @@
 <li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
 </ul>
 </li>
-<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - E_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
+<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
 <ul>
-<li>上面的Loss求导就可以得到梯度是\(E_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
+<li>上面的Loss求导就可以得到梯度是\(\mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
 <li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
 </ul>
 </li>
@@ -420,12 +420,13 @@
 <li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a>  </li>
 </ul>
 <h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
-<li>伪代码：<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png">
-<ul>
-<li>其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数</li>
-<li><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</li>
-<li><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</li>
-</ul>
+<li><p>伪代码如下（其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数）：</p>
+<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png" title height="60%" width="60%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png"> -->
+</li>
+<li><p><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</p>
+</li>
+<li><p><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</p>
 </li>
 </ul>
 <hr>
@@ -435,10 +436,10 @@
 <li>其他改进是在Actor 的target网络输出中，增加噪声</li>
 </ul>
 <h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
-<li>伪代码<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png">
-<ul>
-<li>\(t \text{mod} d\)表示策略更新比Q值更新慢一些，\(d\)次Q值更新对应一次策略更新</li>
-</ul>
+<li>伪代码如下（其中，\(t \ \text{mod} \ d\) 表示策略更新比Q值更新慢一些，\(d\) 次Q值更新对应一次策略更新）：<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png" title height="40%" width="40%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png"> -->
+
+
 </li>
 </ul>
 <h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
@@ -486,8 +487,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——SAC.html" rel="next" title="RL——SAC">
-                <i class="fa fa-chevron-left"></i> RL——SAC
+              <a href="/Notes/RL/RL——GAE.html" rel="next" title="RL——GAE">
+                <i class="fa fa-chevron-left"></i> RL——GAE
               </a>
             
           </div>
@@ -496,8 +497,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——GAE.html" rel="prev" title="RL——GAE">
-                RL——GAE <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Linux/Linux——终端登录其他用户打开图形化窗口.html" rel="prev" title="Linux——多用户问题">
+                Linux——多用户问题 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

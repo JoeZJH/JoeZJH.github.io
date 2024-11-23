@@ -88,7 +88,7 @@
 <meta property="og:description" content="参考文献 原始论文：Reinforcement learning with deep energy-based policies.，2017，ICML，UC Berkeley，作者与SAC作者是同一个 Soft Q-learning解读 - 单字卓的文章 - 知乎 读书笔记：Reinforcement Learning with Deep Energy-Based Policies 论文">
 <meta property="og:locale" content="En/中">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——Soft-Q-Learning/Soft-Q-Learning-Policy-Improvement.png">
-<meta property="og:updated_time" content="2024-11-17T16:17:06.705Z">
+<meta property="og:updated_time" content="2024-11-23T15:17:58.693Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——Soft-Q-Learning">
 <meta name="twitter:description" content="参考文献 原始论文：Reinforcement learning with deep energy-based policies.，2017，ICML，UC Berkeley，作者与SAC作者是同一个 Soft Q-learning解读 - 单字卓的文章 - 知乎 读书笔记：Reinforcement Learning with Deep Energy-Based Policies 论文">
@@ -343,34 +343,34 @@
 </ul>
 <hr>
 <h3 id="回顾常规的强化学习场景"><a href="#回顾常规的强化学习场景" class="headerlink" title="回顾常规的强化学习场景"></a>回顾常规的强化学习场景</h3><ul>
-<li>目标定义：<br>$$<br>\begin{align}<br>J(\theta) &amp;= E_{\tau\sim \pi_\theta}[R(\tau)] \\<br>&amp;= E_{s_0, a_0,\ldots \sim \pi_\theta}\Big[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t) \Big] \\<br>&amp;= \sum_{t=0}^\infty E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]<br>\end{align}<br>$$<ul>
+<li>目标定义：<br>$$<br>\begin{align}<br>J(\theta) &amp;= \mathbb{E}_{\tau\sim \pi_\theta}[R(\tau)] \\<br>&amp;= \mathbb{E}_{s_0, a_0,\ldots \sim \pi_\theta}\Big[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t) \Big] \\<br>&amp;= \sum_{t=0}^\infty \mathbb{E}_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]<br>\end{align}<br>$$<ul>
 <li>第一行是普通PG方法推导的写法，最贴近本质</li>
 <li>第二行是TRPO文章的写法，是第一行的展开形势</li>
-<li>第三行这里\(\sum_{t=0}^T E_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]\)的写法是Soft Q-Learning论文和SAC论文提出来的，和之前TRPO等文章写法都不同，这里从第二行到第三行的变换可以理解为积分和求和交换顺序的写法，从状态\(s_0\)开始，\((s_t,a_t)\)都是按照策略\(\pi_\theta\)执行下去可能遇到的概率分布</li>
+<li>第三行这里\(\sum_{t=0}^T \mathbb{E}_{(s_t,a_t) \sim \rho_{\pi_\theta}} [r(s_t, a_t)]\)的写法是Soft Q-Learning论文和SAC论文提出来的，和之前TRPO等文章写法都不同，这里从第二行到第三行的变换可以理解为积分和求和交换顺序的写法，从状态\(s_0\)开始，\((s_t,a_t)\)都是按照策略\(\pi_\theta\)执行下去可能遇到的概率分布</li>
 </ul>
 </li>
-<li>Q值定义：<br>$$<br>\begin{align}<br>Q^\pi(s_t,a_t) &amp;= E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^lr(s_{t+l}, a_{t+l})] \vert_{(s_t,a_t)}<br>\end{align}<br>$$<ul>
+<li>Q值定义：<br>$$<br>\begin{align}<br>Q^\pi(s_t,a_t) &amp;= \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty \mathbb{E}_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^lr(s_{t+l}, a_{t+l})] \vert_{(s_t,a_t)}<br>\end{align}<br>$$<ul>
 <li>“\(\vert_{(s_t,a_t)}\)”表示条件概率，一般来说，不引起歧义的情况下，也可以省略”\(\vert_{(s_t,a_t)}\)”</li>
 </ul>
 </li>
-<li>V值定义：<br>$$<br>\begin{align}<br>V^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</li>
+<li>V值定义：<br>$$<br>\begin{align}<br>V^\pi(s_t) &amp;= \mathbb{E}_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})\Big] \vert_{(s_t,a_t)} \\<br>&amp;= \mathbb{E}_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</li>
 </ul>
 <hr>
 <h3 id="Soft-Q-Learning"><a href="#Soft-Q-Learning" class="headerlink" title="Soft Q-Learning"></a>Soft Q-Learning</h3><ul>
-<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T E_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
+<li>目标定义<br>$$ J(\phi) = \sum_{t=0}^T \mathbb{E}_{(s_t, a_t) \sim \rho_{\pi_\phi}} [r(s_t, a_t) + \alpha \mathcal{H}(\pi_\phi(.\vert s_t))] $$<ul>
 <li>这里目标中增加的熵就是Soft名字的来源，这里相对标准的强化学习，仅增加了\(\alpha \mathcal{H}(\pi_\phi(.\vert s_t))\)为额外目标，后续在不引起歧义的情况下，我们也用\(\alpha \mathcal{H}(\pi_\phi(s_{t}))\)来表示，且为了方便，后续推导中常常会视为\(\alpha=1\)，这里可以通过奖励和熵同时乘以\(\frac{1}{\alpha}\)来变换得到</li>
 </ul>
 </li>
-<li>Soft Q值定义<br>$$<br>\begin{align}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty E_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))]<br>\end{align}<br>$$<ul>
+<li>Soft Q值定义<br>$$<br>\begin{align}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \sum\limits_{l=1}^\infty \mathbb{E}_{(s_{t+l},a_{t+l}) \sim \rho_\pi}[\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))]<br>\end{align}<br>$$<ul>
 <li>对于\(Q_{\text{soft}}^\pi(s_t, a_t)\)来说，已经发生的事件是“\((s_t,a_t)\)”，此时\(a_t\)是确定的动作，对应的熵\(\mathcal{H}(\pi(s_{t}))=0\)</li>
 </ul>
 </li>
-<li>Soft V值定义，同时推导用Soft Q值表示Soft V值<br>$$<br>\begin{align}<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + \alpha\mathcal{H}(\pi(s_{t})) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big]\Big] \\<br>&amp;= E_{a_t \sim \pi}\Big[r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] + \alpha\mathcal{H}(\pi(s_{t}))\Big] \\<br>&amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t})) \\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t)] - \alpha E_{a_t \sim \pi} [\log \pi(a_t \vert s_t)]\\<br>&amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{align}<br>$$</li>
-<li>推导用Soft V值表示Soft Q值<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^{l-1}(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) +\alpha\mathcal{H}(\pi(s_{t+1+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} \Big[E_{a_{t+1},s_{t+2},a_{t+2},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) + \alpha\mathcal{H}(\pi(s_{t+1+l})))\Big]\Big] \\<br>&amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>\end{aligned}<br>$$</li>
+<li>Soft V值定义，同时推导用Soft Q值表示Soft V值<br>$$<br>\begin{align}<br>V_{\text{soft}}^\pi(s_t) &amp;= \mathbb{E}_{a_t,s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) + \alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= \mathbb{E}_{a_t \sim \pi}\Big[r(s_t, a_t) + \alpha\mathcal{H}(\pi(s_{t})) + \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big]\Big] \\<br>&amp;= \mathbb{E}_{a_t \sim \pi}\Big[r(s_t, a_t) + \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] + \alpha\mathcal{H}(\pi(s_{t}))\Big] \\<br>&amp;= \mathbb{E}_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t})) \\<br>&amp;= \mathbb{E}_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t)] - \alpha \mathbb{E}_{a_t \sim \pi} [\log \pi(a_t \vert s_t)]\\<br>&amp;= \mathbb{E}_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)]<br>\end{align}<br>$$</li>
+<li>推导用Soft V值表示Soft Q值<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t)  &amp;= r(s_t, a_t) + \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^l(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=1}^\infty\gamma^{l-1}(r(s_{t+l}, a_{t+l}) +\alpha\mathcal{H}(\pi(s_{t+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) +\alpha\mathcal{H}(\pi(s_{t+1+l})))\Big] \\<br>&amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} \Big[\mathbb{E}_{a_{t+1},s_{t+2},a_{t+2},\cdots \sim \pi}\Big[\sum\limits_{l=0}^\infty\gamma^l(r(s_{t+1+l}, a_{t+1+l}) + \alpha\mathcal{H}(\pi(s_{t+1+l})))\Big]\Big] \\<br>&amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>\end{aligned}<br>$$</li>
 </ul>
 <hr>
 <h3 id="Soft贝尔曼期望方程"><a href="#Soft贝尔曼期望方程" class="headerlink" title="Soft贝尔曼期望方程"></a>Soft贝尔曼期望方程</h3><ul>
-<li>通过上面的推导，我们可以得到，<strong>Soft贝尔曼期望方程</strong>为：<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [E_{a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})]] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s), a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</li>
+<li>通过上面的推导，我们可以得到，<strong>Soft贝尔曼期望方程</strong>为：<br>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [\mathbb{E}_{a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})]] \\<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s), a_{t+1} \sim \pi} [Q_{\text{soft}}^\pi(s_{t+1}, a_{t+1}) - \alpha \log \pi(a_{t+1} \vert s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= \mathbb{E}_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= \mathbb{E}_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</li>
 </ul>
 <hr>
 <h3 id="Soft贝尔曼最优方程"><a href="#Soft贝尔曼最优方程" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h3><ul>
@@ -379,35 +379,35 @@
 <li>策略的Soft Q值是单调性的证明如下：  <img src="/Notes/RL/RL——Soft-Q-Learning/Soft-Q-Learning-Policy-Improvement.png">
 <ul>
 <li>以上式子证明时没有考虑温度系数\(\alpha\)，考虑温度系数\(\alpha\)时在所有的熵\(\mathcal{H}(\pi(\cdot\vert\cdot))\)时前面都加上\(\alpha\)即可</li>
-<li>其中使用到以下不等式  ：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \le \mathcal{H}(\tilde{\pi}(\cdot\vert s)) + E_{a\sim \tilde{\pi}}[Q_{\text{soft}}^\pi(s,a)]<br>  $$</li>
-<li>上面的不等式又使用到以下式子（下面的式子如何推出上面的式子待确认TODO）：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da<br>  $$<ul>
-<li>以上式子证明过程如下：<br>$$<br>\begin{align}<br>\text{right}  &amp;= - \int \pi(\cdot | s) \log \frac{\pi(\cdot | s)}{\tilde{\pi}(\cdot | s)} + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  {\tilde{\pi}(\cdot | s)} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right) \\<br>&amp;= \mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \\<br>&amp;= \text{left}<br>\end{align}<br>$$</li>
+<li>其中使用到以下不等式  ：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + \mathbb{E}_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \le \mathcal{H}(\tilde{\pi}(\cdot\vert s)) + \mathbb{E}_{a\sim \tilde{\pi}}[Q_{\text{soft}}^\pi(s,a)]<br>  $$</li>
+<li>上面的不等式又使用到以下式子（下面的式子如何推出上面的式子待确认TODO）：<br>  $$<br>  \mathcal{H}(\pi(\cdot\vert s)) + \mathbb{E}_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da<br>  $$<ul>
+<li>以上式子证明过程如下：<br>$$<br>\begin{align}<br>\text{right}  &amp;= - \int \pi(\cdot | s) \log \frac{\pi(\cdot | s)}{\tilde{\pi}(\cdot | s)} + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  {\tilde{\pi}(\cdot | s)} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da} + \int \pi(\cdot | s) \Big(\log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da\Big) \\<br>&amp;= - \int \pi(\cdot | s) \log \pi(\cdot | s) + \int \pi(\cdot | s) \log  \exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right) \\<br>&amp;= \mathcal{H}(\pi(\cdot\vert s)) + \mathbb{E}_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] \\<br>&amp;= \text{left}<br>\end{align}<br>$$</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>其中，由式子<br>$$<br>\begin{align}<br>\mathcal{H}(\pi(\cdot\vert s)) + E_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>\end{align}<br>$$<ul>
+<li>其中，由式子<br>$$<br>\begin{align}<br>\mathcal{H}(\pi(\cdot\vert s)) + \mathbb{E}_{a\sim \pi}[Q_{\text{soft}}^\pi(s,a)] = - D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot))  + \log \int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da \\<br>\end{align}<br>$$<ul>
 <li>其中\(\tilde{\pi}\)是按照\(\tilde{\pi}(s) = \frac{\exp \left(Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(Q_{\text{soft}}^{\pi}(s, a)\right) da}\)迭代以后的策略</li>
 <li>以上推导没有增加温度系数，默认温度系数为1，实际上，如果增加温度系数，有\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)</li>
-<li>问题：如果策略的熵为0或温度系数为0，此时这个最优形式还能降级到\(\pi^*(s) = \arg\max_a Q(s,a)\)吗？<ul>
+<li>问题：如果策略的熵为0或温度系数为0，此时这个最优形式还能降级到\(\pi^*(s) = \mathop{\arg\max}_a Q(s,a)\)吗？<ul>
 <li>当策略的熵为0时，是可以的，此时策略必须是确定性策略，按照上述公式，动作只能取Q值最大的那一个</li>
-<li>当温度系数为0时，此时Reward和DQN一致，最优解应该是\(\pi^*(s) = \arg\max_a Q(s,a)\)。考虑温度系数的版本\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)，当温度系数\(\alpha\rightarrow 0\)时，策略近似取Q值最大的动作，等价于DQN</li>
+<li>当温度系数为0时，此时Reward和DQN一致，最优解应该是\(\pi^*(s) = \mathop{\arg\max}_a Q(s,a)\)。考虑温度系数的版本\(\tilde{\pi}(s) = \frac{\exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, \cdot) \right)}{\int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi}(s, a)\right) da}\)，当温度系数\(\alpha\rightarrow 0\)时，策略近似取Q值最大的动作，等价于DQN</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>当策略收敛以后，即经过迭代以后\(\tilde{\pi} = \pi = \pi^*\)，此时有\(D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot)) = 0\)成立，即<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>考虑温度系数后有：<br>$$ \alpha\mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>两边同时除以\(\alpha\)有<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + E_{a\sim \pi^*}[\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
-<li>由于<br>$$<br>V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>$$</li>
-<li>所以有<br>$$<br>\frac{1}{\alpha}V_{\text{soft}}^\pi(s_t) = E_{a_t \sim \pi}[\frac{1}{\alpha} Q_{\text{soft}}^\pi(s_t, a_t)] + \mathcal{H}(\pi(s_{t}))<br>$$</li>
+<li>当策略收敛以后，即经过迭代以后\(\tilde{\pi} = \pi = \pi^*\)，此时有\(D_{\text{KL}}(\pi(\cdot|s) || \tilde{\pi}(s, \cdot)) = 0\)成立，即<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + \mathbb{E}_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>考虑温度系数后有：<br>$$ \alpha\mathcal{H}(\pi^*(\cdot\vert s)) + \mathbb{E}_{a\sim \pi^*}[Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>两边同时除以\(\alpha\)有<br>$$ \mathcal{H}(\pi^*(\cdot\vert s)) + \mathbb{E}_{a\sim \pi^*}[\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s,a)] = \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
+<li>由于<br>$$<br>V_{\text{soft}}^\pi(s_t) = \mathbb{E}_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>$$</li>
+<li>所以有<br>$$<br>\frac{1}{\alpha}V_{\text{soft}}^\pi(s_t) = \mathbb{E}_{a_t \sim \pi}[\frac{1}{\alpha} Q_{\text{soft}}^\pi(s_t, a_t)] + \mathcal{H}(\pi(s_{t}))<br>$$</li>
 <li>最优的策略\(\pi^*\)对应的V值\(V^{\pi^*}(s)\)为：<br>$$ V_{\text{soft}}^{\pi^*}(s_t) = \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da $$</li>
 </ul>
 <hr>
-<h3 id="贝尔曼方程总结"><a href="#贝尔曼方程总结" class="headerlink" title="贝尔曼方程总结"></a>贝尔曼方程总结</h3><h4 id="贝尔曼方程"><a href="#贝尔曼方程" class="headerlink" title="贝尔曼方程"></a>贝尔曼方程</h4><p>$$<br>\begin{align}<br> Q^\pi(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^\pi(s_{t+1})] \\<br> V^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</p>
-<h4 id="贝尔曼最优方程"><a href="#贝尔曼最优方程" class="headerlink" title="贝尔曼最优方程"></a>贝尔曼最优方程</h4><p>$$<br>\begin{align}<br> Q^{\pi^*}(s_t,a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^{\pi^*}(s_{t+1})] \\<br> V^{\pi^*}(s_t) &amp;= \max_{a_t}[Q^{\pi^*}(s_t, a_t)]<br>\end{align}<br>$$</p>
-<h4 id="Soft贝尔曼方程"><a href="#Soft贝尔曼方程" class="headerlink" title="Soft贝尔曼方程"></a>Soft贝尔曼方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= E_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</p>
-<h4 id="Soft贝尔曼最优方程-1"><a href="#Soft贝尔曼最优方程-1" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^{\pi^*}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma E_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^{\pi^*}(s_{t+1})] \\<br>V_{\text{soft}}^{\pi^*}(s_t) &amp;= \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da<br>\end{aligned}<br>$$</p>
+<h3 id="贝尔曼方程总结"><a href="#贝尔曼方程总结" class="headerlink" title="贝尔曼方程总结"></a>贝尔曼方程总结</h3><h4 id="贝尔曼方程"><a href="#贝尔曼方程" class="headerlink" title="贝尔曼方程"></a>贝尔曼方程</h4><p>$$<br>\begin{align}<br> Q^\pi(s_t,a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^\pi(s_{t+1})] \\<br> V^\pi(s_t) &amp;= \mathbb{E}_{a_t \sim \pi}[Q^\pi(s_t, a_t)]<br>\end{align}<br>$$</p>
+<h4 id="贝尔曼最优方程"><a href="#贝尔曼最优方程" class="headerlink" title="贝尔曼最优方程"></a>贝尔曼最优方程</h4><p>$$<br>\begin{align}<br> Q^{\pi^*}(s_t,a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim p(s_{t+1}|s_t, a_t)}[V^{\pi^*}(s_{t+1})] \\<br> V^{\pi^*}(s_t) &amp;= \max_{a_t}[Q^{\pi^*}(s_t, a_t)]<br>\end{align}<br>$$</p>
+<h4 id="Soft贝尔曼方程"><a href="#Soft贝尔曼方程" class="headerlink" title="Soft贝尔曼方程"></a>Soft贝尔曼方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^\pi(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^\pi(s_{t+1})] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= \mathbb{E}_{a_t \sim \pi} [Q_{\text{soft}}^\pi(s_t, a_t) - \alpha \log \pi(a_t \vert s_t)] \\<br>V_{\text{soft}}^\pi(s_t) &amp;= \mathbb{E}_{a_t \sim \pi}[Q_{\text{soft}}^\pi(s_t, a_t)] + \alpha\mathcal{H}(\pi(s_{t}))<br>\end{aligned}<br>$$</p>
+<h4 id="Soft贝尔曼最优方程-1"><a href="#Soft贝尔曼最优方程-1" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^{\pi^*}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^{\pi^*}(s_{t+1})] \\<br>V_{\text{soft}}^{\pi^*}(s_t) &amp;= \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da<br>\end{aligned}<br>$$</p>
 <ul>
 <li>待更新</li>
 </ul>
@@ -441,8 +441,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——TRPO.html" rel="next" title="RL——TRPO">
-                <i class="fa fa-chevron-left"></i> RL——TRPO
+              <a href="/Notes/RL/RL——SAC.html" rel="next" title="RL——SAC">
+                <i class="fa fa-chevron-left"></i> RL——SAC
               </a>
             
           </div>
@@ -451,8 +451,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——PPO.html" rel="prev" title="RL——PPO">
-                RL——PPO <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html" rel="prev" title="RL——TRPO-PPO-目标函数基础推导">
+                RL——TRPO-PPO-目标函数基础推导 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

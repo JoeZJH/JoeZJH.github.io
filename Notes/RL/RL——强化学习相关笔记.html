@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-16T13:58:47.065Z">
+<meta property="og:updated_time" content="2024-11-23T15:17:58.691Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——强化学习相关笔记">
 <meta name="twitter:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
@@ -399,13 +399,13 @@
 <h3 id="为什么SARSA和DQN都可以收敛到最优解？"><a href="#为什么SARSA和DQN都可以收敛到最优解？" class="headerlink" title="为什么SARSA和DQN都可以收敛到最优解？"></a>为什么SARSA和DQN都可以收敛到最优解？</h3><ul>
 <li>两者的Q值目标都可以表述为：\(r(s,a)+\gamma Q(s’,a’) - Q(s, a)\)，两者的\(Q(s’,a’)\)都是上一轮的\(Q\)值（一般也会使用Q的目标网络\(Q_{\bar{\theta}}(s’,a’)\)，但含义就是上一轮的Q的含义），但两者的\(a’\)值对应的策略不同</li>
 <li>SARSA：  <ul>
-<li><strong>更新目标</strong>：\(a’\)是按照当前Q值对应的\(\epsilon\)-Greedy策略采样的（该动作大多以大概率取\(a’\sim \arg\max_{a’} Q(s’,a’)\)，并以一定的小概率随机采样）</li>
+<li><strong>更新目标</strong>：\(a’\)是按照当前Q值对应的\(\epsilon\)-Greedy策略采样的（该动作大多以大概率取\(a’\sim \mathop{\arg\max}_{a’} Q(s’,a’)\)，并以一定的小概率随机采样）</li>
 <li><strong>样本状态动作分布</strong>：当前策略采样到的状态分布\(s,a,s’\)</li>
 <li>在随机采样概率越来越小的情况下，SARSA最终可以收敛到最优策略</li>
 </ul>
 </li>
 <li>DQN：<ul>
-<li><strong>更新目标</strong>：\(a’\sim \arg\max_{a’} Q(s’,a’)\)，相当于没有\(\epsilon\)-Greedy策略</li>
+<li><strong>更新目标</strong>：\(a’\sim \mathop{\arg\max}_{a’} Q(s’,a’)\)，相当于没有\(\epsilon\)-Greedy策略</li>
 <li><strong>样本状态动作分布</strong>：历史行为策略采样到的状态分布\(s,a,s’\)</li>
 </ul>
 </li>
@@ -454,7 +454,7 @@
 <p>在训练阶段，应该使用随机策略，因为这样可以更好地探索环境；而在评估阶段，应该使用确定性策略，因为最优策略总是一个确定的策略</p>
 </blockquote>
 <ul>
-<li><strong>最优策略是确定性策略</strong>，证明：对于任意给定的状态\(s\),有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \arg\max_a q^*(s,a)\)</li>
+<li><strong>最优策略是确定性策略</strong>，证明：对于任意给定的状态\(s\),有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \mathop{\arg\max}_a q^*(s,a)\)</li>
 </ul>
 </li>
 <li>个人理解：以上描述基本没有问题，但是加一些限定说明会更准确：<ul>
@@ -477,16 +477,16 @@
 </ul>
 <hr>
 <h3 id="off-policy-AC目标和on-policy-AC目标等价吗？"><a href="#off-policy-AC目标和on-policy-AC目标等价吗？" class="headerlink" title="off-policy AC目标和on-policy AC目标等价吗？"></a>off-policy AC目标和on-policy AC目标等价吗？</h3><ul>
-<li>off-policy AC方法的目标都是类似形式：\(\max_\pi \quad E_{s\sim \rho^{\beta}(s)}[V^{\pi}(s)]\)<ul>
+<li>off-policy AC方法的目标都是类似形式：\(\max_\pi \quad \mathbb{E}_{s\sim \rho^{\beta}(s)}[V^{\pi}(s)]\)<ul>
 <li>基本含义就是，找一个最优的策略\(\pi\)，使得\(V^{\pi}(s)\)在<strong>行为策略</strong>的状态访问分布下期望最大</li>
 </ul>
 </li>
-<li>实际上，on-policy AC方法的目标是类似形式：\(\max_\pi \quad E_{s\sim \rho^{\pi}(s)}[V^{\pi}(s)]\)<ul>
+<li>实际上，on-policy AC方法的目标是类似形式：\(\max_\pi \quad \mathbb{E}_{s\sim \rho^{\pi}(s)}[V^{\pi}(s)]\)<ul>
 <li>基本含义就是，找一个最优的策略\(\pi\)，使得\(V^{\pi}(s)\)在<strong>策略\(\pi\)</strong>的状态访问分布下期望最大</li>
 </ul>
 </li>
 <li>答案是<strong>如果策略空间包含所有策略，则两者等价，否则不等价</strong>：<ul>
-<li><strong>如果策略模型空间是无限大的，一定存在最优的策略\(\pi^*\)</strong>，使得任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s), \forall{\pi}\)成立，证明是：对于任意给定的状态\(s\)，有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \arg\max_a q^*(s,a)\)，此时，我们定义一个策略为：对任意状态\(s\)，都取该状态下的\(a^*\)即可</li>
+<li><strong>如果策略模型空间是无限大的，一定存在最优的策略\(\pi^*\)</strong>，使得任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s), \forall{\pi}\)成立，证明是：对于任意给定的状态\(s\)，有\(\int_a \pi(a|s) q^*(s,a) d a \le q^*(s,a^*) \)，其中\(a^* = \mathop{\arg\max}_a q^*(s,a)\)，此时，我们定义一个策略为：对任意状态\(s\)，都取该状态下的\(a^*\)即可</li>
 <li>如果能找到一个最优的策略\(\pi^*\)，使得在任何一个状态\(s\)下都有\(V^{\pi^*}(s) \ge V^{\pi}(s)\)成立，那么，我们找到策略\(\pi^*\)就同时是off-policy和on-policy的最优解<ul>
 <li>这种情况下，如果能找到\(\pi^*\)，则两者等价（注意：即使存在\(\pi^*\)，模型也不一定能学到，如果在off-policy和on-policy设定下学到的难度不同，甚至策略模型空间受限，拟合不了最优的策略\(\pi^*\)，也不能说两者目标等价）</li>
 </ul>

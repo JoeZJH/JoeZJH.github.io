@@ -91,7 +91,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
-<meta property="og:updated_time" content="2024-11-23T11:46:20.468Z">
+<meta property="og:updated_time" content="2024-11-23T16:15:09.723Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——CQL">
 <meta name="twitter:description" content="参考链接： 原始论文：NIPS 2020, Conservative q-learning for offline reinforcement learning   【论文分享】Conservative Q-Learning for Offline Reinforcement Learning      Conservative Q-Learning for Offline Reinforc">
@@ -368,7 +368,7 @@
 </ul>
 <h4 id="Offline-RL中使用常规方法"><a href="#Offline-RL中使用常规方法" class="headerlink" title="Offline RL中使用常规方法"></a>Offline RL中使用常规方法</h4><ul>
 <li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
-<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \arg \min_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \arg \max_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
+<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \mathop{\arg\min}_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \mathop{\arg\max}_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
 <li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
 <li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
 <li>policy evaluation实际上就是在重复对Q使用贝尔曼算子，只是使用最小化均方误差的形式去实现了</li>
@@ -382,12 +382,18 @@
 <li>总结一下：<strong>对于策略\(\pi\)，我们的真实Q值是\(Q^\pi\)，在固定的数据集下学到的是\(\hat{Q}^\pi\)，但该值一般往往会高估，我们的目标是让\(\hat{Q}^\pi\)尽量接近真实值\(Q^\pi\)，那么面临的往往是高估这个问题，CQL算法的核心思想就是解决这个问题</strong></li>
 </ul>
 <h4 id="改进一：打压未知动作的Q值"><a href="#改进一：打压未知动作的Q值" class="headerlink" title="改进一：打压未知动作的Q值"></a>改进一：打压未知动作的Q值</h4><ul>
-<li>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</li>
-<li>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</li>
-<li>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</li>
-<li>这里论文中给出了证明（Theorem 3.1）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png">
+<li><p>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
+</li>
+<li><p>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</p>
+</li>
+<li><p>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</p>
+</li>
+<li><p>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</p>
+</li>
+<li><p>这里论文中给出了证明（Theorem 3.1）：</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png"> -->
+
 <ul>
 <li>上式说明：<ul>
 <li>当\(supp\ \mu \subset supp\ \pi\)（\(supp\ \mu\)表示支持集），且\(\alpha\)足够大时，\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即对于任意的分布\(\mu\)，只要我们这里\(\alpha\)取得足够大，总能学到一个比真实值\(Q^\pi(s,a)\)小的Q值</li>
@@ -399,9 +405,12 @@
 </li>
 </ul>
 <h4 id="改进二：打压补偿"><a href="#改进二：打压补偿" class="headerlink" title="改进二：打压补偿"></a>改进二：打压补偿</h4><ul>
-<li>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \arg \min_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</li>
-<li>这里论文中给出了证明（Theorem 3.2）：  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title="" height="80%" width="80%"> -->
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
+<li><p>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \mathop{\arg\min}_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
+</li>
+<li><p>这里论文中给出了证明（Theorem 3.2）：</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png"> -->
+
 <ul>
 <li>上式说明：<ul>
 <li>当\(\mu=\pi\)（注意，改进一种不需要这个约束），且\(\alpha\)较大时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
@@ -452,10 +461,14 @@ $$
 $$ -->
 
 <h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
-<li>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="70%" width="70%">
-<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> --></li>
-<li>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \arg\max_a Q(s,a)\)作为最终的策略</li>
-<li>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</li>
+<li><p>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))：</p>
+<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="60%" width="60%">
+<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> -->
+</li>
+<li><p>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \mathop{\arg\max}_a Q(s,a)\)作为最终的策略</p>
+</li>
+<li><p>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</p>
+</li>
 </ul>
 <h4 id="实践说明"><a href="#实践说明" class="headerlink" title="实践说明"></a>实践说明</h4><ul>
 <li>\(\alpha\)的选择：</li>
@@ -469,23 +482,31 @@ $$ -->
 </ul>
 <hr>
 <h3 id="一些说明和思考"><a href="#一些说明和思考" class="headerlink" title="一些说明和思考"></a>一些说明和思考</h3><ul>
-<li>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：<ul>
+<li><p>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：</p>
+<ul>
 <li>CQL(\(\mathcal{R}\))：CQL原始形式</li>
 <li>CQL(\(\mathcal{\rho}\))：CQL变体，对任意\(\rho\)均可使用这个表述，包含了后面的CQL(\(\mathcal{H}\))，论文中实验时使用的是\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)</li>
 <li>CQL(\(\mathcal{H}\))：CQL变体，当CQL(\(\mathcal{\rho}\))中\(\rho\)取均匀分布时的更新形式</li>
 </ul>
 </li>
-<li>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</li>
-<li>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</li>
-<li>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？<ul>
+<li><p>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</p>
+</li>
+<li><p>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</p>
+</li>
+<li><p>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？</p>
+<ul>
 <li>普通AC确实是这样实现的，但是在Offline RL场景，不希望迭代效率过慢？</li>
 </ul>
 </li>
-<li>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?<ul>
+<li><p>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?</p>
+<ul>
 <li>详请见附录推导</li>
 </ul>
 </li>
-<li>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
+<li><p>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多</p>
+  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png"> -->
+
 <ul>
 <li>具体来说(Theorem 3.6)：CQL算法得到的策略\(\pi^*(a|s)\)是一个策略\(\hat{\pi}_\beta\)的\(\zeta\)-safe policy improvement，即有\(1-\zeta\)的概率可以保证\(J(\pi^*, M) \ge J(\hat{\pi}_\beta, M) - \zeta\)</li>
 </ul>
@@ -500,7 +521,7 @@ $$ -->
 </li>
 <li>证明前，我们先将上述问题修改成更一般的形式（更一般的形式更常用一些），在更一般的形式下，\(D_{\mathrm{KL}}(\mu | \rho)\)经常会加上温度系数\(\alpha\)或出现在约束中：<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) &amp;\le \epsilon \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
 <li>求解上面的问题可以先转换成构造拉格朗日函数<ul>
-<li>原始问题变形<br>$$<br>\begin{align}<br>\max_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
+<li>原始问题变形<br>$$<br>\begin{align}<br>\min_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
 <li>拉格朗日函数如下<br>$$<br>\begin{align}<br>L(\mu,\alpha,\beta) &amp;= -\mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})] + \alpha(D_{\mathrm{KL}}(\mu | \rho)-\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log\frac{\mu(\mathbf{x})}{\rho(\mathbf{x})} -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log \mu(\mathbf{x}) - \sum_x \mu(\mathbf{x}) \log \rho(\mathbf{x}) -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>\end{align}<br>$$</li>
 </ul>
 </li>
