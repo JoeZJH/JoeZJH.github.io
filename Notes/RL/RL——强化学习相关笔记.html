@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
+<meta name="description" content="on-policy和off-policy方法简单对比？ 下面是网上经常有人引用的一句话： on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。off-policy劣势是曲折，收敛慢，但优势是更为强大和通用。   个人理解，这句话前半段关于on-policy本身需要在某些特定场景下才准确，分析如下： “on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。”">
 <meta name="keywords" content="RL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RL——强化学习相关笔记">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/RL/RL——强化学习相关笔记.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
+<meta property="og:description" content="on-policy和off-policy方法简单对比？ 下面是网上经常有人引用的一句话： on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。off-policy劣势是曲折，收敛慢，但优势是更为强大和通用。   个人理解，这句话前半段关于on-policy本身需要在某些特定场景下才准确，分析如下： “on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。”">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-23T15:17:58.691Z">
+<meta property="og:updated_time" content="2024-11-24T16:47:32.122Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——强化学习相关笔记">
-<meta name="twitter:description" content="为什么off-policy的方法在于不与环境交互时效果不好？ 注：理论上，off-policy的方法对收集样本的行为策略没有要求 Absent Data: 数据集中可能存在某些状态是从来没有出现过的 某些state-action对的缺失会导致在该状态和动作上的错误估计   Training Mismatch: 离线训练数据的分布和强化模型线上serving时的分布不一致 用于更新网络的状">
+<meta name="twitter:description" content="on-policy和off-policy方法简单对比？ 下面是网上经常有人引用的一句话： on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。off-policy劣势是曲折，收敛慢，但优势是更为强大和通用。   个人理解，这句话前半段关于on-policy本身需要在某些特定场景下才准确，分析如下： “on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。”">
 
 
 
@@ -330,6 +330,20 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
+<hr>
+<h3 id="on-policy和off-policy方法简单对比？"><a href="#on-policy和off-policy方法简单对比？" class="headerlink" title="on-policy和off-policy方法简单对比？"></a>on-policy和off-policy方法简单对比？</h3><ul>
+<li>下面是网上经常有人引用的一句话：<blockquote>
+<p>on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。off-policy劣势是曲折，收敛慢，但优势是更为强大和通用。</p>
+</blockquote>
+</li>
+<li>个人理解，这句话前半段关于on-policy本身需要在某些特定场景下才准确，分析如下：</li>
+<li>“on-policy优点是直接了当，速度快，劣势是不一定找到最优策略。”<ul>
+<li>为什么说速度快？对训练数据利用不足本身就会导致收敛慢吧？：这里说的速度快是训练时能够直接训练当前策略收集到的状态动作下的值（Q值或策略），直接更新当前策略收集到的状态动作对，可能导致策略快速收敛到局部最优，特别是当探索不充分时，off-policy则不然</li>
+<li>不一定找到最优策略的理解：1）由于 on-policy 要求收集数据的行为策略（需要权衡探索和利用）和待优化策略是同一个策略，所以不能过于探索，否则最终学习到的策略不好，从而需要降低探索，减少探索以后导致容易陷入局部最优；2）仅更新当前策略收集到的状态动作对，导致模型快速收敛到某一个局部环境中，再也出不来</li>
+<li>理解：on-policy采用初期增加探索，后期减少探索的方式会更好，比如SARSA的更新过程中\(\epsilon\)越来越小</li>
+</ul>
+</li>
+</ul>
 <hr>
 <h3 id="为什么off-policy的方法在于不与环境交互时效果不好？"><a href="#为什么off-policy的方法在于不与环境交互时效果不好？" class="headerlink" title="为什么off-policy的方法在于不与环境交互时效果不好？"></a>为什么off-policy的方法在于不与环境交互时效果不好？</h3><ul>
 <li>注：<em>理论上，off-policy的方法对收集样本的行为策略没有要求</em></li>
@@ -665,7 +679,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">284</span>
+                  <span class="site-state-item-count">285</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -727,7 +741,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么off-policy的方法在于不与环境交互时效果不好？"><span class="nav-number">1.</span> <span class="nav-text">为什么off-policy的方法在于不与环境交互时效果不好？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Online-RL中不能使用BN？"><span class="nav-number">2.</span> <span class="nav-text">为什么Online RL中不能使用BN？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DQN不需要重要性采样？"><span class="nav-number">3.</span> <span class="nav-text">为什么DQN不需要重要性采样？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q网络的更新应该是软更新还是硬更新？"><span class="nav-number">4.</span> <span class="nav-text">Q网络的更新应该是软更新还是硬更新？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-SAC是off-policy的？"><span class="nav-number">5.</span> <span class="nav-text">为什么DDPG/SAC是off-policy的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么SARSA和DQN都可以收敛到最优解？"><span class="nav-number">6.</span> <span class="nav-text">为什么SARSA和DQN都可以收敛到最优解？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#V值更新如何保证学习到指定策略？"><span class="nav-number">7.</span> <span class="nav-text">V值更新如何保证学习到指定策略？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#离散动作、连续动作的使用场景辨析"><span class="nav-number">8.</span> <span class="nav-text">离散动作、连续动作的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#随机策略、确定性策略的使用场景辨析"><span class="nav-number">9.</span> <span class="nav-text">随机策略、确定性策略的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#off-policy-AC目标和on-policy-AC目标等价吗？"><span class="nav-number">10.</span> <span class="nav-text">off-policy AC目标和on-policy AC目标等价吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO可以用确定性策略建模吗？"><span class="nav-number">11.</span> <span class="nav-text">TRPO可以用确定性策略建模吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-TD3有Target-Actor网络，而PPO-SAC没有？"><span class="nav-number">12.</span> <span class="nav-text">为什么DDPG/TD3有Target Actor网络，而PPO/SAC没有？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么场景下需要Twin-Q网络？"><span class="nav-number">13.</span> <span class="nav-text">什么场景下需要Twin Q网络？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#on-policy算法一般会使用多个epoch吗？"><span class="nav-number">14.</span> <span class="nav-text">on-policy算法一般会使用多个epoch吗？</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#on-policy和off-policy方法简单对比？"><span class="nav-number">1.</span> <span class="nav-text">on-policy和off-policy方法简单对比？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么off-policy的方法在于不与环境交互时效果不好？"><span class="nav-number">2.</span> <span class="nav-text">为什么off-policy的方法在于不与环境交互时效果不好？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Online-RL中不能使用BN？"><span class="nav-number">3.</span> <span class="nav-text">为什么Online RL中不能使用BN？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DQN不需要重要性采样？"><span class="nav-number">4.</span> <span class="nav-text">为什么DQN不需要重要性采样？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q网络的更新应该是软更新还是硬更新？"><span class="nav-number">5.</span> <span class="nav-text">Q网络的更新应该是软更新还是硬更新？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-SAC是off-policy的？"><span class="nav-number">6.</span> <span class="nav-text">为什么DDPG/SAC是off-policy的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么SARSA和DQN都可以收敛到最优解？"><span class="nav-number">7.</span> <span class="nav-text">为什么SARSA和DQN都可以收敛到最优解？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#V值更新如何保证学习到指定策略？"><span class="nav-number">8.</span> <span class="nav-text">V值更新如何保证学习到指定策略？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#离散动作、连续动作的使用场景辨析"><span class="nav-number">9.</span> <span class="nav-text">离散动作、连续动作的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#随机策略、确定性策略的使用场景辨析"><span class="nav-number">10.</span> <span class="nav-text">随机策略、确定性策略的使用场景辨析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#off-policy-AC目标和on-policy-AC目标等价吗？"><span class="nav-number">11.</span> <span class="nav-text">off-policy AC目标和on-policy AC目标等价吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TRPO可以用确定性策略建模吗？"><span class="nav-number">12.</span> <span class="nav-text">TRPO可以用确定性策略建模吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么DDPG-TD3有Target-Actor网络，而PPO-SAC没有？"><span class="nav-number">13.</span> <span class="nav-text">为什么DDPG/TD3有Target Actor网络，而PPO/SAC没有？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么场景下需要Twin-Q网络？"><span class="nav-number">14.</span> <span class="nav-text">什么场景下需要Twin Q网络？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#on-policy算法一般会使用多个epoch吗？"><span class="nav-number">15.</span> <span class="nav-text">on-policy算法一般会使用多个epoch吗？</span></a></li></ol></div>
             
 
           </div>

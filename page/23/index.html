@@ -275,6 +275,228 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html" itemprop="url">ML——GBDT-梯度提升树-推导过程</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
+<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
+<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95-%E6%97%A0%E7%BA%A6%E6%9D%9F%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">无约束参数优化方法</a></li>
+</ul>
+<hr>
+<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
+<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
+<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
+<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
+
+</li>
+</ul>
+<hr>
+<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
+<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
+</ul>
+<hr>
+<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
+<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
+<ul>
+<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
+</ul>
+<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \mathop{\arg\max}_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
+<ul>
+<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
+<li>最小化损失函数即可得到最优模型</li>
+</ul>
+<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
+<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
+<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
+<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
+<li>上面的推导中<ul>
+<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数\(L(y_{i}, F(x_{i}))\)关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)，这个梯度也是GBDT名字中梯度的由来<ul>
+<li>这个损失函数在使用不同回归方法时时定义各不相同</li>
+<li>原始论文中提到两个损失函数定义,根据损失函数的不同,对应的归回方法不同: <strong>最小二乘归回</strong>或者<strong>最小绝对误差回归</strong></li>
+</ul>
+</li>
+<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
+<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
+<li>但是需要注意的是,如果我们使用的基分类器是逻辑回归,那么这里每个基分类器的结果都是在[0-1]之间的数,是需要前面的\(\beta\)的</li>
+<li>这里我们推导的时候假定了基分类器是回归树,所以不需要使用 \(\beta\)</li>
+</ul>
+</li>
+<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
+<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
+</ul>
+</li>
+<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
+</ul>
+</li>
+</ul>
+<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用逻辑回归模型[Friedman 2000]等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
+<ul>
+<li>注意:包括Adaboost和GBDT在内<strong>Boosting框架中，基函数(基分类器)都不能使用线性模型</strong><ul>
+<li>理解: Boosting框架本质上是一个加法模型，是对多个基函数的线性组合，得到更优的分类器，可以证明线性模型的线性组合还是线性模型，如果Boosting框架中使用线性模型，那么我们最终得到的分类器也是线性模型，这就局限了我们的整体模型的表达能力</li>
+</ul>
+</li>
+</ul>
+<h5 id="最小二乘回归-损失函数"><a href="#最小二乘回归-损失函数" class="headerlink" title="最小二乘回归(损失函数)"></a>最小二乘回归(损失函数)</h5><p><em>Least-Squares Regression</em></p>
+<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
+<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
+</ul>
+<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least Absolute Deviation Regression, LAD</em></p>
+<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
+<li>绝对值的导数就是1或者-1,当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
+<li>同理得到，当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
+<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
+</ul>
+</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下</li>
+<li>待更新*<br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li>回归树和逻辑回归的优缺点比较<ul>
+<li><strong>树模型优点</strong>:<ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(混合类型特征指的是数值型和类别型均可处理)</li>
+<li>具有伸缩不变性(无需特征归一化: 神经网络和逻辑回归都需要,逻辑回归中是为了保证随机梯度下降的方向正确,速度快)</li>
+<li>可自然的处理缺失值, C4.5树处理缺失值默认使用的方法是先用未缺失样本计算信息增益确定分裂结点,然后将缺失值的每个样本按照权重(当前叶子节点未缺失样本数量 / 未缺失样本总数)分配到各个结点</li>
+<li>对异常点鲁棒(不用去除异常点,LR不具有这个优点)</li>
+<li>有特征选择的作用</li>
+<li>可扩展性强,容易并行(并行是最好的,用来解释为什么XGBoost等都用树模型)</li>
+</ul>
+</li>
+<li><strong>树模型缺点</strong>:<ul>
+<li>缺乏平滑性(回归预测时输出值只能输出若干种数值,而不是连续的数值,所以不平滑[不平滑即离散])</li>
+<li>不适合处理高维稀疏数据(当数据量太少时,非常容易过拟合,树的深度太深,从而模型变得太复杂)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——CTR-CVR的预估模型.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1346,6 +1568,132 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
+<hr>
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
+
+<hr>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
+
+<hr>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
+<ul>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1459,132 +1807,6 @@
 </ul>
 </li>
 <li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——MLP及其BP算法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——MLP及其BP算法.html" itemprop="url">DL——MLP及其BP算法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
-<hr>
-<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
-<li>图示如下</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
-
-<hr>
-<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
-
-<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
-<li>动图</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
-
-<hr>
-<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
-<ul>
-<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
-<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
-<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
 </ul>
 
           
@@ -1930,174 +2152,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
-<hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
-</ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
-<ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2150,7 +2204,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">284</span>
+                  <span class="site-state-item-count">285</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

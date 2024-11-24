@@ -275,6 +275,173 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——贝叶斯优化.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——贝叶斯优化.html" itemprop="url">ML——贝叶斯优化</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文持续更新，主要主要介绍贝叶斯优化</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/662879942" target="_blank" rel="noopener">一文详解贝叶斯优化（Bayesian Optimization）原理 - 下里巴程序员的文章 - 知乎</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/76269142" target="_blank" rel="noopener">贝叶斯优化/Bayesian Optimization - 代忠祥的文章 - 知乎</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="关于贝叶斯优化"><a href="#关于贝叶斯优化" class="headerlink" title="关于贝叶斯优化"></a>关于贝叶斯优化</h3><ul>
+<li>贝叶斯优化（Bayesian Optimization，简称BO）主要用于解决超参数优化问题，目标是找到一组使得目标函数最大或者最小的超参数</li>
+<li>BO的最大优势是可以使用非常少的步骤找到一个还不错的超参数组合，而且不需要知道目标函数（模型）的梯度</li>
+<li>BO使用的场景特点：<ul>
+<li>需要优化的函数（模型）是非常复杂的</li>
+<li>需要优化的函数（模型）对指定的变量（一般指超参数）没有梯度信息（求不出梯度）</li>
+</ul>
+</li>
+<li>BO不适合使用的场景包括：<ul>
+<li>离散问题，即参数是离散的，则不适合使用BO</li>
+<li>参数太多，即参数维度过高，此时不适合使用BO</li>
+</ul>
+</li>
+<li>和BO的适用场景和进化算法（如CEM等）比较相似</li>
+</ul>
+<h3 id="贝叶斯优化的一般步骤"><a href="#贝叶斯优化的一般步骤" class="headerlink" title="贝叶斯优化的一般步骤"></a>贝叶斯优化的一般步骤</h3><ul>
+<li>贝叶斯优化（Bayesian Optimization）算法是一个序列决策过程（Sequential Decision-making Problem），其核心框架是SMBO (Sequential Model-Based Optimization)，而贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO，SMBO的一般算法思路如下：<ul>
+<li>第一步：初始化采样n组参数\(\{x_1,x_2,…,x_n\}\)</li>
+<li>第二步：针对每组参数，观察目标函数（待优化模型）的值（这一步一般需要训练模型或者模拟环境仿真，是成本比较高的操作），将得到的结果组合生成数据集\(D=\{(x_1,y_1),(x_2,y_2),…,(x_n,y_n)\}\)</li>
+<li>第三步：根据数据集D拟合（训练）一个代理模型（Surrogate Model），该代理模型的功能是通过输入\(x_i\)预测输出\(y_i\)</li>
+<li>第四步：根据采集函数（Acquisition Function，简称AC Function），选择一个最优参数\(x_i\)</li>
+<li>第五步：观察目标函数（待优化模型）在参数\(x_i\)下的输出值\(y_i\)，并将\((x_i,y_i)\)添加到数据集D中</li>
+<li>循环执行第三步到第五步，直到达到指定的迭代次数</li>
+<li>最终：输出数据集D中最优的参数\(x^*\) </li>
+</ul>
+</li>
+</ul>
+<h3 id="代理模型"><a href="#代理模型" class="headerlink" title="代理模型"></a>代理模型</h3><ul>
+<li>代理模型一般是非常容易计算的，或者有梯度的，给出任意的\(x_i\)能快速预估\(y_i\)的</li>
+<li>常见的代理模型可以是：高斯过程回归、随机森林等等。其中，贝叶斯优化狭义上特指代理模型为高斯过程回归模型的SMBO。</li>
+<li>高斯过程回归可参考：<ul>
+<li><a href="https://www.zhihu.com/question/46631426/answer/1735470753" target="_blank" rel="noopener">如何通俗易懂地介绍 Gaussian Process？ - 石溪的回答 - 知乎</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/331591492" target="_blank" rel="noopener">快速入门高斯过程（Gaussian process）回归预测 - 摸鱼大王二百五的文章 - 知乎</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="采集函数"><a href="#采集函数" class="headerlink" title="采集函数"></a>采集函数</h3><ul>
+<li>通常做法是设计一个采集函数A，对每个采样点x进行打分，分数越高的点越值得被采样。</li>
+<li>一般来说，采集函数需要满足下面的要求：<ul>
+<li>在已有的采样点处采集函数的值更小，因为这些点已经被探索过，再在这些点处计算函数值对解决问题没有什么用</li>
+<li>探索：在置信区间更宽（方差更大）的点处采集函数的值更大，因为这些点具有更大的不确定性，更值得探索</li>
+<li>利用：对最大（小）化问题，在函数均值更大（小）的点处采集函数的值更大，因为均值是对该点处函数值的估计值，这些点更可能在极值点附近。</li>
+</ul>
+</li>
+<li>常用的AC Function包括下面几种：<ul>
+<li>Probability of Improvement：</li>
+<li>Expected Improvement：</li>
+<li>Entropy Search：</li>
+<li>Upper Confidence Bound：</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -680,7 +847,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -699,7 +866,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
         
 
         <div class="post-meta">
@@ -735,109 +902,143 @@
       
         
           
-            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
-<hr>
-<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
-<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
-</ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>假设训练数据为:\(\{(x, y)\}\)<ul>
-<li>\(x\)特征维度为n(所有特征One-Hot编码后Concat的总维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度，累计计算x是所有One-Hot的维度和)<ul>
-<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
-<li><strong>在FM中，特征\(x\)的所有取值都为0或者1</strong>，因为都是One-Hot的结果做Concat得到的；在使用FM作为组件的模型（比如DeepFM等）中，输入FM的部分也只是稀疏特征的One-Hot编码</li>
-<li>如果有连续特征想要输入FM怎么办？可采用连续特征离散化的方法（比如等频分桶）</li>
-</ul>
-</li>
-<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
-</ul>
-</li>
-<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
-<li>未挖掘到特征之间的关联关系,<ul>
-<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
-<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
-<li>n是样本的特征数量</li>
-<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
-<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
-<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
-</ul>
-</li>
-<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
-<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
-</ul>
-</li>
-<li>解决问题的灵感<ul>
-<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
-</ul>
-</li>
-<li>FM解决问题的方法:<ul>
-<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
-<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
-<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
-<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
-<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
-<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
-<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
-<li>问题: 以前不能用来学习吗?</li>
-<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
-<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
-$$
-\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
-$$
--->
-
-</li>
-</ul>
-<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
-<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
 <ul>
-<li>上式中：<ul>
-<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
-<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
-<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
+<li>参考博客:<ul>
+<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
 </ul>
 </li>
 </ul>
-<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
-<li>整体模型的参数一共是\(1+n+nk\)个<ul>
-<li>偏执项一个\(w_{0}\)</li>
-<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
-<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
+<hr>
+<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
+<p>[待更新]</p>
+<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
+<ul>
+<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
+<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
+<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
+<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c \in C\)对特定项目\(s_{c}’ \in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
+<li>基于启发式的方法(Heuristic-based method): <ul>
+<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
+<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
 </ul>
 </li>
-</ul>
-<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
-<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
-<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
-<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
-</ul>
-</li>
-<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
-<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
-<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
-<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
-<li>显然可得结论</li>
+<li>基于机器学习的方法(Machine learning-based mehod):<ul>
+<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
+<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
-<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
+<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \mathop{\arg\max}_{s \in S} u(c,s)$$</li>
+</ul>
+<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
+<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
+<li>直接对User-Item矩阵进行研究<ul>
+<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
+<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
+</ul>
+</li>
+</ul>
+<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
+<li>Traditional SVD<ul>
+<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
+<li>缺点:<ul>
+<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
+<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
+<li>计算复杂度高,空间消耗大</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FunkSVD<ul>
+<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
+<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
+<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
+<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
+</ul>
+</li>
+<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
+<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
+<li>正则项是两个参数的L2正则</li>
+<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>BiasSVD<ul>
+<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
+<li>带有偏执项的SVD分解</li>
+<li>基于假设: <ul>
+<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
+<li>这些用户的固有属性与商品无关</li>
+</ul>
+</li>
+<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
+<li>这些商品的固有属性与用户无关</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}_{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum_{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
+<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
+<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
+<li>\(b_{u}\)[待更新]</li>
+<li>\(b_{i}\)[待更新]</li>
+<li>\(u\)[待更新]</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>SVD++<ul>
+<li>SVD++是对BiasSVD进行改进的</li>
+<li>基于假设:<ul>
+<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
+</ul>
+</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>TimeSVD++<ul>
+<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>BiasSVDwithU</li>
+<li>NMF</li>
+<li>非负矩阵分解Nonnegative Matrix Factorization*</li>
+<li>PMF</li>
+<li>概率矩阵分解Probabilistic Matrix Factorization*</li>
+<li>WRMF</li>
+<li>weighted regularized matrix factorization*</li>
+</ul>
+<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
+<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
+<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
+<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94Ensemble-%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0.html">ML——Ensemble-集成学习</a></li>
+</ul>
+<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
+<ul>
+<li>核心目的: 填充User-Item矩阵中的缺失值</li>
+<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
+</ul>
+<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
+<ul>
+<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
+<li>模型衡量指标: Precision@K, Recall@K等</li>
+</ul>
+<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
+<ul>
+<li>核心目的: 将候选商品分类,然后用于推荐</li>
+<li>模型衡量指标: Accuracy</li>
 </ul>
 
           
@@ -1064,7 +1265,7 @@ $$
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1083,7 +1284,7 @@ $$
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
         
 
         <div class="post-meta">
@@ -1119,143 +1320,109 @@ $$
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 
-<ul>
-<li>参考博客:<ul>
-<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
-</ul>
-</li>
-</ul>
 <hr>
-<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
-<p>[待更新]</p>
-<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
+<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
+<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>假设训练数据为:\(\{(x, y)\}\)<ul>
+<li>\(x\)特征维度为n(所有特征One-Hot编码后Concat的总维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度，累计计算x是所有One-Hot的维度和)<ul>
+<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
+<li><strong>在FM中，特征\(x\)的所有取值都为0或者1</strong>，因为都是One-Hot的结果做Concat得到的；在使用FM作为组件的模型（比如DeepFM等）中，输入FM的部分也只是稀疏特征的One-Hot编码</li>
+<li>如果有连续特征想要输入FM怎么办？可采用连续特征离散化的方法（比如等频分桶）</li>
+</ul>
+</li>
+<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+</ul>
+</li>
+<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
+<li>未挖掘到特征之间的关联关系,<ul>
+<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
+<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
+<li>n是样本的特征数量</li>
+<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
+<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
+<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
+</ul>
+</li>
+<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
+<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
+</ul>
+</li>
+<li>解决问题的灵感<ul>
+<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+</ul>
+</li>
+<li>FM解决问题的方法:<ul>
+<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
+<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
+<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
+<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
+<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
+<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
+<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
+<li>问题: 以前不能用来学习吗?</li>
+<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
+<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
+$$
+\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
+$$
+-->
+
+</li>
+</ul>
+<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
+<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
 <ul>
-<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
-<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
-<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
-<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c \in C\)对特定项目\(s_{c}’ \in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
-<li>基于启发式的方法(Heuristic-based method): <ul>
-<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
-<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
-</ul>
-</li>
-<li>基于机器学习的方法(Machine learning-based mehod):<ul>
-<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
-<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
+<li>上式中：<ul>
+<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
+<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
+<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
 </ul>
 </li>
 </ul>
-</li>
-<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \mathop{\arg\max}_{s \in S} u(c,s)$$</li>
-</ul>
-<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
-<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
-<li>直接对User-Item矩阵进行研究<ul>
-<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
-<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
+<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
+<li>整体模型的参数一共是\(1+n+nk\)个<ul>
+<li>偏执项一个\(w_{0}\)</li>
+<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
+<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
 </ul>
 </li>
 </ul>
-<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
-<li>Traditional SVD<ul>
-<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
-<li>缺点:<ul>
-<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
-<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
-<li>计算复杂度高,空间消耗大</li>
+<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
+<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
+<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
+<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
+</ul>
+</li>
+<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
+<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
+<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
+<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
+<li>显然可得结论</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>FunkSVD<ul>
-<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
-<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
-<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
-<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
-</ul>
-</li>
-<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
-<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
-<li>正则项是两个参数的L2正则</li>
-<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>BiasSVD<ul>
-<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
-<li>带有偏执项的SVD分解</li>
-<li>基于假设: <ul>
-<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
-<li>这些用户的固有属性与商品无关</li>
-</ul>
-</li>
-<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
-<li>这些商品的固有属性与用户无关</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}_{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum_{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
-<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
-<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
-<li>\(b_{u}\)[待更新]</li>
-<li>\(b_{i}\)[待更新]</li>
-<li>\(u\)[待更新]</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>SVD++<ul>
-<li>SVD++是对BiasSVD进行改进的</li>
-<li>基于假设:<ul>
-<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
-</ul>
-</li>
-<li>优化问题定义[待更新]</li>
-</ul>
-</li>
-<li>TimeSVD++<ul>
-<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
-<li>优化问题定义[待更新]</li>
-</ul>
-</li>
-<li>BiasSVDwithU</li>
-<li>NMF</li>
-<li>非负矩阵分解Nonnegative Matrix Factorization*</li>
-<li>PMF</li>
-<li>概率矩阵分解Probabilistic Matrix Factorization*</li>
-<li>WRMF</li>
-<li>weighted regularized matrix factorization*</li>
-</ul>
-<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
-<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
-<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
-<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94Ensemble-%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0.html">ML——Ensemble-集成学习</a></li>
-</ul>
-<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
-<ul>
-<li>核心目的: 填充User-Item矩阵中的缺失值</li>
-<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
-</ul>
-<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
-<ul>
-<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
-<li>模型衡量指标: Precision@K, Recall@K等</li>
-</ul>
-<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
-<ul>
-<li>核心目的: 将候选商品分类,然后用于推荐</li>
-<li>模型衡量指标: Accuracy</li>
+<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
+<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
 </ul>
 
           
@@ -2219,228 +2386,6 @@ $$
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html" itemprop="url">ML——GBDT-梯度提升树-推导过程</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
-<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
-<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95-%E6%97%A0%E7%BA%A6%E6%9D%9F%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">无约束参数优化方法</a></li>
-</ul>
-<hr>
-<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
-<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
-<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
-<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
-
-</li>
-</ul>
-<hr>
-<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
-<ul>
-<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
-<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
-</ul>
-<hr>
-<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
-<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
-<ul>
-<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
-</ul>
-<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \mathop{\arg\max}_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
-<ul>
-<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
-<li>最小化损失函数即可得到最优模型</li>
-</ul>
-<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
-<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
-<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
-<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
-<li>上面的推导中<ul>
-<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数\(L(y_{i}, F(x_{i}))\)关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)，这个梯度也是GBDT名字中梯度的由来<ul>
-<li>这个损失函数在使用不同回归方法时时定义各不相同</li>
-<li>原始论文中提到两个损失函数定义,根据损失函数的不同,对应的归回方法不同: <strong>最小二乘归回</strong>或者<strong>最小绝对误差回归</strong></li>
-</ul>
-</li>
-<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
-<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
-<li>但是需要注意的是,如果我们使用的基分类器是逻辑回归,那么这里每个基分类器的结果都是在[0-1]之间的数,是需要前面的\(\beta\)的</li>
-<li>这里我们推导的时候假定了基分类器是回归树,所以不需要使用 \(\beta\)</li>
-</ul>
-</li>
-<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
-<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
-</ul>
-</li>
-<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
-</ul>
-</li>
-</ul>
-<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用逻辑回归模型[Friedman 2000]等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
-<ul>
-<li>注意:包括Adaboost和GBDT在内<strong>Boosting框架中，基函数(基分类器)都不能使用线性模型</strong><ul>
-<li>理解: Boosting框架本质上是一个加法模型，是对多个基函数的线性组合，得到更优的分类器，可以证明线性模型的线性组合还是线性模型，如果Boosting框架中使用线性模型，那么我们最终得到的分类器也是线性模型，这就局限了我们的整体模型的表达能力</li>
-</ul>
-</li>
-</ul>
-<h5 id="最小二乘回归-损失函数"><a href="#最小二乘回归-损失函数" class="headerlink" title="最小二乘回归(损失函数)"></a>最小二乘回归(损失函数)</h5><p><em>Least-Squares Regression</em></p>
-<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
-<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
-</ul>
-<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
-<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
-<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
-<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
-<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
-</ul>
-<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least Absolute Deviation Regression, LAD</em></p>
-<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
-<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
-</ul>
-<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
-<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
-<li>绝对值的导数就是1或者-1,当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
-<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
-<li>同理得到，当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
-<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
-<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
-</ul>
-</li>
-<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
-<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下</li>
-<li>待更新*<br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
-</ul>
-<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
-<ul>
-<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
-<li>回归树和逻辑回归的优缺点比较<ul>
-<li><strong>树模型优点</strong>:<ul>
-<li>可解释性强</li>
-<li>可处理混合类型特征(混合类型特征指的是数值型和类别型均可处理)</li>
-<li>具有伸缩不变性(无需特征归一化: 神经网络和逻辑回归都需要,逻辑回归中是为了保证随机梯度下降的方向正确,速度快)</li>
-<li>可自然的处理缺失值, C4.5树处理缺失值默认使用的方法是先用未缺失样本计算信息增益确定分裂结点,然后将缺失值的每个样本按照权重(当前叶子节点未缺失样本数量 / 未缺失样本总数)分配到各个结点</li>
-<li>对异常点鲁棒(不用去除异常点,LR不具有这个优点)</li>
-<li>有特征选择的作用</li>
-<li>可扩展性强,容易并行(并行是最好的,用来解释为什么XGBoost等都用树模型)</li>
-</ul>
-</li>
-<li><strong>树模型缺点</strong>:<ul>
-<li>缺乏平滑性(回归预测时输出值只能输出若干种数值,而不是连续的数值,所以不平滑[不平滑即离散])</li>
-<li>不适合处理高维稀疏数据(当数据量太少时,非常容易过拟合,树的深度太深,从而模型变得太复杂)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
-<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2493,7 +2438,7 @@ $$
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">284</span>
+                  <span class="site-state-item-count">285</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
