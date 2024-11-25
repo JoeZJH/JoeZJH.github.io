@@ -90,7 +90,8 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-1.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-Algorithm.png">
-<meta property="og:updated_time" content="2024-11-23T16:44:19.605Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——IQL/IQL-tau-Analysis.png">
+<meta property="og:updated_time" content="2024-11-25T15:10:09.018Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——IQL">
 <meta name="twitter:description" content="参考链接 原始论文：ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning       IQL的基本思想 常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题 采样方面使用了AWR（Advantag">
@@ -467,6 +468,7 @@
 </ul>
 </li>
 <li>至此，我们已经实现了通过SARSA-style的形式，隐式的学到了近似最优Q值</li>
+<li>关于参数\(\tau\)的一些分析以及以上贝尔曼方程收敛性见附录</li>
 </ul>
 <h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
 <li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
@@ -511,6 +513,28 @@
 </li>
 <li>也就是说，<strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>这三个方法的目标是为了<strong>策略提升量最大化</strong>，而<strong>策略梯度法</strong>的目标是为了原始目标最大化（梯度提升法）</li>
 </ul>
+<hr>
+<h3 id="附录：贝尔曼方程收敛性及-tau-的分析"><a href="#附录：贝尔曼方程收敛性及-tau-的分析" class="headerlink" title="附录：贝尔曼方程收敛性及\(\tau\)的分析"></a>附录：贝尔曼方程收敛性及\(\tau\)的分析</h3><ul>
+<li><p>关于参数\(\tau\)的一些分析，原始论文中关于\(\tau\)的分析如下：</p>
+<img src="/Notes/RL/RL——IQL/IQL-tau-Analysis.png" title height="80%" width="80%">
+<!--  -->
+
+<ul>
+<li>当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</li>
+<li>对于任意的\(\tau\)，Q值和V值迭代都会收敛，且Q值和V值会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)，Lamma1中最后两行就是两者的贝尔曼方程，其中\(\mathbb{E}_{a \sim \mu(\cdot|s)}^\tau\)表示\(\mu(\cdot|s)\)分布下的\(\tau\)期望分位值（或\(\tau\)阶期望分位数）。注意，我们在说分位数时，还需要说明是那个随机变量或者哪个分布的分位数，否则没有意义</li>
+<li>为什么说Q值和V值迭代都会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)呢？<ul>
+<li>理解：这里的\(\tau\)期望分位动作可以视作是一个策略，每次选择动作时，不选择最优动作，也不选择随机动作，而是选择\(\tau\)期望分位点动作，这样，可以得到跟论文中一样的结论：当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</li>
+<li>证明：定义一个策略如下：<br>$$\pi_\tau(s) = \mathop{\text{arg_expectile}^\tau}_a(Q(s,a))$$<br>该策略表示在状态\(s\)下，该策略会选择使得Q值等于\(Q(s,a)\)关于动作\(a\)的\(\tau\)期望分位点的动作，则期望分位动作策略对应的贝尔曼方程跟普通策略下的贝尔曼方程没有区别</li>
+<li>更详细的来说：<ul>
+<li>Q值：假定已经有了\(V_\tau(s’)\)，此时Q值的更新是学习当前状态\(s\)下，按照当前状态对应的\(\tau\)期望分位动作，以及后续策略也采用\(\tau\)期望分位动作得到的价值\(V_\tau(s’)\)来进行拟合的目标值（注意，这里跟其他贝尔曼方程一样，一旦动作决定了，\(r(s,a)\)就确定了，我们所说的期望分位动作就是对动作\(a\)的分布而言的，\(Q(s,a)\)的拟合只考虑\((s,a)\)状态动作对即可，不需要考虑期望分位动作）；</li>
+<li>V值：假定已经有了\(Q_{\tau}(s,a)\)，V值可以从\(Q_{\tau}(s,a)\)中学到\(V_\tau(s’)\)，这里需要使用\(Q_{\tau}(s,a)\)而不是\(Q_{\pi_\beta(s,a)}\)的原因是，V的本质是\(Q(s,a)\)关于动作\(a\)期望，但直接求期望只到了当前状态\(s\)这一层，如果使用\(Q_{\pi_\beta(s,a)}\)来学习那么学到的不是\(V_\tau(s’)\)（\(V_\tau(s’)\)是指后续的动作也是\(\tau\)期望分位动作来定义的，正如Q值和V值的常规贝尔曼方程一样）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 
       
     </div>
@@ -541,8 +565,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/Hadoop/Hadoop——hdfs+dfs和hadoop+fs的区别.html" rel="next" title="Hadoop——hdfs+dfs和hadoop+fs的区别">
-                <i class="fa fa-chevron-left"></i> Hadoop——hdfs+dfs和hadoop+fs的区别
+              <a href="/Notes/RL/RL——CQL.html" rel="next" title="RL——CQL">
+                <i class="fa fa-chevron-left"></i> RL——CQL
               </a>
             
           </div>
@@ -551,8 +575,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——CQL.html" rel="prev" title="RL——CQL">
-                RL——CQL <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/RL/RL——BCQ.html" rel="prev" title="RL——BCQ">
+                RL——BCQ <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -694,7 +718,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于期望回归的Q值学习"><span class="nav-number">4.2.</span> <span class="nav-text">基于期望回归的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的Q值学习"><span class="nav-number">4.3.</span> <span class="nav-text">IQL的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的策略学习"><span class="nav-number">4.4.</span> <span class="nav-text">IQL的策略学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL更新总结"><span class="nav-number">4.5.</span> <span class="nav-text">IQL更新总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：为什么AWR和策略梯度法损失函数不同？"><span class="nav-number">5.</span> <span class="nav-text">附录：为什么AWR和策略梯度法损失函数不同？</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的基本思想"><span class="nav-number">1.</span> <span class="nav-text">IQL的基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多步动态规划和Single-step方法"><span class="nav-number">2.</span> <span class="nav-text">多步动态规划和Single-step方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划-Multi-step-DP"><span class="nav-number">2.1.</span> <span class="nav-text">多步动态规划(Multi-step DP)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Single-step方法"><span class="nav-number">2.2.</span> <span class="nav-text">Single-step方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多步动态规划和Single-step方法的比较"><span class="nav-number">2.3.</span> <span class="nav-text">多步动态规划和Single-step方法的比较</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL之前的方案"><span class="nav-number">3.</span> <span class="nav-text">IQL之前的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一般的Offline-RL学习方法"><span class="nav-number">3.1.</span> <span class="nav-text">一般的Offline RL学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#能避免OOD的学习方法"><span class="nav-number">3.2.</span> <span class="nav-text">能避免OOD的学习方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL的最优Q值目标"><span class="nav-number">3.3.</span> <span class="nav-text">Offline RL的最优Q值目标</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IQL的解决方案"><span class="nav-number">4.</span> <span class="nav-text">IQL的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#期望回归与分位数回归"><span class="nav-number">4.1.</span> <span class="nav-text">期望回归与分位数回归</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于期望回归的Q值学习"><span class="nav-number">4.2.</span> <span class="nav-text">基于期望回归的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的Q值学习"><span class="nav-number">4.3.</span> <span class="nav-text">IQL的Q值学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL的策略学习"><span class="nav-number">4.4.</span> <span class="nav-text">IQL的策略学习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IQL更新总结"><span class="nav-number">4.5.</span> <span class="nav-text">IQL更新总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：为什么AWR和策略梯度法损失函数不同？"><span class="nav-number">5.</span> <span class="nav-text">附录：为什么AWR和策略梯度法损失函数不同？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：贝尔曼方程收敛性及-tau-的分析"><span class="nav-number">6.</span> <span class="nav-text">附录：贝尔曼方程收敛性及\(\tau\)的分析</span></a></li></ol></div>
             
 
           </div>

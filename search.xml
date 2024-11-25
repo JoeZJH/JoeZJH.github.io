@@ -151,6 +151,218 @@
       </tags>
   </entry>
   <entry>
+    <title>RL——IQL</title>
+    <url>/Notes/RL/RL%E2%80%94%E2%80%94IQL.html</url>
+    <content><![CDATA[<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接<ul>
+<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
+<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
+<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
+</ul>
+<hr>
+<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
+<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
+<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
+<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
+<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
+</ul>
+</li>
+<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
+<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
+<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
+</ul>
+</li>
+<li>问题：显示密度模型中的“密度”是什么意思？<ul>
+<li>TODO</li>
+</ul>
+</li>
+</ul>
+<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
+<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
+<li>IQL就是一种Single-step方法</li>
+<li>传统的模仿学习也属于Single-step方法</li>
+</ul>
+<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
+<ul>
+<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
+</ul>
+<hr>
+<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
+<li>思路：按照贝尔曼最优方程迭代</li>
+<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>直接使用上述损失函数存在值高估问题</li>
+<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
+</ul>
+</li>
+</ul>
+<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
+<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
+<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
+<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma \mathbb{E}_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
+</ul>
+</li>
+<li>分析：<ul>
+<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
+<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
+<li>上面的方法更像是在对行为策略进行模仿</li>
+</ul>
+</li>
+</ul>
+<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
+<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
+<li>损失函数：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
+<li>分析：<ul>
+<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
+<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
+</ul>
+</li>
+<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
+<li>BCQ等方法已经学习过上述目标的改进版本</li>
+<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
+<li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
+<ul>
+<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
+<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
+<li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
+<li>分析：<ul>
+<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
+<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>条件随机变量的期望回归</strong></p>
+<ul>
+<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\mathop{\arg\min}_{m_\tau(x)} \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
+<li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
+</li>
+</ul>
+</li>
+<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
+<ul>
+<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
+</ul>
+</li>
+<li><p>分位数回归和期望回归的对比</p>
+  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
+<ul>
+<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
+<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
+</ul>
+</li>
+<li><p>问题：为什么使用期望回归而不是分位数回归？</p>
+<ul>
+<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
+</ul>
+</li>
+</ul>
+<h4 id="基于期望回归的Q值学习"><a href="#基于期望回归的Q值学习" class="headerlink" title="基于期望回归的Q值学习"></a>基于期望回归的Q值学习</h4><ul>
+<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
+<li>其中\(\mathcal{D} \sim \pi_\beta\)，选择合适的\(\tau\)后，可以学到一个大于\(Q^{\pi_\beta}(s,a)\)（行为策略对应的Q值）的\(Q(s,a)\)</li>
+<li>理解：给定\((s,a)\)的情况下，存在许多不同的\((s’,a’)\)样本，当\(\tau &gt; 0.5\)时，相当于是通过这种非对称损失函数降低小于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，增加大于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，从而学到较大的\((s’,a’)\)对应的目标值，极端情况下，学到的是最大值\(r(s, a) + \gamma \max_{(s,a,s’,a’) \sim \mathcal{D}} Q_{\theta’}(s’, a’)\)</li>
+<li>上面的损失函数还存在一些不足，由于环境可能是动态变化的，状态\(s’\)是按照概率\(p(s’|s,a)\)出现，所以以上损失函数还使得Q学到了环境转换的信息。具体来说，学到的Q值高不一定是选到了优秀动作的反应，还可能是因为运气好碰上了转移到一个较好的状态\(s’\)上<ul>
+<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(\mathbb{E}_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
+<li>补充问题1：如果是确定性的环境，是否可以直接使用上述损失函数？</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL的Q值学习"><a href="#IQL的Q值学习" class="headerlink" title="IQL的Q值学习"></a>IQL的Q值学习</h4><ul>
+<li>由于基于期望回归的Q值学习引入了状态转移随机偏差，存在问题，所以需要进行改进：</li>
+<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = \mathbb{E}_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
+<li>这里可以看出\(V(s)\)学到的是\(max_a Q_{\hat{\theta}}(s,a)\)的思想，即对应V值的贝尔曼最优方程</li>
+</ul>
+</li>
+<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
+<li>由于\(V\)在上一步已经通过期望回归学到了最优形式，这一步不需要继续使用期望回归了</li>
+</ul>
+</li>
+<li>至此，我们已经实现了通过SARSA-style的形式，隐式的学到了近似最优Q值</li>
+<li>关于参数\(\tau\)的一些分析以及以上贝尔曼方程收敛性见附录</li>
+</ul>
+<h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
+<li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
+<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = \mathbb{E}_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
+<li>其中 \(\beta \ge 0\) 是温度系数。对于较小的超参数值，该目标类似于行为克隆（近似所有样本权重相等的策略梯度，原始策略梯度中，样本权重是温度系数为1的Q值），而对于较大的值，它试图恢复Q函数的最大值（Q值越大，对应的样本权重越大）。正如AWR等先前工作所示，此目标学习一个在分布约束下的最大化Q值的策略</li>
+</ul>
+</li>
+<li>注意，策略学习时Q值收敛以后进行的(Q和V是交替更新)，Q值学习和策略学习是串行的，且Q值学习彻底完成以后才进行策略学习，并不是交替进行</li>
+<li>思考：使用期望回归学到的V值是\(V^{\pi^*} = max_a Q_{\hat{\theta}}(s,a)\)，为什么可以用最优的V值来更新策略\(Q_{\theta’}(s, a) - V_\psi(s)\)？<ul>
+<li>这种做法是可以的，符合优势函数的定义，因为优势函数的定义也是\(A^\pi(s,a) = Q^\pi(s,a) - V^\pi(s)\)</li>
+<li>虽然此时的V值是\(max_a Q_{\hat{\theta}}(s,a)\)，但是\(Q_{\theta’}(s, a) - V_\psi(s)\)依然可以对动作的好坏进行区分。实际上，只要可以保证动作越好，优势函数越大即可，即使所有动作都是负的或者都是正的也没问题，因为策略的实现是一个softmax，大家都降低的时候，降的少的动作上对一个的概率自然会提升</li>
+</ul>
+</li>
+</ul>
+<h4 id="IQL更新总结"><a href="#IQL更新总结" class="headerlink" title="IQL更新总结"></a>IQL更新总结</h4><ul>
+<li>伪代码如下（说明：伪代码中最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标， 作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a> ）：  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png" title height="80%" width="80%">
+  <!-- <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png"> -->
+
+
+</li>
+</ul>
+<hr>
+<h3 id="附录：为什么AWR和策略梯度法损失函数不同？"><a href="#附录：为什么AWR和策略梯度法损失函数不同？" class="headerlink" title="附录：为什么AWR和策略梯度法损失函数不同？"></a>附录：为什么AWR和策略梯度法损失函数不同？</h3><ul>
+<li>副标题：不同AC框架算法策略更新公式对比分析，为什么相同的目标推导出来完全不同的更新公式？</li>
+<li>问题补充：<ul>
+<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
+<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
+<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
+<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}\mathbb{E}_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
+<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R^{\mathcal{D}}(s,a)-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
+<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
+</ul>
+</li>
+<li>基本推导思路总结：<ul>
+<li><strong>策略梯度法</strong>：推导是直接从最初目标出发，视图求最初目标相对策略的梯度</li>
+<li><strong>PPO</strong>：更新公式是从策略提升的视角出发得到梯度提升的目标，通过限制策略变化幅度和重要性采样分别将未知策略的状态和动作采样的问题切换到已知策略</li>
+<li><strong>DDPG</strong>：直接以最大化Q值为目标来更新，可直接传导策略梯度</li>
+<li><strong>SAC</strong>：的目标中增加了熵，可以看成是DDPG的增加熵的版本</li>
+<li><strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>：更新公式都是相同的形式，是从策略提升的视角出发得到梯度提升的目标，并对该目标进行推导，得到最终的最优策略形式，再带入最优策略形式，从而得到更新公式</li>
+</ul>
+</li>
+<li>也就是说，<strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>这三个方法的目标是为了<strong>策略提升量最大化</strong>，而<strong>策略梯度法</strong>的目标是为了原始目标最大化（梯度提升法）</li>
+</ul>
+<hr>
+<h3 id="附录：贝尔曼方程收敛性及-tau-的分析"><a href="#附录：贝尔曼方程收敛性及-tau-的分析" class="headerlink" title="附录：贝尔曼方程收敛性及\(\tau\)的分析"></a>附录：贝尔曼方程收敛性及\(\tau\)的分析</h3><ul>
+<li><p>关于参数\(\tau\)的一些分析，原始论文中关于\(\tau\)的分析如下：</p>
+<img src="/Notes/RL/RL——IQL/IQL-tau-Analysis.png" title height="80%" width="80%">
+<!--  -->
+
+<ul>
+<li>当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</li>
+<li>对于任意的\(\tau\)，Q值和V值迭代都会收敛，且Q值和V值会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)，Lamma1中最后两行就是两者的贝尔曼方程，其中\(\mathbb{E}_{a \sim \mu(\cdot|s)}^\tau\)表示\(\mu(\cdot|s)\)分布下的\(\tau\)期望分位值（或\(\tau\)阶期望分位数）。注意，我们在说分位数时，还需要说明是那个随机变量或者哪个分布的分位数，否则没有意义</li>
+<li>为什么说Q值和V值迭代都会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)呢？<ul>
+<li>理解：这里的\(\tau\)期望分位动作可以视作是一个策略，每次选择动作时，不选择最优动作，也不选择随机动作，而是选择\(\tau\)期望分位点动作，这样，可以得到跟论文中一样的结论：当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</li>
+<li>证明：定义一个策略如下：<br>$$\pi_\tau(s) = \mathop{\text{arg_expectile}^\tau}_a(Q(s,a))$$<br>该策略表示在状态\(s\)下，该策略会选择使得Q值等于\(Q(s,a)\)关于动作\(a\)的\(\tau\)期望分位点的动作，则期望分位动作策略对应的贝尔曼方程跟普通策略下的贝尔曼方程没有区别</li>
+<li>更详细的来说：<ul>
+<li>Q值：假定已经有了\(V_\tau(s’)\)，此时Q值的更新是学习当前状态\(s\)下，按照当前状态对应的\(\tau\)期望分位动作，以及后续策略也采用\(\tau\)期望分位动作得到的价值\(V_\tau(s’)\)来进行拟合的目标值（注意，这里跟其他贝尔曼方程一样，一旦动作决定了，\(r(s,a)\)就确定了，我们所说的期望分位动作就是对动作\(a\)的分布而言的，\(Q(s,a)\)的拟合只考虑\((s,a)\)状态动作对即可，不需要考虑期望分位动作）；</li>
+<li>V值：假定已经有了\(Q_{\tau}(s,a)\)，V值可以从\(Q_{\tau}(s,a)\)中学到\(V_\tau(s’)\)，这里需要使用\(Q_{\tau}(s,a)\)而不是\(Q_{\pi_\beta(s,a)}\)的原因是，V的本质是\(Q(s,a)\)关于动作\(a\)期望，但直接求期望只到了当前状态\(s\)这一层，如果使用\(Q_{\pi_\beta(s,a)}\)来学习那么学到的不是\(V_\tau(s’)\)（\(V_\tau(s’)\)是指后续的动作也是\(\tau\)期望分位动作来定义的，正如Q值和V值的常规贝尔曼方程一样）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>RL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>RL——CQL</title>
     <url>/Notes/RL/RL%E2%80%94%E2%80%94CQL.html</url>
     <content><![CDATA[<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
@@ -400,195 +612,6 @@ $$ -->
       </tags>
   </entry>
   <entry>
-    <title>RL——IQL</title>
-    <url>/Notes/RL/RL%E2%80%94%E2%80%94IQL.html</url>
-    <content><![CDATA[<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接<ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
-<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
-<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
-</ul>
-<hr>
-<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
-<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
-<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
-<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
-<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
-</ul>
-</li>
-<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
-<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
-<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
-</ul>
-</li>
-<li>问题：显示密度模型中的“密度”是什么意思？<ul>
-<li>TODO</li>
-</ul>
-</li>
-</ul>
-<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
-<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
-<li>IQL就是一种Single-step方法</li>
-<li>传统的模仿学习也属于Single-step方法</li>
-</ul>
-<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
-<ul>
-<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
-</ul>
-<hr>
-<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
-<li>思路：按照贝尔曼最优方程迭代</li>
-<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>直接使用上述损失函数存在值高估问题</li>
-<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
-</ul>
-</li>
-</ul>
-<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
-<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
-<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
-<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma \mathbb{E}_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
-</ul>
-</li>
-<li>分析：<ul>
-<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
-<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
-<li>上面的方法更像是在对行为策略进行模仿</li>
-</ul>
-</li>
-</ul>
-<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
-<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
-<li>损失函数：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
-<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
-</ul>
-</li>
-<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
-<li>BCQ等方法已经学习过上述目标的改进版本</li>
-<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
-<li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
-<ul>
-<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
-<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
-<li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
-<li>分析：<ul>
-<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
-<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>条件随机变量的期望回归</strong></p>
-<ul>
-<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\mathop{\arg\min}_{m_\tau(x)} \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
-<li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
-</li>
-</ul>
-</li>
-<li><p><strong>分位数回归(Quantile Regression)</strong>定义如下:<br>  $$<br>  \mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = |\tau - 1(u &lt; 0)| u.<br>  $$</p>
-<ul>
-<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
-</ul>
-</li>
-<li><p>分位数回归和期望回归的对比</p>
-  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
-<ul>
-<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
-<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
-</ul>
-</li>
-<li><p>问题：为什么使用期望回归而不是分位数回归？</p>
-<ul>
-<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
-</ul>
-</li>
-</ul>
-<h4 id="基于期望回归的Q值学习"><a href="#基于期望回归的Q值学习" class="headerlink" title="基于期望回归的Q值学习"></a>基于期望回归的Q值学习</h4><ul>
-<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
-<li>其中\(\mathcal{D} \sim \pi_\beta\)，选择合适的\(\tau\)后，可以学到一个大于\(Q^{\pi_\beta}(s,a)\)（行为策略对应的Q值）的\(Q(s,a)\)</li>
-<li>理解：给定\((s,a)\)的情况下，存在许多不同的\((s’,a’)\)样本，当\(\tau &gt; 0.5\)时，相当于是通过这种非对称损失函数降低小于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，增加大于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，从而学到较大的\((s’,a’)\)对应的目标值，极端情况下，学到的是最大值\(r(s, a) + \gamma \max_{(s,a,s’,a’) \sim \mathcal{D}} Q_{\theta’}(s’, a’)\)</li>
-<li>上面的损失函数还存在一些不足，由于环境可能是动态变化的，状态\(s’\)是按照概率\(p(s’|s,a)\)出现，所以以上损失函数还使得Q学到了环境转换的信息。具体来说，学到的Q值高不一定是选到了优秀动作的反应，还可能是因为运气好碰上了转移到一个较好的状态\(s’\)上<ul>
-<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(\mathbb{E}_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
-<li>补充问题1：如果是确定性的环境，是否可以直接使用上述损失函数？</li>
-</ul>
-</li>
-</ul>
-<h4 id="IQL的Q值学习"><a href="#IQL的Q值学习" class="headerlink" title="IQL的Q值学习"></a>IQL的Q值学习</h4><ul>
-<li>由于基于期望回归的Q值学习引入了状态转移随机偏差，存在问题，所以需要进行改进：</li>
-<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = \mathbb{E}_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
-<li>这里可以看出\(V(s)\)学到的是\(max_a Q_{\hat{\theta}}(s,a)\)的思想，即对应V值的贝尔曼最优方程</li>
-</ul>
-</li>
-<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
-<li>由于\(V\)在上一步已经通过期望回归学到了最优形式，这一步不需要继续使用期望回归了</li>
-</ul>
-</li>
-<li>至此，我们已经实现了通过SARSA-style的形式，隐式的学到了近似最优Q值</li>
-</ul>
-<h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
-<li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
-<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = \mathbb{E}_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
-<li>其中 \(\beta \ge 0\) 是温度系数。对于较小的超参数值，该目标类似于行为克隆（近似所有样本权重相等的策略梯度，原始策略梯度中，样本权重是温度系数为1的Q值），而对于较大的值，它试图恢复Q函数的最大值（Q值越大，对应的样本权重越大）。正如AWR等先前工作所示，此目标学习一个在分布约束下的最大化Q值的策略</li>
-</ul>
-</li>
-<li>注意，策略学习时Q值收敛以后进行的(Q和V是交替更新)，Q值学习和策略学习是串行的，且Q值学习彻底完成以后才进行策略学习，并不是交替进行</li>
-<li>思考：使用期望回归学到的V值是\(V^{\pi^*} = max_a Q_{\hat{\theta}}(s,a)\)，为什么可以用最优的V值来更新策略\(Q_{\theta’}(s, a) - V_\psi(s)\)？<ul>
-<li>这种做法是可以的，符合优势函数的定义，因为优势函数的定义也是\(A^\pi(s,a) = Q^\pi(s,a) - V^\pi(s)\)</li>
-<li>虽然此时的V值是\(max_a Q_{\hat{\theta}}(s,a)\)，但是\(Q_{\theta’}(s, a) - V_\psi(s)\)依然可以对动作的好坏进行区分。实际上，只要可以保证动作越好，优势函数越大即可，即使所有动作都是负的或者都是正的也没问题，因为策略的实现是一个softmax，大家都降低的时候，降的少的动作上对一个的概率自然会提升</li>
-</ul>
-</li>
-</ul>
-<h4 id="IQL更新总结"><a href="#IQL更新总结" class="headerlink" title="IQL更新总结"></a>IQL更新总结</h4><ul>
-<li>伪代码如下（说明：伪代码中最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标， 作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a> ）：  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png" title height="80%" width="80%">
-  <!-- <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png"> -->
-
-
-</li>
-</ul>
-<hr>
-<h3 id="附录：为什么AWR和策略梯度法损失函数不同？"><a href="#附录：为什么AWR和策略梯度法损失函数不同？" class="headerlink" title="附录：为什么AWR和策略梯度法损失函数不同？"></a>附录：为什么AWR和策略梯度法损失函数不同？</h3><ul>
-<li>副标题：不同AC框架算法策略更新公式对比分析，为什么相同的目标推导出来完全不同的更新公式？</li>
-<li>问题补充：<ul>
-<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
-<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
-<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
-<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}\mathbb{E}_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
-<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R^{\mathcal{D}}(s,a)-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
-<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
-<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
-</ul>
-</li>
-<li>基本推导思路总结：<ul>
-<li><strong>策略梯度法</strong>：推导是直接从最初目标出发，视图求最初目标相对策略的梯度</li>
-<li><strong>PPO</strong>：更新公式是从策略提升的视角出发得到梯度提升的目标，通过限制策略变化幅度和重要性采样分别将未知策略的状态和动作采样的问题切换到已知策略</li>
-<li><strong>DDPG</strong>：直接以最大化Q值为目标来更新，可直接传导策略梯度</li>
-<li><strong>SAC</strong>：的目标中增加了熵，可以看成是DDPG的增加熵的版本</li>
-<li><strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>：更新公式都是相同的形式，是从策略提升的视角出发得到梯度提升的目标，并对该目标进行推导，得到最终的最优策略形式，再带入最优策略形式，从而得到更新公式</li>
-</ul>
-</li>
-<li>也就是说，<strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>这三个方法的目标是为了<strong>策略提升量最大化</strong>，而<strong>策略梯度法</strong>的目标是为了原始目标最大化（梯度提升法）</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>RL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Hadoop——hdfs+dfs和hadoop+fs的区别</title>
     <url>/Notes/Hadoop/Hadoop%E2%80%94%E2%80%94hdfs+dfs%E5%92%8Chadoop+fs%E7%9A%84%E5%8C%BA%E5%88%AB.html</url>
     <content><![CDATA[<p><em>在管理HDFS文件时，我们常用的命令有三个 <code>hadoop fs</code>，<code>hadoop dfs</code>和<code>hdfs dfs</code>【注意没有<code>hdfs fs</code>】</em><br><em>参考：<a href="https://blog.csdn.net/u013019431/article/details/78485555" target="_blank" rel="noopener">https://blog.csdn.net/u013019431/article/details/78485555</a></em></p>
@@ -774,32 +797,6 @@ $$ -->
       </tags>
   </entry>
   <entry>
-    <title>RL——GAE</title>
-    <url>/Notes/RL/RL%E2%80%94%E2%80%94GAE.html</url>
-    <content><![CDATA[<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<p><em>GAE，Generalized advantage estimation，平衡了强化学习中的方差与偏差，常用于TRPO和PPO中，用于评估优势函数</em></p>
-<h3 id="GAE的推导"><a href="#GAE的推导" class="headerlink" title="GAE的推导"></a>GAE的推导</h3><ul>
-<li>推导过程（基于多步时序差分的思想）  <img src="/Notes/RL/RL——GAE/GAE.png">
-<ul>
-<li>\(\lambda\) 是一个介于0和1之间的参数，用于控制偏差-方差的权衡。当 \(\lambda = 0\)时，GAE退化为单步TD误差；当\(\lambda = 1\)时，GAE等价于无限步回报</li>
-<li>\(\gamma\) 是折扣因子</li>
-</ul>
-</li>
-<li>GAE本质上是对不同步数的优势函数进行加权求和，最终得到一个的优势函数估计值</li>
-<li>GAE可通过参数调整控制方差和偏差的关系</li>
-</ul>
-<h3 id="附录：强化学习中的方差与偏差"><a href="#附录：强化学习中的方差与偏差" class="headerlink" title="附录：强化学习中的方差与偏差"></a>附录：强化学习中的方差与偏差</h3><ul>
-<li>参考链接：<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">方差与偏差</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>RL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>RL——DDPG和TD3</title>
     <url>/Notes/RL/RL%E2%80%94%E2%80%94DDPG%E5%92%8CTD3.html</url>
     <content><![CDATA[<ul>
@@ -929,6 +926,32 @@ $$ -->
 <h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
 <li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
 <li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>RL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RL——GAE</title>
+    <url>/Notes/RL/RL%E2%80%94%E2%80%94GAE.html</url>
+    <content><![CDATA[<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<p><em>GAE，Generalized advantage estimation，平衡了强化学习中的方差与偏差，常用于TRPO和PPO中，用于评估优势函数</em></p>
+<h3 id="GAE的推导"><a href="#GAE的推导" class="headerlink" title="GAE的推导"></a>GAE的推导</h3><ul>
+<li>推导过程（基于多步时序差分的思想）  <img src="/Notes/RL/RL——GAE/GAE.png">
+<ul>
+<li>\(\lambda\) 是一个介于0和1之间的参数，用于控制偏差-方差的权衡。当 \(\lambda = 0\)时，GAE退化为单步TD误差；当\(\lambda = 1\)时，GAE等价于无限步回报</li>
+<li>\(\gamma\) 是折扣因子</li>
+</ul>
+</li>
+<li>GAE本质上是对不同步数的优势函数进行加权求和，最终得到一个的优势函数估计值</li>
+<li>GAE可通过参数调整控制方差和偏差的关系</li>
+</ul>
+<h3 id="附录：强化学习中的方差与偏差"><a href="#附录：强化学习中的方差与偏差" class="headerlink" title="附录：强化学习中的方差与偏差"></a>附录：强化学习中的方差与偏差</h3><ul>
+<li>参考链接：<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">方差与偏差</a></li>
 </ul>
 ]]></content>
       <tags>
@@ -1189,6 +1212,48 @@ $$ -->
 <h4 id="Soft贝尔曼最优方程-1"><a href="#Soft贝尔曼最优方程-1" class="headerlink" title="Soft贝尔曼最优方程"></a>Soft贝尔曼最优方程</h4><p>$$<br>\begin{aligned}<br>Q_{\text{soft}}^{\pi^*}(s_t, a_t) &amp;= r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim \rho_{\pi}(s)} [V_{\text{soft}}^{\pi^*}(s_{t+1})] \\<br>V_{\text{soft}}^{\pi^*}(s_t) &amp;= \alpha \log \int \exp \left(\frac{1}{\alpha}Q_{\text{soft}}^{\pi^*}(s, a)\right) da<br>\end{aligned}<br>$$</p>
 <ul>
 <li>待更新</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>RL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RL——TD误差和优势函数的区别</title>
+    <url>/Notes/RL/RL%E2%80%94%E2%80%94TD%E8%AF%AF%E5%B7%AE%E5%92%8C%E4%BC%98%E5%8A%BF%E5%87%BD%E6%95%B0%E7%9A%84%E5%8C%BA%E5%88%AB.html</url>
+    <content><![CDATA[<ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
+</ul>
+</li>
+</ul>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
+<li>时间差分误差，TD error</li>
+<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
+<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
+<li>TD error是针对确定的\(s’\)来说的</li>
+</ul>
+<hr>
+<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
+<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = \mathbb{E}_{s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
+<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
+</ul>
+<hr>
+<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
+<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = \mathbb{E}_{a\sim \pi} [A_{\theta}(s,a)] = \mathbb{E}_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
+</ul>
+<hr>
+<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
+<li>期望贝尔曼误差<br>$$<br>\mathbb{E}_{s\sim \mu} [\epsilon_{\theta}(s)] = \mathbb{E}_{s\sim \mu}[\mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  \mathbb{E}_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
 ]]></content>
       <tags>
@@ -1471,48 +1536,6 @@ $$ -->
 <li>取对数两边，得到：<br>$$ \log p_Y(y) = \log p_X(x) - \log(1-\tanh^2(x)) $$</li>
 <li>这正是我们要证明的等式：<br>$$ \log p(y) = \log p(x) - \log(1-(\tanh(x))^2) $$</li>
 <li>证毕.</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>RL</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>RL——TD误差和优势函数的区别</title>
-    <url>/Notes/RL/RL%E2%80%94%E2%80%94TD%E8%AF%AF%E5%B7%AE%E5%92%8C%E4%BC%98%E5%8A%BF%E5%87%BD%E6%95%B0%E7%9A%84%E5%8C%BA%E5%88%AB.html</url>
-    <content><![CDATA[<ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
-</ul>
-</li>
-</ul>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-
-<hr>
-<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
-<li>时间差分误差，TD error</li>
-<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
-<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
-<li>TD error是针对确定的\(s’\)来说的</li>
-</ul>
-<hr>
-<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
-<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = \mathbb{E}_{s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
-<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
-</ul>
-<hr>
-<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
-<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = \mathbb{E}_{a\sim \pi} [A_{\theta}(s,a)] = \mathbb{E}_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
-</ul>
-<hr>
-<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
-<li>期望贝尔曼误差<br>$$<br>\mathbb{E}_{s\sim \mu} [\epsilon_{\theta}(s)] = \mathbb{E}_{s\sim \mu}[\mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  \mathbb{E}_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
 ]]></content>
       <tags>
@@ -2415,38 +2438,6 @@ $$ -->
       </tags>
   </entry>
   <entry>
-    <title>CA——WideAndDeep</title>
-    <url>/Notes/ComputationalAdvertising/CA%E2%80%94%E2%80%94WideAndDeep.html</url>
-    <content><![CDATA[<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
-<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
-<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
-<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
-</ul>
-</li>
-</ul>
-<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
-<li>注重记忆能力</li>
-<li>手动特征交叉组合(实现低阶的特征组合)</li>
-</ul>
-<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
-<li>泛化能力</li>
-<li>高阶特征</li>
-<li>低维稠密embedding</li>
-</ul>
-<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
-<li>结合了Wide和Deep两个模型</li>
-<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
-<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
-<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CA</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CA——多任务学习总结</title>
     <url>/Notes/ComputationalAdvertising/CA%E2%80%94%E2%80%94%E5%A4%9A%E4%BB%BB%E5%8A%A1%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93.html</url>
     <content><![CDATA[<p><em>多任务学习，multi-task learning</em></p>
@@ -2510,6 +2501,38 @@ $$ -->
 <li>复杂体现在：需要在每个batch上重新求解最优化问题，得到当前的loss权重（用上一个batch的梯度求解这一个batch的最优权重）</li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CA</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CA——WideAndDeep</title>
+    <url>/Notes/ComputationalAdvertising/CA%E2%80%94%E2%80%94WideAndDeep.html</url>
+    <content><![CDATA[<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
+<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
+<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
+</ul>
+</li>
+</ul>
+<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
+<li>注重记忆能力</li>
+<li>手动特征交叉组合(实现低阶的特征组合)</li>
+</ul>
+<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
+<li>泛化能力</li>
+<li>高阶特征</li>
+<li>低维稠密embedding</li>
+</ul>
+<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
+<li>结合了Wide和Deep两个模型</li>
+<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
+<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
+<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
 </ul>
 </li>
 </ul>
@@ -3178,9 +3201,9 @@ $$ -->
 </ul>
 ]]></content>
       <tags>
-        <tag>Others</tag>
         <tag>Linux</tag>
         <tag>Centos</tag>
+        <tag>Others</tag>
       </tags>
   </entry>
   <entry>
@@ -4048,6 +4071,65 @@ $$ -->
       </tags>
   </entry>
   <entry>
+    <title>DL——DDPM</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94DDPM.html</url>
+    <content><![CDATA[<p><em>文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
+<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
+<li>视频中有部分小bug，评论区已修复</li>
+</ul>
+</li>
+<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑<ul>
+<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
+
+<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
+
+<h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><ul>
+<li>待更新</li>
+</ul>
+<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
+<li>关于\(\epsilon_{\theta}(x_t, t)\)的含义<ul>
+<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪音，还是从\(x_{t-1}\)到\(x_t\)加的噪音？<ul>
+<li>回答：是从\(x_0\)到\(x_t\)加的噪音，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪音，而损失函数的目标就是让\(\epsilon_{\theta}-&gt;\epsilon\)。</li>
+</ul>
+</li>
+<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪音，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
+<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(p(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
+</ul>
+</li>
+<li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
+<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = N(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
+<li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
+<li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>DDPM可以不加入噪声吗？<ul>
+<li>实践：不可以，图片生成质量会特别差</li>
+<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>DL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>DL——DDIM</title>
     <url>/Notes/DL/DL%E2%80%94%E2%80%94DDIM.html</url>
     <content><![CDATA[<p><em>文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍</em></p>
@@ -4155,65 +4237,6 @@ $$ -->
 <li>推断时：因为DDPM的采样公式是在满足马尔科夫过程情况下推导出来的， 而DDIM的采样公式是在非马尔科夫过程情况下推导出来的，所以使用DDPM采样公式时，不能跳步；使用DDIM采样公式时（注意：实际上DDIM不采样，直接确定性生成），可以跳步</li>
 </ul>
 </li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>DL</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>DL——DDPM</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94DDPM.html</url>
-    <content><![CDATA[<p><em>文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
-<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
-<li>视频中有部分小bug，评论区已修复</li>
-</ul>
-</li>
-<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑<ul>
-<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
-
-<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
-
-<h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><ul>
-<li>待更新</li>
-</ul>
-<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
-<li>关于\(\epsilon_{\theta}(x_t, t)\)的含义<ul>
-<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪音，还是从\(x_{t-1}\)到\(x_t\)加的噪音？<ul>
-<li>回答：是从\(x_0\)到\(x_t\)加的噪音，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪音，而损失函数的目标就是让\(\epsilon_{\theta}-&gt;\epsilon\)。</li>
-</ul>
-</li>
-<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪音，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
-<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(p(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
-</ul>
-</li>
-<li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
-<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = N(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
-<li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
-<li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>DDPM可以不加入噪声吗？<ul>
-<li>实践：不可以，图片生成质量会特别差</li>
-<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】</li>
 </ul>
 </li>
 </ul>
@@ -8220,219 +8243,6 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Python——编程规范</title>
-    <url>/Notes/Python/Python%E2%80%94%E2%80%94%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83.html</url>
-    <content><![CDATA[<p><em>Python 编程中经验型的一些规范</em><br><strong><em>持续更新</em></strong></p>
-<hr>
-<h3 id="使用li-代替copy-copy-li"><a href="#使用li-代替copy-copy-li" class="headerlink" title="使用li[:]代替copy.copy(li)"></a>使用li[:]代替copy.copy(li)</h3><ul>
-<li><code>li[:]</code>等价于<code>copy.copy(li)</code></li>
-<li><code>li[:]</code>不等价于<code>copy.deepcopy(li)</code></li>
-<li><code>li[:]</code>可以简化代码</li>
-</ul>
-<hr>
-<h3 id="从后开始访问列表"><a href="#从后开始访问列表" class="headerlink" title="从后开始访问列表"></a>从后开始访问列表</h3><ul>
-<li>list作为stack用时访问栈顶元素list[-1]<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">list1 = [1, 5, 2, 3]</span><br><span class="line">print list1[-1]</span><br><span class="line">print list1[-2]</span><br><span class="line">print list1[1:-1]</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">[5, 2]</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="函数内函数"><a href="#函数内函数" class="headerlink" title="函数内函数"></a>函数内函数</h3><ul>
-<li>Python可以在函数内部定义函数,但是要注意不能与外部变量混淆<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def sum_all(alist):</span><br><span class="line"></span><br><span class="line">    def sum_two(a, b):</span><br><span class="line">        return a+b</span><br><span class="line"></span><br><span class="line">    result = 0</span><br><span class="line">    for i in alist:</span><br><span class="line">        result = sum_two(result, i)</span><br><span class="line">    return result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print sum_all([1, 2, 3, 4, 5])</span><br><span class="line"># output:</span><br><span class="line">15</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="不要随意调用特殊方法"><a href="#不要随意调用特殊方法" class="headerlink" title="不要随意调用特殊方法"></a>不要随意调用特殊方法</h3><p><em>(比如：__len__)</em></p>
-<ul>
-<li>特殊方法不应该被开发者调用，而应该被开发者定义新类时实现</li>
-<li>一般使用<code>len(object)</code>即可</li>
-<li>原因： 内置的方法(比如：len())可能会直接返回对象中的<code>ob_size</code>属性，而不用调用<code>__len__()</code>(这个函数往往会用迭代或者其他比较复杂的方法实现)</li>
-</ul>
-<hr>
-<h3 id="多使用列表推导"><a href="#多使用列表推导" class="headerlink" title="多使用列表推导"></a>多使用列表推导</h3><p><em>(list comprehension, 简写listcomps)和生成器表达式(generator expression, 简写genexps)</em></p>
-<ul>
-<li><p>listcomps</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[str(i) for i in range(1,10)]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>genexps</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(str(i) for i in range(1,10))</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="考虑使用reduce而不是循环语句"><a href="#考虑使用reduce而不是循环语句" class="headerlink" title="考虑使用reduce而不是循环语句"></a>考虑使用reduce而不是循环语句</h3><ul>
-<li>reduce<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def add(x, y):</span><br><span class="line">	return x + y</span><br><span class="line">reduce(add, [1,2,3,4,5])</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">from operator import mul</span><br><span class="line">reduce(mul, range(1, 10))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="多使用pprint"><a href="#多使用pprint" class="headerlink" title="多使用pprint"></a>多使用pprint</h3><ul>
-<li>(Pretty Print)而不是print<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import pprint</span><br><span class="line">l1 = (1, &#123;2: 3&#125;, &quot;first&quot;, (&quot;second&quot;, 5, 6, [7, 8, 9]), [1, 3, 5], &quot;this is a pprint&quot;)</span><br><span class="line">pprint.pprint(l1)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">(1,</span><br><span class="line"> &#123;2: 3&#125;,</span><br><span class="line"> &apos;first&apos;,</span><br><span class="line"> (&apos;second&apos;, 5, 6, [7, 8, 9]),</span><br><span class="line"> [1, 3, 5],</span><br><span class="line"> &apos;this is a pprint&apos;)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="多使用三目运算符"><a href="#多使用三目运算符" class="headerlink" title="多使用三目运算符"></a>多使用三目运算符</h3><ul>
-<li><p>Python不像Java和C++一样,有x?y:z这样的三目运算符号,但是可以有自己的特殊使用方法,等价于三目运算符且更容易理解</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># same as x?y:z</span><br><span class="line">result = y if x is True else z</span><br><span class="line">return y if x is True else z</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>注意: 在使用return语句中的三目运算时必须有else语句,否则编译不通过,因为返回值可能会缺失</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="匿名变量的使用"><a href="#匿名变量的使用" class="headerlink" title="匿名变量的使用"></a>匿名变量的使用</h3><ul>
-<li>初始化一个列表时<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">list1 = [_ for _ in list2 if _.val &gt; 10]</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="Python异常处理"><a href="#Python异常处理" class="headerlink" title="Python异常处理"></a>Python异常处理</h3><ul>
-<li><p>异常处理的正确姿势, 注意如果不是必要的话不要使用Exception, 可以考虑列出来需要捕获的所有异常, 然后在函数内部判断异常类型</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except IOError, ValueError, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>当然, 我们一般为了方便也会直接使用下面的方法</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except Exception, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="位运算"><a href="#位运算" class="headerlink" title="位运算"></a>位运算</h3><ul>
-<li>在Python中, 位运算与C++中有所不同</li>
-<li>参见<a href="/Notes/Python/Python%E2%80%94%E2%80%94%E4%BD%8D%E8%BF%90%E7%AE%97%E4%B8%8E%E9%80%BB%E8%BE%91%E8%BF%90%E7%AE%97%E5%92%8CC++%E6%9C%89%E4%BB%80%E4%B9%88%E4%B8%8D%E5%90%8C.html" title="/Notes/Python/Python——位运算与逻辑运算和C++有什么不同.html">Python——位运算与逻辑运算和C++有什么不同</a></li>
-</ul>
-<hr>
-<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><ul>
-<li>内部函数访问全局变量时使用<code>global</code>关键字声明(与外部函数一样)</li>
-<li>内部函数访问外部函数的变量使用<code>nonlocal</code>(仅限Python 3)关键字声明</li>
-<li>如果没有声明<ul>
-<li>变量变为只读的<ul>
-<li>可以写出<code>a.append()</code>这样的语句</li>
-<li>但不可以写出<code>a = b</code>这样的语句</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>函数内部变量与函数外同名时:<ul>
-<li>若写出赋值操作,则认为当前变量为局部变量</li>
-<li>否则认为是函数外的全局变量</li>
-<li>若先访问变量(一般访问,不是对变量赋值,此时视为全局变量),然后对变量赋值(此时视为局部变量),则产生矛盾,Python解释器报错</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="三元表达式的使用"><a href="#三元表达式的使用" class="headerlink" title="三元表达式的使用"></a>三元表达式的使用</h3><ul>
-<li><p>如果在三元表达式使用在加法中,需要加上括号,不然整体意思会变成错误的</p>
-</li>
-<li><p>比如两个结点的加法操作,带有进位<code>carry</code>,我们可以简单的写一行:</p>
-<ul>
-<li><p>下面是错误示例:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">val = l1.val if l1 else 0 + l2.val if l2 else 0 + carry</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>上面的表达式可以理解为如果<code>l1</code>不为空,返回<code>l1.val</code>,否则返回<code>0 + l2.val if l2 else 0 + carry</code></p>
-</li>
-<li><p>当<code>l1</code>为空时又可以理解为如果<code>l2</code>不为空,返回<code>0+l2.val</code>否则返回<code>0+carry</code></p>
-</li>
-</ul>
-</li>
-<li><p>正确的写法</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">val = (l1.val if l1 else 0) + (l2.val if l2 else 0) + carry</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="迭代dict的键时用dict-iterkeys"><a href="#迭代dict的键时用dict-iterkeys" class="headerlink" title="迭代dict的键时用dict.iterkeys()"></a>迭代dict的键时用dict.iterkeys()</h3><ul>
-<li><p>迭代键值时使用<code>iterkeys()</code>而不是<code>keys()</code></p>
-</li>
-<li><p><code>iterkeys()</code>返回一个迭代器而不是所有键值列表</p>
-</li>
-<li><p><code>keys()</code>返回所有键值列表</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.iterkeys()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.keys()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>迭代值时也同理</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.itervalues()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.values()</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="zip实现二维列表的行列变换"><a href="#zip实现二维列表的行列变换" class="headerlink" title="zip实现二维列表的行列变换"></a>zip实现二维列表的行列变换</h3><p><em>只适用于Python3，因为涉及到<code>*</code>操作</em></p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">a = [[1,2,3],</span><br><span class="line">	 [4,5,6]]</span><br><span class="line"></span><br><span class="line">print [e for e in zip(*a)]</span><br><span class="line"># Output</span><br><span class="line">[(1,4), (2,5), (3,6)]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Python3中才能使用<code>*</code>作为操作列表解压符</li>
-<li>Python3中<code>zip</code>函数返回的是一个生成器而不是列表，所以需要迭代成列表</li>
-</ul>
-<hr>
-<h3 id="Python中逻辑运算符的巧用"><a href="#Python中逻辑运算符的巧用" class="headerlink" title="Python中逻辑运算符的巧用"></a>Python中逻辑运算符的巧用</h3><p><em>不建议使用</em></p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">print 0 or 1</span><br><span class="line">print 10 or 1</span><br><span class="line">print None or 1</span><br><span class="line">print 0 and 1</span><br><span class="line">print 1 and 10</span><br><span class="line">print None and 10</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">1</span><br><span class="line">10</span><br><span class="line">1</span><br><span class="line">0</span><br><span class="line">10</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>理解</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">print a or b </span><br><span class="line">&lt;==&gt;</span><br><span class="line">print a if a else b</span><br><span class="line"></span><br><span class="line">print a and b</span><br><span class="line">&lt;==&gt;</span><br><span class="line">print b if a else a</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>记忆: </p>
-<ul>
-<li>把<code>a</code>, <code>b</code>当做逻辑表达式,如果访问到<code>b</code>则返回<code>b</code>,否则返回<code>a</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="reversed函数的使用"><a href="#reversed函数的使用" class="headerlink" title="reversed函数的使用"></a>reversed函数的使用</h3><ul>
-<li><p>接受参数为可迭代对象,返回一个反向访问迭代对象的迭代器</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">for i in reversed(range(n)):</span><br><span class="line"></span><br><span class="line">&lt;==&gt;</span><br><span class="line"></span><br><span class="line">for i in range(n-1, -1, -1):</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><code>reversed</code>的使用似乎更优雅,也更容易理解</p>
-</li>
-<li><p>容易遗忘的点,需要注意: <strong>reversed的参数必须是可迭代的对象,而不是两个数字</strong></p>
-</li>
-</ul>
-<hr>
-<h3 id="将简单的句子优雅的写到一行"><a href="#将简单的句子优雅的写到一行" class="headerlink" title="将简单的句子优雅的写到一行"></a>将简单的句子优雅的写到一行</h3><ul>
-<li><p>返回值</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if i &lt; 0: return Flase</span><br><span class="line">&lt;==&gt;</span><br><span class="line">if i &lt; 0:</span><br><span class="line">	return False</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>其他简单的执行语句直接合并</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">i = 10; j = 10</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>判断语句之后使用</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if bool: i = 10;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>判断语句后使用多条</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if bool: i = 10; j = 20</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>while语句后使用</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">while(bool): print 10; print 20</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>当句子较长时不建议使用</strong></p>
-</li>
-<li><p><strong>一般为了美观,平时的项目也不建议使用</strong></p>
-</li>
-<li><p><strong>刷题时为了让代码看起来简便,是可以使用的,但是这样会使得代码不易调试</strong></p>
-</li>
-<li><p><strong>总之:慎用</strong></p>
-</li>
-</ul>
-<hr>
-<h3 id="用同一个值初始化两个变量"><a href="#用同一个值初始化两个变量" class="headerlink" title="用同一个值初始化两个变量"></a>用同一个值初始化两个变量</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">x = y = value</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>在初始化链表头部时最常用<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">head, curr = ListNode(None)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<hr>
-<h3 id="使用collections-Counter"><a href="#使用collections-Counter" class="headerlink" title="使用collections.Counter"></a>使用<code>collections.Counter</code></h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import collections</span><br><span class="line"></span><br><span class="line">counter = collections.Counter([1, 2, 1, 3, 4, &quot;a&quot;, &quot;a&quot;, &quot;c&quot;])</span><br><span class="line"></span><br><span class="line">print counter</span><br><span class="line">print counter[&quot;a&quot;]</span><br><span class="line">print counter[1]</span><br><span class="line">print counter[-1]</span><br><span class="line">print counter.get(&quot;a&quot;)</span><br><span class="line">print counter.get(-1, 0)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">Counter(&#123;&apos;a&apos;: 2, 1: 2, 2: 1, 3: 1, 4: 1, &apos;c&apos;: 1&#125;)</span><br><span class="line">2</span><br><span class="line">2</span><br><span class="line">0</span><br><span class="line">2</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="递归函数中定义函数会影响递归函数的运行效率吗-待更新"><a href="#递归函数中定义函数会影响递归函数的运行效率吗-待更新" class="headerlink" title="递归函数中定义函数会影响递归函数的运行效率吗?(待更新)"></a>递归函数中定义函数会影响递归函数的运行效率吗?(待更新)</h3>]]></content>
-      <tags>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Python——编程笔记，各种易忘点总结</title>
     <url>/Notes/Python/Python%E2%80%94%E2%80%94%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%8C%E5%90%84%E7%A7%8D%E6%98%93%E5%BF%98%E7%82%B9%E6%80%BB%E7%BB%93.html</url>
     <content><![CDATA[<p><em>Python编程笔记，各种易忘点总结</em><br><strong><em>持续更新</em></strong></p>
@@ -8807,6 +8617,219 @@ print &quot;the final global_list: %s&quot; % global_list</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Python——编程规范</title>
+    <url>/Notes/Python/Python%E2%80%94%E2%80%94%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83.html</url>
+    <content><![CDATA[<p><em>Python 编程中经验型的一些规范</em><br><strong><em>持续更新</em></strong></p>
+<hr>
+<h3 id="使用li-代替copy-copy-li"><a href="#使用li-代替copy-copy-li" class="headerlink" title="使用li[:]代替copy.copy(li)"></a>使用li[:]代替copy.copy(li)</h3><ul>
+<li><code>li[:]</code>等价于<code>copy.copy(li)</code></li>
+<li><code>li[:]</code>不等价于<code>copy.deepcopy(li)</code></li>
+<li><code>li[:]</code>可以简化代码</li>
+</ul>
+<hr>
+<h3 id="从后开始访问列表"><a href="#从后开始访问列表" class="headerlink" title="从后开始访问列表"></a>从后开始访问列表</h3><ul>
+<li>list作为stack用时访问栈顶元素list[-1]<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">list1 = [1, 5, 2, 3]</span><br><span class="line">print list1[-1]</span><br><span class="line">print list1[-2]</span><br><span class="line">print list1[1:-1]</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">[5, 2]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="函数内函数"><a href="#函数内函数" class="headerlink" title="函数内函数"></a>函数内函数</h3><ul>
+<li>Python可以在函数内部定义函数,但是要注意不能与外部变量混淆<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def sum_all(alist):</span><br><span class="line"></span><br><span class="line">    def sum_two(a, b):</span><br><span class="line">        return a+b</span><br><span class="line"></span><br><span class="line">    result = 0</span><br><span class="line">    for i in alist:</span><br><span class="line">        result = sum_two(result, i)</span><br><span class="line">    return result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print sum_all([1, 2, 3, 4, 5])</span><br><span class="line"># output:</span><br><span class="line">15</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="不要随意调用特殊方法"><a href="#不要随意调用特殊方法" class="headerlink" title="不要随意调用特殊方法"></a>不要随意调用特殊方法</h3><p><em>(比如：__len__)</em></p>
+<ul>
+<li>特殊方法不应该被开发者调用，而应该被开发者定义新类时实现</li>
+<li>一般使用<code>len(object)</code>即可</li>
+<li>原因： 内置的方法(比如：len())可能会直接返回对象中的<code>ob_size</code>属性，而不用调用<code>__len__()</code>(这个函数往往会用迭代或者其他比较复杂的方法实现)</li>
+</ul>
+<hr>
+<h3 id="多使用列表推导"><a href="#多使用列表推导" class="headerlink" title="多使用列表推导"></a>多使用列表推导</h3><p><em>(list comprehension, 简写listcomps)和生成器表达式(generator expression, 简写genexps)</em></p>
+<ul>
+<li><p>listcomps</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[str(i) for i in range(1,10)]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>genexps</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(str(i) for i in range(1,10))</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="考虑使用reduce而不是循环语句"><a href="#考虑使用reduce而不是循环语句" class="headerlink" title="考虑使用reduce而不是循环语句"></a>考虑使用reduce而不是循环语句</h3><ul>
+<li>reduce<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def add(x, y):</span><br><span class="line">	return x + y</span><br><span class="line">reduce(add, [1,2,3,4,5])</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">from operator import mul</span><br><span class="line">reduce(mul, range(1, 10))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="多使用pprint"><a href="#多使用pprint" class="headerlink" title="多使用pprint"></a>多使用pprint</h3><ul>
+<li>(Pretty Print)而不是print<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import pprint</span><br><span class="line">l1 = (1, &#123;2: 3&#125;, &quot;first&quot;, (&quot;second&quot;, 5, 6, [7, 8, 9]), [1, 3, 5], &quot;this is a pprint&quot;)</span><br><span class="line">pprint.pprint(l1)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">(1,</span><br><span class="line"> &#123;2: 3&#125;,</span><br><span class="line"> &apos;first&apos;,</span><br><span class="line"> (&apos;second&apos;, 5, 6, [7, 8, 9]),</span><br><span class="line"> [1, 3, 5],</span><br><span class="line"> &apos;this is a pprint&apos;)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="多使用三目运算符"><a href="#多使用三目运算符" class="headerlink" title="多使用三目运算符"></a>多使用三目运算符</h3><ul>
+<li><p>Python不像Java和C++一样,有x?y:z这样的三目运算符号,但是可以有自己的特殊使用方法,等价于三目运算符且更容易理解</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># same as x?y:z</span><br><span class="line">result = y if x is True else z</span><br><span class="line">return y if x is True else z</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>注意: 在使用return语句中的三目运算时必须有else语句,否则编译不通过,因为返回值可能会缺失</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="匿名变量的使用"><a href="#匿名变量的使用" class="headerlink" title="匿名变量的使用"></a>匿名变量的使用</h3><ul>
+<li>初始化一个列表时<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">list1 = [_ for _ in list2 if _.val &gt; 10]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="Python异常处理"><a href="#Python异常处理" class="headerlink" title="Python异常处理"></a>Python异常处理</h3><ul>
+<li><p>异常处理的正确姿势, 注意如果不是必要的话不要使用Exception, 可以考虑列出来需要捕获的所有异常, 然后在函数内部判断异常类型</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except IOError, ValueError, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当然, 我们一般为了方便也会直接使用下面的方法</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">try:</span><br><span class="line">	read some thing</span><br><span class="line">except Exception, e:</span><br><span class="line">	exception_type = type(e)</span><br><span class="line">	print(&quot;%s&quot; % e)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="位运算"><a href="#位运算" class="headerlink" title="位运算"></a>位运算</h3><ul>
+<li>在Python中, 位运算与C++中有所不同</li>
+<li>参见<a href="/Notes/Python/Python%E2%80%94%E2%80%94%E4%BD%8D%E8%BF%90%E7%AE%97%E4%B8%8E%E9%80%BB%E8%BE%91%E8%BF%90%E7%AE%97%E5%92%8CC++%E6%9C%89%E4%BB%80%E4%B9%88%E4%B8%8D%E5%90%8C.html" title="/Notes/Python/Python——位运算与逻辑运算和C++有什么不同.html">Python——位运算与逻辑运算和C++有什么不同</a></li>
+</ul>
+<hr>
+<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><ul>
+<li>内部函数访问全局变量时使用<code>global</code>关键字声明(与外部函数一样)</li>
+<li>内部函数访问外部函数的变量使用<code>nonlocal</code>(仅限Python 3)关键字声明</li>
+<li>如果没有声明<ul>
+<li>变量变为只读的<ul>
+<li>可以写出<code>a.append()</code>这样的语句</li>
+<li>但不可以写出<code>a = b</code>这样的语句</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>函数内部变量与函数外同名时:<ul>
+<li>若写出赋值操作,则认为当前变量为局部变量</li>
+<li>否则认为是函数外的全局变量</li>
+<li>若先访问变量(一般访问,不是对变量赋值,此时视为全局变量),然后对变量赋值(此时视为局部变量),则产生矛盾,Python解释器报错</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="三元表达式的使用"><a href="#三元表达式的使用" class="headerlink" title="三元表达式的使用"></a>三元表达式的使用</h3><ul>
+<li><p>如果在三元表达式使用在加法中,需要加上括号,不然整体意思会变成错误的</p>
+</li>
+<li><p>比如两个结点的加法操作,带有进位<code>carry</code>,我们可以简单的写一行:</p>
+<ul>
+<li><p>下面是错误示例:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">val = l1.val if l1 else 0 + l2.val if l2 else 0 + carry</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>上面的表达式可以理解为如果<code>l1</code>不为空,返回<code>l1.val</code>,否则返回<code>0 + l2.val if l2 else 0 + carry</code></p>
+</li>
+<li><p>当<code>l1</code>为空时又可以理解为如果<code>l2</code>不为空,返回<code>0+l2.val</code>否则返回<code>0+carry</code></p>
+</li>
+</ul>
+</li>
+<li><p>正确的写法</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">val = (l1.val if l1 else 0) + (l2.val if l2 else 0) + carry</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="迭代dict的键时用dict-iterkeys"><a href="#迭代dict的键时用dict-iterkeys" class="headerlink" title="迭代dict的键时用dict.iterkeys()"></a>迭代dict的键时用dict.iterkeys()</h3><ul>
+<li><p>迭代键值时使用<code>iterkeys()</code>而不是<code>keys()</code></p>
+</li>
+<li><p><code>iterkeys()</code>返回一个迭代器而不是所有键值列表</p>
+</li>
+<li><p><code>keys()</code>返回所有键值列表</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.iterkeys()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.keys()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>迭代值时也同理</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 迭代效率高</span><br><span class="line">for _ in dict.itervalues()</span><br><span class="line"># 迭代效率低</span><br><span class="line">for _ in dict.values()</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="zip实现二维列表的行列变换"><a href="#zip实现二维列表的行列变换" class="headerlink" title="zip实现二维列表的行列变换"></a>zip实现二维列表的行列变换</h3><p><em>只适用于Python3，因为涉及到<code>*</code>操作</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">a = [[1,2,3],</span><br><span class="line">	 [4,5,6]]</span><br><span class="line"></span><br><span class="line">print [e for e in zip(*a)]</span><br><span class="line"># Output</span><br><span class="line">[(1,4), (2,5), (3,6)]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Python3中才能使用<code>*</code>作为操作列表解压符</li>
+<li>Python3中<code>zip</code>函数返回的是一个生成器而不是列表，所以需要迭代成列表</li>
+</ul>
+<hr>
+<h3 id="Python中逻辑运算符的巧用"><a href="#Python中逻辑运算符的巧用" class="headerlink" title="Python中逻辑运算符的巧用"></a>Python中逻辑运算符的巧用</h3><p><em>不建议使用</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">print 0 or 1</span><br><span class="line">print 10 or 1</span><br><span class="line">print None or 1</span><br><span class="line">print 0 and 1</span><br><span class="line">print 1 and 10</span><br><span class="line">print None and 10</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">1</span><br><span class="line">10</span><br><span class="line">1</span><br><span class="line">0</span><br><span class="line">10</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>理解</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">print a or b </span><br><span class="line">&lt;==&gt;</span><br><span class="line">print a if a else b</span><br><span class="line"></span><br><span class="line">print a and b</span><br><span class="line">&lt;==&gt;</span><br><span class="line">print b if a else a</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>记忆: </p>
+<ul>
+<li>把<code>a</code>, <code>b</code>当做逻辑表达式,如果访问到<code>b</code>则返回<code>b</code>,否则返回<code>a</code></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="reversed函数的使用"><a href="#reversed函数的使用" class="headerlink" title="reversed函数的使用"></a>reversed函数的使用</h3><ul>
+<li><p>接受参数为可迭代对象,返回一个反向访问迭代对象的迭代器</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">for i in reversed(range(n)):</span><br><span class="line"></span><br><span class="line">&lt;==&gt;</span><br><span class="line"></span><br><span class="line">for i in range(n-1, -1, -1):</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>reversed</code>的使用似乎更优雅,也更容易理解</p>
+</li>
+<li><p>容易遗忘的点,需要注意: <strong>reversed的参数必须是可迭代的对象,而不是两个数字</strong></p>
+</li>
+</ul>
+<hr>
+<h3 id="将简单的句子优雅的写到一行"><a href="#将简单的句子优雅的写到一行" class="headerlink" title="将简单的句子优雅的写到一行"></a>将简单的句子优雅的写到一行</h3><ul>
+<li><p>返回值</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if i &lt; 0: return Flase</span><br><span class="line">&lt;==&gt;</span><br><span class="line">if i &lt; 0:</span><br><span class="line">	return False</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>其他简单的执行语句直接合并</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">i = 10; j = 10</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>判断语句之后使用</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if bool: i = 10;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>判断语句后使用多条</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if bool: i = 10; j = 20</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>while语句后使用</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">while(bool): print 10; print 20</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>当句子较长时不建议使用</strong></p>
+</li>
+<li><p><strong>一般为了美观,平时的项目也不建议使用</strong></p>
+</li>
+<li><p><strong>刷题时为了让代码看起来简便,是可以使用的,但是这样会使得代码不易调试</strong></p>
+</li>
+<li><p><strong>总之:慎用</strong></p>
+</li>
+</ul>
+<hr>
+<h3 id="用同一个值初始化两个变量"><a href="#用同一个值初始化两个变量" class="headerlink" title="用同一个值初始化两个变量"></a>用同一个值初始化两个变量</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">x = y = value</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在初始化链表头部时最常用<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">head, curr = ListNode(None)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="使用collections-Counter"><a href="#使用collections-Counter" class="headerlink" title="使用collections.Counter"></a>使用<code>collections.Counter</code></h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import collections</span><br><span class="line"></span><br><span class="line">counter = collections.Counter([1, 2, 1, 3, 4, &quot;a&quot;, &quot;a&quot;, &quot;c&quot;])</span><br><span class="line"></span><br><span class="line">print counter</span><br><span class="line">print counter[&quot;a&quot;]</span><br><span class="line">print counter[1]</span><br><span class="line">print counter[-1]</span><br><span class="line">print counter.get(&quot;a&quot;)</span><br><span class="line">print counter.get(-1, 0)</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">Counter(&#123;&apos;a&apos;: 2, 1: 2, 2: 1, 3: 1, 4: 1, &apos;c&apos;: 1&#125;)</span><br><span class="line">2</span><br><span class="line">2</span><br><span class="line">0</span><br><span class="line">2</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="递归函数中定义函数会影响递归函数的运行效率吗-待更新"><a href="#递归函数中定义函数会影响递归函数的运行效率吗-待更新" class="headerlink" title="递归函数中定义函数会影响递归函数的运行效率吗?(待更新)"></a>递归函数中定义函数会影响递归函数的运行效率吗?(待更新)</h3>]]></content>
+      <tags>
+        <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Pandas——apply, applymap和map函数</title>
     <url>/Notes/Python/Pandas/Pandas%E2%80%94%E2%80%94apply,%20applymap%E5%92%8Cmap%E5%87%BD%E6%95%B0.html</url>
     <content><![CDATA[<p><em>Pandas库中apply, applymap和map函数的使用</em></p>
@@ -8871,7 +8894,7 @@ ser.map(func_element)</code></pre>
     <content><![CDATA[<p><em>解决PDF的权限问题</em><br><strong>很多PDF文件为保护版权，会通过加密来限制打印和修改权限。随着Acrobat DC版本的发布，PDF文件的加密强度已经达到AES 256-bit</strong></p>
 <hr>
 <h3 id="在线解密"><a href="#在线解密" class="headerlink" title="在线解密"></a>在线解密</h3><ul>
-<li>将文档添加到附件并发送到邮件地址： <a href="mailto:&#111;&#x63;&#x72;&#97;&#x6c;&#108;&#64;&#118;&#x69;&#112;&#46;&#x31;&#x36;&#51;&#x2e;&#99;&#111;&#x6d;" target="_blank" rel="noopener">&#111;&#x63;&#x72;&#97;&#x6c;&#108;&#64;&#118;&#x69;&#112;&#46;&#x31;&#x36;&#51;&#x2e;&#99;&#111;&#x6d;</a></li>
+<li>将文档添加到附件并发送到邮件地址： <a href="mailto:&#x6f;&#99;&#x72;&#x61;&#108;&#108;&#64;&#118;&#x69;&#x70;&#x2e;&#49;&#54;&#x33;&#x2e;&#x63;&#x6f;&#109;" target="_blank" rel="noopener">&#x6f;&#99;&#x72;&#x61;&#108;&#108;&#64;&#118;&#x69;&#x70;&#x2e;&#49;&#54;&#x33;&#x2e;&#x63;&#x6f;&#109;</a></li>
 </ul>
 <hr>
 <h3 id="离线解密"><a href="#离线解密" class="headerlink" title="离线解密"></a>离线解密</h3><ul>
@@ -10077,99 +10100,6 @@ sudo apt-get install fluxgui</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>ML——模型评估指标总结</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87%E6%80%BB%E7%BB%93.html</url>
-    <content><![CDATA[<p><em>各种模型评估指标总结,持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/zongfa/p/9431807.html" target="_blank" rel="noopener">https://www.cnblogs.com/zongfa/p/9431807.html</a></li>
-</ul>
-<h4 id="Accuracy，准确率"><a href="#Accuracy，准确率" class="headerlink" title="Accuracy，准确率"></a>Accuracy，准确率</h4><ul>
-<li>公式：$$ \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN} $$</li>
-<li>直观，但不利于不平衡样本</li>
-</ul>
-<h4 id="Recall，召回率"><a href="#Recall，召回率" class="headerlink" title="Recall，召回率"></a>Recall，召回率</h4><ul>
-<li>公式：$$ \text{Recall} = \frac{TP}{TP+FN} $$</li>
-</ul>
-<h4 id="Precision，精确率"><a href="#Precision，精确率" class="headerlink" title="Precision，精确率"></a>Precision，精确率</h4><ul>
-<li>公式：$$ \text{Precision} = \frac{TP}{TP+FP} $$</li>
-</ul>
-<h4 id="F1-Score"><a href="#F1-Score" class="headerlink" title="F1 Score"></a>F1 Score</h4><ul>
-<li>公式：$$ \text{F1 Score} = \frac{2 * \text{Precision} * \text{Recall}}{\text{Precision}+\text{Recall}} $$</li>
-<li>综合考虑模型”求精“和”求全“的能力</li>
-</ul>
-<h4 id="AUC"><a href="#AUC" class="headerlink" title="AUC"></a>AUC</h4><ul>
-<li>形式化定义：AUC是ROC曲线下方的面积，其中ROC曲线的横坐标是伪阳性率（也叫假正类率，False Positive Rate），纵坐标是真阳性率（真正类率，True Positive Rate）</li>
-<li>本质：任意取两个样本，一个正样本和一个负样本（\( \forall x^+, x^-\)），模型预测正样本为正的概率分为\(Score_\theta(y=1|x^+)\)，模型预测正样本为正的概率分为\(Score_\theta(y=1|x^-)\)，则AUC为：<br>$$ AUC_\theta = P(Score_\theta(y=1|x^+)&gt;Score_\theta(y=1|x^-))$$</li>
-<li>真实实现时，可以统计所有正负样本对，若正样本预估值大于负样本，则累计分数+1，最后用累计分数除以所有可能的正负样本对数量<br>$$ AUC_\theta = \frac{Count(S_+&gt;S_-)}{Count(S_+) * Count(S_-)}$$</li>
-<li>具体代码实现：<ul>
-<li>将样本按照预估分数倒序排列，从大到小</li>
-<li>定义四个变量：正样本总数\(M\)，负样本总数\(N\)，已访问负样本数量\(X=0\)，正样本大于负样本的样本对数量\(Z=0\)</li>
-<li>依次访问所有样本：<ul>
-<li>若为正样本，则\(Z = Z + (N-X)\)</li>
-<li>若为负样本，则\(X = X + 1\)</li>
-</ul>
-</li>
-<li>最后计算：\(AUC = \frac{Z}{M * N}\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="回归模型"><a href="#回归模型" class="headerlink" title="回归模型"></a>回归模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/HuZihu/p/10300760.html" target="_blank" rel="noopener">https://www.cnblogs.com/HuZihu/p/10300760.html</a></li>
-<li>参考：<a href="https://blog.csdn.net/guolindonggld/article/details/87856780" target="_blank" rel="noopener">https://blog.csdn.net/guolindonggld/article/details/87856780</a><h4 id="MSE"><a href="#MSE" class="headerlink" title="MSE"></a>MSE</h4></li>
-<li>MSE (Mean Square Error，均方误差)</li>
-<li>也常用作损失函数<h4 id="RMSE"><a href="#RMSE" class="headerlink" title="RMSE"></a>RMSE</h4></li>
-<li>EMSE (Root Mean Square Error，根均方误差)<h4 id="MAE"><a href="#MAE" class="headerlink" title="MAE"></a>MAE</h4></li>
-<li>MAE (Mean Absolute Error，平均绝对误差)<h4 id="MAPE"><a href="#MAPE" class="headerlink" title="MAPE"></a>MAPE</h4></li>
-<li>MAPE (Mean Absolute Percentage Error，平均绝对百分比误差)<h4 id="SMAPE"><a href="#SMAPE" class="headerlink" title="SMAPE"></a>SMAPE</h4></li>
-<li>MAPE (Symmetric Mean Absolute Percentage Error，对称平均绝对百分比误差)</li>
-</ul>
-<hr>
-<h3 id="排序模型"><a href="#排序模型" class="headerlink" title="排序模型"></a>排序模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/by-dream/p/9403984.html" target="_blank" rel="noopener">https://www.cnblogs.com/by-dream/p/9403984.html</a><h4 id="DCG"><a href="#DCG" class="headerlink" title="DCG"></a>DCG</h4></li>
-<li>DCG（Discounted Cumulative Gain， 累计收益折扣）<h4 id="NDCG"><a href="#NDCG" class="headerlink" title="NDCG"></a>NDCG</h4></li>
-<li>(NDCG)Normalized Discounted Cumulative Gain</li>
-</ul>
-<hr>
-<h3 id="校准模型"><a href="#校准模型" class="headerlink" title="校准模型"></a>校准模型</h3><ul>
-<li>参考：<a href="http://t.zoukankan.com/eilearn-p-14164687.html" target="_blank" rel="noopener">推荐系统（2）—— 评估指标</a></li>
-<li>参考：<a href="https://www.6aiq.com/article/1628642001831" target="_blank" rel="noopener">阿里妈妈展示广告预估校准技术演进之路</a></li>
-</ul>
-<h4 id="COPC"><a href="#COPC" class="headerlink" title="COPC"></a>COPC</h4><ul>
-<li>COPC（Click over Predicted Click）<ul>
-<li>COPC = 实际的点击率/模型预测的点击率，主要衡量model整体预估的偏高和偏低，同样越接近1越好，一般情况下在1附近波动。这个指标在展示广告上应用多一些</li>
-</ul>
-</li>
-</ul>
-<h4 id="PCOC"><a href="#PCOC" class="headerlink" title="PCOC"></a>PCOC</h4><ul>
-<li>PCOC（Predicted Click over Click)<ul>
-<li>PCOC = 模型预估的点击率/实际点击率，与COPC用途相同</li>
-<li>COPC的倒数</li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p>PCOC指标是校准之后的点击率与后验点击率（近似真实概率）的比值，越接近于1，意味着在绝对值上越准确，大于1为高估，小于1为低估，是一种常用的高低估评价指标。但是PCOC存在一定局限性，举个例子：2万个样本，其中1万个样本的预估概率是0.2，后验概率是0.4，计算出PCOC是0.2/0.4=0.5，是显著低估的，另1万个样本PCOC是0.8/0.6= 1.3，明显是高估的。所以校准效果并不好，但是样本放一起看，校准后概率是（0.2+0.8）/2=0.5，后验概率是（0.4+0.6）/2=0.5，整体PCOC是1.0，表现完全正常。所以<strong>单一PCOC指标不能表征样本各维度下的校准水平。</strong></p>
-</blockquote>
-<hr>
-<h3 id="净胜率模型"><a href="#净胜率模型" class="headerlink" title="净胜率模型"></a>净胜率模型</h3><ul>
-<li>ANLP<ul>
-<li>参考：论文《Scalable Bid Landscape Forecasting in Real-time Bidding》</li>
-<li>链接：<a href="https://arxiv.org/pdf/2001.06587.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2001.06587.pdf</a></li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ML——损失函数总结</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E6%80%BB%E7%BB%93.html</url>
     <content><![CDATA[<p><em>各种损失函数(Loss Function)总结,持续更新</em></p>
@@ -10424,24 +10354,103 @@ sudo apt-get install fluxgui</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Math——假设检验</title>
-    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%81%87%E8%AE%BE%E6%A3%80%E9%AA%8C.html</url>
-    <content><![CDATA[<p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
+    <title>ML——模型评估指标总结</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87%E6%80%BB%E7%BB%93.html</url>
+    <content><![CDATA[<p><em>各种模型评估指标总结,持续更新</em></p>
 <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<ul>
-<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
-<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
+
+<hr>
+<h3 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h3><ul>
+<li>参考：<a href="https://www.cnblogs.com/zongfa/p/9431807.html" target="_blank" rel="noopener">https://www.cnblogs.com/zongfa/p/9431807.html</a></li>
 </ul>
-<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
-<h3 id="p-value的含义"><a href="#p-value的含义" class="headerlink" title="p-value的含义"></a>p-value的含义</h3><ul>
-<li>在假设检验中，对p-value的的一种直观理解：在假设\(H_0\)：假设目标样本属于某个正太分布，这个样本不是从这个正太分布中采样的概率就是p值（即p值的本质是一个概率）<ul>
-<li>进一步的理解，已知一个正太分布和一个目标样本，那么这个目标样本对应的p值就是：重新在这个正太分布中重新采样一个新样本，新样本离中心位置\(u_0\)的距离大于等于目标样本的概率（该概率就是正太分布的两边区间积分和）</li>
-<li>p值越小，说明这个目标样本越不可能是从这个正太分布采样出来的，越应该拒绝原假设\(H_0\)（即越应该接受\(H_A\)</li>
+<h4 id="Accuracy，准确率"><a href="#Accuracy，准确率" class="headerlink" title="Accuracy，准确率"></a>Accuracy，准确率</h4><ul>
+<li>公式：$$ \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN} $$</li>
+<li>直观，但不利于不平衡样本</li>
+</ul>
+<h4 id="Recall，召回率"><a href="#Recall，召回率" class="headerlink" title="Recall，召回率"></a>Recall，召回率</h4><ul>
+<li>公式：$$ \text{Recall} = \frac{TP}{TP+FN} $$</li>
+</ul>
+<h4 id="Precision，精确率"><a href="#Precision，精确率" class="headerlink" title="Precision，精确率"></a>Precision，精确率</h4><ul>
+<li>公式：$$ \text{Precision} = \frac{TP}{TP+FP} $$</li>
+</ul>
+<h4 id="F1-Score"><a href="#F1-Score" class="headerlink" title="F1 Score"></a>F1 Score</h4><ul>
+<li>公式：$$ \text{F1 Score} = \frac{2 * \text{Precision} * \text{Recall}}{\text{Precision}+\text{Recall}} $$</li>
+<li>综合考虑模型”求精“和”求全“的能力</li>
+</ul>
+<h4 id="AUC"><a href="#AUC" class="headerlink" title="AUC"></a>AUC</h4><ul>
+<li>形式化定义：AUC是ROC曲线下方的面积，其中ROC曲线的横坐标是伪阳性率（也叫假正类率，False Positive Rate），纵坐标是真阳性率（真正类率，True Positive Rate）</li>
+<li>本质：任意取两个样本，一个正样本和一个负样本（\( \forall x^+, x^-\)），模型预测正样本为正的概率分为\(Score_\theta(y=1|x^+)\)，模型预测正样本为正的概率分为\(Score_\theta(y=1|x^-)\)，则AUC为：<br>$$ AUC_\theta = P(Score_\theta(y=1|x^+)&gt;Score_\theta(y=1|x^-))$$</li>
+<li>真实实现时，可以统计所有正负样本对，若正样本预估值大于负样本，则累计分数+1，最后用累计分数除以所有可能的正负样本对数量<br>$$ AUC_\theta = \frac{Count(S_+&gt;S_-)}{Count(S_+) * Count(S_-)}$$</li>
+<li>具体代码实现：<ul>
+<li>将样本按照预估分数倒序排列，从大到小</li>
+<li>定义四个变量：正样本总数\(M\)，负样本总数\(N\)，已访问负样本数量\(X=0\)，正样本大于负样本的样本对数量\(Z=0\)</li>
+<li>依次访问所有样本：<ul>
+<li>若为正样本，则\(Z = Z + (N-X)\)</li>
+<li>若为负样本，则\(X = X + 1\)</li>
+</ul>
+</li>
+<li>最后计算：\(AUC = \frac{Z}{M * N}\)</li>
 </ul>
 </li>
 </ul>
+<hr>
+<h3 id="回归模型"><a href="#回归模型" class="headerlink" title="回归模型"></a>回归模型</h3><ul>
+<li>参考：<a href="https://www.cnblogs.com/HuZihu/p/10300760.html" target="_blank" rel="noopener">https://www.cnblogs.com/HuZihu/p/10300760.html</a></li>
+<li>参考：<a href="https://blog.csdn.net/guolindonggld/article/details/87856780" target="_blank" rel="noopener">https://blog.csdn.net/guolindonggld/article/details/87856780</a><h4 id="MSE"><a href="#MSE" class="headerlink" title="MSE"></a>MSE</h4></li>
+<li>MSE (Mean Square Error，均方误差)</li>
+<li>也常用作损失函数<h4 id="RMSE"><a href="#RMSE" class="headerlink" title="RMSE"></a>RMSE</h4></li>
+<li>EMSE (Root Mean Square Error，根均方误差)<h4 id="MAE"><a href="#MAE" class="headerlink" title="MAE"></a>MAE</h4></li>
+<li>MAE (Mean Absolute Error，平均绝对误差)<h4 id="MAPE"><a href="#MAPE" class="headerlink" title="MAPE"></a>MAPE</h4></li>
+<li>MAPE (Mean Absolute Percentage Error，平均绝对百分比误差)<h4 id="SMAPE"><a href="#SMAPE" class="headerlink" title="SMAPE"></a>SMAPE</h4></li>
+<li>MAPE (Symmetric Mean Absolute Percentage Error，对称平均绝对百分比误差)</li>
+</ul>
+<hr>
+<h3 id="排序模型"><a href="#排序模型" class="headerlink" title="排序模型"></a>排序模型</h3><ul>
+<li>参考：<a href="https://www.cnblogs.com/by-dream/p/9403984.html" target="_blank" rel="noopener">https://www.cnblogs.com/by-dream/p/9403984.html</a><h4 id="DCG"><a href="#DCG" class="headerlink" title="DCG"></a>DCG</h4></li>
+<li>DCG（Discounted Cumulative Gain， 累计收益折扣）<h4 id="NDCG"><a href="#NDCG" class="headerlink" title="NDCG"></a>NDCG</h4></li>
+<li>(NDCG)Normalized Discounted Cumulative Gain</li>
+</ul>
+<hr>
+<h3 id="校准模型"><a href="#校准模型" class="headerlink" title="校准模型"></a>校准模型</h3><ul>
+<li>参考：<a href="http://t.zoukankan.com/eilearn-p-14164687.html" target="_blank" rel="noopener">推荐系统（2）—— 评估指标</a></li>
+<li>参考：<a href="https://www.6aiq.com/article/1628642001831" target="_blank" rel="noopener">阿里妈妈展示广告预估校准技术演进之路</a></li>
+</ul>
+<h4 id="COPC"><a href="#COPC" class="headerlink" title="COPC"></a>COPC</h4><ul>
+<li>COPC（Click over Predicted Click）<ul>
+<li>COPC = 实际的点击率/模型预测的点击率，主要衡量model整体预估的偏高和偏低，同样越接近1越好，一般情况下在1附近波动。这个指标在展示广告上应用多一些</li>
+</ul>
+</li>
+</ul>
+<h4 id="PCOC"><a href="#PCOC" class="headerlink" title="PCOC"></a>PCOC</h4><ul>
+<li>PCOC（Predicted Click over Click)<ul>
+<li>PCOC = 模型预估的点击率/实际点击率，与COPC用途相同</li>
+<li>COPC的倒数</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>PCOC指标是校准之后的点击率与后验点击率（近似真实概率）的比值，越接近于1，意味着在绝对值上越准确，大于1为高估，小于1为低估，是一种常用的高低估评价指标。但是PCOC存在一定局限性，举个例子：2万个样本，其中1万个样本的预估概率是0.2，后验概率是0.4，计算出PCOC是0.2/0.4=0.5，是显著低估的，另1万个样本PCOC是0.8/0.6= 1.3，明显是高估的。所以校准效果并不好，但是样本放一起看，校准后概率是（0.2+0.8）/2=0.5，后验概率是（0.4+0.6）/2=0.5，整体PCOC是1.0，表现完全正常。所以<strong>单一PCOC指标不能表征样本各维度下的校准水平。</strong></p>
+</blockquote>
+<hr>
+<h3 id="净胜率模型"><a href="#净胜率模型" class="headerlink" title="净胜率模型"></a>净胜率模型</h3><ul>
+<li>ANLP<ul>
+<li>参考：论文《Scalable Bid Landscape Forecasting in Real-time Bidding》</li>
+<li>链接：<a href="https://arxiv.org/pdf/2001.06587.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2001.06587.pdf</a></li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Math——函数空间总结</title>
+    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%87%BD%E6%95%B0%E7%A9%BA%E9%97%B4%E6%80%BB%E7%BB%93.html</url>
+    <content><![CDATA[<p><em>希尔伯特空间,欧几里得空间,巴拿赫空间或者拓扑空间都是<strong>函数空间</strong></em></p>
+<p>参考博客:<a href="https://blog.csdn.net/weixin_36811328/article/details/81207753" target="_blank" rel="noopener">欧几里得空间与希尔伯特空间</a></p>
 ]]></content>
       <tags>
         <tag>Math</tag>
@@ -10532,6 +10541,30 @@ sudo apt-get install fluxgui</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Math——假设检验</title>
+    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%81%87%E8%AE%BE%E6%A3%80%E9%AA%8C.html</url>
+    <content><![CDATA[<p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
+<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
+</ul>
+<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
+<h3 id="p-value的含义"><a href="#p-value的含义" class="headerlink" title="p-value的含义"></a>p-value的含义</h3><ul>
+<li>在假设检验中，对p-value的的一种直观理解：在假设\(H_0\)：假设目标样本属于某个正太分布，这个样本不是从这个正太分布中采样的概率就是p值（即p值的本质是一个概率）<ul>
+<li>进一步的理解，已知一个正太分布和一个目标样本，那么这个目标样本对应的p值就是：重新在这个正太分布中重新采样一个新样本，新样本离中心位置\(u_0\)的距离大于等于目标样本的概率（该概率就是正太分布的两边区间积分和）</li>
+<li>p值越小，说明这个目标样本越不可能是从这个正太分布采样出来的，越应该拒绝原假设\(H_0\)（即越应该接受\(H_A\)</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Math</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Math——因果推断</title>
     <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%9B%A0%E6%9E%9C%E6%8E%A8%E6%96%AD.html</url>
     <content><![CDATA[<p><em>本文介绍因果推断相关概念</em></p>
@@ -10550,6 +10583,62 @@ sudo apt-get install fluxgui</code></pre>
 </ul>
 </li>
 </ul>
+]]></content>
+      <tags>
+        <tag>Math</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Math——样本均值方差和总体均值方差的关系</title>
+    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E6%A0%B7%E6%9C%AC%E5%9D%87%E5%80%BC%E6%96%B9%E5%B7%AE%E5%92%8C%E6%80%BB%E4%BD%93%E5%9D%87%E5%80%BC%E6%96%B9%E5%B7%AE%E7%9A%84%E5%85%B3%E7%B3%BB.html</url>
+    <content><![CDATA[<p><em>本文介绍随机变量样本均值方差和整体均值方差的关系，同时还介绍样本和均值的方差和总体方差的关系</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>其他参考链接：<a href="https://www.zhihu.com/question/357835857/answer/2728936255" target="_blank" rel="noopener">在统计学里如何理解样本均值的方差等于总体方差➗n? - 蘇雲的回答 - 知乎</a></li>
+</ul>
+<h3 id="样本均值的方差与总体方差的关系"><a href="#样本均值的方差与总体方差的关系" class="headerlink" title="样本均值的方差与总体方差的关系"></a>样本均值的方差与总体方差的关系</h3><!-- * 详细推导如下，有时间再重新用文字梳理一下
+<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population.png"> -->
+<ul>
+<li>其他证明方式：<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population-v2.png">
+<ul>
+<li>上式中，如果总体方差未知，想要用样本方差来作为总体方差的无偏估计，则样本方差的定义是应该是 \(S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2\)，（此时样本方差是总体方差的无偏估计）</li>
+</ul>
+</li>
+</ul>
+<h3 id="样本方差为什么要除以n-1"><a href="#样本方差为什么要除以n-1" class="headerlink" title="样本方差为什么要除以n-1?"></a>样本方差为什么要除以n-1?</h3><ul>
+<li>样本方差的定义：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2<br>$$</li>
+<li>为什么样本方差是乘以\(\frac{1}{n-1}\)而不是\(\frac{1}{n}\)？<ul>
+<li>因为这样使用\(\frac{1}{n}\)会低估总体方差，此时样本方差不是总体方差的无偏估计</li>
+<li>样本方差低估了总体方差的原因是因为从总体里面抽出来的数据会更倾向于集中，极端情况下，一个样本对应的方差为0</li>
+</ul>
+</li>
+<li>换个视角想，是因为我们不知道总体的均值，所以计算方差时使用的均值也是从样本中求平均得到的，这使得我们基于该均值得到的方差不够离散（因为使用了样本均值，所以自由度需要减一），也就是低估了总体方差<ul>
+<li>怎么理解自由度？<ul>
+<li>采样一个样本以后无法计算方差，此时方差为0，因为此时均值就等于样本本身，此时自由度为0</li>
+<li>采样两个样本以后得到的方差只根第二个样本到第一个样本的距离有关（样本均值与这两个样本强相关），此时自由度为1</li>
+<li>当采样的样本数非常多（假设为n）时，实际上单个样本与均值的关系很小了，此时自由度为n-1</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当已知总体均值\(\mu\)时（个人理解：这里的\(\mu\)可以是其他采样方式下获得的近似均值，只要不跟当前用于计算方差的样本相关即可），样本方差可以使用：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\mu)^2<br>$$</li>
+<li>样本方差经过\(\frac{1}{n-1}\)修正以后可以用来估计总体方差（修正以后是总体方差的无偏估计）<ul>
+<li>这个修正叫做贝塞尔修正</li>
+</ul>
+</li>
+</ul>
+<!-- * 证明方式1：
+<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population.png">
+<pre><code>* 最后那里使用约等于符号的原因是在n不够大的时候，用样本估计总体总是估计不准确的（但是经过修正的样本方差是总体方差的无偏估计），所以用了约等于</code></pre>
+<ul>
+<li>证明方式2：<a href="https://zhuanlan.zhihu.com/p/315504747">统计学——样本方差和总体方差 - 我是一双烂胶鞋的文章 - 知乎</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v2.png"> -->
+<li>证明 from ：<a href="https://www.bilibili.com/video/BV1pq4y1p7nu/?vd_source=2679bd500199d28bea912c94f550dd3c" target="_blank" rel="noopener">Bilibili-样本方差为什么除以n-1?</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3-aux.png">
+<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3.png">
+
+</li>
+
 ]]></content>
       <tags>
         <tag>Math</tag>
@@ -10621,72 +10710,6 @@ sudo apt-get install fluxgui</code></pre>
 </blockquote>
 </li>
 </ul>
-]]></content>
-      <tags>
-        <tag>Math</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Math——函数空间总结</title>
-    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E5%87%BD%E6%95%B0%E7%A9%BA%E9%97%B4%E6%80%BB%E7%BB%93.html</url>
-    <content><![CDATA[<p><em>希尔伯特空间,欧几里得空间,巴拿赫空间或者拓扑空间都是<strong>函数空间</strong></em></p>
-<p>参考博客:<a href="https://blog.csdn.net/weixin_36811328/article/details/81207753" target="_blank" rel="noopener">欧几里得空间与希尔伯特空间</a></p>
-]]></content>
-      <tags>
-        <tag>Math</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Math——样本均值方差和总体均值方差的关系</title>
-    <url>/Notes/Math/Math%E2%80%94%E2%80%94%E6%A0%B7%E6%9C%AC%E5%9D%87%E5%80%BC%E6%96%B9%E5%B7%AE%E5%92%8C%E6%80%BB%E4%BD%93%E5%9D%87%E5%80%BC%E6%96%B9%E5%B7%AE%E7%9A%84%E5%85%B3%E7%B3%BB.html</url>
-    <content><![CDATA[<p><em>本文介绍随机变量样本均值方差和整体均值方差的关系，同时还介绍样本和均值的方差和总体方差的关系</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>其他参考链接：<a href="https://www.zhihu.com/question/357835857/answer/2728936255" target="_blank" rel="noopener">在统计学里如何理解样本均值的方差等于总体方差➗n? - 蘇雲的回答 - 知乎</a></li>
-</ul>
-<h3 id="样本均值的方差与总体方差的关系"><a href="#样本均值的方差与总体方差的关系" class="headerlink" title="样本均值的方差与总体方差的关系"></a>样本均值的方差与总体方差的关系</h3><!-- * 详细推导如下，有时间再重新用文字梳理一下
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population.png"> -->
-<ul>
-<li>其他证明方式：<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population-v2.png">
-<ul>
-<li>上式中，如果总体方差未知，想要用样本方差来作为总体方差的无偏估计，则样本方差的定义是应该是 \(S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2\)，（此时样本方差是总体方差的无偏估计）</li>
-</ul>
-</li>
-</ul>
-<h3 id="样本方差为什么要除以n-1"><a href="#样本方差为什么要除以n-1" class="headerlink" title="样本方差为什么要除以n-1?"></a>样本方差为什么要除以n-1?</h3><ul>
-<li>样本方差的定义：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2<br>$$</li>
-<li>为什么样本方差是乘以\(\frac{1}{n-1}\)而不是\(\frac{1}{n}\)？<ul>
-<li>因为这样使用\(\frac{1}{n}\)会低估总体方差，此时样本方差不是总体方差的无偏估计</li>
-<li>样本方差低估了总体方差的原因是因为从总体里面抽出来的数据会更倾向于集中，极端情况下，一个样本对应的方差为0</li>
-</ul>
-</li>
-<li>换个视角想，是因为我们不知道总体的均值，所以计算方差时使用的均值也是从样本中求平均得到的，这使得我们基于该均值得到的方差不够离散（因为使用了样本均值，所以自由度需要减一），也就是低估了总体方差<ul>
-<li>怎么理解自由度？<ul>
-<li>采样一个样本以后无法计算方差，此时方差为0，因为此时均值就等于样本本身，此时自由度为0</li>
-<li>采样两个样本以后得到的方差只根第二个样本到第一个样本的距离有关（样本均值与这两个样本强相关），此时自由度为1</li>
-<li>当采样的样本数非常多（假设为n）时，实际上单个样本与均值的关系很小了，此时自由度为n-1</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>当已知总体均值\(\mu\)时（个人理解：这里的\(\mu\)可以是其他采样方式下获得的近似均值，只要不跟当前用于计算方差的样本相关即可），样本方差可以使用：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\mu)^2<br>$$</li>
-<li>样本方差经过\(\frac{1}{n-1}\)修正以后可以用来估计总体方差（修正以后是总体方差的无偏估计）<ul>
-<li>这个修正叫做贝塞尔修正</li>
-</ul>
-</li>
-</ul>
-<!-- * 证明方式1：
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population.png">
-<pre><code>* 最后那里使用约等于符号的原因是在n不够大的时候，用样本估计总体总是估计不准确的（但是经过修正的样本方差是总体方差的无偏估计），所以用了约等于</code></pre>
-<ul>
-<li>证明方式2：<a href="https://zhuanlan.zhihu.com/p/315504747">统计学——样本方差和总体方差 - 我是一双烂胶鞋的文章 - 知乎</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v2.png"> -->
-<li>证明 from ：<a href="https://www.bilibili.com/video/BV1pq4y1p7nu/?vd_source=2679bd500199d28bea912c94f550dd3c" target="_blank" rel="noopener">Bilibili-样本方差为什么除以n-1?</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3-aux.png">
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3.png">
-
-</li>
-
 ]]></content>
       <tags>
         <tag>Math</tag>
@@ -11090,46 +11113,6 @@ sudo apt-get install fluxgui</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>趣味题——绳子剪三段后能构成三角形的概率</title>
-    <url>/Notes/Others/%E8%B6%A3%E5%91%B3%E9%A2%98%E2%80%94%E2%80%94%E7%BB%B3%E5%AD%90%E5%89%AA%E4%B8%89%E6%AE%B5%E5%90%8E%E8%83%BD%E6%9E%84%E6%88%90%E4%B8%89%E8%A7%92%E5%BD%A2%E7%9A%84%E6%A6%82%E7%8E%87.html</url>
-    <content><![CDATA[<p><em>初始题目为1米长的绳子剪成三段后能够构成三角形的概率，实际上绳子的长度可以是任意的，解法都一样</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h3><ul>
-<li>一根绳子长度为n，剪三段后能构成三角形的概率是多少？</li>
-<li>由于长度与概率无关，所以接下来我们把绳子当做长度为1米来处理</li>
-</ul>
-<hr>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
-<li><p>三段绳子的长度分别为x,y,1-x-y</p>
-</li>
-<li><p>首先需要满足<br>$$<br>\begin{align}<br>x &amp;&gt; 0 \\<br>y &amp;&gt; 0\\<br>1-x-y &amp;&gt; 0 \\<br>\end{align}<br>$$</p>
-<ul>
-<li>以x为横坐标，y为纵坐标画图得到阴影区域面积为\(\frac{1}{2}\)</li>
-</ul>
-</li>
-<li><p>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a>*</p>
-<img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/original.png">
-</li>
-<li><p>进一步分析三段绳子能生成组成三角形的概率<br>$$<br>\begin{align}<br>x+y  &amp;&gt; 1-x-y \\<br>y + 1-x-y &amp;&gt; x\\<br>x + 1-x-y &amp;&gt; y \\<br>\end{align}<br>$$</p>
-<ul>
-<li>进一步分析得到阴影部分面积为\(\frac{1}{8}\)</li>
-</ul>
-</li>
-<li><p>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a>*</p>
-<img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/triangle.png"></li>
-<li><p>所以有<br>$$P = \frac{1/8}{1/2} = \frac{1}{4}$$</p>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Others</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>趣味题——寻找最优者</title>
     <url>/Notes/Others/%E8%B6%A3%E5%91%B3%E9%A2%98%E2%80%94%E2%80%94%E5%AF%BB%E6%89%BE%E6%9C%80%E4%BC%98%E8%80%85.html</url>
     <content><![CDATA[<p><em>寻找最优者：不可逆的做出选择，如何使得选到最优者的概率最大</em></p>
@@ -11179,6 +11162,46 @@ sudo apt-get install fluxgui</code></pre>
 <h4 id="策略描述"><a href="#策略描述" class="headerlink" title="策略描述"></a>策略描述</h4><ul>
 <li>拒绝前\(\frac{n}{e}\)个人(也就是拒绝前37%的人),然后从第\(\frac{n}{e}+1\)个开始,只要<strong>优于前面的所有人</strong>,则接受</li>
 <li>这种方式可以保证我们有最大的概率找到最优者</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Others</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>趣味题——绳子剪三段后能构成三角形的概率</title>
+    <url>/Notes/Others/%E8%B6%A3%E5%91%B3%E9%A2%98%E2%80%94%E2%80%94%E7%BB%B3%E5%AD%90%E5%89%AA%E4%B8%89%E6%AE%B5%E5%90%8E%E8%83%BD%E6%9E%84%E6%88%90%E4%B8%89%E8%A7%92%E5%BD%A2%E7%9A%84%E6%A6%82%E7%8E%87.html</url>
+    <content><![CDATA[<p><em>初始题目为1米长的绳子剪成三段后能够构成三角形的概率，实际上绳子的长度可以是任意的，解法都一样</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h3><ul>
+<li>一根绳子长度为n，剪三段后能构成三角形的概率是多少？</li>
+<li>由于长度与概率无关，所以接下来我们把绳子当做长度为1米来处理</li>
+</ul>
+<hr>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li><p>三段绳子的长度分别为x,y,1-x-y</p>
+</li>
+<li><p>首先需要满足<br>$$<br>\begin{align}<br>x &amp;&gt; 0 \\<br>y &amp;&gt; 0\\<br>1-x-y &amp;&gt; 0 \\<br>\end{align}<br>$$</p>
+<ul>
+<li>以x为横坐标，y为纵坐标画图得到阴影区域面积为\(\frac{1}{2}\)</li>
+</ul>
+</li>
+<li><p>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a>*</p>
+<img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/original.png">
+</li>
+<li><p>进一步分析三段绳子能生成组成三角形的概率<br>$$<br>\begin{align}<br>x+y  &amp;&gt; 1-x-y \\<br>y + 1-x-y &amp;&gt; x\\<br>x + 1-x-y &amp;&gt; y \\<br>\end{align}<br>$$</p>
+<ul>
+<li>进一步分析得到阴影部分面积为\(\frac{1}{8}\)</li>
+</ul>
+</li>
+<li><p>图片来源于：<a href="https://blog.csdn.net/fanoluo/article/details/40374571" target="_blank" rel="noopener">https://blog.csdn.net/fanoluo/article/details/40374571</a>*</p>
+<img src="/Notes/Others/趣味题——绳子剪三段后能构成三角形的概率/triangle.png"></li>
+<li><p>所以有<br>$$P = \frac{1/8}{1/2} = \frac{1}{4}$$</p>
+</li>
 </ul>
 ]]></content>
       <tags>
@@ -11471,8 +11494,8 @@ sudo apt-get install fluxgui</code></pre>
 </ul>
 ]]></content>
       <tags>
-        <tag>Pandas</tag>
         <tag>DataFrame</tag>
+        <tag>Pandas</tag>
       </tags>
   </entry>
   <entry>
@@ -12614,19 +12637,6 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
-    <title>RL——常用强化学习算法总结</title>
-    <url>/Notes/RL/RL%E2%80%94%E2%80%94%E5%B8%B8%E7%94%A8%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93.html</url>
-    <content><![CDATA[<hr>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id><a href="#" class="headerlink" title></a></h3>]]></content>
-      <tags>
-        <tag>RL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>RL——多阶段决策-贯序决策-马尔科夫决策</title>
     <url>/Notes/RL/RL%E2%80%94%E2%80%94%E5%A4%9A%E9%98%B6%E6%AE%B5%E5%86%B3%E7%AD%96-%E8%B4%AF%E5%BA%8F%E5%86%B3%E7%AD%96-%E9%A9%AC%E5%B0%94%E7%A7%91%E5%A4%AB%E5%86%B3%E7%AD%96.html</url>
     <content><![CDATA[<h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><ul>
@@ -12703,6 +12713,19 @@ func String2Slice(s string) (b []byte) {
 </li>
 </ul>
 ]]></content>
+      <tags>
+        <tag>RL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RL——常用强化学习算法总结</title>
+    <url>/Notes/RL/RL%E2%80%94%E2%80%94%E5%B8%B8%E7%94%A8%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93.html</url>
+    <content><![CDATA[<hr>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id><a href="#" class="headerlink" title></a></h3>]]></content>
       <tags>
         <tag>RL</tag>
       </tags>
@@ -13329,6 +13352,158 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
+    <title>ML——MCMC采样</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94MCMC%E9%87%87%E6%A0%B7.html</url>
+    <content><![CDATA[<p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
+<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
+</ul>
+<hr>
+<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
+<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
+</ul>
+<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
+<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
+</ul>
+<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
+<ul>
+<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
+<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
+<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
+</ul>
+</li>
+</ul>
+<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
+<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
+<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
+<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
+<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
+<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+</ul>
+</li>
+<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
+</ul>
+<hr>
+<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
+<li>对于原始目标分布\(p(x)\)</li>
+<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
+<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
+</ul>
+</li>
+<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
+<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
+</ul>
+</li>
+</ul>
+<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li>随机选取初始样本x^{0}</li>
+<li>for t = 1,2,3,…:<ul>
+<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
+<li>均匀分布采样\(u \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
+</ul>
+</li>
+<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+</ul>
+</li>
+<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></li>
+</ul>
+<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
+<li>MH采样基于拒绝采样来逼近平稳分布</li>
+<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
+<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
+<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
+<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
+</ul>
+</li>
+</ul>
+<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
+<li><p>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</p>
+</li>
+<li><p><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$</p>
+<ul>
+<li>上式为细致平稳分布条件(detailed balance condition)</li>
+<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
+</ul>
+</li>
+<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
+<ul>
+<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
+</ul>
+</li>
+<li><p>在MH采样法中</p>
+<ul>
+<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
+<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
+<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
+<li>即可</li>
+</ul>
+</li>
+<li><p>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率</p>
+<ul>
+<li>使用原始接受率的方法称为一般MCMC方法</li>
+<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
+</ul>
+</li>
+<li><p>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$</p>
+<ul>
+<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
+</ul>
+</li>
+<li><p>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</p>
+</li>
+</ul>
+<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
+<ul>
+<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
+<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
+</ul>
+<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
+<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
+</ul>
+<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
+<li><p>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</p>
+</li>
+<li><p>for t = 1,2,3,…:</p>
+<ul>
+<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
+<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
+<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
+</ul>
+</li>
+<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
+</ul>
+</li>
+<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
+<ul>
+<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
+<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
+<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
+</ul>
+</li>
+<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ML——主动学习-半监督学习-直推学习</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E4%B8%BB%E5%8A%A8%E5%AD%A6%E4%B9%A0-%E5%8D%8A%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0-%E7%9B%B4%E6%8E%A8%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<p><strong>主动学习(Active Learning), 半监督学习(Semi-Supervised Learning)与直推学习(Transductive Learning)</strong><br><strong>半监督学习又称为归纳学习(Inductive Learning)</strong></p>
@@ -13615,158 +13790,6 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
-    <title>ML——MCMC采样</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94MCMC%E9%87%87%E6%A0%B7.html</url>
-    <content><![CDATA[<p><em>本文介绍MCMC采样法和他的两个常用方法:MH(Metropolis-Hastings)采样法和Gibbs采样法</em><br><em>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<ul>
-<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC)</li>
-<li>MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法</li>
-</ul>
-<hr>
-<h3 id="MCMC概述"><a href="#MCMC概述" class="headerlink" title="MCMC概述"></a>MCMC概述</h3><ul>
-<li>马尔科夫蒙特卡洛(Markov Chain Monte Carlo, MCMC)采样法可分为两个部分(两个MC)描述</li>
-</ul>
-<h4 id="蒙特卡洛法"><a href="#蒙特卡洛法" class="headerlink" title="蒙特卡洛法"></a>蒙特卡洛法</h4><ul>
-<li>蒙特卡洛法(Monte Carlo)是指: <strong>基于采样的数值型近似求解方法</strong></li>
-</ul>
-<h4 id="马尔科夫链"><a href="#马尔科夫链" class="headerlink" title="马尔科夫链"></a>马尔科夫链</h4><p><em>又称离散时间马尔可夫链(discrete-time Markov chain，缩写为DTMC),或者马氏链</em></p>
-<ul>
-<li>马尔科夫链(Markov Chain)是指: 状态空间中经过从一个状态到另一个状态的转换的随机过程, 该随机过程满足马尔科夫性</li>
-<li>马尔科夫性(Markov property)是指: 当一个随机过程在给定现在状态及所有过去状态情况下，其未来状态的条件概率分布仅依赖于当前状态；换句话说，在给定现在状态时，它与过去状态（即该过程的历史路径）是条件独立的，那么此随机过程即具有马尔可夫性质。具有马尔可夫性质的过程通常称之为马尔可夫过程<ul>
-<li>马尔科夫性的简单理解: “无记忆性”: 下一状态的概率分布只能由当前状态决定，在时间序列中它前面的事件均与之无关</li>
-</ul>
-</li>
-</ul>
-<h4 id="MCMC基本思想"><a href="#MCMC基本思想" class="headerlink" title="MCMC基本思想"></a>MCMC基本思想</h4><ul>
-<li>针对采样的目标分布,<strong>构造一个马尔科夫链</strong>,使得该<strong>马尔科夫链的平稳分布就是目标分布</strong></li>
-<li>从任何一个初始状态出发,沿着马尔科夫链进行状态转移,直到<strong>马尔科夫链收敛</strong>(到达平稳状态)</li>
-<li>继续在马尔科夫链上进行状态转移,<strong>收敛后继续采样得到的样本就是原始目标分布的样本</strong><ul>
-<li><strong>burn-in处理</strong>: 现实应用中,我们需要丢弃收敛前的样本,只保留收敛后的样本</li>
-<li>burn-in 原意为”老化,定型”之意,在这里表示我们只取后面马氏链定型(收敛)后采样得到的样本</li>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>核心: <strong>马尔科夫链的构造</strong>,也就是<strong>确定马尔科夫链的状态转移概率</strong></li>
-</ul>
-<hr>
-<h3 id="常见的MCMC方法"><a href="#常见的MCMC方法" class="headerlink" title="常见的MCMC方法"></a>常见的MCMC方法</h3><h4 id="MH-Metropolis-Hastings-采样法"><a href="#MH-Metropolis-Hastings-采样法" class="headerlink" title="MH(Metropolis-Hastings)采样法"></a>MH(Metropolis-Hastings)采样法</h4><ul>
-<li>对于原始目标分布\(p(x)\)</li>
-<li>选择一个参考条件分布\(q(x^{\star}|x)\), 定义接受概率\(A(x,x^{\star})\):<ul>
-<li>(注意这里是参考条件分布,因为是马尔科夫链,所以每个状态都由上一个状态转移而来,需要定义的参考分布应该是条件分布,不是一般拒绝采样中的普通参考分布)<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</li>
-</ul>
-</li>
-<li>MH采样法构建满足平稳分布就是目标分布\(p(x)\)的秘诀就是让<strong>每次采样时,当前状态以一定概率停留在上一状态</strong><ul>
-<li>与拒绝采样对应: 接受意味着跳转到下一状态,拒绝意味着停留在当前状态</li>
-</ul>
-</li>
-</ul>
-<h5 id="采样过程"><a href="#采样过程" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li>随机选取初始样本x^{0}</li>
-<li>for t = 1,2,3,…:<ul>
-<li>参考条件分布采样\(x^{\star} \sim q(x^{star}|x^{t-1})\)</li>
-<li>均匀分布采样\(u \sim U(0,1)\)</li>
-<li>判断是否接受: 如果\(u &lt; A(x^{t-1}, x^{\star})\),则接受,令: \(x^{t} = x^{\star}\), 否则拒绝,令: \(x^{t}=x^{t-1}\)</li>
-</ul>
-</li>
-<li><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\)有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-</ul>
-</li>
-<li>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></li>
-</ul>
-<h5 id="与拒绝采样的区别"><a href="#与拒绝采样的区别" class="headerlink" title="与拒绝采样的区别"></a>与拒绝采样的区别</h5><ul>
-<li>MH采样基于拒绝采样来逼近平稳分布</li>
-<li>拒绝采样中: 如果样本某一步被拒绝,那么该步不会产生新的样本,需要重新对当前步进行采样</li>
-<li>MH中: 每一步都会产生一个样本,被拒绝后,就令当前样本和上一个样本相同即可<ul>
-<li>因为这里是为了使得每个状态的转出概率等于转入概率,所以拒绝就意味着当前采样步骤状态不跳转</li>
-<li>MH采样法最核心的思想就是一定概率停留在上一个状态来实现对马尔科夫链的构建的</li>
-</ul>
-</li>
-</ul>
-<h5 id="MH采样法正确性证明"><a href="#MH采样法正确性证明" class="headerlink" title="MH采样法正确性证明"></a>MH采样法正确性证明</h5><ul>
-<li><p>MH采样法构造的马尔科夫链(状态转移概率矩阵)是正确的吗?</p>
-</li>
-<li><p><strong>细致平稳条件</strong>, 如果非周期的马氏链的状态转移矩阵P和分布\(\pi(x)\)满足下面的式子对任意的\(i,j\)都成立:<br>$$\pi(x^{i})P_{ij} = \pi(x^{j})P_{ji}$$</p>
-<ul>
-<li>上式为细致平稳分布条件(detailed balance condition)</li>
-<li>其中\(\pi(x)\)为马氏链的平稳分布,在这里等于我们的原始分布\(p(x)\)</li>
-</ul>
-</li>
-<li><p>证明\(\pi(x)\)为马氏链的平稳分布:<br>$$<br>\begin{align}<br>\sum_{i=1}^{\infty}\pi(x^{i})P_{ij} = \sum_{i=1}^{\infty}\pi(x^{j})P_{ji} = \pi(x^{j})\sum_{i=1}^{\infty}P_{ji} = \pi(x^{j}) \\<br>=&gt; \pi(x) P = \pi(x)<br>\end{align}<br>$$</p>
-<ul>
-<li>由于\(\pi(x)\)为方程\(\pi(x) P = \pi(x)\)的解,所以\(\pi(x)\)是状态转移矩阵P对应的马氏链的平稳分布</li>
-</ul>
-</li>
-<li><p>在MH采样法中</p>
-<ul>
-<li>参考条件分布函数本对应状态转移矩阵的一个元素,\(q(x^{i}|x^{j}) = P_{ij}\)(注意: <strong>实际上一般不相等</strong>)</li>
-<li>但是很难构造这样方便采样的函数,于是我们使用一个接受率来修正\(q(x^{i}|x^{j})\alpha(x^{j}, x^{i}) = P_{ij}\)<ul>
-<li>\(\alpha(x^{j}, x^{i})\)表示从\(x^{j}\)跳转到\(x^{i}\)的接受率, 其值可如下求得:<br>$$<br>\begin{align}<br>\pi(x^{i}) P_{ij} &amp;= \pi(x^{j})P_{ji} \\<br>\pi(x^{i}) q(x^{j}|x^{i})\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\alpha(x^{j}, x^{i})<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>显然,直接取:<br>$$<br>\begin{align}<br>\alpha(x^{i}, x^{j}) &amp;= \pi(x^{j})q(x^{i}|x^{j})\\<br>\alpha(x^{j}, x^{i}) &amp;= \pi(x^{i})q(x^{j}|x^{i})\\<br>\end{align}<br>$$</li>
-<li>即可</li>
-</ul>
-</li>
-<li><p>但是由于\(\alpha(x^{j}, x^{i})\)一般来说太小,所以我们考虑将\(\alpha(x^{j}, x^{i})\)和\(\alpha(x^{i}, x^{j})\)同时扩大M倍,使得其中大的那个为1,即可得到最大的接受率</p>
-<ul>
-<li>使用原始接受率的方法称为一般MCMC方法</li>
-<li>使用扩大M被接受率的方法称为MCMC的改进方法: MH方法</li>
-</ul>
-</li>
-<li><p>改进后的接受率为从\(x^{i}\)跳转到\(x^{j}\)的接受率:<br>$$<br>\begin{align}<br>A(x^{i}, x^{j}) = min\left ( 1, \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})} \right )<br>\end{align}<br>$$</p>
-<ul>
-<li>理解:<br>$$<br>\begin{align}<br>p(x^{j})q(x^{i}|x^{j}) &amp;&gt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = 1 \\<br>p(x^{j})q(x^{i}|x^{j}) &amp;&lt; p(x^{i})q(x^{j}|x^{i})时: A(x^{i}, x^{j}) = \frac{p(x^{j})q(x^{i}|x^{j})}{p(x^{i})q(x^{j}|x^{i})}<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li><p>在MH中表现为从\(x\)跳转到\(x^{\star}\)的接受率:<br>$$<br>A(x,x^{\star}) = min\left ( 1, \frac{p(x^{\star})q(x|x^{\star})}{p(x)q(x^{\star}|x)} \right )<br>$$</p>
-</li>
-</ul>
-<h4 id="Gibbs采样法"><a href="#Gibbs采样法" class="headerlink" title="Gibbs采样法"></a>Gibbs采样法</h4><p><em>Gibbs采样是MH采样法的一个特例,每次只更新样本的一个维度</em></p>
-<ul>
-<li>针对维度很高的多维向量,同时采样多个维度难度较高,且接受率很小</li>
-<li>使用Gibbs采样每次采样一个维度可以解决这个问题</li>
-</ul>
-<h5 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h5><ul>
-<li>求得已知其他维度下,每一维度的条件概率\(p(x_{i}|x_{1},,,x_{i-1}, x_{i+1},,,x_{d})\)</li>
-</ul>
-<h5 id="采样过程-1"><a href="#采样过程-1" class="headerlink" title="采样过程"></a>采样过程</h5><ul>
-<li><p>随机选择初始状态\(x^{0} = (x_{1}^{0}, x_{2}^{0}, x_{3}^{0},,,, x_{d}^{0})\)</p>
-</li>
-<li><p>for t = 1,2,3,…:</p>
-<ul>
-<li>基于前一次产生的样本:\(x^{t-1} = (x_{1}^{t-1}, x_{2}^{t-1}, x_{3}^{t-1},,,, x_{d}^{t-1})\), 依次采样和更新每个维度的值,即依次按照:<ul>
-<li>\(x_{1}^{t} \sim p(x_{1}|x_{2}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{2}^{t} \sim p(x_{2}|x_{1}^{t}, x_{3}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{i}^{t} \sim p(x_{i}|x_{1}^{t},,,x_{i-1}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)</li>
-<li>\(x_{d}^{t} \sim p(x_{d}|x_{1}^{t}, x_{2}^{t},,,x_{d-1}^{t})\)</li>
-</ul>
-</li>
-<li>得到新的一个样本:\(x^{t} = (x_{1}^{t}, x_{2}^{t}, x_{3}^{t},,,, x_{d}^{t})\)</li>
-</ul>
-</li>
-<li><p><strong>burn-in处理</strong>: 丢弃采样到平稳分布前的样本, 只保留平稳分布后的样本即为服从原始分布\(p(x)\)的样本</p>
-<ul>
-<li>假设采样到收敛用了n次采样,那么服从原始分布的k个样本为\((x^{n+1}, x^{n+2},,,, x^{n+k})\), 有时候为了得到近似独立的样本,可以间隔每r次再取出其中一个样本\((x^{n+r}, x^{n+2r},,,, x^{n+kr})\)</li>
-<li>真正独立同分布的k个样本可用多条k条不同的收敛后的马氏链得到,不同马氏链采样得到的样本是独立同分布的</li>
-<li>注意: 采样完成部分维度生成的中间样本如\((x_{1}^{t},,,x_{i-1}^{t}, x_{i}^{t}, x_{i+1}^{t-1},,,x_{d}^{t-1})\)是不能作为最终样本的,因为他们之间(同一轮次的多个中间样本)相互依赖性太强,不具有独立同分布的(虽然完全采样完成的也不能视为具有独立同分布,但是可近似的认为是独立同分布的)</li>
-</ul>
-</li>
-<li><p>采样次数一般来说是凭经验选择一个足够大的值,现实是现实可以使用一些参数变化量这类的指标来判断采样是否收敛,参考<a href="/Notes/NLP/NLP%E2%80%94%E2%80%94LLDA%E7%9A%84Gibbs%E9%87%87%E6%A0%B7%E5%AE%9E%E7%8E%B0.html">NLP——LLDA的Gibbs采样实现</a></p>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ML——分布的距离评估</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E5%88%86%E5%B8%83%E7%9A%84%E8%B7%9D%E7%A6%BB%E8%AF%84%E4%BC%B0.html</url>
     <content><![CDATA[<h3 id="KL散度"><a href="#KL散度" class="headerlink" title="KL散度"></a>KL散度</h3><h3 id="TV距离"><a href="#TV距离" class="headerlink" title="TV距离"></a>TV距离</h3><ul>
@@ -13796,18 +13819,6 @@ func String2Slice(s string) (b []byte) {
 </blockquote>
 </li>
 <li>神经网络越来越复杂，现在参数量已经非常大，实际上可以看做是非参数模型？</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ML——模型性能评估之MAP</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E4%B9%8BMAP.html</url>
-    <content><![CDATA[<p><em>MAP(Mean Average Precision)</em></p>
-<ul>
-<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
 </ul>
 ]]></content>
       <tags>
@@ -13949,6 +13960,18 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
+    <title>ML——模型性能评估之MAP</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E4%B9%8BMAP.html</url>
+    <content><![CDATA[<p><em>MAP(Mean Average Precision)</em></p>
+<ul>
+<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ML——模型的方差与偏差</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html</url>
     <content><![CDATA[<p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
@@ -13993,6 +14016,80 @@ func String2Slice(s string) (b []byte) {
 </ul>
 </li>
 <li>而提升方法尝试去降低模型的偏差</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ML——样本不均衡问题处理</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A0%B7%E6%9C%AC%E4%B8%8D%E5%9D%87%E8%A1%A1%E9%97%AE%E9%A2%98%E5%A4%84%E7%90%86.html</url>
+    <content><![CDATA[<ul>
+<li>参考链接：<ul>
+<li><a href="https://mp.weixin.qq.com/s/783o94jPRgfkoxbm5n7JYQ" target="_blank" rel="noopener">一文解决样本不均衡（全）</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="样本不均衡问题描述"><a href="#样本不均衡问题描述" class="headerlink" title="样本不均衡问题描述"></a>样本不均衡问题描述</h3><ul>
+<li>问题描述：机器学习中的样本不均衡问题，是指在分类任务中不同类别的训练样例数量存在显著差异的情况。</li>
+<li>场景：包括金融欺诈检测、医疗诊断、网络入侵检测等领域</li>
+</ul>
+<hr>
+<h3 id="样本不均衡的影响"><a href="#样本不均衡的影响" class="headerlink" title="样本不均衡的影响"></a>样本不均衡的影响</h3><ul>
+<li><strong>模型偏向性</strong>：模型倾向于预测label为多数类，因为这样做可以最大化准确率，即使对少数类的预测几乎总是错误的</li>
+<li><strong>过拟合风险</strong>：由于少数类样本数量少，模型容易过拟合这些样本，导致模型在新数据上泛化性差</li>
+<li>总结：<strong>样本不均衡带来的根本影响</strong>是模型会学习到训练集中<strong>样本比例</strong>的这种先验性信息，以致于实际预测时就会对多数类别有侧重（可能导致多数类精度更好，而少数类比较差）通过解决样本不均衡，可以减少模型学习样本比例的先验信息，以获得能学习到辨别好坏本质特征的模型</li>
+</ul>
+<hr>
+<h3 id="哪些情况下需要解决样本不均衡问题"><a href="#哪些情况下需要解决样本不均衡问题" class="headerlink" title="哪些情况下需要解决样本不均衡问题"></a>哪些情况下需要解决样本不均衡问题</h3><ul>
+<li></li>
+</ul>
+<hr>
+<h3 id="评估指标"><a href="#评估指标" class="headerlink" title="评估指标"></a>评估指标</h3><ul>
+<li>不能使用：准确率（Accuracy）</li>
+<li>建议使用：F1分数、精确率（Precision）、召回率（Recall）和AUC等</li>
+</ul>
+<hr>
+<h3 id="解决样本不均衡的方法"><a href="#解决样本不均衡的方法" class="headerlink" title="解决样本不均衡的方法"></a>解决样本不均衡的方法</h3><h4 id="数据层面的方法"><a href="#数据层面的方法" class="headerlink" title="数据层面的方法"></a>数据层面的方法</h4><ul>
+<li><strong>过采样（Over-sampling）</strong>：通过增加少数类样本的数量来缓解不均衡问题。常见的方法包括：<ul>
+<li><strong>随机过采样</strong>：简单地复制少数类样本，容易导致过拟合</li>
+<li><strong>数据增强（Data Augmentation）</strong>：通过变换现有样本生成新的样本，适用于图像（翻转，拉伸等）、文本等数据类型</li>
+<li><strong>SMOTE（Synthetic Minority Over-sampling Technique）</strong>：通过在少数类样本间插值生成新的合成样本，一定程度上可以避免过拟合，但生成的数据置信度也存在问题</li>
+<li><strong>ADASYN（Adaptive Synthetic Sampling）</strong>：通过生成少数类别样本改善不均衡问题，与传统的过采样技术（如SMOTE）相比，ADASYN更注重类间距离和局部密度，尤其是对于少数类中的困难样本或噪声敏感区域，它可以更加精细地调整采样策略，详情可参考：<a href="https://zhuanlan.zhihu.com/p/713121245" target="_blank" rel="noopener">不平衡学习的自适应合成采样方法ADASYN（Matlab代码实现）</a></li>
+</ul>
+</li>
+<li><strong>欠采样（Under-sampling）</strong>：通过减少多数类样本的数量来达到平衡。常用的方法有：<ul>
+<li><strong>随机欠采样</strong>：随机删除多数类样本，但可能丢失重要信息</li>
+<li><strong>Tomek Links</strong>：移除位于类别边界附近的样本对，有助于清理噪声</li>
+<li><strong>ENN（Edited Nearest Neighbors Rule）</strong>：移除与最近邻居类别不同的样本</li>
+<li><strong>NearMiss</strong>：选择与少数类样本最接近的多数类样本</li>
+</ul>
+</li>
+<li><strong>组合采样</strong>：结合过采样和欠采样的方法</li>
+</ul>
+<h4 id="模型层面的方法"><a href="#模型层面的方法" class="headerlink" title="模型层面的方法"></a>模型层面的方法</h4><ul>
+<li><strong>成本敏感学习（Cost-sensitive Learning）</strong>：为不同类别的错误分配不同的固定权重，使模型更加关注少数类的预测</li>
+<li><strong>集成学习（Ensemble Learning）</strong>：使用集成学习的方法降低过拟合问题（比如多个模型进行投票或加权平均）</li>
+</ul>
+<h4 id="损失函数层面"><a href="#损失函数层面" class="headerlink" title="损失函数层面"></a>损失函数层面</h4><ul>
+<li><strong>损失函数优化</strong>：比如使用Focal Loss等</li>
+</ul>
+<h4 id="异常检测"><a href="#异常检测" class="headerlink" title="异常检测"></a>异常检测</h4><ul>
+<li><strong>异常检测（Anomaly Detection）</strong>：将少数类视为异常点（特别是少数类样本非常稀少的情况），使用异常检测算法进行识别，常见的异常检测算法通常包括统计方法、距离检测（K近邻方法）、聚类方法（K-Means）、分类模型（one-class SVM）、自编码器、孤立森林等<ul>
+<li>其中K近邻方法可以用于回归或者分类场景，还可以直接用于异常检测（距离过大的点认为是异常）</li>
+<li>K-Means方法作异常检测时，原理聚类中心的样本视为异常值</li>
+<li>自编码器方法：通过训练一个自编码器来重建数据，重建误差大的数据点被视为异常点</li>
+<li>孤立森林（Isolation Forest）：通过随机挑选特征、随机挑选分割点构建多棵孤立树，在所有孤立树中的平均路径长度的数据点被视为异常点（孤立森林的核心思想是异常点通常更容易被孤立，即在随机分割数据空间时，异常点往往比正常点更快地被单独分隔出来）</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="实践建议"><a href="#实践建议" class="headerlink" title="实践建议"></a>实践建议</h3><ul>
+<li><strong>评估指标的选择</strong>：在不均衡数据集上，不能使用准确率（Accuracy），建议使用均衡指标（F1-Score，AUC等）</li>
+<li><strong>模型选择</strong>：选择对不均衡数据的适应性较好的模型，如决策树和随机森林等，可以多使用一些简单的模型，再进行Bagging来减少过拟合</li>
+<li>具体情况具体分析，很多时候不需要特别的进行处理，另外如果真的进行采样，会导致预估均值有偏差，在CTR等对预估绝对值有要求的场景中，还需要校准</li>
 </ul>
 ]]></content>
       <tags>
@@ -14206,139 +14303,6 @@ func String2Slice(s string) (b []byte) {
       </tags>
   </entry>
   <entry>
-    <title>ML——训练集-验证集-测试集</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E8%AE%AD%E7%BB%83%E9%9B%86-%E9%AA%8C%E8%AF%81%E9%9B%86-%E6%B5%8B%E8%AF%95%E9%9B%86.html</url>
-    <content><![CDATA[<p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
-<hr>
-<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
-<li>训练集: 用于模型训练</li>
-<li>验证集: 用于模型选择</li>
-<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
-</ul>
-<hr>
-<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
-<li>训练集: 用于模型拟合的数据样本</li>
-<li>验证集: 用于模型的选择<ul>
-<li>不参与训练过程</li>
-<li>可用于超参数的调整</li>
-<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
-<li>可多次使用</li>
-</ul>
-</li>
-<li>测试集: 用于模型的评估 <ul>
-<li>不参与训练过程</li>
-<li>不可用于超参数的调整</li>
-<li>只可以使用一次</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
-<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
-<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
-<li>此时从验证集中划分一部分验证集</li>
-</ul>
-<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
-<li>需要训练集用于训练,验证集用于模型选择</li>
-<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
-</ul>
-<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
-<hr>
-<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
-<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
-<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
-</ul>
-<hr>
-<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
-<li>用来调超参数的一部分正好称为验证集</li>
-<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
-</ul>
-<hr>
-<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
-<li>训练集：测试集 = 7：3</li>
-<li>训练集：验证集：测试集 = 6：2：2</li>
-<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ML——样本不均衡问题处理</title>
-    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E6%A0%B7%E6%9C%AC%E4%B8%8D%E5%9D%87%E8%A1%A1%E9%97%AE%E9%A2%98%E5%A4%84%E7%90%86.html</url>
-    <content><![CDATA[<ul>
-<li>参考链接：<ul>
-<li><a href="https://mp.weixin.qq.com/s/783o94jPRgfkoxbm5n7JYQ" target="_blank" rel="noopener">一文解决样本不均衡（全）</a></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="样本不均衡问题描述"><a href="#样本不均衡问题描述" class="headerlink" title="样本不均衡问题描述"></a>样本不均衡问题描述</h3><ul>
-<li>问题描述：机器学习中的样本不均衡问题，是指在分类任务中不同类别的训练样例数量存在显著差异的情况。</li>
-<li>场景：包括金融欺诈检测、医疗诊断、网络入侵检测等领域</li>
-</ul>
-<hr>
-<h3 id="样本不均衡的影响"><a href="#样本不均衡的影响" class="headerlink" title="样本不均衡的影响"></a>样本不均衡的影响</h3><ul>
-<li><strong>模型偏向性</strong>：模型倾向于预测label为多数类，因为这样做可以最大化准确率，即使对少数类的预测几乎总是错误的</li>
-<li><strong>过拟合风险</strong>：由于少数类样本数量少，模型容易过拟合这些样本，导致模型在新数据上泛化性差</li>
-<li>总结：<strong>样本不均衡带来的根本影响</strong>是模型会学习到训练集中<strong>样本比例</strong>的这种先验性信息，以致于实际预测时就会对多数类别有侧重（可能导致多数类精度更好，而少数类比较差）通过解决样本不均衡，可以减少模型学习样本比例的先验信息，以获得能学习到辨别好坏本质特征的模型</li>
-</ul>
-<hr>
-<h3 id="哪些情况下需要解决样本不均衡问题"><a href="#哪些情况下需要解决样本不均衡问题" class="headerlink" title="哪些情况下需要解决样本不均衡问题"></a>哪些情况下需要解决样本不均衡问题</h3><ul>
-<li></li>
-</ul>
-<hr>
-<h3 id="评估指标"><a href="#评估指标" class="headerlink" title="评估指标"></a>评估指标</h3><ul>
-<li>不能使用：准确率（Accuracy）</li>
-<li>建议使用：F1分数、精确率（Precision）、召回率（Recall）和AUC等</li>
-</ul>
-<hr>
-<h3 id="解决样本不均衡的方法"><a href="#解决样本不均衡的方法" class="headerlink" title="解决样本不均衡的方法"></a>解决样本不均衡的方法</h3><h4 id="数据层面的方法"><a href="#数据层面的方法" class="headerlink" title="数据层面的方法"></a>数据层面的方法</h4><ul>
-<li><strong>过采样（Over-sampling）</strong>：通过增加少数类样本的数量来缓解不均衡问题。常见的方法包括：<ul>
-<li><strong>随机过采样</strong>：简单地复制少数类样本，容易导致过拟合</li>
-<li><strong>数据增强（Data Augmentation）</strong>：通过变换现有样本生成新的样本，适用于图像（翻转，拉伸等）、文本等数据类型</li>
-<li><strong>SMOTE（Synthetic Minority Over-sampling Technique）</strong>：通过在少数类样本间插值生成新的合成样本，一定程度上可以避免过拟合，但生成的数据置信度也存在问题</li>
-<li><strong>ADASYN（Adaptive Synthetic Sampling）</strong>：通过生成少数类别样本改善不均衡问题，与传统的过采样技术（如SMOTE）相比，ADASYN更注重类间距离和局部密度，尤其是对于少数类中的困难样本或噪声敏感区域，它可以更加精细地调整采样策略，详情可参考：<a href="https://zhuanlan.zhihu.com/p/713121245" target="_blank" rel="noopener">不平衡学习的自适应合成采样方法ADASYN（Matlab代码实现）</a></li>
-</ul>
-</li>
-<li><strong>欠采样（Under-sampling）</strong>：通过减少多数类样本的数量来达到平衡。常用的方法有：<ul>
-<li><strong>随机欠采样</strong>：随机删除多数类样本，但可能丢失重要信息</li>
-<li><strong>Tomek Links</strong>：移除位于类别边界附近的样本对，有助于清理噪声</li>
-<li><strong>ENN（Edited Nearest Neighbors Rule）</strong>：移除与最近邻居类别不同的样本</li>
-<li><strong>NearMiss</strong>：选择与少数类样本最接近的多数类样本</li>
-</ul>
-</li>
-<li><strong>组合采样</strong>：结合过采样和欠采样的方法</li>
-</ul>
-<h4 id="模型层面的方法"><a href="#模型层面的方法" class="headerlink" title="模型层面的方法"></a>模型层面的方法</h4><ul>
-<li><strong>成本敏感学习（Cost-sensitive Learning）</strong>：为不同类别的错误分配不同的固定权重，使模型更加关注少数类的预测</li>
-<li><strong>集成学习（Ensemble Learning）</strong>：使用集成学习的方法降低过拟合问题（比如多个模型进行投票或加权平均）</li>
-</ul>
-<h4 id="损失函数层面"><a href="#损失函数层面" class="headerlink" title="损失函数层面"></a>损失函数层面</h4><ul>
-<li><strong>损失函数优化</strong>：比如使用Focal Loss等</li>
-</ul>
-<h4 id="异常检测"><a href="#异常检测" class="headerlink" title="异常检测"></a>异常检测</h4><ul>
-<li><strong>异常检测（Anomaly Detection）</strong>：将少数类视为异常点（特别是少数类样本非常稀少的情况），使用异常检测算法进行识别，常见的异常检测算法通常包括统计方法、距离检测（K近邻方法）、聚类方法（K-Means）、分类模型（one-class SVM）、自编码器、孤立森林等<ul>
-<li>其中K近邻方法可以用于回归或者分类场景，还可以直接用于异常检测（距离过大的点认为是异常）</li>
-<li>K-Means方法作异常检测时，原理聚类中心的样本视为异常值</li>
-<li>自编码器方法：通过训练一个自编码器来重建数据，重建误差大的数据点被视为异常点</li>
-<li>孤立森林（Isolation Forest）：通过随机挑选特征、随机挑选分割点构建多棵孤立树，在所有孤立树中的平均路径长度的数据点被视为异常点（孤立森林的核心思想是异常点通常更容易被孤立，即在随机分割数据空间时，异常点往往比正常点更快地被单独分隔出来）</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="实践建议"><a href="#实践建议" class="headerlink" title="实践建议"></a>实践建议</h3><ul>
-<li><strong>评估指标的选择</strong>：在不均衡数据集上，不能使用准确率（Accuracy），建议使用均衡指标（F1-Score，AUC等）</li>
-<li><strong>模型选择</strong>：选择对不均衡数据的适应性较好的模型，如决策树和随机森林等，可以多使用一些简单的模型，再进行Bagging来减少过拟合</li>
-<li>具体情况具体分析，很多时候不需要特别的进行处理，另外如果真的进行采样，会导致预估均值有偏差，在CTR等对预估绝对值有要求的场景中，还需要校准</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ML——贝叶斯优化</title>
     <url>/Notes/ML/ML%E2%80%94%E2%80%94%E8%B4%9D%E5%8F%B6%E6%96%AF%E4%BC%98%E5%8C%96.html</url>
     <content><![CDATA[<p><em>本文持续更新，主要主要介绍贝叶斯优化</em></p>
@@ -14404,6 +14368,65 @@ func String2Slice(s string) (b []byte) {
 <li>Upper Confidence Bound：</li>
 </ul>
 </li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ML——训练集-验证集-测试集</title>
+    <url>/Notes/ML/ML%E2%80%94%E2%80%94%E8%AE%AD%E7%BB%83%E9%9B%86-%E9%AA%8C%E8%AF%81%E9%9B%86-%E6%B5%8B%E8%AF%95%E9%9B%86.html</url>
+    <content><![CDATA[<p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
+<hr>
+<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
+<li>训练集: 用于模型训练</li>
+<li>验证集: 用于模型选择</li>
+<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
+</ul>
+<hr>
+<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
+<li>训练集: 用于模型拟合的数据样本</li>
+<li>验证集: 用于模型的选择<ul>
+<li>不参与训练过程</li>
+<li>可用于超参数的调整</li>
+<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
+<li>可多次使用</li>
+</ul>
+</li>
+<li>测试集: 用于模型的评估 <ul>
+<li>不参与训练过程</li>
+<li>不可用于超参数的调整</li>
+<li>只可以使用一次</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
+<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
+<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
+<li>此时从验证集中划分一部分验证集</li>
+</ul>
+<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
+<li>需要训练集用于训练,验证集用于模型选择</li>
+<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
+</ul>
+<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
+<hr>
+<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
+<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
+<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
+</ul>
+<hr>
+<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
+<li>用来调超参数的一部分正好称为验证集</li>
+<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
+</ul>
+<hr>
+<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
+<li>训练集：测试集 = 7：3</li>
+<li>训练集：验证集：测试集 = 6：2：2</li>
+<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
 </ul>
 ]]></content>
       <tags>
@@ -14619,6 +14642,119 @@ func String2Slice(s string) (b []byte) {
 </li>
 <li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
 <li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>RS</tag>
+        <tag>ML</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RS——FM-因子分解机</title>
+    <url>/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FM-%E5%9B%A0%E5%AD%90%E5%88%86%E8%A7%A3%E6%9C%BA.html</url>
+    <content><![CDATA[<p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
+<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>假设训练数据为:\(\{(x, y)\}\)<ul>
+<li>\(x\)特征维度为n(所有特征One-Hot编码后Concat的总维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度，累计计算x是所有One-Hot的维度和)<ul>
+<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
+<li><strong>在FM中，特征\(x\)的所有取值都为0或者1</strong>，因为都是One-Hot的结果做Concat得到的；在使用FM作为组件的模型（比如DeepFM等）中，输入FM的部分也只是稀疏特征的One-Hot编码</li>
+<li>如果有连续特征想要输入FM怎么办？可采用连续特征离散化的方法（比如等频分桶）</li>
+</ul>
+</li>
+<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+</ul>
+</li>
+<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
+<li>未挖掘到特征之间的关联关系,<ul>
+<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
+<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
+<li>n是样本的特征数量</li>
+<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
+<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
+<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
+</ul>
+</li>
+<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
+<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
+</ul>
+</li>
+<li>解决问题的灵感<ul>
+<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+</ul>
+</li>
+<li>FM解决问题的方法:<ul>
+<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
+<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
+<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
+<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
+<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
+<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
+<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
+<li>问题: 以前不能用来学习吗?</li>
+<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
+<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
+$$
+\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
+$$
+-->
+
+</li>
+</ul>
+<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
+<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
+<ul>
+<li>上式中：<ul>
+<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
+<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
+<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
+<li>整体模型的参数一共是\(1+n+nk\)个<ul>
+<li>偏执项一个\(w_{0}\)</li>
+<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
+<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
+<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
+<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
+<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
+</ul>
+</li>
+<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
+<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
+<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
+<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
+<li>显然可得结论</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
+<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
 </ul>
 ]]></content>
       <tags>
@@ -14849,119 +14985,6 @@ func String2Slice(s string) (b []byte) {
 </ul>
 <h3 id="其他参考链接"><a href="#其他参考链接" class="headerlink" title="其他参考链接"></a>其他参考链接</h3><ul>
 <li><a href="https://zhuanlan.zhihu.com/p/61827629" target="_blank" rel="noopener">揭开YouTube深度推荐系统模型Serving之谜</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>RS</tag>
-        <tag>ML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>RS——FM-因子分解机</title>
-    <url>/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FM-%E5%9B%A0%E5%AD%90%E5%88%86%E8%A7%A3%E6%9C%BA.html</url>
-    <content><![CDATA[<p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
-<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
-</ul>
-<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
-<li>假设训练数据为:\(\{(x, y)\}\)<ul>
-<li>\(x\)特征维度为n(所有特征One-Hot编码后Concat的总维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度，累计计算x是所有One-Hot的维度和)<ul>
-<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
-<li><strong>在FM中，特征\(x\)的所有取值都为0或者1</strong>，因为都是One-Hot的结果做Concat得到的；在使用FM作为组件的模型（比如DeepFM等）中，输入FM的部分也只是稀疏特征的One-Hot编码</li>
-<li>如果有连续特征想要输入FM怎么办？可采用连续特征离散化的方法（比如等频分桶）</li>
-</ul>
-</li>
-<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
-</ul>
-</li>
-<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
-<li>未挖掘到特征之间的关联关系,<ul>
-<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
-<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
-<li>n是样本的特征数量</li>
-<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
-<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
-<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
-</ul>
-</li>
-<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
-<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
-</ul>
-</li>
-<li>解决问题的灵感<ul>
-<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
-</ul>
-</li>
-<li>FM解决问题的方法:<ul>
-<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
-<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
-<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
-<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
-<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
-<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
-<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
-<li>问题: 以前不能用来学习吗?</li>
-<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
-<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<!-- 使用\boldsymbol{v}这个才对，但是使用这个会出现显示错误，待查
-$$
-\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_j)x_ix_j-\sum_{i=1}^n(\boldsymbol{v}_i^T \boldsymbol{v}_i)x_ix_i\right)
-$$
--->
-
-</li>
-</ul>
-<p>$$<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(v_i^T v_j)x_ix_j = \frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n(v_i^T v_j)x_ix_j-\sum_{i=1}^n(v_i^T v_i)x_ix_i\right)<br>$$</p>
-<p>$$<br>\begin{align}<br> &amp;=\frac{1}{2}\left(\sum_{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br> &amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\<br> \end{align}<br> $$</p>
-<ul>
-<li>上式中：<ul>
-<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
-<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
-<li>\(v_i, v_j\)分别表示\(\boldsymbol{v}_i, \boldsymbol{v}_j\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
-<li>整体模型的参数一共是\(1+n+nk\)个<ul>
-<li>偏执项一个\(w_{0}\)</li>
-<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
-<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
-<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
-<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
-<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
-</ul>
-</li>
-<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
-<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
-<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
-<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
-<li>显然可得结论</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
-<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
 </ul>
 ]]></content>
       <tags>
@@ -15441,86 +15464,6 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>ML——RF</title>
-    <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94RF-%E9%9A%8F%E6%9C%BA%E6%A3%AE%E6%9E%97.html</url>
-    <content><![CDATA[<p><em>随机森林是一种集成学习(Ensemble)方法,属于集成学习中的Bagging族,是一种典型的Bagging方法</em></p>
-<hr>
-<h3 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h3><h4 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h4><ul>
-<li>假设训练集总大小为N,特征总数为K</li>
-<li>有放回抽样N个训练样本<ul>
-<li>说明:这种有放回的抽样技术又称为自助法(Bootstrap)重采样技术 </li>
-</ul>
-</li>
-<li><strong>随机</strong>从所有特征中<strong>选取k个特征</strong>(k一般远小于总特征数K)</li>
-<li>用bootstrap采样的结果(N个样本)和k个特征训练一棵决策树(训练时不剪枝,每棵树都尽可能生长)</li>
-<li>重复上述三个步骤:bootstrap采样和训练新的决策树,直到生成m棵决策树</li>
-<li>将m棵决策树组合成随机森林</li>
-</ul>
-<h4 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h4><ul>
-<li>对于一个确定的未标记样本</li>
-<li>经过每一棵决策树预测</li>
-<li>投票产生结果,确定最终分类</li>
-</ul>
-<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>避免过拟合(bootstrap采样[随机]和随机选择部分特征)</li>
-<li>便于处理高维度的数据</li>
-<li>对高维度的数据无需做特征选择,全部保留也无所谓</li>
-<li>可并行计算 </li>
-<li>模型实现简单</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>模型训练多棵树,所以训练时间长</li>
-<li>预测时经过多棵树,预测时间长</li>
-</ul>
-<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><ul>
-<li>决策树类型: 三种(ID3,C4.5,CART)均可选,默认均分的三种算法混合到一起<ul>
-<li>决策树详细信息可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT.html" title="/Notes/ML/Models/ML——DT.html">ML——DT</a></li>
-</ul>
-</li>
-<li>树的数量m:<ul>
-<li>n_estimators</li>
-<li>int i: n_estimators = i</li>
-<li>默认为10</li>
-</ul>
-</li>
-<li>特征个数k(以Sklearn库为例):<ul>
-<li>max_features = k</li>
-<li>int i: k = i</li>
-<li>float f: k = f * K</li>
-<li>sqrt: k = sqrt(K)</li>
-<li>log2: k = log2(K)</li>
-<li>None: k = K </li>
-<li>Sklearn.ensemble.RandomRorestClassifier默认是”auto”,也就是sqrt(K)</li>
-</ul>
-</li>
-<li>树的深度: <ul>
-<li>max_depth</li>
-<li>单棵树的深度</li>
-<li>默认是None,不做限制</li>
-<li>int i: 指定树的深度为i</li>
-</ul>
-</li>
-<li>叶子节点最小样本数:<ul>
-<li>int i: min_samples_leaf = i</li>
-<li>float f: min_samples_leaf = f * N</li>
-<li>默认为1</li>
-</ul>
-</li>
-</ul>
-<h4 id="问题-随机森林的随机体现在哪里"><a href="#问题-随机森林的随机体现在哪里" class="headerlink" title="问题: 随机森林的随机体现在哪里?"></a>问题: 随机森林的随机体现在哪里?</h4><ul>
-<li>个人理解<ul>
-<li>体现在<strong>每棵树的训练样本随机</strong>,有放回采样(自助法(Bootstrap)重采样技术)</li>
-<li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>ML</tag>
-        <tag>RF</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ML——GBDT-梯度提升树-推导过程</title>
     <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT-%E6%A2%AF%E5%BA%A6%E6%8F%90%E5%8D%87%E6%A0%91-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B.html</url>
     <content><![CDATA[<p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
@@ -15646,6 +15589,86 @@ $$
       <tags>
         <tag>ML</tag>
         <tag>GBDT</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ML——RF</title>
+    <url>/Notes/ML/Models/ML%E2%80%94%E2%80%94RF-%E9%9A%8F%E6%9C%BA%E6%A3%AE%E6%9E%97.html</url>
+    <content><![CDATA[<p><em>随机森林是一种集成学习(Ensemble)方法,属于集成学习中的Bagging族,是一种典型的Bagging方法</em></p>
+<hr>
+<h3 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h3><h4 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h4><ul>
+<li>假设训练集总大小为N,特征总数为K</li>
+<li>有放回抽样N个训练样本<ul>
+<li>说明:这种有放回的抽样技术又称为自助法(Bootstrap)重采样技术 </li>
+</ul>
+</li>
+<li><strong>随机</strong>从所有特征中<strong>选取k个特征</strong>(k一般远小于总特征数K)</li>
+<li>用bootstrap采样的结果(N个样本)和k个特征训练一棵决策树(训练时不剪枝,每棵树都尽可能生长)</li>
+<li>重复上述三个步骤:bootstrap采样和训练新的决策树,直到生成m棵决策树</li>
+<li>将m棵决策树组合成随机森林</li>
+</ul>
+<h4 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h4><ul>
+<li>对于一个确定的未标记样本</li>
+<li>经过每一棵决策树预测</li>
+<li>投票产生结果,确定最终分类</li>
+</ul>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>避免过拟合(bootstrap采样[随机]和随机选择部分特征)</li>
+<li>便于处理高维度的数据</li>
+<li>对高维度的数据无需做特征选择,全部保留也无所谓</li>
+<li>可并行计算 </li>
+<li>模型实现简单</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>模型训练多棵树,所以训练时间长</li>
+<li>预测时经过多棵树,预测时间长</li>
+</ul>
+<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><ul>
+<li>决策树类型: 三种(ID3,C4.5,CART)均可选,默认均分的三种算法混合到一起<ul>
+<li>决策树详细信息可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT.html" title="/Notes/ML/Models/ML——DT.html">ML——DT</a></li>
+</ul>
+</li>
+<li>树的数量m:<ul>
+<li>n_estimators</li>
+<li>int i: n_estimators = i</li>
+<li>默认为10</li>
+</ul>
+</li>
+<li>特征个数k(以Sklearn库为例):<ul>
+<li>max_features = k</li>
+<li>int i: k = i</li>
+<li>float f: k = f * K</li>
+<li>sqrt: k = sqrt(K)</li>
+<li>log2: k = log2(K)</li>
+<li>None: k = K </li>
+<li>Sklearn.ensemble.RandomRorestClassifier默认是”auto”,也就是sqrt(K)</li>
+</ul>
+</li>
+<li>树的深度: <ul>
+<li>max_depth</li>
+<li>单棵树的深度</li>
+<li>默认是None,不做限制</li>
+<li>int i: 指定树的深度为i</li>
+</ul>
+</li>
+<li>叶子节点最小样本数:<ul>
+<li>int i: min_samples_leaf = i</li>
+<li>float f: min_samples_leaf = f * N</li>
+<li>默认为1</li>
+</ul>
+</li>
+</ul>
+<h4 id="问题-随机森林的随机体现在哪里"><a href="#问题-随机森林的随机体现在哪里" class="headerlink" title="问题: 随机森林的随机体现在哪里?"></a>问题: 随机森林的随机体现在哪里?</h4><ul>
+<li>个人理解<ul>
+<li>体现在<strong>每棵树的训练样本随机</strong>,有放回采样(自助法(Bootstrap)重采样技术)</li>
+<li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>ML</tag>
+        <tag>RF</tag>
       </tags>
   </entry>
   <entry>
@@ -16251,37 +16274,6 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>DL——MLP及其BP算法</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94MLP%E5%8F%8A%E5%85%B6BP%E7%AE%97%E6%B3%95.html</url>
-    <content><![CDATA[<p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
-<hr>
-<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
-<li>图示如下</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
-
-<hr>
-<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
-
-<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
-<li>动图</li>
-</ul>
-<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
-
-<hr>
-<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
-<ul>
-<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
-<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
-<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>DL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>DL——DeepFM</title>
     <url>/Notes/DL/DL%E2%80%94%E2%80%94DeepFM.html</url>
     <content><![CDATA[<p><em>文本介绍DeepFM的理论和实现</em></p>
@@ -16347,6 +16339,37 @@ $$
       <tags>
         <tag>DL</tag>
         <tag>RS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DL——MLP及其BP算法</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94MLP%E5%8F%8A%E5%85%B6BP%E7%AE%97%E6%B3%95.html</url>
+    <content><![CDATA[<p><em>多层感知机(Multi-Layer Perception， MLP)及其BP(Back Propagation)算法</em></p>
+<hr>
+<h3 id="多层感知机"><a href="#多层感知机" class="headerlink" title="多层感知机"></a>多层感知机</h3><ul>
+<li>图示如下</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-overview.gif" title="MLP-overview.gif">
+
+<hr>
+<h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><h4 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h4><p><em>以一维输出(二分类)为例</em></p>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-overview.png" title="MLP-BP-overview.png">
+
+<h4 id="详细流程"><a href="#详细流程" class="headerlink" title="详细流程"></a>详细流程</h4><ul>
+<li>动图</li>
+</ul>
+<img src="/Notes/DL/DL——MLP及其BP算法/MLP-BP-process.gif" title="MLP-BP-process.gif">
+
+<hr>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p>References:</p>
+<ul>
+<li><a href="http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html" target="_blank" rel="noopener">http://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html</a></li>
+<li><a href="https://www.cnblogs.com/ooon/p/5577241.html" target="_blank" rel="noopener">https://www.cnblogs.com/ooon/p/5577241.html</a></li>
+<li><a href="https://blog.csdn.net/guotong1988/article/details/52096724" target="_blank" rel="noopener">https://blog.csdn.net/guotong1988/article/details/52096724</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>DL</tag>
       </tags>
   </entry>
   <entry>
@@ -16470,35 +16493,37 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>DL——不可导函数的可导近似</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E4%B8%8D%E5%8F%AF%E5%AF%BC%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%AF%E5%AF%BC%E8%BF%91%E4%BC%BC.html</url>
-    <content><![CDATA[<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <title>DL——关于参数的初始化</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E5%85%B3%E4%BA%8E%E5%8F%82%E6%95%B0%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96.html</url>
+    <content><![CDATA[<hr>
+<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
+<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
+<li>并不会因为参数都为0就导致所有神经元死亡！</li>
+</ul>
+<hr>
+<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
+<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
+</li>
+<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
+</li>
+<li><p>单层隐藏层的神经网络一般这样初始化：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
 
 <ul>
-<li>参考链接：<ul>
-<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
+<li>适用于单层隐藏层神经网络的参数</li>
+<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id><a href="#" class="headerlink" title></a></h3><hr>
-<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
-<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
-<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
-<li>待补充</li>
-</ul>
-<hr>
-<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
-<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
-<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
-<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
-<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
+<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
+<li>不是越深越好</li>
+<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
+<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 ]]></content>
       <tags>
         <tag>DL</tag>
-        <tag>NLP</tag>
       </tags>
   </entry>
   <entry>
@@ -16575,37 +16600,35 @@ $$
       </tags>
   </entry>
   <entry>
-    <title>DL——关于参数的初始化</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E5%85%B3%E4%BA%8E%E5%8F%82%E6%95%B0%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96.html</url>
-    <content><![CDATA[<hr>
-<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
-<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
-<li>并不会因为参数都为0就导致所有神经元死亡！</li>
-</ul>
-<hr>
-<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
-<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
-</li>
-<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
-</li>
-<li><p>单层隐藏层的神经网络一般这样初始化：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
+    <title>DL——不可导函数的可导近似</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E4%B8%8D%E5%8F%AF%E5%AF%BC%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%AF%E5%AF%BC%E8%BF%91%E4%BC%BC.html</url>
+    <content><![CDATA[<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <ul>
-<li>适用于单层隐藏层神经网络的参数</li>
-<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
+<li>参考链接：<ul>
+<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
-<li>不是越深越好</li>
-<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
-<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
+<h3 id><a href="#" class="headerlink" title></a></h3><hr>
+<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
+<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
+<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
+<li>待补充</li>
+</ul>
+<hr>
+<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
+<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
+<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
+<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
+<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
 </ul>
 ]]></content>
       <tags>
         <tag>DL</tag>
+        <tag>NLP</tag>
       </tags>
   </entry>
   <entry>
@@ -16997,6 +17020,30 @@ $$
       </tags>
   </entry>
   <entry>
+    <title>DL——迁移学习-元学习-联邦学习</title>
+    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0-%E5%85%83%E5%AD%A6%E4%B9%A0-%E8%81%94%E9%82%A6%E5%AD%A6%E4%B9%A0.html</url>
+    <content><![CDATA[<h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
+<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
+<li>元学习侧重于快速适应新任务的能力</li>
+<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
+</ul>
+<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
+<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
+<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
+</ul>
+<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
+<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
+<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
+</ul>
+<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
+<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>DL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>DL——深度学习中降低过拟合的方法</title>
     <url>/Notes/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html</url>
     <content><![CDATA[<h4 id="添加Dropout"><a href="#添加Dropout" class="headerlink" title="添加Dropout"></a>添加Dropout</h4><ul>
@@ -17086,30 +17133,6 @@ $$
 <li>层的参数?</li>
 </ul>
 </li>
-</ul>
-]]></content>
-      <tags>
-        <tag>DL</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>DL——迁移学习-元学习-联邦学习</title>
-    <url>/Notes/DL/DL%E2%80%94%E2%80%94%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0-%E5%85%83%E5%AD%A6%E4%B9%A0-%E8%81%94%E9%82%A6%E5%AD%A6%E4%B9%A0.html</url>
-    <content><![CDATA[<h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
-<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
-<li>元学习侧重于快速适应新任务的能力</li>
-<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
-</ul>
-<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
-<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
-<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
-</ul>
-<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
-<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
-<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
-</ul>
-<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
-<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
 </ul>
 ]]></content>
       <tags>
@@ -17207,6 +17230,84 @@ $$
       <tags>
         <tag>DL</tag>
         <tag>NLP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PyTorch——backward函数详细解析</title>
+    <url>/Notes/PyTorch/PyTorch%E2%80%94%E2%80%94backward%E5%87%BD%E6%95%B0%E8%AF%A6%E7%BB%86%E8%A7%A3%E6%9E%90.html</url>
+    <content><![CDATA[<p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
+<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
+<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
+</ul>
+<hr>
+<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
+<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
+<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
+<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
+<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
+<li><p>结构图如下所示</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
+<li><p>上面图的代码构建如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>从图中的推导可知,梯度符合预期</li>
+<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
+<li><p>修改上面的构建为</p>
+<ul>
+<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
+</ul>
+</li>
+<li><p>结构图如下:</p>
+<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
+<li><p>代码如下:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>显然推导结果符合代码输出预期</li>
+<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
+<li><p>还以上面的结构图为例</p>
+</li>
+<li><p>直接求中间节点 \(z\) 关于自变量的梯度</p>
+</li>
+<li><p>代码如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
+</ul>
+</li>
+</ul>
+<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
+<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
+</ul>
+<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
+<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
+<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>DL</tag>
+        <tag>PyTorch</tag>
       </tags>
   </entry>
   <entry>
@@ -17337,84 +17438,6 @@ $$
 </ul>
 </li>
 <li></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>DL</tag>
-        <tag>PyTorch</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>PyTorch——backward函数详细解析</title>
-    <url>/Notes/PyTorch/PyTorch%E2%80%94%E2%80%94backward%E5%87%BD%E6%95%B0%E8%AF%A6%E7%BB%86%E8%A7%A3%E6%9E%90.html</url>
-    <content><![CDATA[<p><em>本文主要介绍PyTorch中backward函数和grad的各种用法</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="梯度的定义"><a href="#梯度的定义" class="headerlink" title="梯度的定义"></a>梯度的定义</h3><ul>
-<li>\(y\)对\(x\)的梯度可以理解为: <strong>当 \(x\) 增加1的时候, \(y\) 值的增加量</strong></li>
-<li>如果\(x\)是矢量(矩阵或者向量等),那么计算时也需要看成是多个标量的组合来计算,算出来的值表示的也是 \(x\) 当前维度的值增加1的时候, \(y\) 值的增加量</li>
-</ul>
-<hr>
-<h3 id="backward基础用法"><a href="#backward基础用法" class="headerlink" title="backward基础用法"></a>backward基础用法</h3><ul>
-<li>tensorflow是先建立好图，在前向过程中可以选择执行图的某个部分(每次前向可以执行图的不同部分，前提是，图里必须包含了所有可能情况)</li>
-<li>pytorch是每次前向过程都会重新建立一个图，反向(backward)的时候会释放，每次的图可以不一样, 所以在Pytorch中可以随时使用<code>if</code>, <code>while</code>等语句 <ul>
-<li>tensorflow中使用<code>if</code>, <code>while</code>就得在传入数据前(构建图时)告诉图需要构建哪些逻辑,然后才能传入数据运行</li>
-<li>PyTorch中由于不用在传入数据前先定义图(图和数据一起到达,图构建的同时开始计算数据?)</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对标量的梯度"><a href="#计算标量对标量的梯度" class="headerlink" title="计算标量对标量的梯度"></a>计算标量对标量的梯度</h4><ul>
-<li><p>结构图如下所示</p>
-<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2scalar.jpg"></li>
-<li><p>上面图的代码构建如下</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.Tensor([2]),requires_grad=True)</span><br><span class="line">w2 = Variable(torch.Tensor([3]),requires_grad=True)</span><br><span class="line">w3 = Variable(torch.Tensor([5]),requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([6.])</span><br><span class="line">tensor([3.])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>从图中的推导可知,梯度符合预期</li>
-<li>\(x, y\)不是叶节点,没有梯度存储下来,注意可以理解为梯度计算了,只是没有存储下来,PyTorch中梯度是一层层计算的</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算标量对矢量的梯度"><a href="#计算标量对矢量的梯度" class="headerlink" title="计算标量对矢量的梯度"></a>计算标量对矢量的梯度</h4><ul>
-<li><p>修改上面的构建为</p>
-<ul>
-<li>增加变量 \(s = z.mean\),然后直接求取\(s\)的梯度</li>
-</ul>
-</li>
-<li><p>结构图如下:</p>
-<img src="/Notes/PyTorch/PyTorch——backward函数详细解析/backward_tree_scalar2vector.jpg"></li>
-<li><p>代码如下:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2,requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3,requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5,requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line"># z.backward()</span><br><span class="line">s = z.mean()</span><br><span class="line">s.backward()</span><br><span class="line">print(w1.grad)</span><br><span class="line">print(w2.grad)</span><br><span class="line">print(w3.grad)</span><br><span class="line">print(x.grad)</span><br><span class="line">print(y.grad)</span><br><span class="line"># output:</span><br><span class="line">tensor([[0.2500, 0.2500],</span><br><span class="line">        [0.2500, 0.2500]])</span><br><span class="line">tensor([[1.5000, 1.5000],</span><br><span class="line">        [1.5000, 1.5000]])</span><br><span class="line">tensor([[0.7500, 0.7500],</span><br><span class="line">        [0.7500, 0.7500]])</span><br><span class="line">None</span><br><span class="line">None</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>显然推导结果符合代码输出预期</li>
-<li>梯度的维度与原始自变量的维度相同,每个元素都有自己对应的梯度,表示<strong>当当前元素增加1的时候, 因变量值的增加量</strong></li>
-</ul>
-</li>
-</ul>
-<h4 id="计算矢量对矢量的梯度"><a href="#计算矢量对矢量的梯度" class="headerlink" title="计算矢量对矢量的梯度"></a>计算矢量对矢量的梯度</h4><ul>
-<li><p>还以上面的结构图为例</p>
-</li>
-<li><p>直接求中间节点 \(z\) 关于自变量的梯度</p>
-</li>
-<li><p>代码如下</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">w1 = Variable(torch.ones(2,2)*2, requires_grad=True)</span><br><span class="line">w2 = Variable(torch.ones(2,2)*3, requires_grad=True)</span><br><span class="line">w3 = Variable(torch.ones(2,2)*5, requires_grad=True)</span><br><span class="line">x = w1 + w2</span><br><span class="line">y = w2*w3</span><br><span class="line">z = x+y</span><br><span class="line">z_w1_grad = torch.autograd.grad(outputs=z, inputs=w1, grad_outputs=torch.ones_like(z))</span><br><span class="line">print(z_w1_grad)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容</li>
-</ul>
-</li>
-</ul>
-<h4 id="关于autograd-grad函数"><a href="#关于autograd-grad函数" class="headerlink" title="关于autograd.grad函数"></a>关于autograd.grad函数</h4><ul>
-<li>参考博客: <a href="https://blog.csdn.net/qq_36556893/article/details/91982925" target="_blank" rel="noopener">https://blog.csdn.net/qq_36556893/article/details/91982925</a></li>
-</ul>
-<h5 id="grad-outputs参数详解"><a href="#grad-outputs参数详解" class="headerlink" title="grad_outputs参数详解"></a><code>grad_outputs</code>参数详解</h5><ul>
-<li>在因变量是矢量时,<code>grad_outputs</code>参数不能为空,标量时可以为空(<code>grad_outputs</code>为空时和<code>grad_outputs</code>维度为1时等价)</li>
-<li><code>grad_outputs</code>的维度必须和<code>outputs</code>参数的维度兼容<br>[待更新]</li>
 </ul>
 ]]></content>
       <tags>
@@ -19073,6 +19096,27 @@ source deactivate python3</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>LaTex——编译问题</title>
+    <url>/Notes/LaTeX/LaTeX%E2%80%94%E2%80%94%E7%BC%96%E8%AF%91%E9%97%AE%E9%A2%98.html</url>
+    <content><![CDATA[<h3 id="VSCode环境中引用出错问题排查"><a href="#VSCode环境中引用出错问题排查" class="headerlink" title="VSCode环境中引用出错问题排查"></a>VSCode环境中引用出错问题排查</h3><ul>
+<li><p>参考链接：<a href="https://blog.csdn.net/qq_38397338/article/details/108193853" target="_blank" rel="noopener">latex报错：Citation ‘××××‘ on page x undefined.与众不同的解决方案</a></p>
+</li>
+<li><p>除了排查自身代码问题 &amp;&amp; 修改配置文件外，还可以使用命令行重新编译PDF文件，具体流程如下</p>
+<ul>
+<li><p>切换到xxx.tex文件所在目录下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xelatex xxx</span><br><span class="line">bibtex xxx</span><br><span class="line">xelatex xxx</span><br><span class="line">xelatex xxx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行以上语句后PDF引用恢复正常</p>
+</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Others</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>LaTex——省略号</title>
     <url>/Notes/LaTeX/LaTeX%E2%80%94%E2%80%94%E7%9C%81%E7%95%A5%E5%8F%B7.html</url>
     <content><![CDATA[<h3 id="省略号在LaTeX中的使用"><a href="#省略号在LaTeX中的使用" class="headerlink" title="省略号在LaTeX中的使用"></a>省略号在LaTeX中的使用</h3><ul>
@@ -19246,27 +19290,6 @@ source deactivate python3</code></pre>
 <blockquote>
 <p>$$j^{\star}=\underset{j}{\arg \max}f(j)$$</p>
 </blockquote>
-]]></content>
-      <tags>
-        <tag>Others</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>LaTex——编译问题</title>
-    <url>/Notes/LaTeX/LaTeX%E2%80%94%E2%80%94%E7%BC%96%E8%AF%91%E9%97%AE%E9%A2%98.html</url>
-    <content><![CDATA[<h3 id="VSCode环境中引用出错问题排查"><a href="#VSCode环境中引用出错问题排查" class="headerlink" title="VSCode环境中引用出错问题排查"></a>VSCode环境中引用出错问题排查</h3><ul>
-<li><p>参考链接：<a href="https://blog.csdn.net/qq_38397338/article/details/108193853" target="_blank" rel="noopener">latex报错：Citation ‘××××‘ on page x undefined.与众不同的解决方案</a></p>
-</li>
-<li><p>除了排查自身代码问题 &amp;&amp; 修改配置文件外，还可以使用命令行重新编译PDF文件，具体流程如下</p>
-<ul>
-<li><p>切换到xxx.tex文件所在目录下</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">xelatex xxx</span><br><span class="line">bibtex xxx</span><br><span class="line">xelatex xxx</span><br><span class="line">xelatex xxx</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>执行以上语句后PDF引用恢复正常</p>
-</li>
-</ul>
-</li>
-</ul>
 ]]></content>
       <tags>
         <tag>Others</tag>
@@ -19802,36 +19825,6 @@ source deactivate python3</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Git——GitHub-Pages的CNAME设置</title>
-    <url>/Notes/Git/Git%E2%80%94%E2%80%94GitHub-Pages%E7%9A%84CNAME%E8%AE%BE%E7%BD%AE.html</url>
-    <content><![CDATA[<hr>
-<h3 id="CNAME是什么"><a href="#CNAME是什么" class="headerlink" title="CNAME是什么"></a>CNAME是什么</h3><ul>
-<li>CNAME是DNS解析中的一种别名记录，允许同一个网站有两个不同的记录解析过去</li>
-<li>CNAME在GitHub Pages中体现为可以将xxx.github.io的域名添加别名为自定义的域名（这个域名通常是自己买的，在域名那里也要配置解析到当前xxx.github.io）</li>
-</ul>
-<hr>
-<h3 id="GitHub-Pages中使用CNAME时遇到的问题"><a href="#GitHub-Pages中使用CNAME时遇到的问题" class="headerlink" title="GitHub Pages中使用CNAME时遇到的问题"></a>GitHub Pages中使用CNAME时遇到的问题</h3><ul>
-<li>我们可以在GitHub账户中设置CNAME</li>
-<li>重新提交commit并推送数据到GitHub上后，之前设置的CNAME会被删除，需要重新设置，也就是说每次push操作后都需要重新设置<ul>
-<li>这个问题在<code>hexo d</code>后也会出现</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
-<li>在当前项目的GitHub Pages对应的分支下面新建一个文件，命名为<code>CNAME</code></li>
-<li>打开文件并新建一行为目标网站的域名（如果是中文域名则需要编码转换）</li>
-<li>在Hexo中，我们可以在<code>source</code>文件夹下面新建该文件<ul>
-<li><code>hexo generate</code>时会将<code>source</code>文件夹下面的文件都拷贝到<code>public</code>文件夹下面</li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Git——使用总结</title>
     <url>/Notes/Git/Git%E2%80%94%E2%80%94%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93.html</url>
     <content><![CDATA[<p><em>本文总结一些可能误解或者需要注意的指令用法</em></p>
@@ -19967,6 +19960,36 @@ source deactivate python3</code></pre>
 <li>首先拉取项目并在<code>.gitignore</code>中添加<code>*.DS_Store</code></li>
 <li>执行<code>git rm --cached *.DS_Store</code>, 从缓冲区中删除所有<code>*.DS_Store</code>文件，但保留本地文件</li>
 <li>执行<code>git add .</code>并重新提交</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git——GitHub-Pages的CNAME设置</title>
+    <url>/Notes/Git/Git%E2%80%94%E2%80%94GitHub-Pages%E7%9A%84CNAME%E8%AE%BE%E7%BD%AE.html</url>
+    <content><![CDATA[<hr>
+<h3 id="CNAME是什么"><a href="#CNAME是什么" class="headerlink" title="CNAME是什么"></a>CNAME是什么</h3><ul>
+<li>CNAME是DNS解析中的一种别名记录，允许同一个网站有两个不同的记录解析过去</li>
+<li>CNAME在GitHub Pages中体现为可以将xxx.github.io的域名添加别名为自定义的域名（这个域名通常是自己买的，在域名那里也要配置解析到当前xxx.github.io）</li>
+</ul>
+<hr>
+<h3 id="GitHub-Pages中使用CNAME时遇到的问题"><a href="#GitHub-Pages中使用CNAME时遇到的问题" class="headerlink" title="GitHub Pages中使用CNAME时遇到的问题"></a>GitHub Pages中使用CNAME时遇到的问题</h3><ul>
+<li>我们可以在GitHub账户中设置CNAME</li>
+<li>重新提交commit并推送数据到GitHub上后，之前设置的CNAME会被删除，需要重新设置，也就是说每次push操作后都需要重新设置<ul>
+<li>这个问题在<code>hexo d</code>后也会出现</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li>在当前项目的GitHub Pages对应的分支下面新建一个文件，命名为<code>CNAME</code></li>
+<li>打开文件并新建一行为目标网站的域名（如果是中文域名则需要编码转换）</li>
+<li>在Hexo中，我们可以在<code>source</code>文件夹下面新建该文件<ul>
+<li><code>hexo generate</code>时会将<code>source</code>文件夹下面的文件都拷贝到<code>public</code>文件夹下面</li>
 </ul>
 </li>
 </ul>
@@ -20217,6 +20240,18 @@ source deactivate python3</code></pre>
   </entry>
   <entry>
     <title>Maven——maven包管理问题</title>
+    <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%9F%BA%E7%A1%80.html</url>
+    <content><![CDATA[<hr>
+<h3 id="Maven基础"><a href="#Maven基础" class="headerlink" title="Maven基础"></a>Maven基础</h3><ul>
+<li>参考链接：<a href="https://blog.csdn.net/qq_14958051/article/details/124601351" target="_blank" rel="noopener">Maven 最全教程，看了必懂，99% 的人都收藏了！</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>Others</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Maven——maven包管理问题</title>
     <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%8C%85%E7%AE%A1%E7%90%86%E9%97%AE%E9%A2%98.html</url>
     <content><![CDATA[<hr>
 <h3 id="Maven配置"><a href="#Maven配置" class="headerlink" title="Maven配置"></a>Maven配置</h3><ul>
@@ -20232,18 +20267,6 @@ source deactivate python3</code></pre>
 <li>下面是一个例子<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># 包信息</span><br><span class="line">    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-boot-starter-thymeleaf&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.1.6.RELEASE&lt;/version&gt;</span><br><span class="line"># 存储到本地</span><br><span class="line">	~/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/2.1.6.RELEASE/spring-boot-starter-jdbc-2.1.6.RELEASE.jar</span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
-</ul>
-]]></content>
-      <tags>
-        <tag>Others</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Maven——maven包管理问题</title>
-    <url>/Notes/Others/Maven%E2%80%94%E2%80%94maven%E5%9F%BA%E7%A1%80.html</url>
-    <content><![CDATA[<hr>
-<h3 id="Maven基础"><a href="#Maven基础" class="headerlink" title="Maven基础"></a>Maven基础</h3><ul>
-<li>参考链接：<a href="https://blog.csdn.net/qq_14958051/article/details/124601351" target="_blank" rel="noopener">Maven 最全教程，看了必懂，99% 的人都收藏了！</a></li>
 </ul>
 ]]></content>
       <tags>
