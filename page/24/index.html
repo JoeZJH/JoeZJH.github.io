@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
         
 
         <div class="post-meta">
@@ -330,64 +330,219 @@
       
         
           
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
+            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
 <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
+
+<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
+<hr>
+<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
+<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
+<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
+</ul>
+<hr>
+<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
+<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
+</ul>
+<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
+<li>NNLM网络结构图如下：</li>
+</ul>
+<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
+
+<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
+<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
+</ul>
+<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
+<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
+<li>将构造的数据集作为训练样本集</li>
+<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
+</ul>
+<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
+<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
 <ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
+<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
 </ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+</li>
+<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
+<ul>
+<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
 </ul>
 </li>
 </ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
+<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
+<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
+</li>
+<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
+</li>
+<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
+</li>
+<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
+</li>
+<li><p>b:输出层的偏执参数</p>
+</li>
+<li><p>d:隐含层的偏执参数</p>
+</li>
 </ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
+<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
+<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>\(R(\theta)\)是正则项</li>
+</ul>
+</li>
+<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T}\log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>我们选择优化对数似然函数，原因如下：<ul>
+<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
+<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
+<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
+<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
+</ul>
+</li>
+</ul>
+<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
+<li>最大化对数似然函数(等价于最大化似然函数)</li>
+</ul>
+<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
+<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
+<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
+<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
+</ul>
+</li>
+<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
+</ul>
 
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+          
+        
+      
+    </div>
+    
+    
+    
 
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——不可导函数的可导近似.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——不可导函数的可导近似.html" itemprop="url">DL——不可导函数的可导近似</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
+</ul>
 </li>
 </ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
-</li>
+<hr>
+<h3 id><a href="#" class="headerlink" title></a></h3><hr>
+<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
+<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
+<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
+<li>待补充</li>
 </ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><ul>
-<li>FM的输入仅仅包含稀疏特征，连续特征不包含在FM部分<img src="/Notes/DL/DL——DeepFM/fm_component.png"></li>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><ul>
-<li>DNN的输入包含Combine(稀疏特征，连续特征)<img src="/Notes/DL/DL——DeepFM/dnn_component.png"></li>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
-</ul>
-</li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
+<hr>
+<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
+<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
+<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
+<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
+<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
 </ul>
 
           
@@ -555,7 +710,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——不可导函数的可导近似.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -574,7 +729,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/DL/DL——不可导函数的可导近似.html" itemprop="url">DL——不可导函数的可导近似</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
         
 
         <div class="post-meta">
@@ -610,28 +765,31 @@
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <hr>
+<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
+<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
+<li>并不会因为参数都为0就导致所有神经元死亡！</li>
+</ul>
+<hr>
+<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
+<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
+</li>
+<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
+</li>
+<li><p>单层隐藏层的神经网络一般这样初始化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
 
 <ul>
-<li>参考链接：<ul>
-<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
+<li>适用于单层隐藏层神经网络的参数</li>
+<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id><a href="#" class="headerlink" title></a></h3><hr>
-<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
-<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
-<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
-<li>待补充</li>
-</ul>
-<hr>
-<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
-<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
-<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
-<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
-<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
+<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
+<li>不是越深越好</li>
+<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
+<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 
           
@@ -1267,135 +1425,6 @@
 <li><strong>整体来讲，Adam 是最好的选择</strong></li>
 <li>很多论文里都会用 SGD，没有 momentum 等, SGD 虽然能达到极小值，但是比其它算法用的时间长，而且可能会被困在鞍点, 在不正确的方向上来回震荡</li>
 <li>如果需要更快的收敛，或者是训练更深更复杂的神经网络，需要用一种自适应的算法</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——关于参数的初始化.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——关于参数的初始化.html" itemprop="url">DL——关于参数的初始化</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="为什么参数不能初始化为全0？"><a href="#为什么参数不能初始化为全0？" class="headerlink" title="为什么参数不能初始化为全0？"></a>为什么参数不能初始化为全0？</h3><ul>
-<li>因为此时会导致同一隐藏层的神经元互相对称，可以通过递推法证明，不管迭代多少次，此时所有的神经元都将计算完全相同的函数</li>
-<li>并不会因为参数都为0就导致所有神经元死亡！</li>
-</ul>
-<hr>
-<h3 id="为什么参数不能初始化为太大的数值？"><a href="#为什么参数不能初始化为太大的数值？" class="headerlink" title="为什么参数不能初始化为太大的数值？"></a>为什么参数不能初始化为太大的数值？</h3><ul>
-<li><p>因为参数太大会导致sigmoid(z)或tanh(z)中的z太大，从而导致梯度太小而更新太慢</p>
-</li>
-<li><p>如果网络中完全没有sigmoid和tanh等激活函数，那就还好，但是要注意，二分类中使用sigmoid函数于输出层时也不应该将参数初始化太大</p>
-</li>
-<li><p>单层隐藏层的神经网络一般这样初始化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn((n1, n2)) * 0.01</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>适用于单层隐藏层神经网络的参数</li>
-<li>如果是深层网络则要考虑使用其他常数而不是<code>0.01</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="神经网络的层数也可当做参数"><a href="#神经网络的层数也可当做参数" class="headerlink" title="神经网络的层数也可当做参数"></a>神经网络的层数也可当做参数</h3><ul>
-<li>不是越深越好</li>
-<li>一个问题的开始一般从单层网络开始，即Logistic回归开始</li>
-<li>逐步加深网络层数，不断测试效果，寻找合适的网络层数即可</li>
 </ul>
 
           

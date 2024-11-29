@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="Jiahong的个人博客">
 <meta property="og:description" content="本文主要记录BCB出价的推导  其他参考链接： 智能出价——BCB求解  互联网广告算法漫谈——浅谈广告中的出价技术：包含许多公式的详细推导     BCB介绍 预算约束的出价，Budget Constrained Bidding（简称BCB），广告主的出价目标是设置一定预算，拿到最多的流量（点击或者订单）   问题定义 一般BCB优化问题的定义:  $$\begin{align}\ma">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-11-27T17:17:17.178Z">
+<meta property="og:updated_time" content="2024-11-29T14:15:30.232Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CA——BCB出价推导">
 <meta name="twitter:description" content="本文主要记录BCB出价的推导  其他参考链接： 智能出价——BCB求解  互联网广告算法漫谈——浅谈广告中的出价技术：包含许多公式的详细推导     BCB介绍 预算约束的出价，Budget Constrained Bidding（简称BCB），广告主的出价目标是设置一定预算，拿到最多的流量（点击或者订单）   问题定义 一般BCB优化问题的定义:  $$\begin{align}\ma">
@@ -376,6 +376,29 @@
 </ul>
 </li>
 </ul>
+<hr>
+<h3 id="RL-MPCA论文中关于-lambda-的求解分析"><a href="#RL-MPCA论文中关于-lambda-的求解分析" class="headerlink" title="RL-MPCA论文中关于\(\lambda\)的求解分析"></a>RL-MPCA论文中关于\(\lambda\)的求解分析</h3><ul>
+<li>可使用\(\lambda^{k+1} = \lambda^{k} + \eta(\hat{C} - C)\)来更新\(\lambda\)</li>
+<li>实际上，对于\(x^* = \mathop{\arg\max}_x f(x) - \lambda x\)，其中\(x\)是算力，\(f(x)\)是价值的场景，我们有\(\forall \ \lambda_2 \gt \lambda_1\)，有\(x^*(\lambda_2) \le x^*(\lambda_1)\) 且 \(f(x^*(\lambda_2)) \le f(x^*(\lambda_1))\)，其中\(x^*(\lambda_0)\)和\(f(x^*(\lambda_0))\)分别表示\(\lambda = \lambda_0\)时的最优算力\(x^*\)和价值\(f(x^*)\)<ul>
+<li>证明1：假设有在\(\lambda_1\)下，有\(x^*(\lambda_1) = x_1\)，即任取\(x_2 \ge x_1\)且\(f(x_1) - \lambda_1 x_1 \ge f(x_2) - \lambda_1 x_2\)成立。则取\(\lambda_2 \gt \lambda_1\)时，有\(f(x_1) - \lambda_2 x_1 \ge f(x_2) - \lambda_2 x_2\)也成立。也就是说\(\lambda_2\)对应的最优算力不可能比\(x_1\)更大，故\(\forall \ \lambda_2 \gt \lambda_1\)，\(\lambda_2\)下的最优解\(x^*(\lambda_2)\)不可能大于\(x^*(\lambda_1)\)<ul>
+<li>补充中间证明步骤：由\(x_2 \ge x_1\)且\(\lambda_2 \gt \lambda_1\)可得\(- (\lambda_2 - \lambda_1)x_1 \ge - (\lambda_2 - \lambda_1) x_2\)，所以所有\(f(x_1) - (\lambda_2 - \lambda_1) x_1 - \lambda_1 x_1 \ge f(x_2) - (\lambda_2 - \lambda_1) x_2 - \lambda_1 x_2\)</li>
+</ul>
+</li>
+<li>证明2：由于\(\lambda_2 \gt \lambda_1\)时，\(x^*(\lambda_2) \le x^*(\lambda_1)\)成立，所以，当\(\lambda\)减少时（从\(\lambda_2\)变成\(\lambda_1\)），\(x^*(\lambda_2) \le x^*(\lambda_1)\)，成本增加了，此时除非收益也增加，即\(f(x^*(\lambda_2)) \lt f(x^*(\lambda_1))\)，否则最优点不会动（不动时有\(f(x^*(\lambda_2)) = f(x^*(\lambda_1))\)），也就是说，\(f(x^*(\lambda_2)) \le f(x^*(\lambda_1))\)一定成立</li>
+</ul>
+</li>
+<li>根据证明有如下推论：<ul>
+<li>由于最优算力\(x^*(\lambda)\)和和最优收益\(f(x^*(\lambda))\)和\(\lambda\)均呈现负相关关系（不是严格单调）。<ul>
+<li>当\(\hat{C} &gt; C\)时，约束被违反了，需要增大\(\lambda\)以增强算力约束，减少算力消耗。</li>
+<li>当\(\hat{C} &lt; C\)时，约束指标还有一定提升空间，需要缩小\(\lambda\)以提升收益，直到\(\lambda=0\)为止，此时无法继续缩小\(\lambda\)，最优解对应的算力可能仍然是\(\hat{C} &lt; C\)的（\(\lambda=0\)时，原始约束是松约束，相当于没有这个约束）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>故不论什么情况，均可使用\(\lambda^{k+1} = \lambda^{k} + \eta(\hat{C} - C)\)来更新\(\lambda\)以获取最优解</li>
+<li>论文中对智能算力场景给定两个假设（价值随算力单调递增;边际收益递减），只是说明在智能算力场景中，最优解一定且仅在\(\hat{C} = C\)处，此时可以使用二分查找求解\(\lambda\)或Batch Loss来找到最优模型参数（只有这种情况下可以使用这两种方法）</li>
+<li>实际上，论文中可以不给定假设，也可以推导得到\(\lambda^{k+1} = \lambda^{k} + \eta(\hat{C} - C)\)这样的更新公式，但是这样就无法在<code>4.1.2 𝜆 Correction in Offline Model Evaluation</code>中使用二分查找了，论文中本来二分查找也需要两个假设的，正好基于这个假设使得\(\lambda^{k+1} = \lambda^{k} + \eta(\hat{C} - C)\)更容易推导了</li>
+</ul>
 
       
     </div>
@@ -416,8 +439,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/DL/DL——Transformer.html" rel="prev" title="DL——Transformer">
-                DL——Transformer <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" rel="prev" title="CA——WideAndDeep">
+                CA——WideAndDeep <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -559,7 +582,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#BCB介绍"><span class="nav-number">1.</span> <span class="nav-text">BCB介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题定义"><span class="nav-number">2.</span> <span class="nav-text">问题定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法一"><span class="nav-number">3.</span> <span class="nav-text">解法一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法二"><span class="nav-number">4.</span> <span class="nav-text">解法二</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关于两种解法的结果分析"><span class="nav-number">5.</span> <span class="nav-text">关于两种解法的结果分析</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#BCB介绍"><span class="nav-number">1.</span> <span class="nav-text">BCB介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题定义"><span class="nav-number">2.</span> <span class="nav-text">问题定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法一"><span class="nav-number">3.</span> <span class="nav-text">解法一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法二"><span class="nav-number">4.</span> <span class="nav-text">解法二</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关于两种解法的结果分析"><span class="nav-number">5.</span> <span class="nav-text">关于两种解法的结果分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RL-MPCA论文中关于-lambda-的求解分析"><span class="nav-number">6.</span> <span class="nav-text">RL-MPCA论文中关于\(\lambda\)的求解分析</span></a></li></ol></div>
             
 
           </div>
