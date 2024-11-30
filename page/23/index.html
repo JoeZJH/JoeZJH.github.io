@@ -275,6 +275,421 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——DT-决策树.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——DT-决策树.html" itemprop="url">ML——DT-决策树</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><ul>
+<li>决策树(DT)是一种基本的分类和回归方法</li>
+<li>分类问题中可以理解为if-then规则的集合</li>
+<li>分类问题中也可以理解为定义在特征空间-&gt;类空间上的条件概率分布</li>
+<li>分类问题中使用的是ID3和C4.5<ul>
+<li>ID3 基于 最大化信息增益 来选择特征</li>
+<li>C4.5基于 最大化信息增益比 来选择特征</li>
+</ul>
+</li>
+<li>回归问题使用的是分类与回归树(Classification And Regression Tree, CART)<ul>
+<li>分类树: 基于 最小化基尼(Gini Index)指数 来选择特征</li>
+<li>回归树: 基于 最小化平方误差 来选择特征</li>
+</ul>
+</li>
+<li>关于树模型的复杂度可以用下面的方式评估, 统计学习方法中<strong>CART</strong>选择使用树的<strong>节点总数</strong>来评估树的复杂度<ul>
+<li>叶子节点的数量</li>
+<li>节点总数</li>
+<li>树的深度</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="树模型的优缺点"><a href="#树模型的优缺点" class="headerlink" title="树模型的优缺点"></a>树模型的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(?)</li>
+<li>具体伸缩不变性(不用归一化特征,LR模型需要归一化特征) </li>
+<li>有特征组合的作用</li>
+<li>可自然地处理缺失值(神经网络不能处理缺失值)</li>
+<li>对异常点鲁棒</li>
+<li>有特征选择作用</li>
+<li>可扩展性强，容易并行</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>缺乏平滑性(回归预测时输出值只能 输出有限的若干种数值)</li>
+<li>不适合处理高维稀疏数据<ul>
+<li>数据稀疏时<ul>
+<li>比如某个数据集有10000个样本</li>
+<li>某个特征只有10个样本存在值，其他样本都不存在值</li>
+</ul>
+</li>
+<li>决策树： </li>
+<li>这样的话树容易将当前特征选中作为分类特征，这种划分可能在训练集上看起来很好，但测试集中表现可能不太好(这里不是简单的缺失值，而是数据很稀疏，这里需要进一步的理解[待更新])</li>
+<li>LR等线性模型：<ul>
+<li>因为现在的模型普遍都会带着正则项，而LR等线性模型的正则项是对权重的惩罚，也就是特征对应的权重一旦过大，惩罚就会很大，进一步压缩权重的值，使他不至于过大，而树模型则不一样，树模型的惩罚项通常为叶子节点数和深度等，而我们都知道，对于上面这种 case，树只需要一个节点就可以完美分割9990和10个样本，惩罚项极其之小.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="决策树训练的三个步骤"><a href="#决策树训练的三个步骤" class="headerlink" title="决策树训练的三个步骤"></a>决策树训练的三个步骤</h3><h4 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h4><h5 id="信息增益"><a href="#信息增益" class="headerlink" title="信息增益"></a>信息增益</h5><ul>
+<li>对数据集D的经验熵:\(H(D)=-\sum_{k=1}^{K}\frac{|C_{k}|}{|D|}log_{2}\frac{|C_{k}|}{|D|}\)</li>
+<li>对特征A对数据集D的经验条件熵:\(H(D|A)=\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}H(D_{i})=-\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}\sum_{k=1}^{K}\frac{|D_{ik}|}{|D_{i}|}log_{2}\frac{|D_{ik}|}{|D_{i}|}\), n为特征A的取值个数</li>
+</ul>
+<h5 id="信息增益比"><a href="#信息增益比" class="headerlink" title="信息增益比"></a>信息增益比</h5><ul>
+<li>特征A对训练数据D的信息增益比:\(g_{R}(D,A)=\frac{g(D,A)}{H_{A}(D)}\)<ul>
+<li>其中\(H_{A}=-\sum_{i=1}^{n}\frac{|D_{i}|}{|D|}log_{2}\frac{|D_{i}|}{|D|}\), n为特征A的取值个数</li>
+</ul>
+</li>
+</ul>
+<h5 id="基尼指数"><a href="#基尼指数" class="headerlink" title="基尼指数"></a>基尼指数</h5><ul>
+<li>对于分布\(p=(p_{1},…,p_{k})\)的基尼指数:\(Gini(p)=\sum_{k=1}^{K}p_{k}(1-p_{k})=1-\sum_{k=1}^{K}p_{k}^{2}\)</li>
+<li>对样本集合D,基尼指数为:\(Gini(p)=1-\sum_{k=1}^{K}\left(\frac{|C_{k}|}{|D|}\right)^{2}\)</li>
+<li>在特征A的条件下,集合D的基尼指数:\(Gini(D,A)=\frac{|C_{1}|}{|D|}Gini(D_{1})+\frac{|C_{2}|}{|D|}Gini(D_{2})\)<ul>
+<li>我们将集合D根据特征A分为两类: </li>
+<li>是否取特征A的某个值,其中\(A=a\)的是\(D_{1}\),\(A\neq a\)的是\(D_{2}\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="决策树的生成"><a href="#决策树的生成" class="headerlink" title="决策树的生成"></a>决策树的生成</h4><h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>基于<strong>最大化信息增益</strong>来选择特征</li>
+<li>选取所有信息增益最大的特征作为当前结点的特征</li>
+<li>对取值数目较多的属性有所偏好</li>
+<li>只有分类树,没有回归树</li>
+<li>ID3相当于用极大似然法对模型进行选择(问题:如何理解?)</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>基于<strong>最大化信息增益比</strong>来选择特征</li>
+<li>选取信息增益比最大的特征作为当前结点的特征<ul>
+<li>由于使用最大的信息增益比特征可能对取值数目少的特征属性有所偏好,所以C4.5算法一般不会直接选信息增益比最大的,而是<ul>
+<li><strong>先从候选区属性中找出信息增益高于平均水平的</strong></li>
+<li><strong>再从筛选结果中寻找信息增益比最大的</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>处理连续型特征时使用二分法(bi-partition)</li>
+<li>只有分类树,没有回归树</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>CART的决策树是二叉树</li>
+<li>分类树: 基于<strong>最小化基尼指数</strong>来选择特征<ul>
+<li>输出变量为离散变量</li>
+<li>基于基尼指数选取所有可能的特征A和所有可能的切分点a中,选择基尼指数最小的特征和切分点为最优特征和最优且分点</li>
+</ul>
+</li>
+<li>回归树: 基于<strong>最小化平方误差</strong>来选择特征<ul>
+<li>CART回归树一般称为最小二乘回归树(因为目标函数的优化是最小化误差的平方和实现的)</li>
+<li>输出变量为连续变量</li>
+<li>选取时选择最优划分变量(特征)j和最优切分点s,然后按照变量j的划分点s将结点分为两个结点,大于s的为第一个结点,小于s的为第二个结点</li>
+</ul>
+</li>
+<li>一点说明:<ul>
+<li>*&lt;&lt;统计学习方法&gt;&gt;*中:<ul>
+<li>回归树的特征默认是连续变量,选取划分点s时使用的是<strong>连续变量的各种中间值</strong>作为候选值,<strong>大于s的分为一个结点,小于s的分为一个结点</strong></li>
+<li>分类树的特征默认是离散变量,选取划分点a时使用的是<strong>离散变量的值</strong>作为候选值,<strong>等于a的分为一个结点,不等于a的分为另一个结点</strong></li>
+<li>但是实际上无论时分类树还是回归树,CART都可以用相同手段处理连续值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h4><ul>
+<li>剪枝的核心思想:<ul>
+<li>就是加入考虑树的复杂度考量(决策树的生成时仅仅是考虑到信息增益和信息增益比,没有考量树的复杂度)<ul>
+<li>树的深度越深,树越复杂</li>
+</ul>
+</li>
+<li>整体上再考虑树变得更简单的同时保证分类误差较小</li>
+</ul>
+</li>
+</ul>
+<h5 id="预剪枝"><a href="#预剪枝" class="headerlink" title="预剪枝"></a>预剪枝</h5><ul>
+<li>预剪枝发生在决策树生成过程中</li>
+<li>在每个节点划分前先进行估计</li>
+<li>若当前节点划分不能带来决策树准确率提升,则停止划分</li>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中未提到这个方法,只讲了一种简单的后剪枝算法</li>
+<li>时间复杂度小,欠拟合风险大</li>
+</ul>
+<h5 id="后剪枝"><a href="#后剪枝" class="headerlink" title="后剪枝"></a>后剪枝</h5><ul>
+<li>后剪枝发生在决策树生成后</li>
+<li>自底向上的对非叶子节点进行考察(注意千万不可从根节点开始自顶向下的剪枝,可能失去整体最优的决策树)</li>
+<li>若将该节点换成叶子节点能带来决策树准确率提升,则将该节点替换为叶子节点</li>
+<li>时间复杂度大,欠拟合风险小</li>
+</ul>
+<h6 id="常见的后剪枝方法"><a href="#常见的后剪枝方法" class="headerlink" title="常见的后剪枝方法"></a>常见的后剪枝方法</h6><p><em>各种方法各有优劣,关注不同的优化角度</em></p>
+<ul>
+<li>REP 错误率降低剪枝(Reduced Error Pruning)</li>
+<li>PEP 悲观剪枝(Pessimistic Error Pruning)</li>
+<li>CCP 代价复杂度剪枝(Cost Complexity Pruning), 详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CPP剪枝算法描述</a></li>
+<li>MEP 最小误差剪枝(Minimum Error Pruning)</li>
+<li>CVP (Critical Value Pruning)</li>
+<li>OPP (Optimal Pruning)</li>
+</ul>
+<h5 id="ID3和C4-5的剪枝"><a href="#ID3和C4-5的剪枝" class="headerlink" title="ID3和C4.5的剪枝"></a>ID3和C4.5的剪枝</h5><h5 id="CART的剪枝"><a href="#CART的剪枝" class="headerlink" title="CART的剪枝"></a>CART的剪枝</h5><p><em>CART使用的是CCP剪枝</em></p>
+<ul>
+<li>对任意的子树,我们可以定义子树的损失<ul>
+<li>\(C_{a}(T)=C(T)+\alpha|T|\)</li>
+<li>子树的损失 = 子树的预测误差 + \(\alpha\) * 子树的节点数</li>
+<li>对于回归树和分类树,子树的预测误差定义不一样,前者是误差的平方和,后者是基尼指数</li>
+</ul>
+</li>
+<li>可以证明对于给定的Alpha,一定存在某个损失最小的子树,也就是我们要的最优子树</li>
+<li>现实中实现时可以使用递归的方法实现</li>
+</ul>
+<h6 id="CCP剪枝算法描述"><a href="#CCP剪枝算法描述" class="headerlink" title="CCP剪枝算法描述"></a>CCP剪枝算法描述</h6><p><em>CPP剪枝也是一种后剪枝算法</em><br><strong>修正：统计学习方法CART算法第六步中应该跳到第二步，而不是第三步</strong></p>
+<ul>
+<li>1：计算所有节点对应的\(\alpha\)值: \(\alpha=\frac{C(t)-C(T_{t})}{|T_{t}|-1}\)<ul>
+<li>\(C(t)\)是以<strong>t节点单一节点为树</strong>时单一节点树的损失函数</li>
+<li>\(C(T_{t})\)是以<strong>t节点为根节点的子树</strong>时整棵子树的损失函数</li>
+<li>\(|T_{t}|\)是以<strong>t节点为根节点的子树</strong>时整棵子树的节点数量</li>
+</ul>
+</li>
+<li>2：对当前\(\alpha\)值最小的节点t剪枝，并存储中间结果的\(\alpha\)值和剪枝后的树结构<ul>
+<li>当\(\alpha\)确定时，存在唯一的最小子树\(T_{\alpha}\)使损失函数\(C_{\alpha}(T)\)最小</li>
+</ul>
+</li>
+<li>3：选取当前树为剪枝后的树，跳转到第1步，直到剪枝到只有三个节点的树时截止</li>
+<li>4：截止后得到节点数量从大到小的多个子树\(T_{\alpha_{0}}, T_{\alpha_{1}},…,T_{\alpha_{n}}\). (其中\(T_{\alpha_{i}}\)也就对应着第i个\(\alpha\)值\(\alpha_{i}\))</li>
+<li>5：用交叉验证法对\(\alpha\)的值进行选择(CART算法执行时\(\alpha\)类似超参数，整个算法学习的过程类似于用交叉验证法确定超参数的过程，\(\alpha\)的值确定了，对应的决策树也就确定了！)</li>
+</ul>
+<h4 id="关于连续特征"><a href="#关于连续特征" class="headerlink" title="关于连续特征"></a>关于连续特征</h4><h5 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法"></a>统计学习方法</h5><ul>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中回归树的特征默认是连续变量,分类树的特征默认是离散变量</li>
+</ul>
+<h5 id="机器学习-周志华"><a href="#机器学习-周志华" class="headerlink" title="机器学习 周志华"></a>机器学习 周志华</h5><ul>
+<li>在&lt;&lt;机器学习&gt;&gt;中提到连续特征的一种解决方案:<ul>
+<li>把该连续特征所有出现的取值排序</li>
+<li>取临近两两之间的平均值作为划分点</li>
+<li>像处理离散的点一样,使用信息增益最大化,信息增益率最大化,或者是基尼指数最小化实现对应的划分选择</li>
+</ul>
+</li>
+</ul>
+<h5 id="个人总结"><a href="#个人总结" class="headerlink" title="个人总结"></a>个人总结</h5><ul>
+<li>处理连续型变量(特征的能力)<ul>
+<li>ID3 不能处理连续型特征<ul>
+<li>因为连续型特征往往使得每一个样本该特征取值都不一样,造成该特征对数据集D的经验条件熵为0?</li>
+<li>使得ID3算法趋向于选择这个特征?</li>
+</ul>
+</li>
+<li>C4.5 能处理连续型特征<ul>
+<li>将数据排序后找到类别不同的分割线作为切分点</li>
+<li>根据切分点把连续属性二分类装换为布尔类型</li>
+<li>可多次使用连续属性分类</li>
+</ul>
+</li>
+<li>CART 能处理连续型特征<ul>
+<li>实际对连续型特征的处理<strong>与C4.5一样</strong></li>
+<li>由于CART树构建时每次都会对特征进行二值化分,所以可以很好的适用与连续型变量</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="一些总结"><a href="#一些总结" class="headerlink" title="一些总结"></a>一些总结</h4><ul>
+<li>算法ID3生成可能是多叉树,而CART一定是二叉树，*&lt;&lt;统计学习方法&gt;&gt;*中二者生成相同的数是巧合，除了不同评价方式的特征选择结果一样以外，还需要被选中的特征都是二值的！</li>
+<li>ID3相当于用极大似然法对模型进行选择</li>
+</ul>
+<h4 id="一种很好的理解思路"><a href="#一种很好的理解思路" class="headerlink" title="一种很好的理解思路"></a>一种很好的理解思路</h4><h5 id="ID3-1"><a href="#ID3-1" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>ID3算法就是用<strong>信息增益</strong>大小来判断当前节点应该用什么特征来构建决策树，用计算出的<strong>信息增益最大的特征</strong>来建立决策树的当前节点</li>
+</ul>
+<h6 id="ID3的缺点"><a href="#ID3的缺点" class="headerlink" title="ID3的缺点:"></a>ID3的缺点:</h6><ul>
+<li>ID3<strong>不能处理连续特征</strong></li>
+<li>ID3对取值较多的特征有着偏好<strong>在相同条件下，取值比较多的特征比取值少的特征信息增益大</strong></li>
+<li>ID3<strong>不能处理缺失值</strong></li>
+<li>没有考虑过拟合的问题(问题: ID3没有剪枝吗?)</li>
+</ul>
+<h5 id="C4-5-1"><a href="#C4-5-1" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>C4.5可以看成是对ID3进行改进</li>
+</ul>
+<h6 id="C4-5对ID3的改进"><a href="#C4-5对ID3的改进" class="headerlink" title="C4.5对ID3的改进"></a>C4.5对ID3的改进</h6><ul>
+<li><p>对于ID3不能处理连续特征，C4.5的思路是将连续的特征离散化.</p>
+<ul>
+<li>样本(m个样本)按照特征的取值排列后取相邻样本的平均值作为划分点(m-1个划分点),分别计算以每个划分点作为二元分类时的信息增益. 最终选择信息增益高的(问题:这里是C4.5,为什么不是使用信息增益比而是信息增益来作为区分?)</li>
+<li>C4.5选择连续特征作为分类特征时,只分两类,但是后面(其他层结点)可以使用该特征分类,也就是说连续特征在C4.5中可以多次使用,但每次只分为两部分</li>
+</ul>
+</li>
+<li><p>对于ID3信息增益最大指标会造成偏向于取值较多的特征的问题. C4.5使用信息增益比来解决问题</p>
+</li>
+<li><p>对于ID3不能处理缺失值的问题,C4.5主要解决两个问题</p>
+<ul>
+<li>1) 如何在属性值缺失条件下进行<strong>属性选择</strong><ul>
+<li>没有缺失值的属性,正常处理</li>
+<li>每个属性A有缺失值:<ul>
+<li>对该特征进行划分时仅仅考虑在属性A上没有缺失的部分数据,有缺失的数据不考虑.</li>
+<li>无缺失的数据计算收益时需要乘以一个权重(无缺失的样本总数/样本总数)</li>
+<li>相当于信息增益适当缩小</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>2) 给定划分属性,若<strong>样本在该属性上的值缺失,如何对样本进行划分</strong><ul>
+<li>在A属性没有缺失值的样本,正常划分</li>
+<li>在A属性有缺失值的样本:<ul>
+<li>给每个样本引入权重,初始值都为1 </li>
+<li>同一个样本按照不同概率划入到不同的结点(当前叶节点)中去(概率是当前结点中样本数量/无缺失样本总数) </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>对于没有考虑过拟合的问题:</p>
+<ul>
+<li>C4.5引入了正则化系数剪枝(问题: ID3没有剪枝吗?)</li>
+</ul>
+</li>
+</ul>
+<h6 id="C4-5的缺点"><a href="#C4-5的缺点" class="headerlink" title="C4.5的缺点"></a>C4.5的缺点</h6><ul>
+<li>[这个问题存疑,没有任何书籍显示C4.5的剪枝策略是PEP,&lt;&lt;统计学习方法&gt;&gt;中只是简单的介绍了<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#%E5%90%8E%E5%89%AA%E6%9E%9D">后剪枝</a>]C4.5的剪枝方法时PEP,PEP准确度高,但是存在下面两个子问题:<ul>
+<li>1) PEP使用由上而下的剪枝策略,会导致与预先剪枝相同的问题,造成过度剪枝</li>
+<li>2) 会造成剪枝失败的情况</li>
+</ul>
+</li>
+<li>C4.5生成多叉树,计算机中很多时候多叉树运算效率不如二叉树来的高</li>
+<li>C4.5只能用于分类</li>
+<li>C4.5需要进行大量的对数运算(计算熵)</li>
+</ul>
+<h5 id="CART-1"><a href="#CART-1" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>可以理解为对C4.5进一步的改进</li>
+</ul>
+<h6 id="CART对C4-5的改进"><a href="#CART对C4-5的改进" class="headerlink" title="CART对C4.5的改进"></a>CART对C4.5的改进</h6><ul>
+<li>CART使用CPP代价复杂度剪枝算法<ul>
+<li>详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CCP剪枝算法描述</a></li>
+</ul>
+</li>
+<li>CART使用二叉树只生成二叉树,即使是离散特征<ul>
+<li>CART对连续特征的处理与C4.5完全相同</li>
+<li>CART对离散特征也是二分类且也是可以多次使用同一特征(ID3与C4.5中离散特征只能使用一次,且是多分叉)</li>
+<li>所以CART是一颗二叉树</li>
+</ul>
+</li>
+<li>CART可有分类树和回归树两种<ul>
+<li>回归树的目标函数的优化是: 最小化误差的平方和</li>
+<li>分类树以概率最大的类别作为叶节点的类别</li>
+<li>回归树以中位数或者均值作为预测结果</li>
+</ul>
+</li>
+<li>CART使用基尼指数作为结点混乱度的度量指标<ul>
+<li>避免了对数计算(与熵比较)</li>
+</ul>
+</li>
+</ul>
+<h5 id="ID3-C4-5-CART的缺点"><a href="#ID3-C4-5-CART的缺点" class="headerlink" title="ID3,C4.5,CART的缺点"></a>ID3,C4.5,CART的缺点</h5><ul>
+<li>每次之全责一个最优特征作为分类决策,而实际中其实可能需要多个特征一起决策<ul>
+<li>解决方案: 多变量决策树(每次选择多个特征一起决策)<ul>
+<li>单个特征决策可以看成是直线</li>
+<li>多个特征决策可以看成是斜线</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>样本改变一点点都会造成树的结构改变很大<ul>
+<li>解决方案: 随机森林等集成学习方法</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -448,194 +863,6 @@
 <hr>
 <h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
 <li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
-<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
-<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
-<hr>
-<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
-<li>各种简称,都是同一种算法:<ul>
-<li>GBDT(Gradient Boosting Decision Tree)</li>
-<li>MART(Multiple Additive Regression Tree)</li>
-<li>GBT(Gradient Boosting Tree)</li>
-<li>GTB(Gradient Tree Boosting)</li>
-<li>GBRT(Gradient Boosting Regression Tree)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
-<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
-<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
-<li>残差 = 真实值 - 预测值</li>
-</ul>
-<h4 id="如何理解GBDT中的梯度G？"><a href="#如何理解GBDT中的梯度G？" class="headerlink" title="如何理解GBDT中的梯度G？"></a>如何理解GBDT中的梯度G？</h4><ul>
-<li>G表示Gradient，表示梯度，在GBDT中梯度是指损失函数关于每一个迭代中模型的梯度</li>
-</ul>
-<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
-<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
-<ul>
-<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
-</ul>
-</li>
-<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
-<ul>
-<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
-<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
-</ul>
-</li>
-<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
-<ul>
-<li>因为我们的目标是拟合上一若学习器的残差</li>
-<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
-</ul>
-</li>
-</ul>
-<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
-<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
-<li>此时类别可编码为一个一维向量,取值0或1</li>
-</ul>
-<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
-<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
-<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
-<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
-<li>然后每个模型每轮分别学习当前特征的残差</li>
-<li>每个模型都会用到所有的样本<ul>
-<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
-<li>编码为(x, [0,1,0])</li>
-<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
-<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
-</ul>
-</li>
-<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
-<li>最后预测时<ul>
-<li>给定一个未标记样本</li>
-<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
-<li>最后选择分数最高的一个类为最终分类即可</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
-<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
-<li>和LR对比: 线性模型</li>
-<li>和GBDT对比: </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
-<li>通过不同层级和类型的网络可以对时空信息建模</li>
-<li>适合图像, 声音, 文字等带有时序特质的数据</li>
-</ul>
-<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
-<li>基于树模型的GBDT则能很好地处理表格数据</li>
-<li>模型的可解释性</li>
-<li>输入数据的不变性(几乎不用格式化数据)</li>
-<li>更易于调参等特质更适合数值型数据</li>
 </ul>
 
           
@@ -1662,6 +1889,168 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍DeepFM的理论和实现</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
+<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
+</ul>
+<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
+<li>FM: (Factorization Machines, FM)因子分解机</li>
+<li>FMM: (Field Factorization Machines, FFM)</li>
+</ul>
+<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
+<li>只能二阶特征组合,无法做到高阶特征组合<ul>
+<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
+</ul>
+</li>
+</ul>
+<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>理论上DNN建模高阶组合特征是可行的</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+
+</li>
+</ul>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
+<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
+<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
+<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
+<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
+<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
+<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+
+</li>
+</ul>
+<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
+<li><p>是一种并行化的解决方案</p>
+<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
+</li>
+<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
+</li>
+<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
+</li>
+</ul>
+<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><ul>
+<li>FM的输入仅仅包含稀疏特征，连续特征不包含在FM部分<img src="/Notes/DL/DL——DeepFM/fm_component.png"></li>
+<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
+</ul>
+<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><ul>
+<li>DNN的输入包含Combine(稀疏特征，连续特征)<img src="/Notes/DL/DL——DeepFM/dnn_component.png"></li>
+<li>DNN部分是一个前馈神经网络</li>
+<li>与图像语音的区别:<ul>
+<li>图像语音输入为连续且密集的</li>
+<li>CTR中使用的一般是稀疏的</li>
+</ul>
+</li>
+<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1882,168 +2271,6 @@
 </ul>
 <hr>
 <h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DeepFM的理论和实现</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
-<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
-</ul>
-<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
-<li>FM: (Factorization Machines, FM)因子分解机</li>
-<li>FMM: (Field Factorization Machines, FFM)</li>
-</ul>
-<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
-<li>只能二阶特征组合,无法做到高阶特征组合<ul>
-<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
-</ul>
-</li>
-</ul>
-<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>理论上DNN建模高阶组合特征是可行的</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
-
-</li>
-</ul>
-<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
-<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
-<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
-<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
-<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
-<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
-<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
-
-</li>
-</ul>
-<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
-<li><p>是一种并行化的解决方案</p>
-<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
-</li>
-<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
-</li>
-<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
-</li>
-</ul>
-<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><ul>
-<li>FM的输入仅仅包含稀疏特征，连续特征不包含在FM部分<img src="/Notes/DL/DL——DeepFM/fm_component.png"></li>
-<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
-</ul>
-<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><ul>
-<li>DNN的输入包含Combine(稀疏特征，连续特征)<img src="/Notes/DL/DL——DeepFM/dnn_component.png"></li>
-<li>DNN部分是一个前馈神经网络</li>
-<li>与图像语音的区别:<ul>
-<li>图像语音输入为连续且密集的</li>
-<li>CTR中使用的一般是稀疏的</li>
-</ul>
-</li>
-<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
-</ul>
 
           
         
