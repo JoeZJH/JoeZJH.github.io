@@ -275,421 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——DT-决策树.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/Models/ML——DT-决策树.html" itemprop="url">ML——DT-决策树</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><ul>
-<li>决策树(DT)是一种基本的分类和回归方法</li>
-<li>分类问题中可以理解为if-then规则的集合</li>
-<li>分类问题中也可以理解为定义在特征空间-&gt;类空间上的条件概率分布</li>
-<li>分类问题中使用的是ID3和C4.5<ul>
-<li>ID3 基于 最大化信息增益 来选择特征</li>
-<li>C4.5基于 最大化信息增益比 来选择特征</li>
-</ul>
-</li>
-<li>回归问题使用的是分类与回归树(Classification And Regression Tree, CART)<ul>
-<li>分类树: 基于 最小化基尼(Gini Index)指数 来选择特征</li>
-<li>回归树: 基于 最小化平方误差 来选择特征</li>
-</ul>
-</li>
-<li>关于树模型的复杂度可以用下面的方式评估, 统计学习方法中<strong>CART</strong>选择使用树的<strong>节点总数</strong>来评估树的复杂度<ul>
-<li>叶子节点的数量</li>
-<li>节点总数</li>
-<li>树的深度</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="树模型的优缺点"><a href="#树模型的优缺点" class="headerlink" title="树模型的优缺点"></a>树模型的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
-<li>可解释性强</li>
-<li>可处理混合类型特征(?)</li>
-<li>具体伸缩不变性(不用归一化特征,LR模型需要归一化特征) </li>
-<li>有特征组合的作用</li>
-<li>可自然地处理缺失值(神经网络不能处理缺失值)</li>
-<li>对异常点鲁棒</li>
-<li>有特征选择作用</li>
-<li>可扩展性强，容易并行</li>
-</ul>
-<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
-<li>缺乏平滑性(回归预测时输出值只能 输出有限的若干种数值)</li>
-<li>不适合处理高维稀疏数据<ul>
-<li>数据稀疏时<ul>
-<li>比如某个数据集有10000个样本</li>
-<li>某个特征只有10个样本存在值，其他样本都不存在值</li>
-</ul>
-</li>
-<li>决策树： </li>
-<li>这样的话树容易将当前特征选中作为分类特征，这种划分可能在训练集上看起来很好，但测试集中表现可能不太好(这里不是简单的缺失值，而是数据很稀疏，这里需要进一步的理解[待更新])</li>
-<li>LR等线性模型：<ul>
-<li>因为现在的模型普遍都会带着正则项，而LR等线性模型的正则项是对权重的惩罚，也就是特征对应的权重一旦过大，惩罚就会很大，进一步压缩权重的值，使他不至于过大，而树模型则不一样，树模型的惩罚项通常为叶子节点数和深度等，而我们都知道，对于上面这种 case，树只需要一个节点就可以完美分割9990和10个样本，惩罚项极其之小.</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="决策树训练的三个步骤"><a href="#决策树训练的三个步骤" class="headerlink" title="决策树训练的三个步骤"></a>决策树训练的三个步骤</h3><h4 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h4><h5 id="信息增益"><a href="#信息增益" class="headerlink" title="信息增益"></a>信息增益</h5><ul>
-<li>对数据集D的经验熵:\(H(D)=-\sum_{k=1}^{K}\frac{|C_{k}|}{|D|}log_{2}\frac{|C_{k}|}{|D|}\)</li>
-<li>对特征A对数据集D的经验条件熵:\(H(D|A)=\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}H(D_{i})=-\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}\sum_{k=1}^{K}\frac{|D_{ik}|}{|D_{i}|}log_{2}\frac{|D_{ik}|}{|D_{i}|}\), n为特征A的取值个数</li>
-</ul>
-<h5 id="信息增益比"><a href="#信息增益比" class="headerlink" title="信息增益比"></a>信息增益比</h5><ul>
-<li>特征A对训练数据D的信息增益比:\(g_{R}(D,A)=\frac{g(D,A)}{H_{A}(D)}\)<ul>
-<li>其中\(H_{A}=-\sum_{i=1}^{n}\frac{|D_{i}|}{|D|}log_{2}\frac{|D_{i}|}{|D|}\), n为特征A的取值个数</li>
-</ul>
-</li>
-</ul>
-<h5 id="基尼指数"><a href="#基尼指数" class="headerlink" title="基尼指数"></a>基尼指数</h5><ul>
-<li>对于分布\(p=(p_{1},…,p_{k})\)的基尼指数:\(Gini(p)=\sum_{k=1}^{K}p_{k}(1-p_{k})=1-\sum_{k=1}^{K}p_{k}^{2}\)</li>
-<li>对样本集合D,基尼指数为:\(Gini(p)=1-\sum_{k=1}^{K}\left(\frac{|C_{k}|}{|D|}\right)^{2}\)</li>
-<li>在特征A的条件下,集合D的基尼指数:\(Gini(D,A)=\frac{|C_{1}|}{|D|}Gini(D_{1})+\frac{|C_{2}|}{|D|}Gini(D_{2})\)<ul>
-<li>我们将集合D根据特征A分为两类: </li>
-<li>是否取特征A的某个值,其中\(A=a\)的是\(D_{1}\),\(A\neq a\)的是\(D_{2}\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="决策树的生成"><a href="#决策树的生成" class="headerlink" title="决策树的生成"></a>决策树的生成</h4><h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
-<li>基于<strong>最大化信息增益</strong>来选择特征</li>
-<li>选取所有信息增益最大的特征作为当前结点的特征</li>
-<li>对取值数目较多的属性有所偏好</li>
-<li>只有分类树,没有回归树</li>
-<li>ID3相当于用极大似然法对模型进行选择(问题:如何理解?)</li>
-</ul>
-<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
-<li>基于<strong>最大化信息增益比</strong>来选择特征</li>
-<li>选取信息增益比最大的特征作为当前结点的特征<ul>
-<li>由于使用最大的信息增益比特征可能对取值数目少的特征属性有所偏好,所以C4.5算法一般不会直接选信息增益比最大的,而是<ul>
-<li><strong>先从候选区属性中找出信息增益高于平均水平的</strong></li>
-<li><strong>再从筛选结果中寻找信息增益比最大的</strong></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>处理连续型特征时使用二分法(bi-partition)</li>
-<li>只有分类树,没有回归树</li>
-</ul>
-<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><ul>
-<li>CART的决策树是二叉树</li>
-<li>分类树: 基于<strong>最小化基尼指数</strong>来选择特征<ul>
-<li>输出变量为离散变量</li>
-<li>基于基尼指数选取所有可能的特征A和所有可能的切分点a中,选择基尼指数最小的特征和切分点为最优特征和最优且分点</li>
-</ul>
-</li>
-<li>回归树: 基于<strong>最小化平方误差</strong>来选择特征<ul>
-<li>CART回归树一般称为最小二乘回归树(因为目标函数的优化是最小化误差的平方和实现的)</li>
-<li>输出变量为连续变量</li>
-<li>选取时选择最优划分变量(特征)j和最优切分点s,然后按照变量j的划分点s将结点分为两个结点,大于s的为第一个结点,小于s的为第二个结点</li>
-</ul>
-</li>
-<li>一点说明:<ul>
-<li>*&lt;&lt;统计学习方法&gt;&gt;*中:<ul>
-<li>回归树的特征默认是连续变量,选取划分点s时使用的是<strong>连续变量的各种中间值</strong>作为候选值,<strong>大于s的分为一个结点,小于s的分为一个结点</strong></li>
-<li>分类树的特征默认是离散变量,选取划分点a时使用的是<strong>离散变量的值</strong>作为候选值,<strong>等于a的分为一个结点,不等于a的分为另一个结点</strong></li>
-<li>但是实际上无论时分类树还是回归树,CART都可以用相同手段处理连续值</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h4><ul>
-<li>剪枝的核心思想:<ul>
-<li>就是加入考虑树的复杂度考量(决策树的生成时仅仅是考虑到信息增益和信息增益比,没有考量树的复杂度)<ul>
-<li>树的深度越深,树越复杂</li>
-</ul>
-</li>
-<li>整体上再考虑树变得更简单的同时保证分类误差较小</li>
-</ul>
-</li>
-</ul>
-<h5 id="预剪枝"><a href="#预剪枝" class="headerlink" title="预剪枝"></a>预剪枝</h5><ul>
-<li>预剪枝发生在决策树生成过程中</li>
-<li>在每个节点划分前先进行估计</li>
-<li>若当前节点划分不能带来决策树准确率提升,则停止划分</li>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中未提到这个方法,只讲了一种简单的后剪枝算法</li>
-<li>时间复杂度小,欠拟合风险大</li>
-</ul>
-<h5 id="后剪枝"><a href="#后剪枝" class="headerlink" title="后剪枝"></a>后剪枝</h5><ul>
-<li>后剪枝发生在决策树生成后</li>
-<li>自底向上的对非叶子节点进行考察(注意千万不可从根节点开始自顶向下的剪枝,可能失去整体最优的决策树)</li>
-<li>若将该节点换成叶子节点能带来决策树准确率提升,则将该节点替换为叶子节点</li>
-<li>时间复杂度大,欠拟合风险小</li>
-</ul>
-<h6 id="常见的后剪枝方法"><a href="#常见的后剪枝方法" class="headerlink" title="常见的后剪枝方法"></a>常见的后剪枝方法</h6><p><em>各种方法各有优劣,关注不同的优化角度</em></p>
-<ul>
-<li>REP 错误率降低剪枝(Reduced Error Pruning)</li>
-<li>PEP 悲观剪枝(Pessimistic Error Pruning)</li>
-<li>CCP 代价复杂度剪枝(Cost Complexity Pruning), 详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CPP剪枝算法描述</a></li>
-<li>MEP 最小误差剪枝(Minimum Error Pruning)</li>
-<li>CVP (Critical Value Pruning)</li>
-<li>OPP (Optimal Pruning)</li>
-</ul>
-<h5 id="ID3和C4-5的剪枝"><a href="#ID3和C4-5的剪枝" class="headerlink" title="ID3和C4.5的剪枝"></a>ID3和C4.5的剪枝</h5><h5 id="CART的剪枝"><a href="#CART的剪枝" class="headerlink" title="CART的剪枝"></a>CART的剪枝</h5><p><em>CART使用的是CCP剪枝</em></p>
-<ul>
-<li>对任意的子树,我们可以定义子树的损失<ul>
-<li>\(C_{a}(T)=C(T)+\alpha|T|\)</li>
-<li>子树的损失 = 子树的预测误差 + \(\alpha\) * 子树的节点数</li>
-<li>对于回归树和分类树,子树的预测误差定义不一样,前者是误差的平方和,后者是基尼指数</li>
-</ul>
-</li>
-<li>可以证明对于给定的Alpha,一定存在某个损失最小的子树,也就是我们要的最优子树</li>
-<li>现实中实现时可以使用递归的方法实现</li>
-</ul>
-<h6 id="CCP剪枝算法描述"><a href="#CCP剪枝算法描述" class="headerlink" title="CCP剪枝算法描述"></a>CCP剪枝算法描述</h6><p><em>CPP剪枝也是一种后剪枝算法</em><br><strong>修正：统计学习方法CART算法第六步中应该跳到第二步，而不是第三步</strong></p>
-<ul>
-<li>1：计算所有节点对应的\(\alpha\)值: \(\alpha=\frac{C(t)-C(T_{t})}{|T_{t}|-1}\)<ul>
-<li>\(C(t)\)是以<strong>t节点单一节点为树</strong>时单一节点树的损失函数</li>
-<li>\(C(T_{t})\)是以<strong>t节点为根节点的子树</strong>时整棵子树的损失函数</li>
-<li>\(|T_{t}|\)是以<strong>t节点为根节点的子树</strong>时整棵子树的节点数量</li>
-</ul>
-</li>
-<li>2：对当前\(\alpha\)值最小的节点t剪枝，并存储中间结果的\(\alpha\)值和剪枝后的树结构<ul>
-<li>当\(\alpha\)确定时，存在唯一的最小子树\(T_{\alpha}\)使损失函数\(C_{\alpha}(T)\)最小</li>
-</ul>
-</li>
-<li>3：选取当前树为剪枝后的树，跳转到第1步，直到剪枝到只有三个节点的树时截止</li>
-<li>4：截止后得到节点数量从大到小的多个子树\(T_{\alpha_{0}}, T_{\alpha_{1}},…,T_{\alpha_{n}}\). (其中\(T_{\alpha_{i}}\)也就对应着第i个\(\alpha\)值\(\alpha_{i}\))</li>
-<li>5：用交叉验证法对\(\alpha\)的值进行选择(CART算法执行时\(\alpha\)类似超参数，整个算法学习的过程类似于用交叉验证法确定超参数的过程，\(\alpha\)的值确定了，对应的决策树也就确定了！)</li>
-</ul>
-<h4 id="关于连续特征"><a href="#关于连续特征" class="headerlink" title="关于连续特征"></a>关于连续特征</h4><h5 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法"></a>统计学习方法</h5><ul>
-<li>在&lt;&lt;统计学习方法&gt;&gt;中回归树的特征默认是连续变量,分类树的特征默认是离散变量</li>
-</ul>
-<h5 id="机器学习-周志华"><a href="#机器学习-周志华" class="headerlink" title="机器学习 周志华"></a>机器学习 周志华</h5><ul>
-<li>在&lt;&lt;机器学习&gt;&gt;中提到连续特征的一种解决方案:<ul>
-<li>把该连续特征所有出现的取值排序</li>
-<li>取临近两两之间的平均值作为划分点</li>
-<li>像处理离散的点一样,使用信息增益最大化,信息增益率最大化,或者是基尼指数最小化实现对应的划分选择</li>
-</ul>
-</li>
-</ul>
-<h5 id="个人总结"><a href="#个人总结" class="headerlink" title="个人总结"></a>个人总结</h5><ul>
-<li>处理连续型变量(特征的能力)<ul>
-<li>ID3 不能处理连续型特征<ul>
-<li>因为连续型特征往往使得每一个样本该特征取值都不一样,造成该特征对数据集D的经验条件熵为0?</li>
-<li>使得ID3算法趋向于选择这个特征?</li>
-</ul>
-</li>
-<li>C4.5 能处理连续型特征<ul>
-<li>将数据排序后找到类别不同的分割线作为切分点</li>
-<li>根据切分点把连续属性二分类装换为布尔类型</li>
-<li>可多次使用连续属性分类</li>
-</ul>
-</li>
-<li>CART 能处理连续型特征<ul>
-<li>实际对连续型特征的处理<strong>与C4.5一样</strong></li>
-<li>由于CART树构建时每次都会对特征进行二值化分,所以可以很好的适用与连续型变量</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="一些总结"><a href="#一些总结" class="headerlink" title="一些总结"></a>一些总结</h4><ul>
-<li>算法ID3生成可能是多叉树,而CART一定是二叉树，*&lt;&lt;统计学习方法&gt;&gt;*中二者生成相同的数是巧合，除了不同评价方式的特征选择结果一样以外，还需要被选中的特征都是二值的！</li>
-<li>ID3相当于用极大似然法对模型进行选择</li>
-</ul>
-<h4 id="一种很好的理解思路"><a href="#一种很好的理解思路" class="headerlink" title="一种很好的理解思路"></a>一种很好的理解思路</h4><h5 id="ID3-1"><a href="#ID3-1" class="headerlink" title="ID3"></a>ID3</h5><ul>
-<li>ID3算法就是用<strong>信息增益</strong>大小来判断当前节点应该用什么特征来构建决策树，用计算出的<strong>信息增益最大的特征</strong>来建立决策树的当前节点</li>
-</ul>
-<h6 id="ID3的缺点"><a href="#ID3的缺点" class="headerlink" title="ID3的缺点:"></a>ID3的缺点:</h6><ul>
-<li>ID3<strong>不能处理连续特征</strong></li>
-<li>ID3对取值较多的特征有着偏好<strong>在相同条件下，取值比较多的特征比取值少的特征信息增益大</strong></li>
-<li>ID3<strong>不能处理缺失值</strong></li>
-<li>没有考虑过拟合的问题(问题: ID3没有剪枝吗?)</li>
-</ul>
-<h5 id="C4-5-1"><a href="#C4-5-1" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
-<li>C4.5可以看成是对ID3进行改进</li>
-</ul>
-<h6 id="C4-5对ID3的改进"><a href="#C4-5对ID3的改进" class="headerlink" title="C4.5对ID3的改进"></a>C4.5对ID3的改进</h6><ul>
-<li><p>对于ID3不能处理连续特征，C4.5的思路是将连续的特征离散化.</p>
-<ul>
-<li>样本(m个样本)按照特征的取值排列后取相邻样本的平均值作为划分点(m-1个划分点),分别计算以每个划分点作为二元分类时的信息增益. 最终选择信息增益高的(问题:这里是C4.5,为什么不是使用信息增益比而是信息增益来作为区分?)</li>
-<li>C4.5选择连续特征作为分类特征时,只分两类,但是后面(其他层结点)可以使用该特征分类,也就是说连续特征在C4.5中可以多次使用,但每次只分为两部分</li>
-</ul>
-</li>
-<li><p>对于ID3信息增益最大指标会造成偏向于取值较多的特征的问题. C4.5使用信息增益比来解决问题</p>
-</li>
-<li><p>对于ID3不能处理缺失值的问题,C4.5主要解决两个问题</p>
-<ul>
-<li>1) 如何在属性值缺失条件下进行<strong>属性选择</strong><ul>
-<li>没有缺失值的属性,正常处理</li>
-<li>每个属性A有缺失值:<ul>
-<li>对该特征进行划分时仅仅考虑在属性A上没有缺失的部分数据,有缺失的数据不考虑.</li>
-<li>无缺失的数据计算收益时需要乘以一个权重(无缺失的样本总数/样本总数)</li>
-<li>相当于信息增益适当缩小</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>2) 给定划分属性,若<strong>样本在该属性上的值缺失,如何对样本进行划分</strong><ul>
-<li>在A属性没有缺失值的样本,正常划分</li>
-<li>在A属性有缺失值的样本:<ul>
-<li>给每个样本引入权重,初始值都为1 </li>
-<li>同一个样本按照不同概率划入到不同的结点(当前叶节点)中去(概率是当前结点中样本数量/无缺失样本总数) </li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>对于没有考虑过拟合的问题:</p>
-<ul>
-<li>C4.5引入了正则化系数剪枝(问题: ID3没有剪枝吗?)</li>
-</ul>
-</li>
-</ul>
-<h6 id="C4-5的缺点"><a href="#C4-5的缺点" class="headerlink" title="C4.5的缺点"></a>C4.5的缺点</h6><ul>
-<li>[这个问题存疑,没有任何书籍显示C4.5的剪枝策略是PEP,&lt;&lt;统计学习方法&gt;&gt;中只是简单的介绍了<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#%E5%90%8E%E5%89%AA%E6%9E%9D">后剪枝</a>]C4.5的剪枝方法时PEP,PEP准确度高,但是存在下面两个子问题:<ul>
-<li>1) PEP使用由上而下的剪枝策略,会导致与预先剪枝相同的问题,造成过度剪枝</li>
-<li>2) 会造成剪枝失败的情况</li>
-</ul>
-</li>
-<li>C4.5生成多叉树,计算机中很多时候多叉树运算效率不如二叉树来的高</li>
-<li>C4.5只能用于分类</li>
-<li>C4.5需要进行大量的对数运算(计算熵)</li>
-</ul>
-<h5 id="CART-1"><a href="#CART-1" class="headerlink" title="CART"></a>CART</h5><ul>
-<li>可以理解为对C4.5进一步的改进</li>
-</ul>
-<h6 id="CART对C4-5的改进"><a href="#CART对C4-5的改进" class="headerlink" title="CART对C4.5的改进"></a>CART对C4.5的改进</h6><ul>
-<li>CART使用CPP代价复杂度剪枝算法<ul>
-<li>详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CCP剪枝算法描述</a></li>
-</ul>
-</li>
-<li>CART使用二叉树只生成二叉树,即使是离散特征<ul>
-<li>CART对连续特征的处理与C4.5完全相同</li>
-<li>CART对离散特征也是二分类且也是可以多次使用同一特征(ID3与C4.5中离散特征只能使用一次,且是多分叉)</li>
-<li>所以CART是一颗二叉树</li>
-</ul>
-</li>
-<li>CART可有分类树和回归树两种<ul>
-<li>回归树的目标函数的优化是: 最小化误差的平方和</li>
-<li>分类树以概率最大的类别作为叶节点的类别</li>
-<li>回归树以中位数或者均值作为预测结果</li>
-</ul>
-</li>
-<li>CART使用基尼指数作为结点混乱度的度量指标<ul>
-<li>避免了对数计算(与熵比较)</li>
-</ul>
-</li>
-</ul>
-<h5 id="ID3-C4-5-CART的缺点"><a href="#ID3-C4-5-CART的缺点" class="headerlink" title="ID3,C4.5,CART的缺点"></a>ID3,C4.5,CART的缺点</h5><ul>
-<li>每次之全责一个最优特征作为分类决策,而实际中其实可能需要多个特征一起决策<ul>
-<li>解决方案: 多变量决策树(每次选择多个特征一起决策)<ul>
-<li>单个特征决策可以看成是直线</li>
-<li>多个特征决策可以看成是斜线</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>样本改变一点点都会造成树的结构改变很大<ul>
-<li>解决方案: 随机森林等集成学习方法</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2432,6 +2017,197 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
+<hr>
+<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
+<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
+<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
+</ul>
+<hr>
+<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
+<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
+</ul>
+<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
+<li>NNLM网络结构图如下：</li>
+</ul>
+<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
+
+<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
+<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
+</ul>
+<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
+<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
+<li>将构造的数据集作为训练样本集</li>
+<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
+</ul>
+<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
+<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
+<ul>
+<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
+</ul>
+</li>
+<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
+<ul>
+<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
+</ul>
+</li>
+</ul>
+<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
+<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
+</li>
+<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
+</li>
+<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
+</li>
+<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
+</li>
+<li><p>b:输出层的偏执参数</p>
+</li>
+<li><p>d:隐含层的偏执参数</p>
+</li>
+</ul>
+<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
+<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
+<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>\(R(\theta)\)是正则项</li>
+</ul>
+</li>
+<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T}\log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>我们选择优化对数似然函数，原因如下：<ul>
+<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
+<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
+<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
+<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
+</ul>
+</li>
+</ul>
+<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
+<li>最大化对数似然函数(等价于最大化似然函数)</li>
+</ul>
+<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
+<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
+<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
+<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
+</ul>
+</li>
+<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2484,7 +2260,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">287</span>
+                  <span class="site-state-item-count">286</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
