@@ -275,6 +275,164 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——在root用户下也无法删除文件.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Linux——在root用户下也无法删除文件.html" itemprop="url">Linux——在root用户下也无法删除文件</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍Linux中即使是root用户,某些特殊文件也无法删除的问题</em></p>
+<ul>
+<li>相关指令:<ul>
+<li>chattr</li>
+<li>lsattr</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="问题来源"><a href="#问题来源" class="headerlink" title="问题来源"></a>问题来源</h3><ul>
+<li>chattr命令给予用户权限去修改文件属性已提高系统的安全性<ul>
+<li>注意chattr命令不能保护<code>/</code>, <code>/dev</code>, <code>tmp</code>, <code>var</code>目录(本身)</li>
+</ul>
+</li>
+<li>其中一个属性<code>i</code>可以使得文件无法被删除,重命名,设置链接,同时不能修改内容等<ul>
+<li>添加<code>i</code>属性指令: <code>chattr +i [filename]</code></li>
+<li>移除<code>i</code>属性指令: <code>chattr -i [filename]</code></li>
+</ul>
+</li>
+<li>问题特征表现为,在root用户权限下,某些文件无法删除,报错为:<blockquote>
+<p>rm: cannot remove ‘[filename]’: Operation not permitted</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li><p>查看文件属性</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsattr [filename]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>此时文件属性中会多一个<code>i</code>属性</li>
+</ul>
+</li>
+<li><p>删除文件<code>i</code>属性</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chattr -i [filename]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>文件<code>i</code>属性删除后可以正常修改或者删除文件了</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="相关说明"><a href="#相关说明" class="headerlink" title="相关说明"></a>相关说明</h3><ul>
+<li>参考博客链接为: <a href="http://www.ha97.com/5172.html" target="_blank" rel="noopener">http://www.ha97.com/5172.html</a><blockquote>
+<p>+ ：在原有参数设定基础上，追加参数。<br>- ：在原有参数设定基础上，移除参数。<br>= ：更新为指定参数设定。<br>A：文件或目录的 atime (access time)不可被修改(modified), 可以有效预防例如手提电脑磁盘I/O错误的发生。<br>S：硬盘I/O同步选项，功能类似sync。<br>a：即append，设定该参数后，只能向文件中添加数据，而不能删除，多用于服务器日志文件安全，只有root才能设定这个属性。<br>c：即compresse，设定文件是否经压缩后再存储。读取时需要经过自动解压操作。<br>d：即no dump，设定文件不能成为dump程序的备份目标。<br>i：设定文件不能被删除、改名、设定链接关系，同时不能写入或新增内容。i参数对于文件 系统的安全设置有很大帮助。<br>j：即journal，设定此参数使得当通过mount参数：data=ordered 或者 data=writeback 挂 载的文件系统，文件在写入时会先被记录(在journal中)。如果filesystem被设定参数为 data=journal，则该参数自动失效。<br>s：保密性地删除文件或目录，即硬盘空间被全部收回。<br>u：与s相反，当设定为u时，数据内容其实还存在磁盘中，可以用于undeletion。<br>各参数选项中常用到的是a和i。a选项强制只可添加不可删除，多用于日志系统的安全设定。而i是更为严格的安全设定，只有superuser (root) 或具有CAP_LINUX_IMMUTABLE处理能力（标识）的进程能够施加该选项。</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h3 id="评论补充说明"><a href="#评论补充说明" class="headerlink" title="评论补充说明"></a>评论补充说明</h3><ul>
+<li>参考地址: <a href="http://www.ha97.com/5172.html" target="_blank" rel="noopener">http://www.ha97.com/5172.html</a> 的评论部分<blockquote>
+<p>i: 将无法对文件进行修改,若对目录设置后则仅能修改子文件而不能新建或删除。<br>a: 仅允许补充（追加）内容.无法覆盖/删除(Append Only)。<br>S: 文件内容变更后立即同步到硬盘(sync)。<br>s: 彻底从硬盘中删除，不可恢复(用0填充原文件所在硬盘区域)。<br>A: 不再修改这个文件的最后访问时间(atime)。<br>b: 不再修改文件或目录的存取时间。<br>D: 检查压缩文件中的错误。<br>d: 当使用dump命令备份时忽略本文件/目录。<br>c: 默认将文件或目录进行压缩。<br>u: 当删除此文件后依然保留其在硬盘中的数据，方便日后恢复。<br>t: 让文件系统支持尾部合并（tail-merging）。<br>X: 可以直接访问压缩文件的内容。</p>
+</blockquote>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——各种数据分析图介绍.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1037,6 +1195,136 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——远程登录Ubuntu后只有一个$符号.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Ubuntu——远程登录Ubuntu后只有一个$符号.html" itemprop="url">Ubuntu——远程登录Ubuntu后只有一个$符号</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>对新添加的用户,我们远程登录Ubuntu后有时候只有一个<code>$</code>符号</em></p>
+<hr>
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>对新添加的用户,远程登录Ubuntu后有时候只有一个<code>$</code>符号</li>
+</ul>
+<hr>
+<h3 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h3><ul>
+<li>Ubuntu为新用户默认启动的是<code>sh</code>而不是<code>bash</code></li>
+<li><code>sh</code>的命令比较少,只有一些<code>ls</code>, <code>pwd</code>这样的命令</li>
+</ul>
+<hr>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><h4 id="不修改源文件"><a href="#不修改源文件" class="headerlink" title="不修改源文件"></a>不修改源文件</h4><ul>
+<li>每次登录时先使用<code>bash</code>命令运行<code>bash</code>程序</li>
+<li>之后的指令都会是<code>bash</code>解释执行</li>
+<li>在<code>bash</code>中使用<code>sh</code>可会退到<code>sh</code>命令行</li>
+<li>该方法的缺陷在于多次执行<code>bash</code>和<code>sh</code>后,会造成进程嵌套多次,这样exit指令退出时需要多次</li>
+</ul>
+<h4 id="修改源文件"><a href="#修改源文件" class="headerlink" title="修改源文件"></a>修改源文件</h4><ul>
+<li>标记文件/etc/passwd</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/passwd</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>找到用户对应的启动命令并将<code>sh</code>(可能没有<code>sh</code>,直接是空白)修改为<code>bash</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 修改前</span><br><span class="line">jiahong:x:1001:1001::/home/jiahong:</span><br><span class="line"># 修改后</span><br><span class="line">jiahong:x:1001:1001::/home/jiahong:/bin/bash</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——安装Ubuntu后要首先要做的事情.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1288,136 +1576,6 @@ sudo apt-get install fluxgui</code></pre>
 </li>
 </ul>
 <p><del>下面是一些没经过测试的，之后会测试验证</del></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——远程登录Ubuntu后只有一个$符号.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Ubuntu——远程登录Ubuntu后只有一个$符号.html" itemprop="url">Ubuntu——远程登录Ubuntu后只有一个$符号</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>对新添加的用户,我们远程登录Ubuntu后有时候只有一个<code>$</code>符号</em></p>
-<hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>对新添加的用户,远程登录Ubuntu后有时候只有一个<code>$</code>符号</li>
-</ul>
-<hr>
-<h3 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h3><ul>
-<li>Ubuntu为新用户默认启动的是<code>sh</code>而不是<code>bash</code></li>
-<li><code>sh</code>的命令比较少,只有一些<code>ls</code>, <code>pwd</code>这样的命令</li>
-</ul>
-<hr>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><h4 id="不修改源文件"><a href="#不修改源文件" class="headerlink" title="不修改源文件"></a>不修改源文件</h4><ul>
-<li>每次登录时先使用<code>bash</code>命令运行<code>bash</code>程序</li>
-<li>之后的指令都会是<code>bash</code>解释执行</li>
-<li>在<code>bash</code>中使用<code>sh</code>可会退到<code>sh</code>命令行</li>
-<li>该方法的缺陷在于多次执行<code>bash</code>和<code>sh</code>后,会造成进程嵌套多次,这样exit指令退出时需要多次</li>
-</ul>
-<h4 id="修改源文件"><a href="#修改源文件" class="headerlink" title="修改源文件"></a>修改源文件</h4><ul>
-<li>标记文件/etc/passwd</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/passwd</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>找到用户对应的启动命令并将<code>sh</code>(可能没有<code>sh</code>,直接是空白)修改为<code>bash</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 修改前</span><br><span class="line">jiahong:x:1001:1001::/home/jiahong:</span><br><span class="line"># 修改后</span><br><span class="line">jiahong:x:1001:1001::/home/jiahong:/bin/bash</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
 
           
         
@@ -1814,120 +1972,6 @@ sudo apt-get install fluxgui</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Ubuntu-Jupyter——安装pip包.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Jupyter/Ubuntu-Jupyter——安装pip包.html" itemprop="url">Python-Jupyter——安装pip包</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>安装pip包</em></p>
-<hr>
-<h3 id="在Jupyter环境中安装pip包"><a href="#在Jupyter环境中安装pip包" class="headerlink" title="在Jupyter环境中安装pip包"></a>在Jupyter环境中安装pip包</h3><ul>
-<li><p>为了方便使用，我们一般会选择将Jupyter的内核切换为某个特定的虚拟Python环境，切换后，Jupyter的Python命令会按照新环境运行，但是安装软件包不会默认安装到当前环境（而是base环境）</p>
-</li>
-<li><p>直接使用下面的命令安装会安装在base环境中</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!pip install xxx</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>如果想要安装在当前运行环境中，可以使用下面的命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">import sys</span><br><span class="line">!&#123;sys.executable&#125; -m pip install xxx</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1980,7 +2024,7 @@ sudo apt-get install fluxgui</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">286</span>
+                  <span class="site-state-item-count">287</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

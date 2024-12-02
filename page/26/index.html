@@ -275,6 +275,124 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——LossNan问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/TensorFlow/TensorFlow——LossNan问题.html" itemprop="url">TensorFlow——LossNan问题</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>训练时梯度出现nan或-nan</li>
+<li>问题详细描述：在训练时，出现异常：NanLossDuringTrainingError: NaN loss during training. </li>
+</ul>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
+<li>进一步分析，batch_size=1且worker=1时，发现首先是线上梯度出现nan或-nan，然后下一轮跌待中所有数据都是nan,进一步导致loss为nan</li>
+<li>在问题确认过程中，需要一步步排除：<ul>
+<li>排除分母除0的情况，可以简单的用<code>tf.div_no_nan</code>代替<code>\</code></li>
+<li>排除log参数为负数或0的情况</li>
+<li>排除抽取batch中选择符合条件的行后出现行数为[]的情况，使用 <code>tf.shape(x)[0]</code> 是否为0来判断是否为空</li>
+<li>重点：排除整数除法等导致的值为0的情况，这种情况比较隐晦，难以感知</li>
+<li>有时候会是TensorFlow版本导致，需要注意</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/TensorFlow/TensorFlow——变量定义及复用.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1817,154 +1935,6 @@ source deactivate python3</code></pre>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Ubuntu——添加自定义的软件到启动器.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Linux/Ubuntu——添加自定义的软件到启动器.html" itemprop="url">Ubuntu——添加自定义的软件到启动器</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>日常使用Ubuntu时,某些自己编写的脚本(程序)或者下载的程序不能从启动器搜索到</em></p>
-<hr>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>自己编写的脚本</li>
-<li>自己编写的程序</li>
-<li>网上自己下载的程序(不是通过apt-get或者APPStore安装)</li>
-</ul>
-<hr>
-<h3 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h3><h4 id="编写程序启动脚本"><a href="#编写程序启动脚本" class="headerlink" title="编写程序启动脚本"></a>编写程序启动脚本</h4><p><em>如果需要运行的就是脚本这一步可以不用</em></p>
-<ul>
-<li>编写shell脚本,脚本内容为启动运行程序<ul>
-<li>涉及到程序的名称这里应该用绝对路径</li>
-</ul>
-</li>
-<li>脚本可以放到任意地方,一般和当前程序在一个文件夹下即可</li>
-</ul>
-<h4 id="添加脚本执行权限"><a href="#添加脚本执行权限" class="headerlink" title="添加脚本执行权限"></a>添加脚本执行权限</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod +x exmaple.sh</span><br></pre></td></tr></table></figure>
-
-<h4 id="新建启动"><a href="#新建启动" class="headerlink" title="新建启动"></a>新建启动</h4><ul>
-<li><p>新建文件到指定文件夹</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/share/applications</span><br><span class="line">sudo gedit example.desktop</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑文件如下格式</p>
-<ul>
-<li>Name是程序搜索时会出现的名字</li>
-<li>Exec是执行脚本路径,必须有执行权限,否则在启动器中仍然搜索不到该程序</li>
-<li>Icon是软件的图标,这里可以任意自定义图标,从网上下载或者自己生成均可<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[Desktop Entry]</span><br><span class="line">Version=1.0</span><br><span class="line">Name=Example</span><br><span class="line">Exec=/home/username/example.sh</span><br><span class="line">Terminal=false</span><br><span class="line">Icon=/home/username/example.png</span><br><span class="line">Type=Application</span><br><span class="line">Categories=Development</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><ul>
-<li>按键: Win键</li>
-<li>输入Example</li>
-<li>如果出现图标和名字对应的程序,说明成功</li>
-<li>如果不成功,复查以下问题<ul>
-<li>启动脚本路径是否正确且为绝对路径</li>
-<li>执行权限是否已经成功设置</li>
-<li>Name是否设置正确</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2017,7 +1987,7 @@ source deactivate python3</code></pre>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">286</span>
+                  <span class="site-state-item-count">287</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

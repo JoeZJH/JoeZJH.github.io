@@ -275,6 +275,197 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
+<hr>
+<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
+<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
+<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
+</ul>
+<hr>
+<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
+<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
+</ul>
+<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
+<li>NNLM网络结构图如下：</li>
+</ul>
+<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
+
+<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
+<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
+</ul>
+<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
+<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
+<li>将构造的数据集作为训练样本集</li>
+<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
+</ul>
+<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
+<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
+<ul>
+<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
+</ul>
+</li>
+<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
+<ul>
+<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
+</ul>
+</li>
+</ul>
+<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
+<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
+</li>
+<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
+</li>
+<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
+</li>
+<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
+</li>
+<li><p>b:输出层的偏执参数</p>
+</li>
+<li><p>d:隐含层的偏执参数</p>
+</li>
+</ul>
+<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
+<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
+<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>\(R(\theta)\)是正则项</li>
+</ul>
+</li>
+<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T}\log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>我们选择优化对数似然函数，原因如下：<ul>
+<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
+<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
+<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
+<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
+</ul>
+</li>
+</ul>
+<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
+<li>最大化对数似然函数(等价于最大化似然函数)</li>
+</ul>
+<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
+<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
+<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
+<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
+</ul>
+</li>
+<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -346,132 +537,6 @@
 
 <h4 id="权重参数的梯度"><a href="#权重参数的梯度" class="headerlink" title="权重参数的梯度"></a>权重参数的梯度</h4><p><em>同偏置量的梯度计算相似步骤可得</em></p>
 <img src="/Notes/DL/DL——softmax遇上交叉熵损失时的梯度计算/gradient_w.png">
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——不可导函数的可导近似.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——不可导函数的可导近似.html" itemprop="url">DL——不可导函数的可导近似</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id><a href="#" class="headerlink" title></a></h3><hr>
-<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
-<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
-<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
-<li>待补充</li>
-</ul>
-<hr>
-<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
-<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
-<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
-<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
-<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
-</ul>
-
           
         
       
@@ -638,6 +703,132 @@
 <h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
 <li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
 <li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——不可导函数的可导近似.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——不可导函数的可导近似.html" itemprop="url">DL——不可导函数的可导近似</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://kexue.fm/archives/6620" target="_blank" rel="noopener">函数光滑化杂谈：不可导函数的可导逼近-科学空间</a>：苏神关于不可导函数逼近可导函数的总结  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id><a href="#" class="headerlink" title></a></h3><hr>
+<h3 id="AUC的近似"><a href="#AUC的近似" class="headerlink" title="AUC的近似"></a>AUC的近似</h3><ul>
+<li>参见：《MBA: Mini-Batch AUC Optimization》</li>
+<li>详情见：<a href="https://zhuanlan.zhihu.com/p/74216219" target="_blank" rel="noopener">AUC Optimization - Lanzhe Guo的文章 - 知乎</a></li>
+<li>待补充</li>
+</ul>
+<hr>
+<h3 id="其他特殊函数-采样"><a href="#其他特殊函数-采样" class="headerlink" title="其他特殊函数-采样"></a>其他特殊函数-采样</h3><ul>
+<li>实际上，可以把采样也看做一个不可导函数，采样的可导近似方法一般称为重参数化技巧</li>
+<li>采样包含连续型分布采样和离散分布采样，分别有不同的重参数化技巧</li>
+<li>离散分布采样的一种重参数化技巧叫做Gumbel softmax trick（其中使用到了argmax函数的可导近似函数softmax）</li>
+<li>详情可参考<a href="/Notes/DL/DL%E2%80%94%E2%80%94%E9%87%8D%E5%8F%82%E6%95%B0%E5%8C%96%E6%8A%80%E5%B7%A7.html">DL——重参数化技巧</a></li>
 </ul>
 
           
@@ -1235,116 +1426,25 @@
 <li>很多论文里都会用 SGD，没有 momentum 等, SGD 虽然能达到极小值，但是比其它算法用的时间长，而且可能会被困在鞍点, 在不正确的方向上来回震荡</li>
 <li>如果需要更快的收敛，或者是训练更深更复杂的神经网络，需要用一种自适应的算法</li>
 </ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——特殊函数的反向传播.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——特殊函数的反向传播.html" itemprop="url">DL——特殊函数的反向传播</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
+<hr>
+<h3 id="epoch粒度的学习率调整"><a href="#epoch粒度的学习率调整" class="headerlink" title="epoch粒度的学习率调整"></a>epoch粒度的学习率调整</h3><ul>
+<li>本文中提到的常规的梯度下降方法中学习率均是在以batch为单位变化，即同一个batch学习率相同，而不同batch学习率可能不同</li>
+<li>深度学习中还有一类学习率调整方法，是以epoch为单位变化的，即同一个epoch学习率相同，而不同epoch学习率可能不同</li>
+<li>常见的epoch为单位变化的学习率有：<ul>
+<li>StepLR:间隔调整学习率</li>
+<li>MultiStepLR:按设定的间隔调整学习率</li>
+<li>ExponentialLR︰按指数衰减调整学习率</li>
+<li>CosineAnnealingLR:以余弦函数为周期，在每个周期最大值时重置学习率</li>
+<li>CosineAnnealingWarmRestarts : CosineAnnealingLR加上warmup</li>
+<li>ReduceLROnPlateau:当某指标不再变化（下降或升高），调整学习率</li>
 </ul>
-<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
-<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
-<li>参考文献：Cross DQN</li>
+</li>
+<li>如果以epoch为单位的学习率(如StepLR)和以batch为单位的学习率(如Adam)调整同时被设置，则：<ul>
+<li>两者会同时生效</li>
+<li>StepLR负责在每个epoch开始时调整学习率</li>
+<li>Adam负责在每个batch开始时调整学习率</li>
+</ul>
+</li>
 </ul>
 
           
@@ -1585,6 +1685,236 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习-元学习-联邦学习.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——迁移学习-元学习-联邦学习.html" itemprop="url">DL——迁移学习-元学习-联邦学习</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
+<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
+<li>元学习侧重于快速适应新任务的能力</li>
+<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
+</ul>
+<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
+<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
+<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
+</ul>
+<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
+<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
+<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
+</ul>
+<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
+<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——特殊函数的反向传播.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——特殊函数的反向传播.html" itemprop="url">DL——特殊函数的反向传播</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="pooling"><a href="#pooling" class="headerlink" title="pooling"></a>pooling</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/xunan003/article/details/86597954" target="_blank" rel="noopener">普通max pooling反向传播与RoI max pooling反向传播解读</a></li>
+</ul>
+<h3 id="argmax"><a href="#argmax" class="headerlink" title="argmax"></a>argmax</h3><ul>
+<li>参考文献：<a href="https://blog.csdn.net/weixin_39326879/article/details/105968540?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2~default~CTRLIST~default-1.pc_relevant_aa&utm_relevant_index=1" target="_blank" rel="noopener">pytorch使用argmax argsoftmax</a></li>
+<li>参考文献：Cross DQN</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——重参数化技巧.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1759,354 +2089,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——迁移学习-元学习-联邦学习.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——迁移学习-元学习-联邦学习.html" itemprop="url">DL——迁移学习-元学习-联邦学习</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="迁移学习-元学习-联邦学习对比"><a href="#迁移学习-元学习-联邦学习对比" class="headerlink" title="迁移学习-元学习-联邦学习对比"></a>迁移学习-元学习-联邦学习对比</h3><ul>
-<li>迁移学习侧重于知识从源任务到目标任务的迁移</li>
-<li>元学习侧重于快速适应新任务的能力</li>
-<li>联邦学习则侧重于在数据隐私保护的前提下进行分布式学习。</li>
-</ul>
-<h4 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h4><ul>
-<li>迁移学习（Transfer Learning）允许模型在一个任务上学习得到的知识应用到另一个不同但相关的任务上。这种方法特别适用于目标任务的数据量不足时。在迁移学习中，通常有一个源域（source domain）和一个目标域（target domain），模型首先在源域上进行训练，然后将学到的特征或参数迁移到目标域以提高学习效率和性能。</li>
-<li>参考博客: <a href="https://blog.csdn.net/dakenz/article/details/85954548" target="_blank" rel="noopener">https://blog.csdn.net/dakenz/article/details/85954548</a></li>
-</ul>
-<h4 id="元学习"><a href="#元学习" class="headerlink" title="元学习"></a>元学习</h4><ul>
-<li>元学习（Meta-Learning），又称为“学会学习”，是指模型不仅学习如何处理具体的任务，而且学习如何从经验中快速适应和学习新任务的过程。元学习特别关注于当面对新任务时，如何利用已有的知识来加速学习过程。元学习的一个典型应用是通过少量的样本（例如，少样本学习）快速适应新任务。</li>
-<li>参考链接：<a href="https://www.bilibili.com/video/BV1UN4y1A7hr/?vd_source=b4442974569859635a5e307b2d4e3b56" target="_blank" rel="noopener">【李宏毅-元学习】少样本&amp;元学习Meta Learning_MAML最新机器学习课程！！！</a></li>
-</ul>
-<h4 id="联邦学习"><a href="#联邦学习" class="headerlink" title="联邦学习"></a>联邦学习</h4><ul>
-<li>联邦学习（Federated Learning）是一种分布式机器学习范式，它允许多个参与者在保持数据隐私和数据本地化的前提下共同构建机器学习模型。在联邦学习中，数据不需要集中存储或处理，而是在各个参与者的本地进行训练，只有模型的更新（如参数）在参与者之间共享。这种方式可以解决数据孤岛问题，同时保护用户隐私。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——CrossEntopyLoss和NLLLoss的区别.html" itemprop="url">PyTorch——CrossEntopyLoss和NLLLoss的区别</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="NLLLoss"><a href="#NLLLoss" class="headerlink" title="NLLLoss"></a>NLLLoss</h3><ul>
-<li><p>使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.NLLLoss()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>具体操作</p>
-<ul>
-<li>返回负对数似然损失(The negative log likelihood loss)</li>
-<li>虽然命名是负对数自然损失, 但是实际上本函数不含有<code>log</code>操作,本函数假设<code>log</code>操作在输入前已经完成了</li>
-</ul>
-</li>
-<li><p>常用于分类问题的损失函数</p>
-</li>
-<li><p>一般适用于网络最后一层为<code>log_softmax</code>的时候</p>
-</li>
-</ul>
-<h4 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h4><ul>
-<li>单个样本的计算公式:<ul>
-<li>普通样本计算公式:<br>$$loss(x, class) = -x[class]$$</li>
-<li>带有权重的单个样本计算公式:<br>$$loss(x, class) = -weights[class] * x[class]$$</li>
-<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
-<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
-</ul>
-</li>
-</ul>
-</li>
-<li>批量样本的计算公式:<ul>
-<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(x_i, class_i)$$</li>
-<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(x_i, class_i)$$</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="CrossEntropyLoss"><a href="#CrossEntropyLoss" class="headerlink" title="CrossEntropyLoss"></a>CrossEntropyLoss</h3><ul>
-<li><p>使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.CrossEntropyLoss()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>具体操作</p>
-<ul>
-<li>等价于 <code>log_softmax</code> + <code>torch.nn.NLLLoss()</code></li>
-<li>先对网络输出做对数似然, 然后再</li>
-</ul>
-</li>
-<li><p>softmax的定义<br>$$softmax(x_{i}) = \frac{e^{x_{i}}}{\sum_{j=1}x_{j}}$$</p>
-</li>
-<li><p>log_softmax的定义<br>$$log(softmax(x_{i}))$$</p>
-<ul>
-<li>注意: 这里的<code>log</code>是以<code>e</code>为底的对数</li>
-</ul>
-</li>
-</ul>
-<h4 id="为什么是这种实现方式"><a href="#为什么是这种实现方式" class="headerlink" title="为什么是这种实现方式?"></a>为什么是这种实现方式?</h4><ul>
-<li>为什么是<code>log_softmax</code> + <code>torch.nn.NLLLoss()</code>的方式而不是普通的计算方式<ul>
-<li>普通的计算方式是直接对每个概率求出log值, 然后相加, 本质上是一样的</li>
-<li><code>CrossEntropyLoss</code>中多了个softmax是为了保证输入都是概率值</li>
-</ul>
-</li>
-<li><code>log(softmax(x))</code>的优化<ul>
-<li>实际上使用的是<code>log_softmax(x)</code></li>
-<li><code>log_softmax(x)</code>的运算速度比单独计算<code>softmax</code> + <code>log</code>的速度快</li>
-<li>同时二者的运算结果相同</li>
-<li>文档中没有提到, 但是一种可能的优化方法是<br>$$<br>\begin{align}<br>log_sofmax(x) &amp;= log \frac{e^{x_{i}}}{\sum_{j=1}x_{j}} \\<br>&amp;= log e^{x_i} - log \sum_{j=1}x_{j} \\<br>&amp;= x_i - log \sum_{j=1}x_{j}<br>\end{align}<br>$$</li>
-<li>上面的式子中,只需要计算一次 \(log \sum_{j=1}x_{j}\)即可(且不同维度可重用该值), 其他的都是加减法运算</li>
-</ul>
-</li>
-</ul>
-<h3 id="相关损失函数-BCELoss"><a href="#相关损失函数-BCELoss" class="headerlink" title="相关损失函数 BCELoss"></a>相关损失函数 BCELoss</h3><ul>
-<li><p>使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.BCELoss()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>具体操作</p>
-<ul>
-<li>就是实现了书上定义的二分类交叉熵定义</li>
-</ul>
-</li>
-</ul>
-<h4 id="计算公式-1"><a href="#计算公式-1" class="headerlink" title="计算公式:"></a>计算公式:</h4><ul>
-<li>单个样本的计算公式:<ul>
-<li>普通样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_i(t[i]\log(o[i])+(1-t[i])\log(1-o[i])) $$</li>
-<li>带有权重的单个样本计算公式:<br>$$ loss(o,t)=-\frac{1}{n}\sum_iweights[i]\ (t[i]log(o[i])+(1-t[i])*\log(1-o[i])) $$</li>
-<li>因为多类别分类中,类别中只有一个维度是1, 其他维度都是0, 所以在计算时只考虑为1的维度就行, 为0的维度与当前类别值相乘为0<ul>
-<li>(在这里我们存储的不是向量,而是该为1的维度的索引,所以使用-x[class]即可直接取出该样本对应的对数似然损失,其中,取对数的操作在输入前已经完成了) </li>
-</ul>
-</li>
-</ul>
-</li>
-<li>批量样本的计算公式:<ul>
-<li><code>size_average=True</code>(default):<br>$$all\_loss = \frac{1}{mini\_batch\_size}\sum_i loss(o_i, t_i)$$</li>
-<li><code>size_average=False</code>:<br>$$all\_loss = \sum_i loss(o_i, t_i)$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="BCELoss-vs-CrossEntropyLoss"><a href="#BCELoss-vs-CrossEntropyLoss" class="headerlink" title="BCELoss vs CrossEntropyLoss"></a>BCELoss vs CrossEntropyLoss</h4><ul>
-<li><code>BCELoss</code>对应的网络只有一个输出值</li>
-<li><code>CrossEntropyLoss</code>对应的网络有两个输出值</li>
-<li>可以证明, 二分类时<code>BCELoss</code> 与 <code>CrossEntropyLoss</code>等价<ul>
-<li>证明时, 将每个<code>CrossEntropyLoss</code>的计算公式中的 <code>softmax</code> 函数分子分母同时除以<code>shift</code>, 即可得到为下面的定义, 进一步可得到<code>BCELoss</code>的计算公式<br>$$f_i(x) = \frac{e^{(x_i - shift)}} { \sum^j e^{(x_j - shift)}},shift = max (x_i)$$</li>
-</ul>
-</li>
-</ul>
-<h3 id="相关损失函数-MultiLabelMarginLoss"><a href="#相关损失函数-MultiLabelMarginLoss" class="headerlink" title="相关损失函数 MultiLabelMarginLoss"></a>相关损失函数 MultiLabelMarginLoss</h3><ul>
-<li><p>使用</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.MultiLabelMarginLoss()</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>用于多标签分类的损失函数</p>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>一般来说直接使用<code>CrossEntropyLoss</code>即可<ul>
-<li>二分类时还可以使用<code>nn.BCELoss</code></li>
-<li>二分类时使用<code>nn.BCELoss</code>的话,输入的<code>input</code>和<code>target</code>维度都为<code>n * 1</code>的维度</li>
-<li>二分类时使用<code>CrossEntropyLoss</code>则输入的<code>input</code>为<code>n * 2</code>的维度</li>
-</ul>
-</li>
-<li>如果使用<code>NLLLoss</code>则一定记得在输出层最后加一层<code>log_softmax</code>层</li>
-<li>注意,<code>log</code>指的是以<code>e</code>为底的对数函数,而不是以<code>10</code>为底的<ul>
-<li>Mac自带的计算器中<code>log</code>是以<code>10</code>为底的,<code>ln</code>才是以<code>e</code>为底的</li>
-</ul>
-</li>
-<li></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2159,7 +2141,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">286</span>
+                  <span class="site-state-item-count">287</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
