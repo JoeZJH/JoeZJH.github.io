@@ -275,6 +275,449 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——LightGBM概述.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——LightGBM概述.html" itemprop="url">ML——LightGBM概述</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍LightGBM的一些特性和并行实现方法</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>参考博客: <a href="https://www.cnblogs.com/ldt-/p/10206356.html" target="_blank" rel="noopener">https://www.cnblogs.com/ldt-/p/10206356.html</a></li>
+</ul>
+<hr>
+<h3 id="LightGBM-vs-XGBoost"><a href="#LightGBM-vs-XGBoost" class="headerlink" title="LightGBM vs XGBoost"></a>LightGBM vs XGBoost</h3><ul>
+<li>树结点切分方式不同:<ul>
+<li>XGBoost树节点切分是 <strong>Level-wise</strong><img src="/Notes/ML/Models/ML——LightGBM概述/level-wise.png"></li>
+<li>LightGBM树节点切分是 <strong>Leaf-wise</strong><img src="/Notes/ML/Models/ML——LightGBM概述/leaf-wise.png"></li>
+</ul>
+</li>
+<li>LightGBM<strong>直接支持类别特征</strong>，对类别特征<strong>不必</strong>进行 <strong>One-Hot</strong> 处理</li>
+<li>实现方面: <ul>
+<li><strong>直方图算法</strong>(近似切分算法)最初由LightGBM提出,后来的XGBoost算法也实现了直方图算法</li>
+</ul>
+</li>
+<li>XGBoost的近似搜索算法和LightGBM的直方图算法不同<ul>
+<li>XGBoost的近似搜索算法是保存所有样本的二阶梯度,用分位数确定划分方法,他的分割点是可以直接通过计算总的样本梯度和和分位数点得到的.<br>      * LightGBM算法是将所有样本放进对应的桶中,并以当前桶作为划分点,计算左右桶的最大增益,它的最优点是遍历所有的桶才能得到的.</li>
+</ul>
+</li>
+<li>LightGBM 通信优化 比 XGBoost 做得好<ul>
+<li>这里有亲身体验: XGBoost使用多个处理器时,有时候处理器数量增加训练速度不增加,甚至反而变慢,<code>xgboost.XGBClassifier</code></li>
+</ul>
+</li>
+<li>LightGBM 使用了 <strong>GOSS</strong>(Gradient-based One-Side Sampling) 来做采样算法<ul>
+<li>GOSS 是通过区分不同梯度的实例，保留较大梯度实例同时对较小梯度随机采样的方式减少计算量，从而达到提升效率的目的</li>
+<li><strong>GOSS 算法流程</strong>: <ul>
+<li>根据样本的梯度将样本降序排序</li>
+<li>保留前 \(a \ (0 &lt; a &lt; 1)\) 比例大小的数据样本，作为数据子集 \(Z_1\), 也就是保留 \(a * len(all\_samples)\) 的数据样本</li>
+<li>对于剩下的数据的样本，随机采样获得大小为 \(b \ (0 &lt; b &lt; 1)\) 的数据子集 \(Z_2\), 也就是采样 \(b * len(all\_samples)\) 的数据样本</li>
+<li>计算信息增益时对采样的 \(Z_2\) 样本的梯度数据乘以 \((1-a)/b\)（目的是不改变原数据的分布）</li>
+</ul>
+</li>
+<li>GOSS的思想是,梯度大的实例正常使用,梯度小的实例就通过采样实现部分拟合总体的方法(拟合时不改变原来的分布,除以采样率就行了)</li>
+</ul>
+</li>
+<li>LightGBM 使用了 <strong>EFB</strong> (Exclusive Feature Bundling)<ul>
+<li>EFB 通过特征捆绑的方式减少特征维度(其实是降维技术)的方式,提升计算效率</li>
+<li>通常被捆绑的特征都是互斥的(一个特征值为0,一个特征值不为0), 这样两个特征捆绑起来也不会造成信息丢失</li>
+<li>当两个特征不是完全互斥时,可以用一个指标对特征不互斥程度进行评估,称为<strong>冲突比率</strong></li>
+<li>冲突比率较小时,我们可以将他们捆绑而不太影响训练结果</li>
+<li>EFB 算法流程: <ul>
+<li>将特征按照非零值的个数进行排序</li>
+<li>计算不同特征之间的冲突比率</li>
+<li>遍历每个特征并尝试合并特征，使冲突比率最小化</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>LightGBM 的内存优化<ul>
+<li>XGBoost 中 需要对每个特征进行预排序(注意:这里不能在算是XGBoost的缺点了,后来的XGBoost也实现了这个直方图算法,不需要预排序了)</li>
+<li>LightGBM使用直方图算法替代了预排序</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="LightGBM的优点"><a href="#LightGBM的优点" class="headerlink" title="LightGBM的优点"></a>LightGBM的优点</h3><ul>
+<li>相对XGBoost:<ul>
+<li>速度快 (GOSS, EFB, Histogram等)</li>
+<li>内存少 (XGBoost中排序)</li>
+<li>精度高(效果不明显, 与XGBoost相当, 本人测试, 实际使用中有时候不如XGBoost, 可能是参数调节的问题)</li>
+</ul>
+</li>
+</ul>
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>虽然官方一再强调LightGBM的精度不比XGBoost低,而且可能超过XGBoost,但是实践中, LightGBM除了比XGBoost快以外, 精度方面没什么优势, 甚至精度还不如XGBoost(注意: 也可能是我调参技术不行)<ul>
+<li>问题: 为什么某些数据集上出现LightGBM比XGBoost精度差的情况? </li>
+<li>回答: (个人理解)因为GOSS和EFB会带来一定的精度损失</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>LightGBM = XGBoost + Histogram + GOSS + EFB</strong><ul>
+<li>XGBoost: 不同于XGBoost的, 树节点切分不同, LightGBM使用了 <strong>Leaf-wise</strong> 的生长策略</li>
+<li>Histogram: <ul>
+<li>Histogram方法牺牲了一定的精度,但是作者强调了在实验中精度降低并不多</li>
+<li>开始的XGBoost使用的是预先排序的方式, 后来在 XGBoost 中也实现了Histogram</li>
+<li>LightGBM 对 Histogram 算法进一步加速</li>
+<li>一个叶子节点的Histogram可以直接由父节点的Histogram和兄弟节点的Histogram做差得到, 一般情况下，构造Histogram需要遍历该叶子上的所有数据，通过该方法，只需要遍历Histogram的k个捅, 速度提升了一倍</li>
+</ul>
+</li>
+<li>GOSS: 对于梯度小的样本, 使用采样部分代替总体的方法省时间</li>
+<li>EFB: 互斥特征捆绑,提升计算效率</li>
+</ul>
+</li>
+<li>LightGBM 真正做到了把并行做到极致<ul>
+<li>特征并行: 在不同的机器在不同的特征集合上分别寻找最优的分割点, 然后再机器间同步最优的分割点.</li>
+<li>数据并行: 让不同的机器先在本地构造直方图, 然后进行全局的合并,然后在合并的直方图上寻找最优的分割点.</li>
+</ul>
+</li>
+<li>LightGBM 支持类别特征<ul>
+<li>无需将类别特征 One-Hot</li>
+</ul>
+</li>
+<li>问题: 为什么XGBoost也使用了直方图,但是速度依然比较慢?<br>  * 直方图算法的实现有两种:<ul>
+<li><ol>
+<li><strong>全局构造</strong>,在树的构造过程中只建立一次直方图, 每次分裂都从缓存的直方图中寻找分裂点</li>
+</ol>
+</li>
+<li><ol start="2">
+<li><strong>局部构造</strong>, 每次树分裂到一层的时候就建立一次直方图</li>
+</ol>
+</li>
+<li>XGBoost使用的是局部构造的方式, 所以速度会较慢</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——LR-逻辑回归.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——LR-逻辑回归.html" itemprop="url">ML——LR-逻辑回归</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+
+
+<hr>
+<h3 id="手动推导流程"><a href="#手动推导流程" class="headerlink" title="手动推导流程"></a>手动推导流程</h3><ul>
+<li>假设有m样本:\(X = (x_{1}, x_{2}, x_{3},\dots x_{m})\)<ul>
+<li>样本点为: \(((x_{1}, y_{1}), (x_{2}, y_{2}), (x_{3}, y_{3}),\dots (x_{m}, y_{m}))\)</li>
+</ul>
+</li>
+<li>假设\(w, \theta, x_{i}\)等所有向量都为列向量</li>
+</ul>
+<h4 id="确定分类决策函数"><a href="#确定分类决策函数" class="headerlink" title="确定分类决策函数"></a>确定分类决策函数</h4><ul>
+<li>线性回归模型<br>$$f(x) = w^{T}x + b$$</li>
+<li>令<br>$$<br>\begin{align}<br>\theta &amp;= (w; b) \\<br>x_{i} &amp;= (x_{i}; 1)<br>\end{align}<br>$$</li>
+<li>有<br>$$f(x) = \theta^{T} x$$</li>
+<li>逻辑回归决策函数<strong>在线性回归模型上加一个sigmoid函数</strong><br>$$<br>\begin{align}<br>h_{\theta}(x) &amp;= sigmoid(f(x)) \\<br>&amp;= \frac{1}{1+e^{-f(x)}} \\<br>&amp;= \frac{1}{1+e^{-\theta^{T} x}} \\<br>\end{align}<br>$$</li>
+<li>即<br>$$<br>\begin{align}<br>p(y=1|x) &amp;= h_{\theta}(x) = \frac{1}{1+e^{-\theta^{T} x}} = \frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}\\<br>p(y=0|x) &amp;= 1-h_{\theta}(x) = \frac{e^{-\theta^{T} x}}{1+e^{-\theta^{T} x}} = \frac{1}{1+e^{\theta^{T} x}} \\<br>\end{align}<br>$$</li>
+<li><strong>对数几率(log odds, 也称为logit)</strong>定义为: \(ln \frac{p}{1-p}\) ,在LR中有:<br>$$<br>\begin{align}<br>ln\frac{h_{\theta}(x)}{1-h_{\theta}(x)} = \theta^T x<br>\end{align}<br>$$</li>
+<li>分类超平面不确定,与最终的阈值有关,\(\alpha\)的值与最终阈值相关<br>$$w^{\star}x + b^{\star} = \alpha$$<ul>
+<li>分类超平面由\((w, b)\)和阈值唯一确定,(注意: SVM的分类超平面由\((w, b)\)唯一确定)</li>
+<li>这一点和SVM不同,SVM的分类超平面是确定的,详情参看<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94SVM-%E6%94%AF%E6%8C%81%E5%90%91%E9%87%8F%E6%9C%BA.html">ML——SVM-支持向量机</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="确定优化目标"><a href="#确定优化目标" class="headerlink" title="确定优化目标"></a>确定优化目标</h4><ul>
+<li>LR中使用<strong>极大似然法</strong><br>$$<br>\begin{align}<br>L(\theta) &amp;= p(Y|X;\theta) \\<br>&amp;= \prod_{i=1}^{m}p(y_{i}|x_{i}; \theta) \\<br>&amp;= \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}}<br>\end{align}<br>$$</li>
+<li>上面的式子不易求导优化,我们使用与上面的式子单调性和最优点等价的<strong>对数似然函数</strong>为<br>$$<br>\begin{align}<br>LL(\theta) &amp;= \log L(\theta) \\<br>&amp;= \log \prod_{i=1}^{m}(p(y_{i} = 1|x_{i};\theta))^{y_{i}}(p(y_{i} = 0|x_{i};\theta))^{1-y_{i}} \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}\log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})\log(p(y_{i} = 0|x_{i};\theta)) \right ) \\<br>&amp;= \sum_{i=1}^{m}\left (y_{i}\log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} +\log(p(y_{i} = 0|x_{i};\theta))\right ) \\<br>\end{align}<br>$$<ul>
+<li>上面的式子中：<br>$$\sum_{i=1}^{m}\left (y_{i}\log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})\log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>加个负号即为为交叉熵损失函数<br>$$-\sum_{i=1}^{m}\left (y_{i}\log(p(y_{i} = 1|x_{i};\theta)) + (1-y_{i})\log(p(y_{i} = 0|x_{i};\theta)) \right )$$<br>所以交叉熵损失函数与逻辑回归的对数似然损失函数（=逻辑回归对数似然函数的负数）是等价的</li>
+</ul>
+</li>
+<li>由前面的推导有<br>$$<br>\begin{align}<br>\log \frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} = \log\frac{\frac{e^{\theta^{T} x}}{1+e^{\theta^{T} x}}}{\frac{1}{1+e^{\theta^{T} x}}} = \log e^{\theta^{T} x} = \theta^{T}x\\<br>\end{align}<br>$$<br>$$\log(p(y_{i} = 0|x_{i};\theta)) =\log(\frac{1}{1+e^{\theta^{T} x}}) = -\log(1+e^{\theta^{T} x})$$</li>
+<li>故而有<br>$$<br>\begin{align}<br>LL(\theta) &amp;= \sum_{i=1}^{m}\left (y_{i}\log\frac{p(y_{i} = 1|x_{i};\theta)}{p(y_{i} = 0|x_{i};\theta)} +\log(p(y_{i} = 0|x_{i};\theta))\right )\\<br>&amp;= \sum_{i=1}^{m}\left ( y_{i}\theta^{T}x - \log(1+e^{\theta^{T}x}) \right)<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h4><ul>
+<li>最大化似然函数等价于最小化似然函数的负数</li>
+<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数</strong><br>$$loss(\theta) = -LL(\theta) = \sum_{i=1}^{m}\left (- y_{i}\theta^{T}x +\log(1+e^{\theta^{T}x}) \right)$$</li>
+</ul>
+<h4 id="梯度下降法优化"><a href="#梯度下降法优化" class="headerlink" title="梯度下降法优化"></a>梯度下降法优化</h4><p><em>注意: 这里优化目标也可以用牛顿法</em></p>
+<ul>
+<li>目标,求一个\(\theta^{\star}\)满足似然函数最大化或者损失函数最小化<br>$$\theta^{\star} = \mathop{\arg\max}_{\theta} LL(\theta) = \mathop{\arg\min}_{\theta} -LL(\theta) = \mathop{\arg\min}_{\theta} loss(\theta)$$</li>
+<li>对数似然函数对参数\(\theta\)求导有<br>$$<br>\begin{align}<br>\frac{\partial loss(\theta)}{\partial\theta} &amp;= \sum_{i=1}^{m}\left ( -y_{i}x_{i} + \frac{x_{i}e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + \frac{e^{\theta^{T}x}}{1+e^{\theta^{T}}x}\right ) \\<br>&amp;= \sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta}(x_{i})\right ) \\<br>\end{align}<br>$$</li>
+<li>LR模型的梯度下降参数迭代公式<br>$$<br>\begin{align}<br>\theta^{t+1} &amp;= \theta^{t} - \alpha\sum_{i=1}^{m}x_{i}\left ( -y_{i} + h_{\theta^{t}}(x_{i})\right ) \\<br>&amp;= \theta^{t} + \alpha\sum_{i=1}^{m}x_{i}\left ( y_{i} - h_{\theta^{t}}(x_{i})\right )<br>\end{align}<br>$$<ul>
+<li>其中\(\alpha\)为步长</li>
+</ul>
+</li>
+<li><strong>线性回归</strong>和<strong>LR模型</strong>的梯度下降法参数迭代公式表达式看似相同,但是不同的模型对应的<strong>\(h_{\theta}\)函数并不相同</strong></li>
+</ul>
+<hr>
+<h3 id="其他总结"><a href="#其他总结" class="headerlink" title="其他总结"></a>其他总结</h3><p><em>参考:<a href="https://www.cnblogs.com/ModifyRong/p/7739955.html" target="_blank" rel="noopener">https://www.cnblogs.com/ModifyRong/p/7739955.html</a></em></p>
+<ul>
+<li>LR中使用<strong>极大似然法</strong>,所以对应的损失函数自然为<strong>对数似然损失函数(对数损失函数)</strong><ul>
+<li>对数似然损失函数定义为:<br>$$Loss(\theta) = -P(Y|X; \theta)$$</li>
+<li>&lt;&lt;统计学习方法&gt;&gt;P213中定义LR的损失函数为逻辑斯蒂损失函数,在LR模型和最大熵模型中,逻辑斯蒂损失函数本质上与对数似然损失函数等价,可推导得到</li>
+</ul>
+</li>
+<li>一句话概括逻辑回归:<ul>
+<li><strong>逻辑回归是假设数据服从伯努利分布,通过极大似然函数的方法,运用梯度下降法或者牛顿法来求解参数,来达到将数据二分类的目的</strong></li>
+<li>逻辑回归的假设: <strong>数据服从伯努利分布</strong>, \(p(y=1|x) = 1-p(y=0|x)\)</li>
+<li>逻辑回归的损失函数: <strong>对数似然损失函数(交叉熵损失函数)</strong>, 也就是对数似然函数的负数</li>
+<li>逻辑回归的求解方法: <strong>梯度下降法或牛顿法</strong></li>
+<li>逻辑回归的目的: <strong>将数据二分类</strong></li>
+<li>逻辑回归如何分类: <strong>预测结果是连续的[0-1]的数</strong>,我们一般选择0.5作为阈值来分类,但是这个值可能是可以变化的,因为损失函数最小并不意味着0.5时分类精度最高</li>
+</ul>
+</li>
+<li>为什么要用极大似然法?等价于为什么要用对数似然损失函数作为损失函数?<ul>
+<li>损失函数一般有平方损失函数,对数损失函数,合页损失函数,绝对值损失函数等,极大似然函数取对数后等同于对数损失函数,在逻辑回归这个模型中,推导可以得到,对数损失函数训练求解参数的迭代函数只与\(x_{i}, y_{i}\)相关,与sigmoid函数的梯度等无关.这样的参数更新自始至终都比较稳定</li>
+<li>为什么不选平方损失函数的呢？其一是因为如果你使用平方损失函数,你会发现梯度更新的速度和sigmod函数本身的梯度是很相关的,sigmod函数在它在定义域内的梯度都不大于0.25, 这样训练会非常的慢</li>
+</ul>
+</li>
+<li>逻辑回归中,如果某些特征高度相关,甚至某些特征完全相同,会造成什么影响?<ul>
+<li>损失函数收敛后,没有影响,因为特征的相关性并不影响分类器效果,重复特征会分化特征的权重(10个重复特征和单个特征训练结果差别在于前者每个特征的权重是后者的十分之一),本质上最终结果不变的</li>
+<li>但是训练时由于特征重复,参数增多,模型复杂度增加,训练时长,内存等都会增加</li>
+</ul>
+</li>
+<li>为什么需要去掉高度相关的特征?<ul>
+<li>去掉高度相关的特征使得模型可解释性更好</li>
+<li>提高训练时间,节约内存,减少参数数量</li>
+<li>特征的提取本身也需要时间,实际工程项目中可以少提取一个特征往往能节约很多时间</li>
+</ul>
+</li>
+<li><strong>logistic与logit的区别</strong>?<ul>
+<li>logit: 又名 log adds , 指的是”对数几率”, 定义为\(ln\frac{p}{1-p}\)</li>
+<li>logistic: 又叫Sigmoid函数, 指的是”对数几率函数”, 本质上是一种”Sigmoid”函数, 定义为 \(f(x) = \frac{1}{1+e^{-x}}\)</li>
+</ul>
+</li>
+<li>简单介绍LR模型的优缺点:<ul>
+<li>优点:<ul>
+<li>模型简单,可解释性好,(如果对数据特征进行了归一化处理的话)可以从特征的权重看到不同特征对最终结果的影响</li>
+<li>模型效果往往不错(特征工程做得好的话)</li>
+<li>训练速度快, 成熟的SGD优化方法(SGD可以分布式)等</li>
+<li>内存占用小</li>
+<li>输出结果可以作为概率值,然后可以对阈值根据实际进行划分,不一定是确定的0.5,只是一般选择0.5而已</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li><strong>难以处理非线性数据,本质上是线性分类面</strong></li>
+<li><strong>难以处理数据不平衡问题</strong>, 这里如果正例远远多于负例,那么全都预测为正例,整体损失函数也不会太大</li>
+<li><strong>LR本身无法筛选特征</strong>,有时候会用GBDT和XGBoost来筛选特征,然后再用LR模型</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>扩展:逻辑回归可像SVM一样引入核函数处理非线性分类问题吗?<ul>
+<li>一般来说不可以</li>
+<li><strong>[存疑]</strong>理论上通过对原始样本非线性映射,似乎也可以,如果将\(f(x) = \theta^{T}x\)中的\(f(x)\)看做\(\theta\)看做变量,然后类比SVM的核函数,定义一个关于\(x_{i}\)的非线性映射<ul>
+<li>这里\(x_{i}\)表示第\(i\)个样本, 用\(x_{i}^{j}\)表示第\(i\)个样本的第\(j\)个维度<br>$$x_{i}^{j} = \phi_{j}(x_{i}^{j})$$</li>
+<li>基于上述非线性映射函数的定义,我们对每个样本都进行线性映射,每个维度用不同的映射函数(不同样本相同维度映射函数相同)</li>
+<li>这里的非线性映射与SVM的核函数不同,SVM不使用核函数的话,也可以通过相同的非线性映射的方式实现非线性分类</li>
+<li>使用核技巧后的LR模型将变得很慢,SVM与kernels是相配的,而LR与kernels会十分慢(来源<a href="https://www.cnblogs.com/yan2015/p/5183284.html" target="_blank" rel="noopener">SVM核技巧</a>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>LR模型训练完成后，输出概率多少的样本应该评估为正样本？【以下分析为个人理解，暂无严格证明】<ul>
+<li><strong>LR模型的损失函数本质上是交叉熵损失函数，交叉熵损失函数本质是最小化预估分布与训练样本分布之间的差距，故而预估均值与真实训练样本均值应该相等</strong>，即LR模型的预估值均值理论上与训练样本标签均值相同（这里LR的预估值是Sigmoid的输出值，训练样本负样本标签为0，正样本标签为1）。【PS，一种辅助理解思考：假设训练集中的样本特征完全相同，但其中30%是正样本，另外70%为负样本，那么优秀的LR模型在预估该训练样本时应该输出约为0.3】</li>
+<li>进一步来说，当预估的平均值大于训练样本的均值时，即可判断为正样本。<ul>
+<li>举例，假设训练样本的均值为0.4，那么预估值大于0.4的样本均可视为正样本（思考：这种判定下模型的准确率\( \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}\)应该是最高的？）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-vs-传统GBDT.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -557,118 +1000,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——多阶段决策-贯序决策-马尔科夫决策.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——多阶段决策-贯序决策-马尔科夫决策.html" itemprop="url">RL——多阶段决策-贯序决策-马尔科夫决策</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><ul>
-<li>区分多阶段决策-贯序决策-马尔科夫决策之间的区别和联系</li>
-</ul>
-<h3 id="决策过程分析"><a href="#决策过程分析" class="headerlink" title="决策过程分析"></a>决策过程分析</h3><ul>
-<li>百度百科<blockquote>
-<p>马尔可夫决策过程（Markov Decision Process, MDP）是序贯决策（sequential decision）的数学模型，用于在系统状态具有马尔可夫性质的环境中模拟智能体可实现的随机性策略与回报<br>多阶段决策是指决策者在整个决策过程中做出时间上先后有别的多项决策。它通常比只需做出一项决策的单阶段决策要复杂，它或是要决策者一次确定各阶段应选择的一串最优策略，或是找出表示一个过程内连续变化的一条控制变量曲线，或是确定适合不同状态的灵活策略。<br>序贯决策是指按时间顺序排列起来，以得到按顺序的各种决策(策略)，是用于随机性或不确定性动态系统最优化的决策方法。</p>
-</blockquote>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——值分布强化学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -836,6 +1167,118 @@
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
 <li>相对普通强化学习拟合一个值期望不同，值分布强化学习拟合一个值分布，所以建模难度会更高些</li>
 <li>值分布有很多用途，比如在风险敏感（Risk-Sensitive）的应用场景中，可以使用分布来帮助决策选择风险低的动作（比如<a href="https://www.ifaamas.org/Proceedings/aamas2020/pdfs/p1359.pdf" target="_blank" rel="noopener">Optimized Cost per Mille in Feeds Advertising</a>中使用借助IQN来选择低风险的出价动作）</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——多阶段决策-贯序决策-马尔科夫决策.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——多阶段决策-贯序决策-马尔科夫决策.html" itemprop="url">RL——多阶段决策-贯序决策-马尔科夫决策</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><ul>
+<li>区分多阶段决策-贯序决策-马尔科夫决策之间的区别和联系</li>
+</ul>
+<h3 id="决策过程分析"><a href="#决策过程分析" class="headerlink" title="决策过程分析"></a>决策过程分析</h3><ul>
+<li>百度百科<blockquote>
+<p>马尔可夫决策过程（Markov Decision Process, MDP）是序贯决策（sequential decision）的数学模型，用于在系统状态具有马尔可夫性质的环境中模拟智能体可实现的随机性策略与回报<br>多阶段决策是指决策者在整个决策过程中做出时间上先后有别的多项决策。它通常比只需做出一项决策的单阶段决策要复杂，它或是要决策者一次确定各阶段应选择的一串最优策略，或是找出表示一个过程内连续变化的一条控制变量曲线，或是确定适合不同状态的灵活策略。<br>序贯决策是指按时间顺序排列起来，以得到按顺序的各种决策(策略)，是用于随机性或不确定性动态系统最优化的决策方法。</p>
+</blockquote>
+</li>
 </ul>
 
           
@@ -1726,252 +2169,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——参数*args与**kwargs的意义.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——参数*args与**kwargs的意义.html" itemprop="url">Python——参数*args与**kwargs的意义***</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>Python中常常使用\</em>args与**kwargs这样的参数形式定义函数的参数,他们表示该函数可以接受任何类型任何数量的参数*</p>
-<ul>
-<li>参考博客:<a href="https://blog.csdn.net/maliao1123/article/details/52152989" target="_blank" rel="noopener">https://blog.csdn.net/maliao1123/article/details/52152989</a></li>
-</ul>
-<hr>
-<h3 id="一句话解释"><a href="#一句话解释" class="headerlink" title="一句话解释"></a>一句话解释</h3><ul>
-<li>*args是非关键字参数，用于元</li>
-<li>**kwargs是关键字参数，用于字典</li>
-</ul>
-<hr>
-<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def test(*args, **kwargs):</span><br><span class="line">    print &quot;args: &quot;, args</span><br><span class="line">    print &quot;kwargs: &quot;, kwargs</span><br><span class="line"></span><br><span class="line">test(1,2,3)</span><br><span class="line">test(a=1, b=2)</span><br><span class="line">test(1, a=2, c=2)</span><br><span class="line"># output</span><br><span class="line">args:  (1, 2, 3)</span><br><span class="line">kwargs:  &#123;&#125;</span><br><span class="line">args:  ()</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 1, &apos;b&apos;: 2&#125;</span><br><span class="line">args:  (1,)</span><br><span class="line">kwargs:  &#123;&apos;a&apos;: 2, &apos;c&apos;: 2&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>注意: 关键字参数后面不能有非关键字参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test(1, a=1, 2)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>上面的函数调用会造成语法错误</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>*args表示任何多个无名参数，它是一个tuple；</li>
-<li>**kwargs表示关键字参数，它是一个dict</li>
-<li>同时使用*args和**kwargs时，必须*args参数列要在**kwargs前<ul>
-<li>否则提示语法错误“SyntaxError: non-keyword arg after keyword arg”</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Python——双端队列deque.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Python——双端队列deque.html" itemprop="url">Python——双端队列deque</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍Python中双端队列(double-ended queue, 简称为deque)的用法</em></p>
-<hr>
-<h3 id="导入包"><a href="#导入包" class="headerlink" title="导入包"></a>导入包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">from collections import deque</span><br><span class="line">import collections</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">import collections</span><br><span class="line">dq = collections.deque()</span><br><span class="line">dq.append(3)</span><br><span class="line">dq.append(4)</span><br><span class="line">dq.append(1)</span><br><span class="line">dq.appendleft(9)</span><br><span class="line">dq.appendleft(10)</span><br><span class="line">print dq</span><br><span class="line">print dq.pop()</span><br><span class="line">print dq</span><br><span class="line">print dq.popleft()</span><br><span class="line">print dq</span><br><span class="line"></span><br><span class="line">while len(dq):</span><br><span class="line">    print dq.pop()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># output:</span><br><span class="line">deque([10, 9, 3, 4, 1])</span><br><span class="line">1</span><br><span class="line">deque([10, 9, 3, 4])</span><br><span class="line">10</span><br><span class="line">deque([9, 3, 4])</span><br><span class="line">4</span><br><span class="line">3</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>注意,deque没有<code>qsize()</code>函数,但是可以像普通队列一样使用Python内嵌的<code>len</code>函数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2024,7 +2221,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">287</span>
+                  <span class="site-state-item-count">289</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

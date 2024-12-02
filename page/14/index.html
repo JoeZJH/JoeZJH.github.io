@@ -275,6 +275,367 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——xgboost包使用笔记.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——xgboost包使用笔记.html" itemprop="url">ML——xgboost包使用笔记</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>xgboost包中包含了XGBoost分类器,回归器等, 本文详细介绍<code>XGBClassifier</code>类</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="安装和导入"><a href="#安装和导入" class="headerlink" title="安装和导入"></a>安装和导入</h3><ul>
+<li><p>安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install xgboost</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clf = xgb.XGBClassifier()</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="模型参数"><a href="#模型参数" class="headerlink" title="模型参数"></a>模型参数</h3><h4 id="普通参数"><a href="#普通参数" class="headerlink" title="普通参数"></a>普通参数</h4><p><em>以下参数按照我理解的重要性排序</em></p>
+<ul>
+<li><code>booster</code>: <ul>
+<li>‘gbtree’: 使用树模型作为基分类器</li>
+<li>‘gbliner’: 使用线性模型作为基分类器</li>
+<li>默认使用模型树模型即可,因为使用线性分类器时XGBoost相当于退化成含有L1和L2正则化的逻辑回归(分类问题中)或者线性回归(回归问题中) </li>
+</ul>
+</li>
+<li><code>n_estimators</code>: 基分类器数量<ul>
+<li>每个分类器都需要一轮训练,基分类器越多,训练所需要的时间越多</li>
+<li>经测试发现,开始时越大越能提升模型性能,但是增加到一定程度后模型变化不大,甚至出现过拟合</li>
+</ul>
+</li>
+<li><code>max_depth[default=3]</code>: 每棵树的最大深度<ul>
+<li>树越深,越容易过拟合</li>
+</ul>
+</li>
+<li><code>objective[default=&quot;binary:logistic&quot;]</code>: 目标(损失函数)函数,训练的目标是最小化损失函数<ul>
+<li>‘binary:logistic’: 二分类回归, <code>XGBClassifier</code>默认是这个,因为<code>XGBClassifier</code>是分类器</li>
+<li>‘reg:linear’: 线性回归, <code>XGBRegressor</code>默认使用这个</li>
+<li>‘multi:softmax’: 多分类中的softmax</li>
+<li>‘multi:softprob’: 与softmax相同,但是每个类别返回的是当前类别的概率值而不是普通的softmax值</li>
+</ul>
+</li>
+<li><code>n_jobs</code>: 线程数量<ul>
+<li>以前使用的是<code>nthread</code>, 现在已经不使用了,直接使用<code>n_jobs</code>即可</li>
+<li>经测试发现并不是越多越快, 猜测原因可能是因为各个线程之间交互需要代价</li>
+</ul>
+</li>
+<li><code>reg_alpha</code>: L1正则化系数</li>
+<li><code>reg_lambda</code>: L2正则化系数</li>
+<li><code>subsample</code>: 样本的下采样率</li>
+<li><code>colsample</code>: 构建每棵树时的样本特征下采样率</li>
+<li><code>scale_pos_weight</code>: 用于平衡正负样本不均衡问题, 有助于样本不平衡时训练的收敛<ul>
+<li>具体调参实验还需测试[待更新]</li>
+<li>这个值可以作为计算损失时正样本的权重</li>
+</ul>
+</li>
+<li><code>learning_rate</code>: shrinkage参数<ul>
+<li>更新叶子结点权重时,乘以该系数,避免步长过大,减小学习率,增加学习次数</li>
+<li>在公式中叫做<code>eta</code>, 也就是 \(\eta\)</li>
+</ul>
+</li>
+<li><code>min_child_weight[default=1]</code>: [待更新]</li>
+<li><code>max_leaf_nodes</code>: 最大叶子结点数目<ul>
+<li>也是用于控制过拟合, 和<code>max_depth</code>的作用差不多</li>
+</ul>
+</li>
+<li><code>importance_type</code>: 指明特征重要性评估方式, 只有在<code>booster</code>为’gbtree’时有效<ul>
+<li>‘gain’: [默认], is the average gain of splits which use the feature</li>
+<li>‘cover’: is the average coverage of splits which use the feature</li>
+<li>‘weight’: is the number of times a feature appears in a tree</li>
+<li>‘total_gain’: 整体增益</li>
+<li>‘total_cover’: 整体覆盖率</li>
+</ul>
+</li>
+</ul>
+<h4 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h4><ul>
+<li><p><code>feature_importances_</code>: </p>
+<ul>
+<li>返回特征的重要性列表</li>
+<li>特征重要性可以由不同方式评估</li>
+<li>特征重要性评估指标(<code>importance_type</code>)在创建时指定, 使用<code>plot_importance</code>函数的话,可以在使用函数时指定</li>
+</ul>
+</li>
+<li><p><code>plot_importance</code>: 按照递减顺序给出每个特征的重要性排序图</p>
+<ul>
+<li><p>使用方式</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">from xgboost import plot_importance</span><br><span class="line">   from matplotlib import pyplot</span><br><span class="line">   plot_importance(model) </span><br><span class="line">   pyplot.show()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>详细定义</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">def plot_importance(booster, ax=None, height=0.2,</span><br><span class="line">                    xlim=None, ylim=None, title=&apos;Feature importance&apos;,</span><br><span class="line">                    xlabel=&apos;F score&apos;, ylabel=&apos;Features&apos;,</span><br><span class="line">                    importance_type=&apos;weight&apos;, max_num_features=None,</span><br><span class="line">                    grid=True, show_values=True, **kwargs):</span><br><span class="line">    &quot;&quot;&quot;Plot importance based on fitted trees.</span><br><span class="line">    Parameters</span><br><span class="line">    ----------</span><br><span class="line">    booster : Booster, XGBModel or dict</span><br><span class="line">        Booster or XGBModel instance, or dict taken by Booster.get_fscore()</span><br><span class="line">    ax : matplotlib Axes, default None</span><br><span class="line">        Target axes instance. If None, new figure and axes will be created.</span><br><span class="line">    grid : bool, Turn the axes grids on or off.  Default is True (On).</span><br><span class="line">    importance_type : str, default &quot;weight&quot;</span><br><span class="line">        How the importance is calculated: either &quot;weight&quot;, &quot;gain&quot;, or &quot;cover&quot;</span><br><span class="line">        * &quot;weight&quot; is the number of times a feature appears in a tree</span><br><span class="line">        * &quot;gain&quot; is the average gain of splits which use the feature</span><br><span class="line">        * &quot;cover&quot; is the average coverage of splits which use the feature</span><br><span class="line">          where coverage is defined as the number of samples affected by the split</span><br><span class="line">    max_num_features : int, default None</span><br><span class="line">        Maximum number of top features displayed on plot. If None, all features will be displayed.</span><br><span class="line">    height : float, default 0.2</span><br><span class="line">        Bar height, passed to ax.barh()</span><br><span class="line">    xlim : tuple, default None</span><br><span class="line">        Tuple passed to axes.xlim()</span><br><span class="line">    ylim : tuple, default None</span><br><span class="line">        Tuple passed to axes.ylim()</span><br><span class="line">    title : str, default &quot;Feature importance&quot;</span><br><span class="line">        Axes title. To disable, pass None.</span><br><span class="line">    xlabel : str, default &quot;F score&quot;</span><br><span class="line">        X axis title label. To disable, pass None.</span><br><span class="line">    ylabel : str, default &quot;Features&quot;</span><br><span class="line">        Y axis title label. To disable, pass None.</span><br><span class="line">    show_values : bool, default True</span><br><span class="line">        Show values on plot. To disable, pass False.</span><br><span class="line">    kwargs :</span><br><span class="line">        Other keywords passed to ax.barh()</span><br><span class="line">    Returns</span><br><span class="line">    -------</span><br><span class="line">    ax : matplotlib Axes</span><br><span class="line">    &quot;&quot;&quot;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="单调性保证"><a href="#单调性保证" class="headerlink" title="单调性保证"></a>单调性保证</h3><ul>
+<li>XGBoost自带单调性保证功能:<ul>
+<li>参数使用示例是<code>monotone_constraints=&quot;(1,0,-1,0,0)&quot;</code>，表示输出结果随着<ul>
+<li>第一个参数单调递增</li>
+<li>第三个参数单调递减</li>
+<li>其他参数不做约束 </li>
+</ul>
+</li>
+<li>这个参数的实现逻辑是： <ul>
+<li>monotone_constraints 参数通过在梯度提升树的分裂过程中加入额外的限制来实现单调性。具体来说，在选择最佳分裂点时，XGBoost 不仅考虑分裂的增益（如基尼不纯度减少或均方误差减少），还会检查分裂是否满足指定的单调性约束。如果一个潜在的分裂点违反了单调性约束，那么即使它能带来较大的增益，也不会被选作最佳分裂点。 </li>
+</ul>
+</li>
+<li>在现实场景中会出现修改单调特征值以后，模型预测结果为0的问题 <ul>
+<li>表现：实际使用时体现为输出值全是相同的（单调确没有意义）</li>
+<li>原因：此时主要原因是数据本身不具有单调性，特别是当label不随着单调特征单调时，容易出现学到的许多区间上模型值相同 </li>
+<li>测试（对于单调递增场景，单调递减的正常）： <ul>
+<li>测试一：如果样本中存在太多不单调的数据，甚至希望单增，但数据单调递减，则会导致模型预估值随目标特征值变化，基本相同 * 测试二：如果样本中的目标特征和label是满足单调的，但是存在一些随机值，则在某些区间上容易出现单调值，特别是没有见过的区间上，预估值会是完全一致的 </li>
+<li>注意：测试时，需要限定其他特征都不变，只有当前特征变化才可以，否则无法保证单调性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Demo示例：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">import xgboost as xgb</span><br><span class="line">import numpy as np</span><br><span class="line">from sklearn.datasets import make_regression</span><br><span class="line">from sklearn.model_selection import train_test_split</span><br><span class="line"># 创建一个简单的回归数据集</span><br><span class="line">X, y = make_regression(n_samples=1000, n_features=5, noise=0.1)</span><br><span class="line"># 假设我们有5个特征，并且我们知道第一个特征应该与目标变量呈现正相关，</span><br><span class="line"># 第二个特征应该与目标变量呈现负相关，其余特征没有特定的单调性要求。</span><br><span class="line">monotone_constraints = (1, -1, 0, 0, 0)</span><br><span class="line"># 划分数据集</span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)</span><br><span class="line"># 将数据转换为 DMatrix 格式，这是 XGBoost 所需的数据格式</span><br><span class="line">dtrain = xgb.DMatrix(X_train, label=y_train)</span><br><span class="line">dtest = xgb.DMatrix(X_test, label=y_test)</span><br><span class="line"># 定义 XGBoost 参数</span><br><span class="line">params = &#123;</span><br><span class="line">    &apos;objective&apos;: &apos;reg:squarederror&apos;,  # 对于回归任务</span><br><span class="line">    &apos;monotone_constraints&apos;: str(monotone_constraints)  # 应用单调性约束</span><br><span class="line">&#125;</span><br><span class="line"># 训练模型</span><br><span class="line">model = xgb.train(params, dtrain, num_boost_round=100)</span><br><span class="line"># 预测</span><br><span class="line">predictions = model.predict(dtest)</span><br><span class="line"># 打印部分预测结果</span><br><span class="line">print(predictions[:10])</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Ubuntu-Jupyter——修改默认路径.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Python/Jupyter/Ubuntu-Jupyter——修改默认路径.html" itemprop="url">Ubuntu-Jupyter——修改默认路径</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>Ubuntu下修改Jupyter的默认路径</em></p>
+<ul>
+<li>经测试，按照本文的方法修改后不一定生效</li>
+<li>一个比较优雅的方法是每次进入指定路径，从该路径启动<code>jupyter notebook</code><ul>
+<li>这种方法可确保Jupyter根目录为指定目录</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="查看配置文件"><a href="#查看配置文件" class="headerlink" title="查看配置文件"></a>查看配置文件</h3><ul>
+<li>首先查看是已经生成Jupyter的配置文件，默认新装的Jupyter根目录为<code>～/</code>, 是没有配置文件的<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 查看配置文件命令</span><br><span class="line">cat ~/.jupyter/jupyter_notebook_config.py</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="生成配置文件"><a href="#生成配置文件" class="headerlink" title="生成配置文件"></a>生成配置文件</h3><ul>
+<li><p>如果没有配置文件，则首先需要生成新的配置文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 生成配置文件命令</span><br><span class="line">jupyter notebook --generate-config</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>root用户执行时可能需要按照要求加上参数</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="编辑配置文件有两种方式"><a href="#编辑配置文件有两种方式" class="headerlink" title="编辑配置文件有两种方式"></a>编辑配置文件有两种方式</h3><h4 id="相对路径方式"><a href="#相对路径方式" class="headerlink" title="相对路径方式"></a>相对路径方式</h4><p><strong>打开配置文件修改相对目录<code>c.NotebookApp.default_url</code>，这里默认为<code>/tree</code>， 修改成自己想要的地址即可</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># /tree表示当前路径pwd， 如下则表示当前终端路径下的/Coding路径</span><br><span class="line">c.NotebookApp.default_url = &apos;/tree/Coding&apos;</span><br><span class="line"># 这种情况以后打开Jupyter时都需要到指定的文件目录下才行，适用于多个jupyter路径的情况</span><br></pre></td></tr></table></figure>
+
+<p><em>一般使用这种情况时建议直接保留相对目录<code>/tree</code>即可，这样可以在启动Jupyter时直接在那个文件目录下启动</em></p>
+<h4 id="绝对路径方式"><a href="#绝对路径方式" class="headerlink" title="绝对路径方式"></a>绝对路径方式</h4><p><strong>打开配置文件配置绝对目录<code>c.NotebookApp.notebook_dir</code></strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 这种情况下无论在哪里打开都是绝对目录 	</span><br><span class="line">c.NotebookApp.notebook_dir = u&apos;/home/jiahong/JupyterWorkspace&apos;</span><br></pre></td></tr></table></figure>
+
+<p><strong>如果两种情况都配置了，默认以第一中情况为主，因为第一个是redirect的</strong><br><strong>如果两种情况都没配置，默认等价于配置了<code>c.NotebookApp.default_url = &#39;/tree&#39;</code></strong></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Ubuntu-Jupyter——安装pip包.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1348,543 +1709,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——损失函数总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——损失函数总结.html" itemprop="url">ML——损失函数总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>各种损失函数(Loss Function)总结,持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="名词概念"><a href="#名词概念" class="headerlink" title="名词概念"></a>名词概念</h3><p><em>在机器学习和统计学中，成本函数（Cost Function）、经验风险（Empirical Risk）和损失函数（Loss Function）是三个密切相关但又有所区别的概念</em></p>
-<ul>
-<li><strong>损失函数</strong>（Loss Function）： 损失函数衡量的是单个训练样本的预测值与实际值之间的差异。它是模型预测误差的量化表示。常见的损失函数包括均方误差（Mean Squared Error, MSE）、交叉熵损失（Cross-Entropy Loss）等</li>
-<li><strong>成本函数</strong>（Cost Function）： 又名代价函数，等价于损失函数</li>
-<li><strong>期望风险</strong>（Expected Risk）：所有样本（训练样本+验证样本+测试样本+未知样本）的损失函数的期望，用于评估模型的泛化能力</li>
-<li><strong>经验风险</strong>（Empirical Risk）： 经验风险是在给定数据集上（一般是训练集），模型的平均损失。它是所有训练样本损失函数值的平均，用于评估模型在特定数据集上的表现。经验风险可以视为模型在有限数据集上的泛化能力的估计，本质是对期望风险的一种估计</li>
-<li><strong>结构风险</strong>（Structural Risk）：用于平衡模型对样本的拟合能力和复杂度<br>$$<br>结构风险 = 经验风险 + \alpha 正则化项<br>$$</li>
-<li>注意：<strong>在一般的书籍或者博客论文中，尝尝也用 <em>损失函数</em> 或 <em>成本函数</em> 笼统的表达了 <em>成本函数、经验风险、损失函数、成本函数、甚至结构风险</em> 等所有相关概念</strong>，所以本文下面也会比较笼统称为损失函数</li>
-</ul>
-<h3 id="损失函数总体说明"><a href="#损失函数总体说明" class="headerlink" title="损失函数总体说明"></a>损失函数总体说明</h3><ul>
-<li>损失函数(Loss Function)又称为代价函数(Cost Function)</li>
-<li>损失函数用于评估预测值与真实值之间的不一致程度</li>
-<li>损失函数/成本函数是模型的优化目标函数,(神经网络训练的过程就是最小化损失函数的过程)</li>
-<li>损失函数/成本函数越小,说明预测值越接近于真实值,模型表现越好</li>
-</ul>
-<hr>
-<h3 id="各种损失函数介绍"><a href="#各种损失函数介绍" class="headerlink" title="各种损失函数介绍"></a>各种损失函数介绍</h3><h4 id="平方损失函数"><a href="#平方损失函数" class="headerlink" title="平方损失函数"></a>平方损失函数</h4><p><em>最常用的回归损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss = (y - f(x))^{2}$$</li>
-<li>对应模型<ul>
-<li>线性回归<ul>
-<li>使用的均方误差来自于平方损失函数<br>$$loss_{MSE} = \frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2$$</li>
-</ul>
-</li>
-<li>其他扩展，RMSE（Root Mean Squared Error，常用作指标而不是损失函数）<br>$$loss_{RMSE} = \sqrt{\frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2}$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="MSLE-RMSLE损失函数"><a href="#MSLE-RMSLE损失函数" class="headerlink" title="MSLE/RMSLE损失函数"></a>MSLE/RMSLE损失函数</h4><ul>
-<li>MSLE，Mean Squared Logarithmic Error<br>$$loss_{MSLE} = \frac{1}{m}\sum_{i=1}^{m} \left(\log(1+y_{i}) - \log(1+f(x_{i})) \right)^2$$</li>
-<li>RMSLE，Root Mean Squared Logarithmic Error</li>
-<li>损失函数形式<br>$$loss_{RMSLE} = \sqrt{\frac{1}{m}\sum_{i=1}^{m} \left(\log(1+y_{i}) - \log(1+f(x_{i})) \right)^2}$$</li>
-<li>MSLE和RMSLE可缓解长尾变量导致的异常值问题</li>
-</ul>
-<h4 id="MAPE-MSPE-RMAPE-RMSPE损失函数"><a href="#MAPE-MSPE-RMAPE-RMSPE损失函数" class="headerlink" title="MAPE/MSPE/RMAPE/RMSPE损失函数"></a>MAPE/MSPE/RMAPE/RMSPE损失函数</h4><ul>
-<li>MAPE，Mean Absolute Percentage Error<br>$$loss_{MAPE} = \frac{1}{m}\sum_{i=1}^{m} \left|\frac{y_i-f(x_i)}{y_i}\right|$$</li>
-<li>MSPE，Mean Squared Percentage Error<br>$$loss_{MSPE} = \frac{1}{m}\sum_{i=1}^{m} \left(\frac{y_i-f(x_i)}{y_i}\right)^2$$</li>
-<li>RMAPE/RMSPE在MAPE/MSPE的基础上开根号即可</li>
-<li>MAPE/MSPE/RMAPE/RMSPE都可缓解长尾变量导致的异常值问题</li>
-</ul>
-<h4 id="绝对值损失函数"><a href="#绝对值损失函数" class="headerlink" title="绝对值损失函数"></a>绝对值损失函数</h4><p><em>最常用的回归损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss = |y - f(x)|$$</li>
-<li>对应的经验风险:<br>$$loss_{MAE} = \frac{1}{m}\sum_{i=1}^{m}|y_{i} - f(x_{i})|$$</li>
-</ul>
-<h4 id="交叉熵损失函数（对数似然损失函数）"><a href="#交叉熵损失函数（对数似然损失函数）" class="headerlink" title="交叉熵损失函数（对数似然损失函数）"></a>交叉熵损失函数（对数似然损失函数）</h4><p><em>最常见的损失函数<strong>交叉熵损失函数</strong>,又名<strong>对数似然损失函数</strong></em></p>
-<ul>
-<li>基本形式（目标：在已知X时，样本标签Y出现的概率最大化，损失函数在概率前加个负号即可）<br>$$loss=L(P_{\theta}(Y|X))=-logP_{\theta}(Y|X)$$ </li>
-<li><strong>二分类</strong>中的交叉熵损失函数:<br>$$loss_{CE} = \frac{1}{N} \sum_{i}^{N}-y_ilogy_i’ - (1-y_i)log(1-y_i’)$$<ul>
-<li>二分类中对于单个样本的损失一般写为:<br>  $$loss(x_i) = -y_ilogy_i’ - (1-y_i)log(1-y_i’)$$</li>
-<li>写成最容易看清楚的形式为:<br>  $$<br>  \begin{align}<br>  loss(x_i) &amp;= -logy_i’, &amp;\quad y_i = 1 \\<br>  loss(x_i) &amp;= -log(1-y_i’), &amp;\quad y_i = 0<br>  \end{align}<br>  $$<ul>
-<li>\(y_i\) 为样本 \(x_i\)的真实类别</li>
-<li>\(y_i’\) 为样本\(x_i\)在模型中的预测值(这个值在二分类中为Sigmoid函数归一化后的取值,代表样本分类为\(y_i=1\)的概率)</li>
-<li>\(y_i’\) 也可表达为 \(p_{i,1}\), 即样本\(i\) 分类为1的概率</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><strong>多分类</strong>中的交叉熵损失函数:<br>$$loss_{CE} = -\frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta}$$<ul>
-<li>\(y_{i,c} \in \{0, 1\}\)：当样本\(i\)的真实分类是\(c\)时，\(y_{i,c}=1\)，否则\(y_{i,c}=0\)</li>
-<li>\(p_{i,c}^{\theta}\)：表示样本\(i\)为分类\(c\)的预估概率，由 \(y_{i,c} \in \{0, 1\}\)可知损失函数不需要关注样本预测为其他错误类别的概率，仅关注真实样本对应类别的概率即可</li>
-<li>二分类的场景实际上是多分类的特定形式，\(1-y_i’\)可以用来表示分类为0时的概率</li>
-</ul>
-</li>
-<li><strong>凡是极大似然估计作为学习策略的模型,损失函数都为交叉熵损失函数（对数似然损失函数）</strong><ul>
-<li>因为极大化似然函数等价于极小化对数似然损失函数，推导：<br>  $$<br>  \begin{align}<br>  \theta^{*} &amp;= \mathop{\arg\max}_{\theta} \prod_i P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\min}_{\theta} - \sum_i \log P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\min}_{\theta} - \frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta}<br>  \end{align}<br>  $$ </li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第十二章中LR使用的是极大似然估计但是对应的损失函数是逻辑斯蒂损失函数,这里可以证明LR中对数似然损失函数和逻辑斯蒂损失函数完全等价,证明见统计学习方法212页笔记</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>所有使用极大似然估计的模型<ul>
-<li>可以证明，<strong>极大似然估计法最大化样本出现概率</strong>的目标是<strong>最小化真实分布和预估分布的KL散度</strong><ul>
-<li>为了方便证明，下面把\(P_{\theta}(y_i|x_i)\)写作\(P_{\theta}(x_i)\)，这里\(x_i\)包含了样本的label（\(y_i\)）信息<br>$$<br>\begin{align}<br>\theta^{*} &amp;= \mathop{\arg\min}_{\theta} - \frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta} &amp;\quad — 交叉熵损失函数\\<br>&amp;= \mathop{\arg\min}_{\theta} - \sum_i \log P_{\theta}(x_i)  &amp;\quad — 交叉熵损失函数\\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(x_i) \\<br>&amp;= \mathop{\arg\max}_{\theta} \prod_i P_{\theta}(x_i) &amp;\quad — 极大似然法\\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(x_i) \\<br>&amp;\approx \mathop{\arg\max}_{\theta} \mathbb{E}_{x \sim P_{data}}\log P_{\theta}(x) \\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log P_{\theta}(x) dx \\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log P_{\theta}(x) dx - \int_{x} P_{data}(x) \log P_{data}(x) dx &amp;\quad — 减去一项与\theta无关的项\\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log \frac{P_{\theta}(x)}{P_{data}(x)} dx \\<br>&amp;= \mathop{\arg\max}_{\theta} -\int_{x} P_{data}(x) \log \frac{P_{data}(x)}{P_{\theta}(x)} dx \\<br>&amp;= \mathop{\arg\min}_{\theta} \int_{x} P_{data}(x) \log \frac{P_{data}(x)}{P_{\theta}(x)} dx \\<br>&amp;= \mathop{\arg\min}_{\theta} KL(P_{data}|| P_{\theta})  &amp;\quad — KL散度\\<br>\end{align}<br>$$ </li>
-<li>上式表明：似然函数最大化(极大似然法，对应交叉熵损失最小化)，等价于最小化真实分布与预估分布的KL散度</li>
-<li>注：式中\(x_i\)样本表示&lt;特征,标签&gt;对，\(P_{\theta}(x_i)\)表示在模型\(\theta\)下，真实&lt;特征,标签&gt;出现的概率</li>
-</ul>
-</li>
-<li>同理，可以证明，<strong>最小化交叉熵损失函数</strong>的目标也是<strong>最小化真实分布和预估分布的KL散度</strong></li>
-</ul>
-</li>
-<li>最大化后验概率等价于最小化对数似然损失函数<br>$$\theta^{\star} = \mathop{\arg\max}_{\theta} LL(\theta) = \mathop{\arg\min}_{\theta} -LL(\theta) = \mathop{\arg\min}_{\theta} -\log P(Y|X) = \mathop{\arg\min}_{\theta} -\sum_{i=1}^{N}\log p_{\theta}(y_{i}|x_{i})$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="指数损失函数"><a href="#指数损失函数" class="headerlink" title="指数损失函数"></a>指数损失函数</h4><p><em>提升方法的损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=e^{-yf(x)}$$</li>
-<li>对应模型<ul>
-<li>提升方法</li>
-</ul>
-</li>
-</ul>
-<h4 id="0-1损失函数"><a href="#0-1损失函数" class="headerlink" title="0-1损失函数"></a>0-1损失函数</h4><p><em>最理想的损失函数,但是不光滑,不可导</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=0, \text{if} \  yf(x)&gt;0 \\<br>loss=L(y,f(x))=1, \text{if} \  yf(x)&lt;0$$</li>
-<li>在由\(f(x)\)符号判断样本的类别的二分类问题中<ul>
-<li>分类正确时总有\(yf(x)&gt;0\),损失为0</li>
-<li>分类错误时总有\(yf(x)&lt;0\),损失为1</li>
-</ul>
-</li>
-<li>在特定的模型中,比如要求\(f(x)=y\)才算正确分类的模型中<ul>
-<li>0-1损失函数可定义为如下<br>$$loss=L(y,f(x))=0, \text{if} \  y=f(x) \\<br>loss=L(y,f(x))=1, \text{if} \  y\neq f(x)$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="合页损失函数"><a href="#合页损失函数" class="headerlink" title="合页损失函数"></a>合页损失函数</h4><p><em>支持向量机的损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=[1-yf(x)]_{+}$$</li>
-<li>\([z]_{+}\)表示<ul>
-<li>\(z&gt;0\)时取\(z\)</li>
-<li>\(z\leq 0\)时取0</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>支持向量机</li>
-</ul>
-</li>
-</ul>
-<h4 id="感知机的损失函数"><a href="#感知机的损失函数" class="headerlink" title="感知机的损失函数"></a>感知机的损失函数</h4><p><em>感知机特有的损失函数&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=[-yf(x)]_{+}$$</li>
-<li>与合页损失函数对比<ul>
-<li>相当于函数图像整体左移一个单位长度</li>
-<li>合页损失函数比感知机的损失函数对学习的要求更高</li>
-<li>这使得感知机对分类正确的样本就无法进一步优化(分类正确的样本损失函数为0),学到的分类面只要能对样本正确分类即可(不是最优的,而且随机梯度下降时从不同点出发会有不同结果)</li>
-<li>而SVM则需要学到最优的才行,因为即使分类正确的样本,依然会有一个较小的损失,此时为了最小化损失函数,需要不断寻找,直到分类面为最优的分类面位置</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>感知机</li>
-</ul>
-</li>
-</ul>
-<h4 id="感知损失函数"><a href="#感知损失函数" class="headerlink" title="感知损失函数"></a>感知损失函数</h4><p><em>与感知机没有任何关系</em></p>
-<ul>
-<li>基本形式<br>$$L(y,f(x))=1, \text{if} \   \left | y-f(x)\right |&gt;t \\<br>L(y,f(x))=0,  \text{if} \  \left | y-f(x)\right |&lt; t$$</li>
-<li>这里”感知”的意思是在一定范围内认为\(y\approx f(x)\),满足小范围差距时,损失函数为0</li>
-</ul>
-<h4 id="Focal-Loss"><a href="#Focal-Loss" class="headerlink" title="Focal Loss"></a>Focal Loss</h4><p><em>论文原文为: <a href="http://openaccess.thecvf.com/content_ICCV_2017/papers/Lin_Focal_Loss_for_ICCV_2017_paper.pdf" target="_blank" rel="noopener">ICCV 2017: Focal Loss for Dense Object Detection</a></em></p>
-<ul>
-<li>主要是为了解决正负样本严重失衡的问题</li>
-<li>是交叉熵损失函数的一种改进</li>
-<li>回归交叉熵损失函数的表达式为:<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$</li>
-<li>Focal Loss的损失函数如下<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -(1-y_i’)^\gamma logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -y_i^\gamma\log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)的取值在原始论文中使用了 0, 0.5, 1, 2, 5 等</li>
-<li>当 \(\gamma &gt; 0\) 时显然有<ul>
-<li>预测值\(y_i’\)与真实标签\(y_i\)差异越大的样本,他们的损失权重越大（\(y_i=1\)时，预测值和真实值的差异为\(1-y_i’\)，\(y_i=0\)时，差异为\(y_i’\)）</li>
-<li>预测值\(y_i’\)与真实标签\(y_i\)差异越小的样本,他们的损失权重越小</li>
-<li>以上两点给了模型重视分类错误样本的提示，模型会重视分类出错的样本</li>
-</ul>
-</li>
-<li>\(\gamma = 0\)时Focal Loss退化为交叉熵损失函数</li>
-<li>\(\gamma\) 越大,说明, 分类错误的样本占的损失比重越大 </li>
-</ul>
-</li>
-<li>实际使用中, 常加上\(\alpha\)平衡变量<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -\alpha(1-y_i’)^\gamma logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -(1-\alpha)y_i^\gamma\log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$<ul>
-<li>\(\alpha\) 用于平衡正负样本的重要性</li>
-<li>\(\gamma\) 用于加强对难分类样本的重视程度</li>
-</ul>
-</li>
-<li>假设正样本数量太少, 负样本数量太多, 那么该损失函数将降低负样本在训练中所占的权重, 可以理解为一种<strong>困难样本挖掘</strong><ul>
-<li>困难样本挖掘的思想就是找到分类错误的样本(难以分类的样本), 然后重点关注这些错误样本</li>
-</ul>
-</li>
-<li>原论文中的实验结果:<img src="/Notes/ML/ML——损失函数总结/focal_loss_Overview.png">
-
-</li>
-</ul>
-<h4 id="岭回归"><a href="#岭回归" class="headerlink" title="岭回归"></a>岭回归</h4><ul>
-<li>基本思路是在最小二乘的基础上加上L2正则<br>$$loss(\theta) = \frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2 + \lambda \theta^2$$</li>
-<li>其中\(\lambda \theta^2\)项是L2正则项，也称为<strong>收缩惩罚项（shrinkage penalty）</strong><ul>
-<li>它试图缩小模型的参数，引入偏差来缓解参数估计中的方法问题，原始的最小二乘是无偏估计，但是引入了L2正则以后会变成有偏的，但是方差更小的参数估计</li>
-<li>实际上，shrinkage参数，也称为<strong>收缩参数</strong>，是统计学里面的一个概念，是用于缓解参数估计时离群点带来的问题</li>
-</ul>
-</li>
-</ul>
-<h4 id="几个回归损失函数的对比"><a href="#几个回归损失函数的对比" class="headerlink" title="几个回归损失函数的对比"></a>几个回归损失函数的对比</h4><ul>
-<li>参考链接补充：<a href="https://www.cnblogs.com/nxf-rabbit75/archive/2019/02/26/10440805.html" target="_blank" rel="noopener">https://www.cnblogs.com/nxf-rabbit75/archive/2019/02/26/10440805.html</a></li>
-</ul>
-<hr>
-<h3 id="不同模型的损失函数"><a href="#不同模型的损失函数" class="headerlink" title="不同模型的损失函数"></a>不同模型的损失函数</h3><h4 id="决策树的损失函数"><a href="#决策树的损失函数" class="headerlink" title="决策树的损失函数"></a>决策树的损失函数</h4><ul>
-<li>决策树有两个解释<ul>
-<li>if-then规则</li>
-<li>条件概率分布</li>
-</ul>
-</li>
-<li>&lt;&lt;统计学习方法&gt;&gt;: 决策树的损失函数是对数似然<ul>
-<li>决策树可以看作是对不同概率空间的划分</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Loss-Function-vs-Cost-Function"><a href="#Loss-Function-vs-Cost-Function" class="headerlink" title="Loss Function vs Cost Function"></a>Loss Function vs Cost Function</h3><ul>
-<li>损失函数（Loss Function）应用于一个特定的样本计算误差</li>
-<li>成本函数（Cost Function）是对所有样本而言的误差</li>
-</ul>
-<hr>
-<h3 id="损失函数相关思考"><a href="#损失函数相关思考" class="headerlink" title="损失函数相关思考"></a>损失函数相关思考</h3><h4 id="分类问题为什么不能用MSE？"><a href="#分类问题为什么不能用MSE？" class="headerlink" title="分类问题为什么不能用MSE？"></a>分类问题为什么不能用MSE？</h4><ul>
-<li>参考链接：<ul>
-<li><a href="https://blog.csdn.net/CCSUXWZ/article/details/123695477?utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~aggregatepage~first_rank_ecpm_v1~rank_v31_ecpm-2-123695477.pc_agg_new_rank&utm_term=%E5%88%86%E7%B1%BB%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%94%A8mse&spm=1000.2123.3001.4430" target="_blank" rel="noopener">为什么分类问题不使用MSE(平方损失函数)</a></li>
-<li><a href="https://mp.weixin.qq.com/s?__biz=MzA4ODUxNjUzMQ==&mid=2247497812&idx=2&sn=a89412d3f803727758d2848d4c4cdc54&chksm=902a4a88a75dc39e76c72727eb494893e4108e3c2e543151d989144cf27a455fd10fb915a538&mpshare=1&scene=1&srcid=0323TN8Afh6zKFPclQcibgi8&sharer_sharetime=1648029215231&sharer_shareid=2b3e20f48a2bd45a6e7e36b7b6821670#rd" target="_blank" rel="noopener">深究交叉熵损失(Cross-entropy)和平方损失(MSE)的区别</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></li>
-</ul>
-</li>
-<li>原因：<ul>
-<li>在sigmoid函数拟合概率的情况下，使用MSE会导致预估值接近0或者为1时的梯度都接近0，不利于模型学习收敛</li>
-<li>在sigmoid函数拟合概率的情况下，MSE是非凸优化问题，容易陷入局部最优；交叉熵损失则是凸优化问题，不会陷入局部最优</li>
-</ul>
-</li>
-<li><strong>最小化交叉熵损失函数等价于不做任何假设的极大似然估计</strong>，其本质是在最小化真实样本分布和预估分布的KL散度（这里的分布可以是已知X时，label的条件分布）</li>
-<li><strong>最小化MSE损失函数等价于假设噪声服从高斯分布时的极大似然估计</strong><ul>
-<li><em>推导可参考：<a href="https://zhuanlan.zhihu.com/p/541655548" target="_blank" rel="noopener">MSE的推导</a>、<a href="https://zhuanlan.zhihu.com/p/501569029?utm_psn=1753542229158043648&utm_id=0" target="_blank" rel="noopener">MSE，MLE和高斯分布的关系</a>、<a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></em></li>
-<li>假设在回归问题中\(y = z + \epsilon\)，样本噪声\(\epsilon\)服从均值为0，方差为\(\sigma\)的高斯分布，即\(\epsilon \sim N(0,\sigma)\)，这里的\(\sigma&gt;0\)</li>
-<li>则有原始样本\(y\)服从均值为\(z\)方差为\(\sigma\)的高斯分布\(y \sim N(z,\sigma)\)，我们的目标是用模型拟合非噪声部分\(y_{pred} = \theta^T x = z\)，此时有\(y = y_{pred} + \epsilon\)，即\(y\)服从高斯分布\(y \sim N(y_{pred},\sigma)\)</li>
-<li>正太分布的概率密度函数为\(p(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-u)^2}{2\sigma^2}}\)，则此时单个样本出现的概率为\(\frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y-\theta^T x)^2}{2\sigma^2}}\)。</li>
-<li>用<strong>极大似然法</strong>估计参数\(\theta\)，即最大化多个样本的联合概率为:<br>  $$<br>  \begin{align}<br>  \theta^* &amp;= \mathop{\arg\max}_\theta \prod_i \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} \\<br>  &amp;= \mathop{\arg\max}_\theta \prod_i e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} &amp;\quad —去掉与\theta无关的常数项 \\<br>  &amp;= \mathop{\arg\max}_\theta \sum_i -\frac{(y^i-\theta^T x^i)^2}{2\sigma^2} &amp;\quad —取对数 \\<br>  &amp;= \mathop{\arg\max}_\theta \sum_i -(y^i-\theta^T x^i)^2 &amp;\quad —继续去除常数项 \\<br>  &amp;= \mathop{\arg\min}_\theta \sum_i (y^i-\theta^T x^i)^2 \\<br>  \end{align}<br>  $$</li>
-<li>即当假设噪声服从高斯分布时，用极大似然法估计参数与MSE损失函数得到的参数相同</li>
-</ul>
-</li>
-</ul>
-<h4 id="MSE和RMSE对反向传播过程一样吗？"><a href="#MSE和RMSE对反向传播过程一样吗？" class="headerlink" title="MSE和RMSE对反向传播过程一样吗？"></a>MSE和RMSE对反向传播过程一样吗？</h4><ul>
-<li>答案是不一样<ul>
-<li>MSE的梯度是：<br>$$ \nabla_{w} loss_{MSE} = \frac{1}{M}\sum_{i=1}^M 2(f_w(x_i)-y_i) \cdot \nabla_{w}f_w(x_i) $$</li>
-<li>RMSE的梯度是：<br>$$ \nabla_{w} loss_{RMSE} = \frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}} \cdot \frac{1}{M}\sum_{i=1}^M 2(f_w(x_i)-y_i) \cdot \nabla_{w}f_w(x_i) $$</li>
-</ul>
-</li>
-<li>由于两者的梯度不同，所以两者对参数的影响也不同，由于\(\frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}}\)不是固定值，所以MSE和RMSE对梯度的影响也不是简单的固定倍数关系<ul>
-<li>可以简单理解为：<ul>
-<li>RMSE的梯度相当于在MSE的基础上乘以\(\frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}}\)，在不同的Batch中，该值不同，Loss越大，该值越大，Loss越小，该值越小</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>MSE是在假设误差服从均值为0的正太分布（即\(\epsilon \sim N(0,\sigma)\)）的基础上基于<strong>极大似然法</strong>求得的目标函数</li>
-<li>在同一个Batch内来看，RMSE与MSE的目标实际上是完全一致的，即MSE最小时，RMSE也最小；但是从不同Batch之间来看，RMSE的梯度系数不同无法实现在所有训练集上MSE最小<ul>
-<li><strong>当所有数据只有一个Batch时，RMSE和MSE对梯度的影响是常数倍数关系（基于所有样本计算Loss得到的常数）</strong></li>
-</ul>
-</li>
-<li>为了实现多次采样Batch后实现MSE（满足极大似然法推导结果），一般常用MSE作为损失函数，而不是RMSE，RMSE更多是一个指标</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型评估指标总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——模型评估指标总结.html" itemprop="url">ML——模型评估指标总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>各种模型评估指标总结,持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/zongfa/p/9431807.html" target="_blank" rel="noopener">https://www.cnblogs.com/zongfa/p/9431807.html</a></li>
-</ul>
-<h4 id="Accuracy，准确率"><a href="#Accuracy，准确率" class="headerlink" title="Accuracy，准确率"></a>Accuracy，准确率</h4><ul>
-<li>公式：$$ \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN} $$</li>
-<li>直观，但不利于不平衡样本</li>
-</ul>
-<h4 id="Recall，召回率"><a href="#Recall，召回率" class="headerlink" title="Recall，召回率"></a>Recall，召回率</h4><ul>
-<li>公式：$$ \text{Recall} = \frac{TP}{TP+FN} $$</li>
-</ul>
-<h4 id="Precision，精确率"><a href="#Precision，精确率" class="headerlink" title="Precision，精确率"></a>Precision，精确率</h4><ul>
-<li>公式：$$ \text{Precision} = \frac{TP}{TP+FP} $$</li>
-</ul>
-<h4 id="F1-Score"><a href="#F1-Score" class="headerlink" title="F1 Score"></a>F1 Score</h4><ul>
-<li>公式：$$ \text{F1 Score} = \frac{2 * \text{Precision} * \text{Recall}}{\text{Precision}+\text{Recall}} $$</li>
-<li>综合考虑模型”求精“和”求全“的能力</li>
-</ul>
-<h4 id="AUC"><a href="#AUC" class="headerlink" title="AUC"></a>AUC</h4><ul>
-<li>形式化定义：AUC是ROC曲线下方的面积，其中ROC曲线的横坐标是伪阳性率（也叫假正类率，False Positive Rate），纵坐标是真阳性率（真正类率，True Positive Rate）</li>
-<li>本质：任意取两个样本，一个正样本和一个负样本（\( \forall x^+, x^-\)），模型预测正样本为正的概率分为\(Score_\theta(y=1|x^+)\)，模型预测正样本为正的概率分为\(Score_\theta(y=1|x^-)\)，则AUC为：<br>$$ AUC_\theta = P(Score_\theta(y=1|x^+)&gt;Score_\theta(y=1|x^-))$$</li>
-<li>真实实现时，可以统计所有正负样本对，若正样本预估值大于负样本，则累计分数+1，最后用累计分数除以所有可能的正负样本对数量<br>$$ AUC_\theta = \frac{Count(S_+&gt;S_-)}{Count(S_+) * Count(S_-)}$$</li>
-<li>具体代码实现：<ul>
-<li>将样本按照预估分数倒序排列，从大到小</li>
-<li>定义四个变量：正样本总数\(M\)，负样本总数\(N\)，已访问负样本数量\(X=0\)，正样本大于负样本的样本对数量\(Z=0\)</li>
-<li>依次访问所有样本：<ul>
-<li>若为正样本，则\(Z = Z + (N-X)\)</li>
-<li>若为负样本，则\(X = X + 1\)</li>
-</ul>
-</li>
-<li>最后计算：\(AUC = \frac{Z}{M * N}\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="回归模型"><a href="#回归模型" class="headerlink" title="回归模型"></a>回归模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/HuZihu/p/10300760.html" target="_blank" rel="noopener">https://www.cnblogs.com/HuZihu/p/10300760.html</a></li>
-<li>参考：<a href="https://blog.csdn.net/guolindonggld/article/details/87856780" target="_blank" rel="noopener">https://blog.csdn.net/guolindonggld/article/details/87856780</a><h4 id="MSE"><a href="#MSE" class="headerlink" title="MSE"></a>MSE</h4></li>
-<li>MSE (Mean Square Error，均方误差)</li>
-<li>也常用作损失函数<h4 id="RMSE"><a href="#RMSE" class="headerlink" title="RMSE"></a>RMSE</h4></li>
-<li>EMSE (Root Mean Square Error，根均方误差)<h4 id="MAE"><a href="#MAE" class="headerlink" title="MAE"></a>MAE</h4></li>
-<li>MAE (Mean Absolute Error，平均绝对误差)<h4 id="MAPE"><a href="#MAPE" class="headerlink" title="MAPE"></a>MAPE</h4></li>
-<li>MAPE (Mean Absolute Percentage Error，平均绝对百分比误差)<h4 id="SMAPE"><a href="#SMAPE" class="headerlink" title="SMAPE"></a>SMAPE</h4></li>
-<li>MAPE (Symmetric Mean Absolute Percentage Error，对称平均绝对百分比误差)</li>
-</ul>
-<hr>
-<h3 id="排序模型"><a href="#排序模型" class="headerlink" title="排序模型"></a>排序模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/by-dream/p/9403984.html" target="_blank" rel="noopener">https://www.cnblogs.com/by-dream/p/9403984.html</a><h4 id="DCG"><a href="#DCG" class="headerlink" title="DCG"></a>DCG</h4></li>
-<li>DCG（Discounted Cumulative Gain， 累计收益折扣）<h4 id="NDCG"><a href="#NDCG" class="headerlink" title="NDCG"></a>NDCG</h4></li>
-<li>(NDCG)Normalized Discounted Cumulative Gain</li>
-</ul>
-<hr>
-<h3 id="校准模型"><a href="#校准模型" class="headerlink" title="校准模型"></a>校准模型</h3><ul>
-<li>参考：<a href="http://t.zoukankan.com/eilearn-p-14164687.html" target="_blank" rel="noopener">推荐系统（2）—— 评估指标</a></li>
-<li>参考：<a href="https://www.6aiq.com/article/1628642001831" target="_blank" rel="noopener">阿里妈妈展示广告预估校准技术演进之路</a></li>
-</ul>
-<h4 id="COPC"><a href="#COPC" class="headerlink" title="COPC"></a>COPC</h4><ul>
-<li>COPC（Click over Predicted Click）<ul>
-<li>COPC = 实际的点击率/模型预测的点击率，主要衡量model整体预估的偏高和偏低，同样越接近1越好，一般情况下在1附近波动。这个指标在展示广告上应用多一些</li>
-</ul>
-</li>
-</ul>
-<h4 id="PCOC"><a href="#PCOC" class="headerlink" title="PCOC"></a>PCOC</h4><ul>
-<li>PCOC（Predicted Click over Click)<ul>
-<li>PCOC = 模型预估的点击率/实际点击率，与COPC用途相同</li>
-<li>COPC的倒数</li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p>PCOC指标是校准之后的点击率与后验点击率（近似真实概率）的比值，越接近于1，意味着在绝对值上越准确，大于1为高估，小于1为低估，是一种常用的高低估评价指标。但是PCOC存在一定局限性，举个例子：2万个样本，其中1万个样本的预估概率是0.2，后验概率是0.4，计算出PCOC是0.2/0.4=0.5，是显著低估的，另1万个样本PCOC是0.8/0.6= 1.3，明显是高估的。所以校准效果并不好，但是样本放一起看，校准后概率是（0.2+0.8）/2=0.5，后验概率是（0.4+0.6）/2=0.5，整体PCOC是1.0，表现完全正常。所以<strong>单一PCOC指标不能表征样本各维度下的校准水平。</strong></p>
-</blockquote>
-<hr>
-<h3 id="净胜率模型"><a href="#净胜率模型" class="headerlink" title="净胜率模型"></a>净胜率模型</h3><ul>
-<li>ANLP<ul>
-<li>参考：论文《Scalable Bid Landscape Forecasting in Real-time Bidding》</li>
-<li>链接：<a href="https://arxiv.org/pdf/2001.06587.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2001.06587.pdf</a></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1937,7 +1761,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">287</span>
+                  <span class="site-state-item-count">289</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>

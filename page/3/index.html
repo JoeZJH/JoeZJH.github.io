@@ -275,6 +275,361 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——策略梯度法推导.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——策略梯度法推导.html" itemprop="url">RL——策略梯度法推导</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>策略梯度法(Policy Gradient)推导，以及REINFORCE算法的介绍</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<ul>
+<li>参考链接：<ul>
+<li>策略梯度法总结：<a href="https://paperexplained.cn/articles/article/detail/31/#5a5b5c8b-ed5f-42f4-92bd-589568e5d867" target="_blank" rel="noopener">策略梯度算法专题</a> （包含推导和总结）</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h3><ul>
+<li><strong>策略</strong> \(\pi(a|s, \theta)\) (也可以表达为 \(\pi_{ \theta}(a|s)\))是一个从状态 \(s\) 到动作 \(a\) 概率的映射，其中 \(\theta\) 表示策略的参数。</li>
+<li><strong>整个轨迹的累计回报</strong> \(R(\tau)\)是轨迹\(\tau\)对应的回报：<br>$$<br>R(\tau) = \sum_{k=0}^{\infty} r_{k}<br>$$<ul>
+<li>注意：这里没有折扣因子</li>
+</ul>
+</li>
+<li><strong>时间t步开始的回报</strong> \(G_t\) 是从时间步 \(t\) 开始到结束的所有奖励的总和，通常定义为折扣累积奖励：<br>$$<br>G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>$$<br>其中 \(\gamma\) 是折扣因子，\(r_{k}\) 是在时间步 \(k\) 收到的即时奖励。</li>
+<li><strong>目标</strong> 是找到参数 \(\theta\) 使得长期回报的期望值最大，即 \(\max_\theta J(\theta)\)，其中 \(J(\theta) = \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau)]\)。</li>
+</ul>
+<hr>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><h4 id="优化目标："><a href="#优化目标：" class="headerlink" title="优化目标："></a>优化目标：</h4><ul>
+<li><strong>目标函数</strong> \(J(\theta)\) 定义为从初始分布开始，遵循策略 \(\pi_\theta\) 时的平均回报：<br> $$<br> J(\theta) = \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau)]<br> $$</li>
+<li>其中 \(\tau = (s_0, a_0, r_1, s_1, a_1, \dots)\) 表示一个轨迹，\(p_\theta(\tau)\) 是在策略 \(\pi_\theta\) 下产生轨迹 \(\tau\) 的概率。</li>
+</ul>
+<h4 id="梯度估计："><a href="#梯度估计：" class="headerlink" title="梯度估计："></a>梯度估计：</h4><ul>
+<li>我们的目标是计算目标函数关于参数 \(\theta\) 的梯度 \(\nabla_\theta J(\theta)\)。我们有：<br> $$<br> \nabla_\theta J(\theta) = \nabla_\theta \int R(\tau) p_\theta(\tau) d\tau = \int R(\tau) \nabla_\theta p_\theta(\tau) d\tau<br> $$</li>
+<li>使用对数概率技巧（log derivative trick，\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)）可以将上式转换为：<br> $$<br> \nabla_\theta J(\theta) = \int R(\tau) p_\theta(\tau) \frac{\nabla_\theta p_\theta(\tau)}{p_\theta(\tau)} d\tau = \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]<br> $$</li>
+<li>如果通过蒙特卡洛采样估计上面的式子，则可以写成：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n)<br>  \end{align}<br>  $$<ul>
+<li>上式是对原始梯度的无偏估计</li>
+</ul>
+</li>
+</ul>
+<h4 id="轨迹展开："><a href="#轨迹展开：" class="headerlink" title="轨迹展开："></a>轨迹展开：</h4><ul>
+<li><p>轨迹展开后，有 \(p_\theta(\tau) = p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)\)，其中 \(p(s_0)\) 是初始状态的分布，\(p(s_{t+1}|s_t, a_t)\) 是环境的转移概率。<br>  $$<br>  \begin{align}<br>  p_\theta(\tau) &amp;= p_{\pi_\theta}(s_0, a_0, s_1, a_1,\cdots) \\<br>  &amp;= p(s_0)\pi_\theta(a_0|s_0)p(s_1|s_0,a_0)\cdots \\<br>  &amp;= p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>由于环境的输出与策略无关，即\(\nabla_\theta p(s_1|s_0,a_0) = 0\)，于是有：<br>  $$<br>  \begin{align}<br>  \nabla_\theta \log p_\theta(\tau) &amp;= \nabla_\theta p(s_0) \prod_t \pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \log p(s_0) + \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) + \nabla_\theta  \sum_t  \log p(s_{t+1}|s_t, a_t) \\<br>  &amp;= \nabla_\theta \sum_t \log \pi_\theta(a_t|s_t) \\<br>  &amp;=  \sum_t \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>所以我们可以进一步简化梯度表达式为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] = \mathbb{E}_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)   \right] \\<br> &amp;\approx \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla_\theta \log p_\theta(\tau^n) = \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</p>
+<ul>
+<li>此时，上式依然是对原始梯度的无偏估计</li>
+<li>本文以上的推导主要都是在证明下面的式子：<strong>\(\nabla_\theta \int R(\tau) p_\theta(\tau) d\tau\)等价于\(\mathbb{E}_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)  \right]\)</strong></li>
+<li>在一些其他文章中，证明的重点是如下的式子：<br>   $$<br>   \begin{aligned}<br>   \nabla_\theta J(\theta)<br>   &amp;= \nabla_\theta \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \pi_\theta(a \vert s) \\<br>   &amp;\propto \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \nabla_\theta \pi_\theta(a \vert s)<br>   \end{aligned}<br>   $$<ul>
+<li>本质上与本文的证明等价，因为\( \sum_{s \in \mathcal{S}} d^\pi(s) \sum_{a \in \mathcal{A}} Q^\pi(s, a) \nabla_\theta \pi_\theta(a \vert s) = \mathbb{E}_{\tau \sim p_\theta(\tau)} \left[\sum_t R(\tau) \nabla_\theta \log \pi_\theta(a_t|s_t)  \right] \)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>核心理解：</p>
+<ul>
+<li>\(R(\tau^n)\)表示采样得到的轨迹\(\tau^n\)对应的Reward，上述公式假设一共有N个轨迹</li>
+<li>对于任意给定的轨迹\(\tau^n\)，其上面的任意样本对\((s_t,a_t)\)，均使用固定的\(R(\tau^n)\)对 \(\nabla_\theta \log \pi_\theta(a_t|s_t)\)进行加权（实际上在使用中，不会直接使用\(R(\tau^n)\)，因为轨迹中过去的Reward与当前动作无关，所以，我们仅考虑后续的轨迹上的收益即可）</li>
+</ul>
+</li>
+</ul>
+<h4 id="REINFORCE算法："><a href="#REINFORCE算法：" class="headerlink" title="REINFORCE算法："></a>REINFORCE算法：</h4><ul>
+<li>考虑到轨迹中过去的Reward与当前动作无关，且后续轨迹上的收益与当前动作的关系越来越小，所以我们使用\(G_t\)来替换\(R(\tau)\)<br>  $$<br>  R(\tau) = \sum_{k=0}^{\infty} r_{k} \quad \rightarrow \quad G_t = \sum_{k=t}^{\infty} \gamma^k r_{k}<br>  $$</li>
+<li>此时梯度进一步近似为：<br> $$<br>  \begin{align}<br> \nabla_\theta J(\theta) &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} R(\tau^n) \nabla_\theta \log \pi_\theta(a_t|s_t) \\<br> &amp;\approx \frac{1}{N}\sum_{n=1}^N \sum_{t=1}^{T_n} G_t^n \nabla_\theta \log \pi_\theta(a_t|s_t)<br>  \end{align}<br> $$</li>
+<li>REINFORCE算法利用上述梯度估计来更新策略参数。具体地，对于轨迹\(R(\tau^n)\)上的状态动作样本对\((s_t,a_t)\)，参数更新规则如下：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) G_t^n<br> $$<ul>
+<li>其中 \(\alpha\) 是学习率</li>
+<li>因为是累加操作，所以可以展开对每一个状态动作样本对\((s_t,a_t)\)进行累加</li>
+<li>\(\frac{1}{N}\)可以不需要了，有了学习率了，可以调节到学习率中</li>
+</ul>
+</li>
+<li>补充REINFORCE算法伪代码：<img src="/Notes/RL/RL——策略梯度法推导/PG-1.png">
+<img src="/Notes/RL/RL——策略梯度法推导/PG-2.png">
+
+</li>
+</ul>
+<h4 id="减小方差："><a href="#减小方差：" class="headerlink" title="减小方差："></a>减小方差：</h4><ul>
+<li><p>为了减少方差，可以在梯度估计中引入一个baseline函数 \(b(s_t)\)，它是一个与动作无关的量。更新规则变为：<br> $$<br> \theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a_t|s_t) (G_t - b(s_t))<br> $$</p>
+<ul>
+<li>常见的选择是使用价值函数 \(V(s_t)\) 作为基线，这有助于稳定学习过程。</li>
+<li>可以证明，增加 \(b(s_t)\) 后，梯度不会发生改变，上式对梯度的估计依然是无偏的</li>
+</ul>
+</li>
+<li><p>性质一：<strong>减去一个baseline以后，依然是原始梯度的无偏估计</strong>，证明如下：<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta)<br>  &amp;= \mathbb{E}_{\tau \sim p_{\theta}(\tau)} (R(\tau) - b) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \mathbb{E}_{\tau \sim p_{\theta}(\tau)} \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau p_{\theta}(\tau) \nabla_\theta \log p_{\theta}(\tau) \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \sum_\tau \nabla_\theta p_{\theta}(\tau) \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta \sum_\tau  p_{\theta}(\tau) \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  - b \nabla_\theta 1 \\<br>  &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)]  \\<br>  \end{align}<br>  $$</p>
+<ul>
+<li>第三行到第四行用到了对数概率技巧：\(\nabla_\theta log y({\theta}) = \frac{\nabla_\theta  y({\theta})}{ y({\theta}) }\)</li>
+<li>第四行到第五行使用了求梯度和加法交换顺序的法则</li>
+</ul>
+</li>
+<li><p>性质二：<strong>减去一个合适的baseline函数以后，方差会变小</strong>，证明如下：</p>
+<ul>
+<li>方差展开<br>  $$<br>  \begin{align}<br>  &amp;\ Var_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] \\<br>  &amp;= \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b)^2 \nabla^2 \log p_{\theta}(\tau)] - [\mathbb{E}_{\tau \sim p_{\theta}(\tau)} [(R(\tau) - b) \nabla \log p_{\theta}(\tau)] ]^2 \\<br>  &amp;= \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [R(\tau)^2 \nabla^2 \log p_{\theta}(\tau)] - [\mathbb{E}_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau)] ]^2 - 2 b \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)] \\<br>  &amp;= Var_{\tau \sim p_{\theta}(\tau)} [R(\tau)  \nabla \log p_{\theta}(\tau) ] - 2 b \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] + b^2 \mathbb{E}_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]<br>  \end{align}<br>  $$</li>
+<li>进一步解的，使得上式取小值的最优\(b\)为：<br>  $$<br>  b = \frac{\mathbb{E}_{\tau \sim p_{\theta}(\tau)} [R(\tau) \nabla^2 \log p_{\theta}(\tau)] }{\mathbb{E}_{\tau \sim p_{\theta}(\tau)} [ \nabla^2 \log p_{\theta}(\tau)]}<br>  $$</li>
+<li>实际应用中，为了方便计算，通常会使用：<br>  $$<br>  \hat{b} = \mathbb{E}_{\tau \sim p_{\theta}(\tau)} R(\tau)<br>  $$ </li>
+<li>那为什么\(\hat{b} = \mathbb{E}_{\tau \sim p_{\theta}(\tau)} R(\tau)\)是\(V_{\pi_{\theta}}(s_t)\)呢？因为两者是等价的，证明如下：<ul>
+<li>对于非确定性策略来说，在状态\(s_t\)下可选的动作服从一个分布\(\pi_{\theta}(s_t)\)，按照\(\mathbb{E}_{\tau \sim p_{\theta}(\tau)} R(\tau)\)的逻辑，该值是状态\(s_t\)下按照策略\(\pi_{\theta}(s_t)\)执行得到\(R(\tau)\)期望（注意\(a_t\)服从\(\pi_{\theta}\)分布，后续的执行动作也服从\(\pi_{\theta}\)分布），实际上就是\(V_{\pi_{\theta}}(s_t)\)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="实际使用中的-R-tau"><a href="#实际使用中的-R-tau" class="headerlink" title="实际使用中的\(R(\tau)\)"></a>实际使用中的\(R(\tau)\)</h3><h4 id="原始形式"><a href="#原始形式" class="headerlink" title="原始形式"></a>原始形式</h4><p>$$ R(\tau) = \sum_{k=0}^{\infty} r_{k} $$</p>
+<ul>
+<li>上式中实际上是一个固定轨迹的奖励，从第0步开始</li>
+<li>可基于蒙特卡洛采样得到</li>
+</ul>
+<h4 id="REINFORCE方法"><a href="#REINFORCE方法" class="headerlink" title="REINFORCE方法"></a>REINFORCE方法</h4><ul>
+<li>迭代样本\((s_t,a_t)\)时，使用以下形式：<br>$$ G_t = \sum_{k=t}^{\infty} \gamma^k r_{k} $$<ul>
+<li>丢弃掉动作之前的奖励，这些奖励与当前动作无关</li>
+<li>未来越远的动作奖励越小，因为这些奖励受当前动作影响的概率越小</li>
+</ul>
+</li>
+<li>使用baseline函数进行改进<br>$$\sum_{k=t}^{\infty} \gamma^k r_{k} - b(s_t)$$</li>
+</ul>
+<h4 id="用Q值替代"><a href="#用Q值替代" class="headerlink" title="用Q值替代"></a>用Q值替代</h4><ul>
+<li>用\(Q(s,a)\)值代替\(R(\tau)\)</li>
+<li>理由，\(Q(s,a)\)值是状态\(s\)执行\(a\)以后的\(G_t\)的期望值：<br>$$Q^{\pi_\theta}(s_t,a_t) = \mathbb{E}_{\pi_\theta} [G_t|s_t, a_t]$$</li>
+<li>使用Q值来替代可以降低方差</li>
+</ul>
+<h4 id="用优势函数替代"><a href="#用优势函数替代" class="headerlink" title="用优势函数替代"></a>用优势函数替代</h4><ul>
+<li>用\(A(s,a) = Q(s,a) - V(s)\)来替代<ul>
+<li>可以减去\(V(s)\)的理由是之前证明过减去一个baseline函数\(V(s)\)可以降低方差，且梯度无偏</li>
+</ul>
+</li>
+<li>实际上使用时可以使用单个V网络+TD-Error实现对优势函数的估计<br>  $$ A(s,a) = r(s,a) + \gamma V(s’) - V(s) $$</li>
+<li>应用场景：<ul>
+<li>常规的Actor Critic方法</li>
+<li>PPO方法的优势函数估计（实际的PPO中常常是GAE方式，是优势函数的一种加权）</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——POMDP.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——POMDP.html" itemprop="url">RL——POMDP</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考链接：<a href="https://www.zhihu.com/zvideo/1326278888684187648?utm_source=wechat_session&utm_medium=social&utm_oi=675997552948678656" target="_blank" rel="noopener">POMDP讲解</a></li>
+</ul>
+<h3 id="MDP"><a href="#MDP" class="headerlink" title="MDP"></a>MDP</h3><ul>
+<li><img src="/Notes/RL/RL——POMDP/MDP.png">
+<ul>
+<li>对于确定决策，策略的概率值为1即可<h3 id="POMDP"><a href="#POMDP" class="headerlink" title="POMDP"></a>POMDP</h3></li>
+</ul>
+</li>
+<li><img src="/Notes/RL/RL——POMDP/POMDP.png"></li>
+<li></li>
+<li>
+<h3 id="求解方案"><a href="#求解方案" class="headerlink" title="求解方案"></a>求解方案</h3></li>
+<li><img src="/Notes/RL/RL——POMDP/MDP_Policy_Function.png"></li>
+<li><img src="/Notes/RL/RL——POMDP/POMDP_Policy_Function.png"></li>
+<li><img src="/Notes/RL/RL——POMDP/POMDP_Solutions.png"></li>
+<li><img src="/Notes/RL/RL——POMDP/POMDP2RL.png">
+<ul>
+<li>RL本身并不假设知道状态转移矩阵等，所以其实可以直接使用RL求解POMDP试一下的，只是RL不保证收敛而已（PS：Q-Learning还是收敛的吧，只是DQN没有数据证明收敛）</li>
+<li>如果能建模出来POMDP的整个过程，没必要用RL了</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——深刻认识URL.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1246,133 +1601,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" itemprop="url">CA——WideAndDeep</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
-<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
-<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
-<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
-</ul>
-</li>
-</ul>
-<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
-<li>注重记忆能力</li>
-<li>手动特征交叉组合(实现低阶的特征组合)</li>
-</ul>
-<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
-<li>泛化能力</li>
-<li>高阶特征</li>
-<li>低维稠密embedding</li>
-</ul>
-<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
-<li>结合了Wide和Deep两个模型</li>
-<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
-<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
-<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——多任务学习总结.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1489,6 +1717,133 @@
 <li>复杂体现在：需要在每个batch上重新求解最优化问题，得到当前的loss权重（用上一个batch的梯度求解这一个batch的最优权重）</li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" itemprop="url">CA——WideAndDeep</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
+<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
+<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
+</ul>
+</li>
+</ul>
+<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
+<li>注重记忆能力</li>
+<li>手动特征交叉组合(实现低阶的特征组合)</li>
+</ul>
+<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
+<li>泛化能力</li>
+<li>高阶特征</li>
+<li>低维稠密embedding</li>
+</ul>
+<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
+<li>结合了Wide和Deep两个模型</li>
+<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
+<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
+<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
 </ul>
 </li>
 </ul>
@@ -1830,330 +2185,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——Next主题搜索窗口无法弹出.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hexo/Hexo——Next主题搜索窗口无法弹出.html" itemprop="url">Hexo——Next主题搜索窗口无法弹出</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客： <a href="https://www.sqlsec.com/2017/12/hexosearch.html" target="_blank" rel="noopener">https://www.sqlsec.com/2017/12/hexosearch.html</a></li>
-</ul>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
-<li>有时候会遇到在Mac上Next主题窗口无法弹出的问题</li>
-<li>问题分为两类<ul>
-<li>一类为找不到 <code>search.xml</code> 文件：加载 <code>search.xml</code> 时错误为404</li>
-<li>另一类为文章中有特殊字符：加载 <code>search.xml</code> 检查时错误为304</li>
-</ul>
-</li>
-</ul>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><h4 id="404类"><a href="#404类" class="headerlink" title="404类"></a>404类</h4><ul>
-<li><p>修改最外层配置文件<code>./_config.yml</code>,添加以下语句(实测这一步非必须)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">search:</span><br><span class="line">  path: search.xml</span><br><span class="line">  field: post</span><br><span class="line">  format: html</span><br><span class="line">  limit: 10000</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装搜索插件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h4 id="304类"><a href="#304类" class="headerlink" title="304类"></a>304类</h4><ul>
-<li>304状态说明是加载文件存在，但是无法正常解析文件</li>
-<li>直接用浏览器访问 <code>search.xml</code> 文件链接，然后查看文件解析异常出现在哪个地方，然后删除特殊字符即可<ul>
-<li>个人理解，从哪个文件不能搜索，特殊字符就出现在哪个文件中</li>
-<li>说明：目前还没遇到过这种情况，后面遇到会再补充</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Feature-Hashing.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——Feature-Hashing.html" itemprop="url">CA——Feature-Hashing</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考文献: <a href="http://alex.smola.org/papers/2009/Weinbergeretal09.pdf" target="_blank" rel="noopener">Feature Hashing for Large Scale Multitask Learning</a></li>
-<li>特征哈希(Feature Hashing)常用于数据特征降维，同时尽量保留原始特征的表达能力<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-</li>
-</ul>
-<h3 id="论文贡献"><a href="#论文贡献" class="headerlink" title="论文贡献"></a>论文贡献</h3><ul>
-<li>给出了一种高维数据降维方法，特征哈希(Feature Hashing)</li>
-<li>严格证明了特征哈希的可用性</li>
-</ul>
-<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
-<li>一种构造组合特征的方法是笛卡尔乘积</li>
-<li>计算广告领域往往有数十亿的高维特征</li>
-<li>一种表达方式是使用词表法，对每个特征从词表里面进行查询<ul>
-<li>缺陷一：拓展问题，每次拓展词表时难度较大(难以进行模型升级，因为特征维度在变化)</li>
-<li>缺陷二：无法处理词表中不存在的特征(Unknown特征)</li>
-</ul>
-</li>
-<li>一般的降维方法容易带来特征表达能力的损失</li>
-</ul>
-<h3 id="特征哈希"><a href="#特征哈希" class="headerlink" title="特征哈希"></a>特征哈希</h3><ul>
-<li><p>哈希函数定义(参考自博客：<a href="https://blog.csdn.net/qjf42/article/details/82387559" target="_blank" rel="noopener">https://blog.csdn.net/qjf42/article/details/82387559</a>)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">def feature_hashing(features, m):</span><br><span class="line">	&quot;&quot;&quot;</span><br><span class="line">	Args:</span><br><span class="line">		features: 输入特征序列，可以是数字，字符串(本质还是数字)</span><br><span class="line">		m: 输出的特征维度，通常是2**26(vw),2**20(scikit-learn)</span><br><span class="line">	Returns:</span><br><span class="line">		m维的（稀疏）向量</span><br><span class="line">	&quot;&quot;&quot;</span><br><span class="line">	# 这里的x一般是稀疏表示的（如：scipy.sparse.csr_matrix），这里是为了方便说明</span><br><span class="line">    x = np.zeros(m)</span><br><span class="line">    for feature in features:</span><br><span class="line">    	# hash_func_1保证散列尽量平均且散列速度快</span><br><span class="line">        idx = hash_func_1(feature) % m </span><br><span class="line">        # 这里在原始论文中</span><br><span class="line">        sign = hash_func_2(feature) % 2</span><br><span class="line">        if sign == 1:</span><br><span class="line">            x[idx] += 1</span><br><span class="line">        else:</span><br><span class="line">            x[idx] -= 1</span><br><span class="line">    return x</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>输出特征维度一般为\(m = 2^24\)等，是一个认为给定的数字</li>
-</ul>
-</li>
-<li><p>与词表法比较：</p>
-<ul>
-<li>解决了模型升级时的特征拓展问题(增加新特征时，特征的维度不会变化)</li>
-<li>解决了Unknown特征问题(个人理解：因为hash函数不管是什么特征，都可以一视同仁)</li>
-<li>无需查表，节省了查表的时间(个人理解：其实查表时一般实现方式也是用哈希表构建索引，所以这里不能算是优势)</li>
-<li>完成了降维(这里是把字典法里面对邮件或者文档的id也算作一个特征，这个特征one hot表示一下将会造成数据维度变得非常大？但是id算做特征有什么意义吗？)</li>
-</ul>
-</li>
-</ul>
-<h3 id="一些说明"><a href="#一些说明" class="headerlink" title="一些说明"></a>一些说明</h3><ul>
-<li>冲突总会发生，也就是说不同一个特征总有一定的概率被映射到同一个维度(即两个不同特征的<code>idx</code>值可能相等)上</li>
-<li>Paper中的垃圾邮件过滤模型实验证明：冲突造成的损失漏召率在\(m=2^22\)时影响约为1%，接近不做hash时的效果(特征维度在不做hash约为\(2^{25}\))且在\(m=2^{18}\)时为1.12%，也只升高了一点点</li>
-<li>另外：无论如何，总有特殊情况，比如重要的特征如用户的性别特征“男”和“女”二者可能被映射到同一个维度上<ul>
-<li>这里编码时是男:<code>(1, 0)</code>, 女<code>(0, 1)</code>这样的，所以如果二者映射到同一个维度上，那么这两个特征丢失了原本的表达能力</li>
-<li>真实环境中如果遇到这些问题将会很难调试，如果找到了相关的问题，可以通过修改映射函数的输入参数字符串等方式来错开两个特征</li>
-</ul>
-</li>
-<li>特征哈希本身可以类比于机器学习中的核技巧,所以特征哈希也称为哈希技巧</li>
-</ul>
-<h3 id="一些理解"><a href="#一些理解" class="headerlink" title="一些理解"></a>一些理解</h3><h4 id="知乎用户"><a href="#知乎用户" class="headerlink" title="知乎用户"></a>知乎用户</h4><ul>
-<li>参考<a href="https://www.zhihu.com/people/ainika-peng" target="_blank" rel="noopener">Ainika Peng</a>的博客：<a href="https://www.zhihu.com/question/264165760/answer/279676705" target="_blank" rel="noopener">https://www.zhihu.com/question/264165760/answer/279676705</a></li>
-<li>一般而言这类技术是为了解决两个问题：<ul>
-<li>一是<strong>将categorical的特征编码为模型可理解的格式</strong>, 这是个基础问题。One-Hot Serializing就可以达到这个效果，例如将训练样本中出现过的的每个deviceid按顺序递增编号（比如deviceid@xxx:1 -&gt; feature@10000:1）。<ul>
-<li>缺点1：这个映射表需要传递给引擎端，在prediction的时候照着再查一遍，数据量大且数据结构设计不好的时候很费时间；</li>
-<li>缺点2：有些频次很低的特征置信度不高，单独出现对模型无益（甚至over-fitting）。这时候可以使用按频次截断技术进行降维。比如微软在deep crossing中提到的特征工程方法：只保留曝光最多的10k个campaign id编码为0-9999，其余的id全部编码为10000，但辅以poCTR等连续特征作为辅助。事实上这是一种手工的Hashing方法。</li>
-</ul>
-</li>
-<li>二是<strong>尽可能在保留有效信息的基础上降低训练和预测过程的时间复杂度</strong></li>
-</ul>
-</li>
-<li>自动Hashing方法的好处是：<ul>
-<li>只要训练和预测时使用的hashing方法一致，对同一个特征的编码结果即一致，因此引擎预测或提供数据dump的时候无需查找编码表。所以其最大优点在于数据一致性和速度提升，这在极大规模特征和在线学习中至关重要。</li>
-</ul>
-</li>
-<li>我们说的Hashing算法一般而言均特意设计为低碰撞率。<ul>
-<li>因此一般hashing算法本身不会大幅降低特征维度，自然也不会大幅损失特征信息。真正可能存在问题的是hashing之后的降维过程。</li>
-<li>一个非常常见的陷阱是string哈希到int64后取模m，试图将特征压缩至m维one-hot空间。在这种情况下，对于不知情的随机hashing过程，不同特征的碰撞率为1/m。举个例子，对于“性别”特征，将male哈希为一个int64，female哈希为另一个int64，很难发生碰撞；但如果你试图使用mod2将其压缩，如果你的算法哈希出的这两个int64奇偶性相同，则会导致特征失效。在你有很多feature需要哈希而又不清楚hashing算法细节的情况下，这在概率意义上是很容易发生的。<ul>
-<li>这里的mod2是极端举例，其实m的取值小于原始维度的情况下都有一定概率造成冲突</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>因此我们会更倾向于所谓的embedding算法<ul>
-<li>例如将70万维的userid通过weight embedding到32维的连续值特征上（不同于传统hashing的低维离散值特征）。这意味着训练过程更加复杂（有更多的weight需要optimize）；但对于预测过程，其特征性能十分良好且时间复杂度得以降低。同时，由于连续值特征空间的表达能力大幅高于离散值特征空间，整个模型的表达能力并不会明显下降，也基本不会发生离散hashing的碰撞问题。</li>
-<li>当然，如果是<strong>FM这类倾向于接受离散值的模型，手工serializing+精心设计的hashing是较好的选择</strong>。</li>
-</ul>
-</li>
-<li>优点：<ul>
-<li>训练和预测的时间复杂度大幅降低；</li>
-<li>数据的一致性强，不存在同一个特征今天编码成这个、明天编码成那个的情况，便于跟踪单特征效果；</li>
-<li>对new feature可以直接编码并加入训练，无需等待编码表统计并反馈；</li>
-<li>降低feature space大小，（精心设计可以）降低over-fitting的几率。</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>在不清楚hashing function细节的情况下，容易导致特征碰撞失效，且难以排查；</li>
-<li>难以通过hashing出的特征反推源特征；</li>
-<li>embedding会降低模型的可解释性。</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2206,7 +2237,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">287</span>
+                  <span class="site-state-item-count">289</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
