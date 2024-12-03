@@ -91,7 +91,7 @@
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_2.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Algorithm.png">
 <meta property="og:image" content="https://joezjh.github.io/Notes/RL/RL——CQL/CQL-Theorem3_6.png">
-<meta property="og:updated_time" content="2024-11-27T17:17:17.212Z">
+<meta property="og:updated_time" content="2024-12-03T15:55:20.327Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RL——CQL">
 <meta name="twitter:description" content="参考链接： 原始论文：NIPS 2020, Conservative q-learning for offline reinforcement learning   【论文分享】Conservative Q-Learning for Offline Reinforcement Learning      Conservative Q-Learning for Offline Reinforc">
@@ -364,10 +364,12 @@
 <h4 id="回顾贝尔曼算子"><a href="#回顾贝尔曼算子" class="headerlink" title="回顾贝尔曼算子"></a>回顾贝尔曼算子</h4><ul>
 <li>一般的贝尔曼算子(Bellman Operator)，写作\(\mathcal{B}^\pi\)，重复对\(Q(s,a)\)使用\(\mathcal{B}^\pi\)，持续迭代可收敛到策略\(\pi\)对应的Q值\(Q^{\pi}(s,a)\)值:<br>$$<br>\mathcal{B}^\pi Q = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim p(s^\prime \vert s, a), a^\prime \sim \pi(a^\prime\vert s^\prime)}[Q (s^\prime, a^\prime)]<br>$$</li>
 <li>Q-Learning的迭代公式，相当于策略是找Q值最优的那个动作，通过对Q重复使用如下贝尔曼最优算子（Bellman Optimality Operator），写作\(\mathcal{B}^{\pi^*}\)或者\(\mathcal{B}^*\)：<br>$$ \mathcal{B}^{*} Q(\mathbf{s}, \mathbf{a})=r(\mathbf{s}, \mathbf{a})+\gamma \mathbb{E}_{\mathbf{s}^{\prime} \sim P\left(\mathbf{s}^{\prime} \mid \mathbf{s}, \mathbf{a}\right)}\left[\max _{\mathbf{a}^{\prime}} Q\left(\mathbf{s}^{\prime}, \mathbf{a}^{\prime}\right)\right] $$</li>
-<li>在Offline RL中，我们定义新的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，即更新只在固定数据集上进行，即对于给定的数据集\(\mathcal{D} = { (s,a,r,s’)} \sim \pi_\beta\)，\(\hat{\mathcal{B}}^\pi\)的更新都发生在数据集上</li>
 </ul>
-<h4 id="Offline-RL中使用常规方法"><a href="#Offline-RL中使用常规方法" class="headerlink" title="Offline RL中使用常规方法"></a>Offline RL中使用常规方法</h4><ul>
+<h4 id="Offline中的贝尔曼算子"><a href="#Offline中的贝尔曼算子" class="headerlink" title="Offline中的贝尔曼算子"></a>Offline中的贝尔曼算子</h4><ul>
+<li>在Offline RL中，我们定义新的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，即更新只在固定数据集上进行，即对于给定的数据集\(\mathcal{D} = { (s,a,r,s’)} \sim \pi_\beta\)，\(\hat{\mathcal{B}}^\pi\)的更新都发生在数据集上</li>
 <li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
+</ul>
+<h4 id="如果在Offline-RL中使用常规AC方法会发生什么？"><a href="#如果在Offline-RL中使用常规AC方法会发生什么？" class="headerlink" title="如果在Offline RL中使用常规AC方法会发生什么？"></a>如果在Offline RL中使用常规AC方法会发生什么？</h4><ul>
 <li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \mathop{\arg\min}_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \mathop{\arg\max}_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
 <li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
 <li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
@@ -602,8 +604,8 @@ $$ -->
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/RL/RL——IQL.html" rel="next" title="RL——IQL">
-                <i class="fa fa-chevron-left"></i> RL——IQL
+              <a href="/Notes/RL/RL——BCQ.html" rel="next" title="RL——BCQ">
+                <i class="fa fa-chevron-left"></i> RL——BCQ
               </a>
             
           </div>
@@ -612,8 +614,8 @@ $$ -->
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/RL/RL——BCQ.html" rel="prev" title="RL——BCQ">
-                RL——BCQ <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Others/趣味题——同距运动员.html" rel="prev" title="趣味题——同距运动员">
+                趣味题——同距运动员 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -755,7 +757,7 @@ $$ -->
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些定义"><span class="nav-number">2.1.</span> <span class="nav-text">一些定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回顾贝尔曼算子"><span class="nav-number">2.2.</span> <span class="nav-text">回顾贝尔曼算子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline-RL中使用常规方法"><span class="nav-number">2.3.</span> <span class="nav-text">Offline RL中使用常规方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一：打压未知动作的Q值"><span class="nav-number">2.4.</span> <span class="nav-text">改进一：打压未知动作的Q值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二：打压补偿"><span class="nav-number">2.5.</span> <span class="nav-text">改进二：打压补偿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三：CQL-mathcal-R"><span class="nav-number">2.6.</span> <span class="nav-text">改进三：CQL(\(\mathcal{R}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进四：CQL-mathcal-rho"><span class="nav-number">2.7.</span> <span class="nav-text">改进四：CQL(\(\mathcal{\rho}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进五：CQL-mathcal-H"><span class="nav-number">2.8.</span> <span class="nav-text">改进五：CQL(\(\mathcal{H}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CQL伪代码"><span class="nav-number">2.9.</span> <span class="nav-text">CQL伪代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实践说明"><span class="nav-number">2.10.</span> <span class="nav-text">实践说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些说明和思考"><span class="nav-number">3.</span> <span class="nav-text">一些说明和思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明约束优化问题"><span class="nav-number">4.</span> <span class="nav-text">附录：证明约束优化问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：最优策略形式的使用方式"><span class="nav-number">5.</span> <span class="nav-text">附录：最优策略形式的使用方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明logsumexp公式"><span class="nav-number">6.</span> <span class="nav-text">附录：证明logsumexp公式</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL在解决什么问题？"><span class="nav-number">1.</span> <span class="nav-text">CQL在解决什么问题？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQL相关推导"><span class="nav-number">2.</span> <span class="nav-text">CQL相关推导</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一些定义"><span class="nav-number">2.1.</span> <span class="nav-text">一些定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回顾贝尔曼算子"><span class="nav-number">2.2.</span> <span class="nav-text">回顾贝尔曼算子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Offline中的贝尔曼算子"><span class="nav-number">2.3.</span> <span class="nav-text">Offline中的贝尔曼算子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如果在Offline-RL中使用常规AC方法会发生什么？"><span class="nav-number">2.4.</span> <span class="nav-text">如果在Offline RL中使用常规AC方法会发生什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进一：打压未知动作的Q值"><span class="nav-number">2.5.</span> <span class="nav-text">改进一：打压未知动作的Q值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进二：打压补偿"><span class="nav-number">2.6.</span> <span class="nav-text">改进二：打压补偿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进三：CQL-mathcal-R"><span class="nav-number">2.7.</span> <span class="nav-text">改进三：CQL(\(\mathcal{R}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进四：CQL-mathcal-rho"><span class="nav-number">2.8.</span> <span class="nav-text">改进四：CQL(\(\mathcal{\rho}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改进五：CQL-mathcal-H"><span class="nav-number">2.9.</span> <span class="nav-text">改进五：CQL(\(\mathcal{H}\))</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CQL伪代码"><span class="nav-number">2.10.</span> <span class="nav-text">CQL伪代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实践说明"><span class="nav-number">2.11.</span> <span class="nav-text">实践说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些说明和思考"><span class="nav-number">3.</span> <span class="nav-text">一些说明和思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明约束优化问题"><span class="nav-number">4.</span> <span class="nav-text">附录：证明约束优化问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：最优策略形式的使用方式"><span class="nav-number">5.</span> <span class="nav-text">附录：最优策略形式的使用方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：证明logsumexp公式"><span class="nav-number">6.</span> <span class="nav-text">附录：证明logsumexp公式</span></a></li></ol></div>
             
 
           </div>
