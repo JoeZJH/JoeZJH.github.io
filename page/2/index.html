@@ -336,10 +336,105 @@
 <p><em>Diffuser</em></p>
 <ul>
 <li>参考链接：<ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/2205.09991" target="_blank" rel="noopener">Planning with Diffusion for Flexible Behavior Synthesis</a>  </li>
+<li>原始论文：<a href="https://arxiv.org/pdf/2205.09991" target="_blank" rel="noopener">Planning with Diffusion for Flexible Behavior Synthesis</a>    </li>
 <li>源码：</li>
+<li>其他参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/656099228" target="_blank" rel="noopener">Diffusion Model + RL 系列技术科普博客（1）：Diffuser - DILab决策实验室的文章 - 知乎</a>  </li>
+<li><a href="https://www.cnblogs.com/guapiii/p/planning-with-diffusion.html" target="_blank" rel="noopener">【论文翻译-RL×Diffusion】Planning with Diffusion for Flexible Behavior Synthesis</a>  </li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><h4 id="Diffusion-Model"><a href="#Diffusion-Model" class="headerlink" title="Diffusion Model"></a>Diffusion Model</h4><ul>
+<li>自Stable Diffusion问世以来，Diffusion Model（扩散模型）凭借其强大的生成效果横扫各大图像生成领域</li>
+<li>在Diffusion Model之前，一般的生成模型更多是VAE或GAN，相较于前两者，Diffusion Model具有更强的建模复杂分布的能力（比如人脸生成，几乎可以做到以假乱真），那么该技术是否可以直接用于生成MDP的决策轨迹呢？答案是可以！</li>
+<li>常规的Diffusion Model，DDPM的训练和推断流程如下：
+
+</li>
+</ul>
+<h4 id="Diffusion-Model如何用于决策"><a href="#Diffusion-Model如何用于决策" class="headerlink" title="Diffusion Model如何用于决策"></a>Diffusion Model如何用于决策</h4><ul>
+<li>模仿生成：一种简单的思路是直接让Diffusion Model直接模仿专家策略/行为策略，然后直接在Serving是模仿行为策略进行决策，详情见<a href="https://zhuanlan.zhihu.com/p/637145728" target="_blank" rel="noopener">智能体该如何模仿人类行为？通过扩散模型可以这么做</a>  </li>
+<li>引入最大化目标的生成（Diffuser）：首先训练一个生成轨迹的Diffusion模型，在采样/生成过程中引入目标，本质是Classifier-guided Sampling，通过引入最大化收益的目标，引导模型生成使得收益最大的轨迹，并在下一次决策时执行轨迹中的第一步决策，本文的方法就是这种</li>
+<li>引入最大化目标化和约束的生成（Decision Diffuser）：除了引入最大化收益的目标，还引入约束条件，使得生成的轨迹既满足约束，又能最大化指定目标，详细论文见：<a href="https://arxiv.org/pdf/2211.15657" target="_blank" rel="noopener">Is Conditional Generative Modeling all you need for Decision-Making?</a>  </li>
+</ul>
+<hr>
+<h3 id="Diffuser整体概述"><a href="#Diffuser整体概述" class="headerlink" title="Diffuser整体概述"></a>Diffuser整体概述</h3><h4 id="Diffuser基本框架"><a href="#Diffuser基本框架" class="headerlink" title="Diffuser基本框架"></a>Diffuser基本框架</h4><ul>
+<li>本文提出一种<strong>trajectory-level</strong> Diffusion Probabilistic Model，称为Diffuser，基本结构图如下：
+
+</li>
+</ul>
+<h4 id="Diffuser优点分析"><a href="#Diffuser优点分析" class="headerlink" title="Diffuser优点分析"></a>Diffuser优点分析</h4><ul>
+<li><strong>Long-horizon scalability</strong>：长周期可扩展性。Diffuser学习目标是生成准确的Trajectory而不是单步的误差，所以不需要面对动态模型中rollout的符合误差问题</li>
+<li><strong>Task compositionality</strong>：任务组合性。奖励是以梯度的形式加入生成过程的，引导生成朝指定方向发展，所以可以通过将多个奖励的梯度加起来从而实现奖励组合的Planning，而且任务修改以后不需要重新训练Diffusion模型</li>
+<li><strong>Temporal compositionality</strong>：时间组合性。Diffuser通过迭代提升局部一致性来生成全局连贯（Globally Coherent）的轨迹，这使得Diffuser可以通过拼接（Stitching）子序列来生成新的轨迹</li>
+<li><strong>Effective non-greedy planning</strong>：高效的规划方法。Diffuser的依赖一个轨迹生成模型来执行Planning，生成模型学的越准确，Planning效果越好，（只要足够生成模型足够好就能保证Planning不会太差），生成过程并不关注数据是否系数，轨迹序列是否长等常规规划方法中比较难的问题。（理解：实际上周期太长也不好做轨迹生成吧？）</li>
+</ul>
+<h4 id="论文名称解读"><a href="#论文名称解读" class="headerlink" title="论文名称解读"></a>论文名称解读</h4><ul>
+<li>论文名称为：Planning with Diffusion for Flexible Behavior Synthesis<ul>
+<li>Planning：指出了本文实在解决规划问题</li>
+<li>Flexible：表示灵活性，轨迹生成的目标是在采样阶段引入的，修改目标并不需要重新训练Diffusion模型</li>
+<li>Behavior Synthesis：指出了文章的目标是行为合成，即通过生成序列（序列中包含了行为）来完成决策</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Diffuser方案"><a href="#Diffuser方案" class="headerlink" title="Diffuser方案"></a>Diffuser方案</h3><h4 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h4><ul>
+<li>对于一个MDP问题，我们的优化目标是：<br>$$<br>\begin{align}<br>a_{0:T}^* = \mathop{\arg\max}_{a_{0:T}} J(s_0, a_{0:T}) = \mathop{\arg\max}_{a_{0:T}} \sum_{t=0}^{T} r(s_t, a_t)<br>\end{align}<br>$$</li>
+<li>目标解读<ul>
+<li>\(T\)表示序列长度，也称为规划范围，planning horizon</li>
+<li>\(a_{0:T}\)表示动作序列，我们的目标就是找到一个最优的行为序列，使得目标函数最大</li>
+<li>\(\tau = (s_0, a_0, s_1, a_1,\cdots,s_T,a_T)\)表示轨迹</li>
+</ul>
+</li>
+</ul>
+<h4 id="Diffusion-Probabilistic-Models"><a href="#Diffusion-Probabilistic-Models" class="headerlink" title="Diffusion Probabilistic Models"></a>Diffusion Probabilistic Models</h4><ul>
+<li>扩散概率模型（Diffusion Probabilistic Models）的生成过程是迭代denoising的过程（也称为去噪过程、反向过程或逆过程）：\(p_\theta(\tau^{i-1}|\tau^i)\)，该过程是扩散过程（Diffusion Process）\(q(\tau^i|\tau^{i-1})\)的逆过程<ul>
+<li>前向过程，扩散过程：\(q(\tau^i|\tau^{i-1})\)，没有参数，是训练模型时提前确定的</li>
+<li>逆向过程，去噪过程：\(p_\theta(\tau^{i-1}|\tau^i)\)，有参数，去噪时需要模型预估分布</li>
+</ul>
+</li>
+<li>数据分布定义：<br>$$ p_\theta(\tau^0) = \int p(\tau^N)\prod_{i=1}^N p_\theta(\tau^{i-1}|\tau^i) \text{d} \tau^{1:N}$$</li>
+<li>其中，\(p(\tau^N)\)是标准高斯先验分布，\(p(\tau^0)\)表示无去噪后的数据（无噪音数据）。</li>
+<li>参数\(\theta\)可以通过最小化去噪过程的负对数似然的变分下界（如何理解这里是变分下界？）来优化：\(\theta^* = \mathop{\arg\min_\theta} -\mathbb{E}_{\tau^0}[\log p_\theta(\tau^0)]\)</li>
+<li>去噪过程常常可以参数化为固定的、时间步长相关的协方差高斯分布（在已知\(\tau^i\)时\(\tau^{i-1}\)的条件概率）：<br>$$ p_\theta(\tau^{i-1}|\tau^i) = \mathcal{N}(\tau^{i-1}|\mu_\theta(\tau^i, i), \Sigma^i)$$<ul>
+<li>其中\(\mathcal{N}(\tau^{i-1}|\mu_\theta(\tau^i, i), \Sigma^i)\)表示均值为\(\mu_\theta(\tau^i, i)\)，协方差为\(\Sigma^i\)的高斯分布</li>
+<li>注：前向过程\(q(\tau^i|\tau^{i-1})\)是预先指定的，没有可学习参数，扩散模型\(\epsilon_\theta\)实际上学习的ground truth就是前向过程中每一步引入的误差\(\epsilon\)</li>
+</ul>
+</li>
+<li>符号说明：本文中，使用上标\(i\)表示Diffusion时间步，使用下标\(t\)表示规划时间步。比如\(s_t^0\)表示第\(t\)个状态的第0个Diffusion时间步（即无噪音）轨迹，当不会引起误会时，会省略第0个Diffusion时间步的上标，即\(\tau = \tau^0\)。我们也使用\(\tau_{s_t},\tau_{a_t}\)表示轨迹\(\tau\)的第\(t\)个状态和动作</li>
+</ul>
+<h4 id="Planning-with-Diffusion"><a href="#Planning-with-Diffusion" class="headerlink" title="Planning with Diffusion"></a>Planning with Diffusion</h4><ul>
+<li>采样过程就是规划过程<br>$$ \tilde{p}_\theta(\tau) \propto p(\tau)h(\tau) $$<ul>
+<li>其中\(h(\tau)\)可以包含先验信息（比如观测历史）、期望输出（比如期望达到的目标），或者一般的优化函数目标（比如reward或者costs）等</li>
+<li>对于相同的环境，只需要建模一个模型\(p_\theta(\tau)\)，即可在多个不同的任务上使用（不同任务使用不同的\(h(\tau)\)即可）</li>
+</ul>
+</li>
+</ul>
+<h5 id="轨迹规划的生成模型"><a href="#轨迹规划的生成模型" class="headerlink" title="轨迹规划的生成模型"></a>轨迹规划的生成模型</h5><ul>
+<li>训练过程<br>$$<br>\mathcal{L}(\theta) = \mathbb{E}_{i,\epsilon,{\tau^{0}}}\left[\lVert \epsilon - \epsilon_\theta({\tau^{i}}, i) \rVert^2\right]<br>$$<ul>
+<li>其中\(i\sim \mathcal{U}\{1,2,\cdots,N\}\)表示扩散时间步（\(\mathcal{U}\)表示从集合中按照均匀分布随机采样），\(\epsilon\sim N(0,\mathbf{I})\)表示噪声目标（ground truth），\(\tau^i\)是\(\tau^0\)经过噪声\(\epsilon\)干扰的</li>
+</ul>
+</li>
+</ul>
+<h5 id="强化学习-引导式采样"><a href="#强化学习-引导式采样" class="headerlink" title="强化学习-引导式采样"></a>强化学习-引导式采样</h5><ul>
+<li><em>Reinforcement Learning as Guided Sampling</em></li>
+<li>在解决强化学习问题时，我们需要引入奖励，参照<a href="https://arxiv.org/pdf/1805.00909" target="_blank" rel="noopener">Reinforcement Learning and Control as Probabilistic Inference: Tutorial and Review</a>的做法，我们使用概率图模型的方式进行建模（control-as-inference   graphical model）</li>
+<li>再概率图模型下，假设\(\mathcal{O}_t\)是一个二元随机变量，表示轨迹中时间步\(t\)的最优性（理解：二元随机变量即取值为0或者为1，即当时间步\(t\)最优时\(\mathcal{O}_t=1\)，不是最优时\(\mathcal{O}_t=0\)），具体来说，可以用如下分布去表示该变量的概率分布：\( p(\mathcal{O}_t=1) = \exp(r(s_t, a_t)) \)</li>
+<li>一个问题：\(\exp(r(s_t, a_t))\)不能用来表示概率吧，概率不能大于1而reward可能大于1？<ul>
+<li>这里概率可以表示在某个state下采取某个action能够获得的reward越高，optimality是true的概率也就越大</li>
+<li>从原始论文中可以看出，这个值\( p(\mathcal{O}_t=1) = \exp(r(s_t, a_t)) \)是为了方便推导直接拍出来的，个人理解使用\( p(\mathcal{O}_t=1) \propto \exp(r(s_t, a_t)) \)会更准确</li>
+<li>实际推导中，则可以使用\(p(\mathcal{O}_t=1|s_t,a_t) \propto \exp(r(s_t, a_t))\)（常常简写为\(p(\mathcal{O}_t|s_t,a_t) \propto \exp(r(s_t, a_t))\)，其中认为\(\mathcal{O}_t\)一定为1）</li>
+</ul>
+</li>
+</ul>
+<h5 id="条件目标强化学习-图像修复"><a href="#条件目标强化学习-图像修复" class="headerlink" title="条件目标强化学习-图像修复"></a>条件目标强化学习-图像修复</h5><ul>
+<li><em>Goal-Conditioned RL as Inpainting</em></li>
+</ul>
+<hr>
+<h3 id="附录：Diffuser还算是强化学习吗？"><a href="#附录：Diffuser还算是强化学习吗？" class="headerlink" title="附录：Diffuser还算是强化学习吗？"></a>附录：Diffuser还算是强化学习吗？</h3><ul>
+<li>从狭义的强化学习来看，Diffuser没有MDP过程，基本不是强化学习了</li>
 </ul>
 
           
@@ -389,7 +484,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Decision-Diffuser.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——DDPG和TD3.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -408,7 +503,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——Decision-Diffuser.html" itemprop="url">RL——Decision-Diffuser</a></h1>
+                <a class="post-title-link" href="/Notes/RL/RL——DDPG和TD3.html" itemprop="url">RL——DDPG和TD3</a></h1>
         
 
         <div class="post-meta">
@@ -444,204 +539,140 @@
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/384497349" target="_blank" rel="noopener">强化学习之图解PPO算法和TD3算法</a>  <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<p><em>Decision-Diffuser</em></p>
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：</li>
-<li>源码：</li>
-</ul>
+
 </li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Decision-Transformer.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——Decision-Transformer.html" itemprop="url">RL——Decision-Transformer</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<p><em>Decision-Transformer，简称DT，使用序列预估的思想去实现决策问题</em></p>
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper_files/paper/2021/file/7f489f642a0ddb10272b5c31057f0663-Paper.pdf" target="_blank" rel="noopener">Decision Transformer: Reinforcement Learning via Sequence Modeling</a>  </li>
-<li>源码：<a href="https://github.com/kzl/decision-transformer" target="_blank" rel="noopener">/github.com/kzl/decision-transformer</a>  </li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="HER技术"><a href="#HER技术" class="headerlink" title="HER技术"></a>HER技术</h3><ul>
-<li>在Decision Transformer之前，HER（Hindsight Experience Replay）方法已经有这种事后的思想，HER通过将想要达到的目标状态添加到策略网络的输入端，实现在给定目标的情况下，进行决策</li>
+<h3 id="DPG"><a href="#DPG" class="headerlink" title="DPG"></a>DPG</h3><ul>
+<li>原始论文：<a href="https://proceedings.mlr.press/v32/silver14.pdf" target="_blank" rel="noopener">Deterministic Policy Gradient Algorithms</a>（论文中详细描述了SGD，DPG两种算法的off-policy，on-policy版本的分析）  </li>
+</ul>
+<h4 id="Stochastic-Actor-Critic-Algorithms"><a href="#Stochastic-Actor-Critic-Algorithms" class="headerlink" title="Stochastic Actor-Critic Algorithms"></a>Stochastic Actor-Critic Algorithms</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前策略采样到的数据（实际上，Q值的学习样本保证\(a_{t+1}\)的采样策略即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^{\pi},a\sim\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：\(s\sim \rho^{\pi}\)中的\(\pi\)必须是\(\pi_\theta\)吗？<ul>
+<li>回答：是的，原始推导中，回合\(\tau\)必须是来自当前策略的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="Off-Policy-Actor-Critic"><a href="#Off-Policy-Actor-Critic" class="headerlink" title="Off-Policy Actor Critic"></a>Off-Policy Actor Critic</h4><ul>
+<li>Critic网络损失函数<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ <ul>
+<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是当前其他行为策略采样到的数据</li>
+</ul>
+</li>
+<li>Actor网络优化梯度：<br>$$<br>\nabla_\theta J(\pi_\theta) = \mathbb{E}_{s\sim \rho^\beta,a\sim \beta}\left[ \frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \nabla_\theta \log \pi_\theta(a|s)Q^w(s,a) \right]<br>$$<ul>
+<li>问题：<strong>动作的偏移通过重要性采样\(\frac{\pi_\theta(a|s)}{\beta_\theta(a|s)} \)来解决，但是状态也可以吗？</strong> <ul>
+<li>回答：不可以，这里状态采用行为策略采样是因为off-policy场景下，策略梯度的目标就是在行为策略采样的状态上最大化目标函数（这样得到的不是最优策略，线上serving时的状态分布肯定与当前行为策略采样的状态不一致，所以是一个妥协的次优解）</li>
+</ul>
+</li>
+<li>思考：<strong>off-policy AC 与 DQN 的区别</strong><ul>
+<li>对于DQN，我们通过在每一个状态上让Q值拟合到最优策略对应的Q值（与状态分布无关，任意的状态我们都可以找到最优策略对应的Q值），然后通过\(\mathop{\arg\max}_a Q(s,a)\)来找到最优策略。</li>
+<li>对于off-policy AC，如果不考虑状态的分布，这里带来的偏差是从优化目标上出现的，即off-policy AC最大化的目标是，在行为策略采样的状态分布下，寻找一个策略，最大化累计策略收益期望。这里的目标显然与on-policy的原始目标不同了，状态分布线上线下不一致问题会导致天然的偏差。</li>
+<li>问题：为什么不可以理解为与DQN一样？任意给定的状态我都做到策略最大化了，实际上就已经求到了最优策略了？（按照这个理解，除了off-policy都会遇到的训练评估数据分布不一致外，没有别的问题？）<ul>
+<li>回答：不可以，因为<strong>DQN的目标是拟合\(Q^*(s,a)\)，与状态分布无关</strong>；而<strong>策略梯度法的目标找到一个最优策略\(\pi^*\)，最大化策略该策略下的累计收益，这里要求状态分布和动作分布均来自求解到的最优策略\(\pi^*\)</strong>，off-policy AC下的状态分布是行为策略的，存在偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>off-policy AC方法不常用，因为从目标上天然旧带着偏差</li>
+</ul>
+<h5 id="Off-Policy-AC如何对混合策略采样的样本进行重要性采样？"><a href="#Off-Policy-AC如何对混合策略采样的样本进行重要性采样？" class="headerlink" title="Off-Policy AC如何对混合策略采样的样本进行重要性采样？"></a>Off-Policy AC如何对混合策略采样的样本进行重要性采样？</h5><ul>
+<li>在Replay Buffer中记录下每个样本的采样策略（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L194" target="_blank" rel="noopener">代码示例</a>），并在更新时逐个样本计算动作概率比值（<a href="https://github.com/Kaixhin/ACER/blob/master/train.py#L89-L92" target="_blank" rel="noopener">代码示例</a>），参见：  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 策略记录</span><br><span class="line">memory.append(state, action, reward, policy.detach()) </span><br><span class="line"></span><br><span class="line">## 动作概率比值计算</span><br><span class="line">if off_policy:</span><br><span class="line">    rho = policies[i].detach() / old_policies[i]</span><br><span class="line">else:</span><br><span class="line">    rho = torch.ones(1, action_size)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="On-Policy-Deterministic-Actor-Critic"><a href="#On-Policy-Deterministic-Actor-Critic" class="headerlink" title="On-Policy Deterministic Actor-Critic"></a>On-Policy Deterministic Actor-Critic</h4><ul>
+<li>优化目标<br>$$ J(\theta) = \int_\mathcal{S} \rho^{\mu_\theta}(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ <ul>
+<li>其中\(\rho^{\mu_\theta}(s’) = \int_\mathcal{S} \sum_{k=1}^\infty \gamma^{k-1} \rho_0(s) \rho^\mu(s \to s’, k) ds\)</li>
+</ul>
+</li>
+<li>确定性梯度定理：<br>$$<br>\begin{aligned}<br>\nabla_\theta J(\theta)<br>&amp;= \int_\mathcal{S} \rho^{\mu_\theta}(s) \nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)} ds \\<br>&amp;= \mathbb{E}_{s \sim \rho^{\mu_\theta}} [\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s) \rvert_{a=\mu_\theta(s)}]<br>\end{aligned}<br>$$</li>
+<li>确定性策略看作是随机策略的一种特殊形式，也就是策略的概率分布仅在某一个动作上有非零概率(该动作概率为1)。实际上，在DPG的论文中，作者指出：如果对随机策略，通过确定性策略和一个随机变量进行重参数化(re-parameterize)，那么随机策略最终会在方差\(\sigma=0\)时与确定性策略等价。由于随机策略需要对整个状态和动作空间进行积分，我们可以预计随机策略的学习需要比确定性策略更多的样本（这里只是猜测，没有证据证明）</li>
+</ul>
+<h4 id="Off-Policy-Deterministic-Actor-Critic"><a href="#Off-Policy-Deterministic-Actor-Critic" class="headerlink" title="Off-Policy Deterministic Actor-Critic"></a>Off-Policy Deterministic Actor-Critic</h4><ul>
+<li><p>优化目标<br>$$ J_\beta(\theta) = \int_\mathcal{S} \rho^\beta(s) Q^{\mu_\theta}(s, \mu_\theta(s)) ds $$ </p>
+<ul>
+<li>其中\(\rho^\beta(s)\)是行为策略上采样得到的样本状态分布，这里直接导致了优化目标不是在最优策略下的回合（回合包含状态和动作）分布下的奖励期望最大，相对on-policy Deterministic AC算是次优解</li>
+</ul>
+</li>
+<li><p>推导结果：<br>$$<br>\begin{aligned}<br>\nabla_\theta J_\beta(\theta) &amp;= \mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>Critic网络更新（TD-Error）<br>$$<br>Loss_{\text{critic}} = \sum_t (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
+<ul>
+<li>这里要求\(a_{t+1} = \mu_\theta(s_{t+1})\)，\(Q^w(s_t,a_t)\)值拟合的目标是策略\(\mu_\theta\)对应的Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)，实际更新中常使用Target网络\(\bar{\theta}\)</li>
+<li>这里训练使用的\((s_t,a_t,s_{t+1})\)是行为策略采样到的数据（Q值\(Q^{\mu_\theta}(s_{t}, a_t)\)的学习样本保证\(a_{t+1}\)的采样策略是\(\mu_\theta\)即可，样本可以是任意策略采样的，当然，用当前策略采样的会更好些）</li>
+</ul>
+</li>
+<li><p>Actor网络更新<br>$$<br>\begin{aligned}<br>Loss_{\text{actor}} = - \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))]<br>\end{aligned}<br>$$</p>
+<ul>
+<li>上面的Loss求导就可以得到梯度是\(\mathbb{E}_{s \sim \rho^\beta(s)} \left[\nabla_a Q^{\mu_\theta}(s, a) \nabla_\theta \mu_\theta(s)  \rvert_{a=\mu_\theta(s)} \right]\)，与之前推导结论一致</li>
+<li>直观上理解，这里的目标是对于任意给定的状态\(s_t\)下（这个状态样本是行为策略采样得到的），找到一个最大最大化当前\(Q_w(s_t,\mu_\theta(s_t)) \)的动作参数\(\mu_\theta\)</li>
+</ul>
+</li>
 </ul>
 <hr>
-<h3 id="Decision-Transformer"><a href="#Decision-Transformer" class="headerlink" title="Decision Transformer"></a>Decision Transformer</h3><h4 id="returns-to-go轨迹变换"><a href="#returns-to-go轨迹变换" class="headerlink" title="returns-to-go轨迹变换"></a>returns-to-go轨迹变换</h4><ul>
-<li>原始的轨迹：\( \tau = (s_1,a_1,r_1,s_2,a_2,r_2,\cdots,s_T,a_T,r_T) \)</li>
-<li>returns-to-go对应的轨迹：\( \tau = (\hat{R}_1,s_1,a_1,\hat{R}_2,s_2,a_2,\cdots,\hat{R}_T,s_T,a_T) \)<ul>
-<li>\(\hat{R}_t = \sum_{t’=t}^T r_{t’}\)被称为return-to-go（与state、action等一样的粒度），表示复数或者泛指时，也是用returns-to-go</li>
-<li>注意，\(\hat{R}_t\)没有使用discount ratio，是无折扣的奖励，方便后续实现中减去已获得的奖励实现目标值变换</li>
+<h3 id="DDPG"><a href="#DDPG" class="headerlink" title="DDPG"></a>DDPG</h3><ul>
+<li>Deep Deterministic Policy Gradient Algorithms，是DPG的Deep网络版本，原始论文地址<a href="https://arxiv.org/pdf/1509.02971" target="_blank" rel="noopener">CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING</a>  </li>
 </ul>
+<h4 id="DDPG训练流程"><a href="#DDPG训练流程" class="headerlink" title="DDPG训练流程"></a>DDPG训练流程</h4><ul>
+<li><p>伪代码如下（其中\(\theta^{\mu’}\)和\(\theta^{Q’}\)分别表示策略\(\mu’\)和价值\(Q’\)的参数）：</p>
+<img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png" title height="60%" width="60%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/DDPG-Algorithm.png"> -->
 </li>
-</ul>
-<h4 id="建模方式"><a href="#建模方式" class="headerlink" title="建模方式"></a>建模方式</h4><ul>
-<li>整体架构  <img src="/Notes/RL/RL——Decision-Transformer/DT-Architecture.png" title height="70%" width="70%"></li>
-<li>demo  <img src="/Notes/RL/RL——Decision-Transformer/DT-Demo.png" title height="70%" width="70%">
-
+<li><p><strong>随机探索</strong>：做选择动作\(a_t\)时，添加一个随机噪声，可以增强探索能力，使得模型更加鲁棒，如果没有随机噪声，可能会很快收敛到局部最优</p>
 </li>
-</ul>
-<h4 id="伪代码"><a href="#伪代码" class="headerlink" title="伪代码"></a>伪代码</h4><ul>
-<li>在原始Transformer的基础上，DT算法的实现非常简单，DT算法的整体伪代码如下：  <img src="/Notes/RL/RL——Decision-Transformer/DT-Algorithm.png" title height="70%" width="70%"></li>
-<li>伪代码讲解：<ul>
-<li>token：包含三种模态的token，分别为return-to-go、state和action</li>
-<li>位置编码：虽然是三个token，但是同一个时间片的return-to-go、state和action，对应的位置编码相同</li>
-<li>模型的输入：过去\(K-1\)个时间片的(return-to-go,state,action)完整信息和当前时间片的(return-to-go,state)，共\((K-1)*3+2\)个tokens</li>
-<li>输出：仅在输入是state token对应的位置上，输出action token为决策目标</li>
-<li>损失函数：伪代码中使用的是MSE损失函数（对应连续动作场景），实际上对于离散动作场景， 可以使用交叉熵损失函数（策略网络输出Softmax后的多个头）</li>
-<li>训练时：<ul>
-<li>每个样本仅保留最近的\(K\)个步骤，模型输入是\(K*\)个样本</li>
-<li>时间步\(t\)是一直累计的，与\(K\)无关</li>
-</ul>
-</li>
-<li>推断时的自回归：<ul>
-<li>初始化时先指定初始状态\(s_0\)和最终目标target_return \(R_0\)</li>
-<li>通过DT模型决策得到动作\(a_t\)</li>
-<li>与环境交互执行动作\(a_t\)并得到reward \(r_{t}\)，并跳转到状态\(s_{t+1}\)</li>
-<li>通过reward \(r_t\)计算下个时间步的return-to-go \(R_{t+1} = R_t - r_t\)</li>
-<li>将\((a_t, s_{t+1}, R_{t+1})\)分别加入到各自token列表中</li>
-<li>截断到\(K\)个时间步，注意动作是保留\(K-1\)个，不足\(K\)个时间步时，会自动paddding（直接调用Transformer）即可，此时也需要保证模型输入action比return-to-go和state少一个</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="预测时如何指定Reward目标？"><a href="#预测时如何指定Reward目标？" class="headerlink" title="预测时如何指定Reward目标？"></a>预测时如何指定Reward目标？</h4><ul>
-<li><p>可以使用离线采样样本中Reward最大值作为目标，论文原始表述如下</p>
-  <img src="/Notes/RL/RL——Decision-Transformer/DT-Setting-of-Return-to-go.png" title height="100%" width="100%">
-</li>
-<li><p>个人理解：这个目标不一定要是最优目标，也不需要与离线目标完全相等，但是比较难设置：</p>
-<ul>
-<li>如果太小，但是生成的不一定是最优的路径</li>
-<li>如果太大，理论上，可以生成最优解，但是因为模型没有见过该目标值（模型做不到，因为训练时也收集不到这样的样本），可能会发生意想不到情况</li>
-</ul>
+<li><p><strong>软更新</strong>：Target网络的更新选择软更新，DQN中是硬更新</p>
 </li>
 </ul>
 <hr>
-<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
-<li><p>Atari上收集的实验数据集训练的实验结果见如下图：</p>
-  <img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-Atari.png" title height="100%" width="100%">
-
-<ul>
-<li>在部分场景上，CQL效果更好</li>
+<h3 id="TD3"><a href="#TD3" class="headerlink" title="TD3"></a>TD3</h3><ul>
+<li>TD3是对DDPG的改进，全称为Twin Delayed Deep Deterministic Policy Gradient Algorithm，原始论文：<a href="https://arxiv.org/pdf/1802.09477" target="_blank" rel="noopener">Addressing Function Approximation Error in Actor-Critic Methods，ICML 2018，Google Research, Brain Team</a>，代码地址：<a href="https://github.com/sfujim/TD3" target="_blank" rel="noopener">github.com/sfujim/TD3</a> </li>
+<li>有两个改进包含在名字中，Twin和Delayed</li>
+<li>其他改进是在Actor 的target网络输出中，增加噪声</li>
 </ul>
-</li>
-<li><p>D4RL以及OpenAI-Gym上收集的数据集上的实验结果如下图（注意，补充了一些）：</p>
-  <img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-OpenAI-Gym-and-D4RL.png" title height="100%" width="100%">
+<h4 id="TD3训练流程"><a href="#TD3训练流程" class="headerlink" title="TD3训练流程"></a>TD3训练流程</h4><ul>
+<li>伪代码如下（其中，\(t \ \text{mod} \ d\) 表示策略更新比Q值更新慢一些，\(d\) 次Q值更新对应一次策略更新）：<img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png" title height="40%" width="40%">
+<!-- <img src="/Notes/RL/RL——DDPG和TD3/TD3-Algorithm.png"> -->
 
-<ul>
-<li>补充了一些D4RL中没有的数据集（Medium是指直接用Medium Agent与环境交互生成的样本；Medium-Replay是指训练一个Medium Agent时收集的Replay Buffer；Medium-Expert是Medium Agent和Expert Agent两种策略收集到的数据集的混合）<img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-OpenAI-Gym-Replay.png" title height="100%" width="100%">
 
 </li>
 </ul>
+<h4 id="改进1：Twin"><a href="#改进1：Twin" class="headerlink" title="改进1：Twin"></a>改进1：Twin</h4><ul>
+<li>采用双Critic网络（训练网络和target网络均为双网络），缓解Q值高估问题</li>
+</ul>
+<h4 id="改进2：Delayed"><a href="#改进2：Delayed" class="headerlink" title="改进2：Delayed"></a>改进2：Delayed</h4><ul>
+<li>Actor的目标是在Q值更新时，寻找最优的策略，如果Q值更新太快，容易波动，可以让Q值比较稳定了再更新Actor网络</li>
+<li>具体做法，Critic网络更新\(d\)次再更新一次Actor</li>
+</ul>
+<h4 id="改进3：Target策略网络增加噪声"><a href="#改进3：Target策略网络增加噪声" class="headerlink" title="改进3：Target策略网络增加噪声"></a>改进3：Target策略网络增加噪声</h4><ul>
+<li>在Actor 的target策略网络输出的策略中，增加噪声，可以缓解Q值高估问题</li>
+</ul>
+<hr>
+<h3 id="TD3-BC（for-Offline-RL）"><a href="#TD3-BC（for-Offline-RL）" class="headerlink" title="TD3+BC（for Offline RL）"></a>TD3+BC（for Offline RL）</h3><ul>
+<li>原始论文(与TD3同一个作者)：<a href="https://arxiv.org/pdf/2106.06860" target="_blank" rel="noopener">A Minimalist Approach to Offline Reinforcement Learning，NeurIPS 2021，Google Research, Brain Team</a>，开源代码：<a href="https://github.com/sfujim/TD3_BC" target="_blank" rel="noopener">github.com/sfujim/TD3_BC</a>  </li>
+<li>TD3+BC，在TD3的基础上，增加策略模仿，即对策略进行迭代时，损失函数中增加\(loss_{\text{BC}} = (\pi_{\theta}(s) - a)^2\)</li>
+<li>论文中提到三个改进点：<ul>
+<li>加入带权重的BC正则项</li>
+<li>状态归一化（不一定很重要）</li>
+<li>提出对权重的一种设定方式</li>
+</ul>
 </li>
+<li>DDPG是Online RL的算法，TD3+BC是Offline RL的算法</li>
 </ul>
 
           
@@ -852,6 +883,194 @@
 <hr>
 <h3 id="超参数的设置"><a href="#超参数的设置" class="headerlink" title="超参数的设置"></a>超参数的设置</h3><ul>
 <li>\(k\)值不能太大，太大了会导致数据集中真实样本减少，出现问题</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Decision-Transformer.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——Decision-Transformer.html" itemprop="url">RL——Decision-Transformer</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<p><em>Decision-Transformer，简称DT，使用序列预估的思想去实现决策问题</em></p>
+<ul>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper_files/paper/2021/file/7f489f642a0ddb10272b5c31057f0663-Paper.pdf" target="_blank" rel="noopener">Decision Transformer: Reinforcement Learning via Sequence Modeling</a>  </li>
+<li>源码：<a href="https://github.com/kzl/decision-transformer" target="_blank" rel="noopener">/github.com/kzl/decision-transformer</a>  </li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="HER技术"><a href="#HER技术" class="headerlink" title="HER技术"></a>HER技术</h3><ul>
+<li>在Decision Transformer之前，HER（Hindsight Experience Replay）方法已经有这种事后的思想，HER通过将想要达到的目标状态添加到策略网络的输入端，实现在给定目标的情况下，进行决策</li>
+</ul>
+<hr>
+<h3 id="Decision-Transformer"><a href="#Decision-Transformer" class="headerlink" title="Decision Transformer"></a>Decision Transformer</h3><h4 id="returns-to-go轨迹变换"><a href="#returns-to-go轨迹变换" class="headerlink" title="returns-to-go轨迹变换"></a>returns-to-go轨迹变换</h4><ul>
+<li>原始的轨迹：\( \tau = (s_1,a_1,r_1,s_2,a_2,r_2,\cdots,s_T,a_T,r_T) \)</li>
+<li>returns-to-go对应的轨迹：\( \tau = (\hat{R}_1,s_1,a_1,\hat{R}_2,s_2,a_2,\cdots,\hat{R}_T,s_T,a_T) \)<ul>
+<li>\(\hat{R}_t = \sum_{t’=t}^T r_{t’}\)被称为return-to-go（与state、action等一样的粒度），表示复数或者泛指时，也是用returns-to-go</li>
+<li>注意，\(\hat{R}_t\)没有使用discount ratio，是无折扣的奖励，方便后续实现中减去已获得的奖励实现目标值变换</li>
+</ul>
+</li>
+</ul>
+<h4 id="建模方式"><a href="#建模方式" class="headerlink" title="建模方式"></a>建模方式</h4><ul>
+<li>整体架构  <img src="/Notes/RL/RL——Decision-Transformer/DT-Architecture.png" title height="70%" width="70%"></li>
+<li>demo  <img src="/Notes/RL/RL——Decision-Transformer/DT-Demo.png" title height="70%" width="70%">
+
+</li>
+</ul>
+<h4 id="伪代码"><a href="#伪代码" class="headerlink" title="伪代码"></a>伪代码</h4><ul>
+<li>在原始Transformer的基础上，DT算法的实现非常简单，DT算法的整体伪代码如下：  <img src="/Notes/RL/RL——Decision-Transformer/DT-Algorithm.png" title height="70%" width="70%"></li>
+<li>伪代码讲解：<ul>
+<li>token：包含三种模态的token，分别为return-to-go、state和action</li>
+<li>位置编码：虽然是三个token，但是同一个时间片的return-to-go、state和action，对应的位置编码相同</li>
+<li>模型的输入：过去\(K-1\)个时间片的(return-to-go,state,action)完整信息和当前时间片的(return-to-go,state)，共\((K-1)*3+2\)个tokens</li>
+<li>输出：仅在输入是state token对应的位置上，输出action token为决策目标</li>
+<li>损失函数：伪代码中使用的是MSE损失函数（对应连续动作场景），实际上对于离散动作场景， 可以使用交叉熵损失函数（策略网络输出Softmax后的多个头）</li>
+<li>训练时：<ul>
+<li>每个样本仅保留最近的\(K\)个步骤，模型输入是\(K*\)个样本</li>
+<li>时间步\(t\)是一直累计的，与\(K\)无关</li>
+</ul>
+</li>
+<li>推断时的自回归：<ul>
+<li>初始化时先指定初始状态\(s_0\)和最终目标target_return \(R_0\)</li>
+<li>通过DT模型决策得到动作\(a_t\)</li>
+<li>与环境交互执行动作\(a_t\)并得到reward \(r_{t}\)，并跳转到状态\(s_{t+1}\)</li>
+<li>通过reward \(r_t\)计算下个时间步的return-to-go \(R_{t+1} = R_t - r_t\)</li>
+<li>将\((a_t, s_{t+1}, R_{t+1})\)分别加入到各自token列表中</li>
+<li>截断到\(K\)个时间步，注意动作是保留\(K-1\)个，不足\(K\)个时间步时，会自动paddding（直接调用Transformer）即可，此时也需要保证模型输入action比return-to-go和state少一个</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="预测时如何指定Reward目标？"><a href="#预测时如何指定Reward目标？" class="headerlink" title="预测时如何指定Reward目标？"></a>预测时如何指定Reward目标？</h4><ul>
+<li><p>可以使用离线采样样本中Reward最大值作为目标，论文原始表述如下</p>
+  <img src="/Notes/RL/RL——Decision-Transformer/DT-Setting-of-Return-to-go.png" title height="100%" width="100%">
+</li>
+<li><p>个人理解：这个目标不一定要是最优目标，也不需要与离线目标完全相等，但是比较难设置：</p>
+<ul>
+<li>如果太小，但是生成的不一定是最优的路径</li>
+<li>如果太大，理论上，可以生成最优解，但是因为模型没有见过该目标值（模型做不到，因为训练时也收集不到这样的样本），可能会发生意想不到情况</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
+<li><p>Atari上收集的实验数据集训练的实验结果见如下图：</p>
+  <img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-Atari.png" title height="100%" width="100%">
+
+<ul>
+<li>在部分场景上，CQL效果更好</li>
+</ul>
+</li>
+<li><p>D4RL以及OpenAI-Gym上收集的数据集上的实验结果如下图（注意，补充了一些）：</p>
+  <img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-OpenAI-Gym-and-D4RL.png" title height="100%" width="100%">
+
+<ul>
+<li>补充了一些D4RL中没有的数据集（Medium是指直接用Medium Agent与环境交互生成的样本；Medium-Replay是指训练一个Medium Agent时收集的Replay Buffer；Medium-Expert是Medium Agent和Expert Agent两种策略收集到的数据集的混合）<img src="/Notes/RL/RL——Decision-Transformer/DT-Experiments-OpenAI-Gym-Replay.png" title height="100%" width="100%">
+
+</li>
+</ul>
+</li>
 </ul>
 
           
@@ -1116,143 +1335,6 @@
 <h3 id="DPPO-Distributed-PPO"><a href="#DPPO-Distributed-PPO" class="headerlink" title="DPPO(Distributed PPO)"></a>DPPO(Distributed PPO)</h3><ul>
 <li>DPPO是PPO的分布式版本，引入了分布式计算的概念，允许多个计算节点（或智能体）并行地与环境交互，收集数据，并将这些数据用于更新全局模型。</li>
 <li>分布式架构不仅加快了数据收集的速度，还提高了算法处理大规模并行任务的能力，使得学习过程更加高效</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——TD误差和优势函数的区别.html" itemprop="url">RL——TD误差和优势函数的区别</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考链接：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
-</ul>
-</li>
-</ul>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-
-<hr>
-<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
-<li>时间差分误差，TD error</li>
-<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
-<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
-<li>TD error是针对确定的\(s’\)来说的</li>
-</ul>
-<hr>
-<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
-<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = \mathbb{E}_{s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
-<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
-</ul>
-<hr>
-<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
-<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = \mathbb{E}_{a\sim \pi} [A_{\theta}(s,a)] = \mathbb{E}_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
-</ul>
-<hr>
-<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
-<li>期望贝尔曼误差<br>$$<br>\mathbb{E}_{s\sim \mu} [\epsilon_{\theta}(s)] = \mathbb{E}_{s\sim \mu}[\mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  \mathbb{E}_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
-<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
 
           
@@ -1865,7 +1947,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TD误差和优势函数的区别.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1884,7 +1966,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html" itemprop="url">RL——TRPO-PPO-目标函数基础推导</a></h1>
+                <a class="post-title-link" href="/Notes/RL/RL——TD误差和优势函数的区别.html" itemprop="url">RL——TD误差和优势函数的区别</a></h1>
         
 
         <div class="post-meta">
@@ -1920,137 +2002,39 @@
       
         
           
-            <p><em>本文主要介绍TRPO、PPO相关内容</em></p>
+            <ul>
+<li>参考链接：<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/264806566" target="_blank" rel="noopener">TD误差 vs 优势函数 vs贝尔曼误差</a></li>
+</ul>
+</li>
+</ul>
 <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<ul>
-<li>参考链接：<ul>
-<li><a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>：知乎</li>
-<li><a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>：博客</li>
-<li><a href="https://blog.csdn.net/wdlovecjy/article/details/124192928" target="_blank" rel="noopener">TRPO公式推导</a>:笔记式推导</li>
-<li><a href="https://www.cnblogs.com/kailugaji/p/15388913.html" target="_blank" rel="noopener">信赖域策略优化(Trust Region Policy Optimization, TRPO)</a>:PPT式推导</li>
-<li><a href="https://www.52coding.com.cn/2018/11/22/RL%20-%20TRPO/" target="_blank" rel="noopener">RL - Trust Region Policy Optimization (TRPO)</a></li>
-<li><a href="https://blog.csdn.net/zzzzzzzzzzhy/article/details/130692382" target="_blank" rel="noopener">Trust Region Policy Optimization (TRPO) 公式推导</a>:包含一些比较细节的推导过程</li>
-</ul>
-</li>
+
+
+
+<hr>
+<h3 id="TD误差"><a href="#TD误差" class="headerlink" title="TD误差"></a>TD误差</h3><ul>
+<li>时间差分误差，TD error</li>
+<li>定义如下：<br>$$<br>\delta_{\theta}(s, a, s’) = R(s, a, s’) + \gamma v_{\theta}(s’) - v_{\theta}(s)<br>$$</li>
+<li>\(R(s,a,s’)=r(s,a,s’)\)，表示从状态\(s\)执行\(a\)之后转移到\(s’\)获得的立即回报</li>
+<li>TD error是针对确定的\(s’\)来说的</li>
 </ul>
 <hr>
-<h3 id="相关概念理解"><a href="#相关概念理解" class="headerlink" title="相关概念理解"></a>相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
-<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})] $$<ul>
-<li>说明：以上期望是条件概率下的期望，为了更准确表达，一般来说可以加上”\(\vert_{(s_t,a_t)} \)”</li>
-</ul>
-</li>
-<li>V值的定义<br>$$ V_\pi(s_t) = \mathbb{E}_{a_t, s_{t+1},\cdots \sim \pi}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l}, a_{t+l})] = \mathbb{E}_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
-<li>优势函数的定义<br>$$ A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t) $$</li>
-</ul>
-<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = \mathbb{E}_{s_0, a_0,\ldots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</p>
-<ul>
-<li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
-</ul>
-<h4 id="普通策略梯度法的解法"><a href="#普通策略梯度法的解法" class="headerlink" title="普通策略梯度法的解法"></a>普通策略梯度法的解法</h4><ul>
-<li>设定策略为\(\pi_\theta\)，则\(\eta(\pi)\)可表达为一个关于策略参数\(\theta\)的函数\(\eta(\theta)\)，此时可通过梯度上升法（策略梯度法）得到参数更新公式：<br>$$ \theta_{new} = \theta_{old} + \alpha\nabla_{\theta}\eta(\theta) $$</li>
-</ul>
-<h4 id="普通策略梯度法会遇到的问题"><a href="#普通策略梯度法会遇到的问题" class="headerlink" title="普通策略梯度法会遇到的问题"></a>普通策略梯度法会遇到的问题</h4><ul>
-<li>普通策略梯度法可能存在不稳定问题：<ul>
-<li>如果公式更新的步长选取过小，训练速度慢</li>
-<li>如果步长选取过大，那么会导致策略参数更新步子迈得过大，如果更新过渡，可能导致策略变差，从而导致交互样本变差，差的样本进一步导致策略更差，形成恶性循环。</li>
-</ul>
-</li>
-<li>TRPO/PPO的解法：选择一个合适的更新策略，或是如何选择一个合适的步长，使得更新过后的策略一定比当前策略更好</li>
-</ul>
-<h4 id="TRPO-PPO的核心思想"><a href="#TRPO-PPO的核心思想" class="headerlink" title="TRPO/PPO的核心思想"></a>TRPO/PPO的核心思想</h4><ul>
-<li>TRPO/PPO的核心是使用一个约束优化问题来更新策略，这个约束保证了新策略与旧策略之间的差异不会太大</li>
+<h3 id="优势函数"><a href="#优势函数" class="headerlink" title="优势函数"></a>优势函数</h3><ul>
+<li>优势函数，Advantage Function<br>$$<br>A_{\theta}(s,a) = \mathbb{E}_{s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s) = Q_{\theta}(s,a) - v_{\theta}(s)<br>$$</li>
+<li>优势函数是TD误差关于状态\(s’\)的期望，即从状态\(s\)执行\(a\)之后关于状态\(s’\)的期望</li>
 </ul>
 <hr>
-<h3 id="TRPO-PPO的推导"><a href="#TRPO-PPO的推导" class="headerlink" title="TRPO/PPO的推导"></a>TRPO/PPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
-<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = \mathbb{E}_{s_0, a_0,\cdots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</li>
-<li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$ \eta(\tilde{\pi}) = \eta(\pi) + \mathbb{E}_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)] $$<ul>
-<li>证明如下：<br>$$<br>\begin{aligned}<br>\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-\mathbb{E}_{s_0}[V_\pi(s_0)] + \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
-</ul>
-</li>
-<li>显然，如果我们能找到一个策略\(\tilde{\pi}\)使得\(\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \ge 0\)成立，即可确保策略性能（目标函数）是单调递增的<ul>
-<li>但是，直接求解上式是非常困难的，因为策略\(\tilde{\pi}\)是未知的，无法用这个策略收集数据，下面我们先对这个形式进行变形，再通过其他方法近似求解</li>
-</ul>
-</li>
-</ul>
-<h4 id="策略提升的变形"><a href="#策略提升的变形" class="headerlink" title="策略提升的变形"></a>策略提升的变形</h4><ul>
-<li>变形如下：<br>$$<br>\begin{aligned}<br>\eta({\tilde{\pi}}) - \eta({\pi}) &amp;= \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \\<br>&amp;=  \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)<br>\end{aligned}<br>$$</li>
-<li>其中有<br>$$ \rho_\pi(s) = P(s_0=s) + \gamma P(s_1=s) + \gamma^2 P(s_2=s) + \ldots $$</li>
-<li>证明如下：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]\\<br>  &amp;=\sum\limits_{t=0}^\infty\sum\limits_sP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\\<br>  &amp;=\sum\limits_s\sum\limits_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\\<br>  &amp;=\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)<br>\end{aligned}<br>$$</li>
-<li>对于\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\)来说，我们仍然难以求解，因为策略\(\tilde{pi}\)是未知的，我们无法用这个策略收集数据，所以我们使用旧的策略\(\pi\)来替换新策略\(\tilde{\pi}\)收集数据</li>
-<li>对于状态部分，当新旧策略特别接近时，他们的状态访问分布会比较接近，我们可以利用MM（Majorization-Minimization）方法构造近似目标函数，可以证明，直接优化目标函数即可优化最优:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi(\cdot|s)|| \tilde{\pi}(\cdot|s)\right)<br>\end{aligned}<br>$$<ul>
-<li>其中的一些字符含义见下面的描述：在严格证明下，经过一系列推导后，我们可以得到<strong>最终优化问题</strong>是：<br>  $$ \theta = \mathop{\arg\max}_{\theta}\left[ \sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\right] $$<ul>
-<li>其中：<br>  $$<br>  \begin{aligned}<br>  \epsilon &amp;= \max_{s,a} A_\pi(s,a) \quad — s,a是所有可行状态动作，不属于具体分布\\<br>  D_{\text{KL}}^\max(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) &amp;= \max_s D_{\text{KL}}(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) \quad — s是所有可行状态<br>  \end{aligned}<br>  $$</li>
-<li>对应求解伪代码<img src="/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png"></li>
-</ul>
-</li>
-<li>MM方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。</li>
-<li>可以通过严格的MM方法数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数是旧的目标函数的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>、<a href="https://www.zhihu.com/question/316004388" target="_blank" rel="noopener">强化学习TRPO模型中，L_pi(.)可逼近rho(.)的证明何解？</a>）。这个证明较为复杂，有时间可以详细看看。</li>
-<li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
-</ul>
-</li>
-<li>基于KL散度限制新旧策略的距离后我们得到如下的目标<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \\<br>  \text{s.t.} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi}(s)} \left[D_{\text{KL}}(\pi, \tilde{\pi})\right] \le \delta<br>\end{aligned}<br>$$</li>
-<li>进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
-<li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
-</ul>
-</li>
-<li>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以有最大化\(\eta(\tilde{\pi})\)，等价于最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>\text{s.t. } \quad \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
-<li>一般也会写成期望的等价形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}(s), a \sim \pi_{\theta_\text{old}}(a|s)}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}(s)} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
-<li>或者进一步简写成：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$<ul>
-<li>目标是原始目标等价的期望形式</li>
-<li>约束则考虑了计算KL散度时在旧策略采样的状态分布上进行验证（个人理解：这里策略之间的KL散度需要指定状态或状态分布才有意义，实际上该状态分布应该是当前策略对应的状态分布，详细展开写应该是\(\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}(\cdot|s), \pi_{\theta_\text{new}}(\cdot|s))\right]\)，使用状态\(s \sim \rho_{\pi_{\theta_\text{old}}}\)或者\(s \sim \rho_{\pi_{\theta_\text{new}}}\)都可以，因为两者很接近）</li>
-</ul>
-</li>
-<li>至此，目标函数中采样策略（包括状态和动作）变成了之前的旧策略，总结一下有：<ul>
-<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的，这个改动是MM（Majorization-Minimization）方法的思想，构造一个可以严格通过MM方法证明的近似目标函数\(\sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\)，这个目标函数的优化没有信赖域的概念，所以不是Trust Region方法</li>
-<li>在构造近似目标函数后，进一步简化目标函数的等价形式为KL散度约束下的更简洁形式，此时算是Trust Region方法</li>
-<li>动作分布替换旧策略是基于重要性采样实现的</li>
-</ul>
-</li>
+<h3 id="贝尔曼误差"><a href="#贝尔曼误差" class="headerlink" title="贝尔曼误差"></a>贝尔曼误差</h3><ul>
+<li>贝尔曼误差<br>$$<br>\epsilon_{\theta}(s) = \mathbb{E}_{a\sim \pi} [A_{\theta}(s,a)] = \mathbb{E}_{a\sim \pi,s’\sim P}[\delta_{\theta}(s, a, s’)] = \mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)] - v_{\theta}(s)<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
 <hr>
-<h3 id="TRPO简单理解"><a href="#TRPO简单理解" class="headerlink" title="TRPO简单理解"></a>TRPO简单理解</h3><h4 id="TRPO名字的由来"><a href="#TRPO名字的由来" class="headerlink" title="TRPO名字的由来"></a>TRPO名字的由来</h4><ul>
-<li>TRPO（Trust Region Policy Optimization）的名字来源于其核心方法——信任域（Trust Region）优化。</li>
-<li>TRPO同时包含了Trust Region算法和MM（Majorization-Minimization）算法的思想：<ul>
-<li>MM算法：推导过程中，在对策略提升部分进行转换时，使用的是MM算法的思想，构造了一个近似目标函数，同时证明了该近似目标函数与原始目标函数的关系（两者的梯度和值在当前策略处相等，且近似目标函数处处小于等于原始目标函数）；</li>
-<li>Trust Region算法：TRPO方法在每次迭代需要在KL散度约束内做更新优化，并且构造了一个KL散度约束的优化问题来近似求解，属于Trust Region方法的思想；</li>
-</ul>
-</li>
-<li>补充问题：MM算法、Trust Region算法、近端梯度下降算法，这三种方法的区别和关系是什么？<ul>
-<li>MM算法 vs Trust Region算法：<ul>
-<li>相同点：两者都是迭代优化方法，每次迭代都通过解决一个较简单的优化问题来逼近原始问题的解。</li>
-<li>异同点：<ul>
-<li>构造方式: MM算法通过构造一个上界函数来近似目标函数，而Trust Region算法通过在一个信赖域内构造一个近似模型来优化目标函数。</li>
-<li>信赖域: Trust Region算法明确使用信赖域来限制每次迭代的步长，而MM算法没有这种信赖域的概念。</li>
-<li>适用范围: MM算法更适合处理凸优化问题，而Trust Region算法在处理非凸优化问题和大规模优化问题时表现更优。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>近端梯度下降：近端梯度下降方法（Proximal Gradient Descent, PGD）是一种用于优化非光滑（nonsmooth）和复合目标函数的优化算法。它结合了梯度下降法和近端算子（proximal operator），可以有效处理带有非光滑正则化项的优化问题。该方法PPO和TRPO都没有用到</li>
-</ul>
-</li>
-</ul>
-<h4 id="TRPO解法思路"><a href="#TRPO解法思路" class="headerlink" title="TRPO解法思路"></a>TRPO解法思路</h4><ul>
-<li>近似求解上述式子，用一阶梯度近似目标，用二阶梯度近似约束，从而得到一个关于参数最优化问题</li>
-<li>基于共轭梯度法可以求解该问题</li>
-</ul>
-<h4 id="GAE"><a href="#GAE" class="headerlink" title="GAE"></a>GAE</h4><ul>
-<li>GAE（Generalized Advantage Estimation，广义优势估计）是一种用于估计策略梯度算法中优势函数的方法。它旨在解决标准优势函数估计方法的高方差问题，通过引入一个可调参数来平衡偏差与方差之间的关系。</li>
-<li>详情可参考<a href="/Notes/RL/RL%E2%80%94%E2%80%94GAE.html">RL——GAE</a></li>
-</ul>
-<hr>
-<h3 id="PPO简单理解"><a href="#PPO简单理解" class="headerlink" title="PPO简单理解"></a>PPO简单理解</h3><h4 id="PPO名字的由来"><a href="#PPO名字的由来" class="headerlink" title="PPO名字的由来"></a>PPO名字的由来</h4><ul>
-<li>PPO（Proximal Policy Optimization）名字中的“Proximal”是指“近端”约束，表示确保新策略不会偏离旧策略太远，从而保证策略更新的稳定性和有效性。跟近端梯度下降（Proximal Gradient Descent）方法没有直接关系。“Proximal”是“最接近的”或“邻近的”。在不同的上下文中，“proximal”可以有不同的具体含义，但其核心概念通常与“接近”或“邻近”有关。</li>
-<li>由于PPO的优化目标推导过程与TRPO相同，都用到了近似目标函数，所以推导过程中也用到了MM的思想和Trust Region的思想，但在解决问题时仅用到了近端（“Proximal”）约束，即每次迭代策略不要更新太多（没有严格遵循Trust Region推导得到的结果），严格来说不属于Trust Region方法</li>
-</ul>
-<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
-<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
-</ul>
-<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
-<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  \mathbb{E}_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
-<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+<h3 id="期望贝尔曼误差"><a href="#期望贝尔曼误差" class="headerlink" title="期望贝尔曼误差"></a>期望贝尔曼误差</h3><ul>
+<li>期望贝尔曼误差<br>$$<br>\mathbb{E}_{s\sim \mu} [\epsilon_{\theta}(s)] = \mathbb{E}_{s\sim \mu}[\mathbb{E}_{a \sim \pi, s’\sim P}[R(s, a, s’) + \gamma v_{\theta}(s’)]] -  \mathbb{E}_{s\sim \mu}[ v_{\theta}(s)]<br>$$</li>
+<li>贝尔曼误差是优势函数关于动作\(a\)的期望</li>
 </ul>
 
           
@@ -2297,6 +2281,241 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RL/RL——TRPO-PPO-目标函数基础推导.html" itemprop="url">RL——TRPO-PPO-目标函数基础推导</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍TRPO、PPO相关内容</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>：知乎</li>
+<li><a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>：博客</li>
+<li><a href="https://blog.csdn.net/wdlovecjy/article/details/124192928" target="_blank" rel="noopener">TRPO公式推导</a>:笔记式推导</li>
+<li><a href="https://www.cnblogs.com/kailugaji/p/15388913.html" target="_blank" rel="noopener">信赖域策略优化(Trust Region Policy Optimization, TRPO)</a>:PPT式推导</li>
+<li><a href="https://www.52coding.com.cn/2018/11/22/RL%20-%20TRPO/" target="_blank" rel="noopener">RL - Trust Region Policy Optimization (TRPO)</a></li>
+<li><a href="https://blog.csdn.net/zzzzzzzzzzhy/article/details/130692382" target="_blank" rel="noopener">Trust Region Policy Optimization (TRPO) 公式推导</a>:包含一些比较细节的推导过程</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="相关概念理解"><a href="#相关概念理解" class="headerlink" title="相关概念理解"></a>相关概念理解</h3><h4 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h4><ul>
+<li>Q值的定义<br>$$ Q_\pi(s_t,a_t) = \mathbb{E}_{s_{t+1},a_{t+1},\cdots \sim \pi}[\sum\limits_{l=0}^\infty\gamma^lr(s_{t+l}, a_{t+l})] $$<ul>
+<li>说明：以上期望是条件概率下的期望，为了更准确表达，一般来说可以加上”\(\vert_{(s_t,a_t)} \)”</li>
+</ul>
+</li>
+<li>V值的定义<br>$$ V_\pi(s_t) = \mathbb{E}_{a_t, s_{t+1},\cdots \sim \pi}[\sum \limits_{l=0}^\infty \gamma^lr(s_{t+l}, a_{t+l})] = \mathbb{E}_{a_t\sim \pi(\cdot|s_t)}[Q_\pi(s_t, a_t)] $$</li>
+<li>优势函数的定义<br>$$ A_\pi(s_t,a_t) = Q_\pi(s_t,a_t) - V_\pi(s_t) $$</li>
+</ul>
+<h4 id="强化学习的目标定义"><a href="#强化学习的目标定义" class="headerlink" title="强化学习的目标定义"></a>强化学习的目标定义</h4><p>$$ \eta(\pi) = \mathbb{E}_{s_0, a_0,\ldots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</p>
+<ul>
+<li>强化学习的目标是找到一个策略\(\pi\)，能最大化以上目标函数 </li>
+</ul>
+<h4 id="普通策略梯度法的解法"><a href="#普通策略梯度法的解法" class="headerlink" title="普通策略梯度法的解法"></a>普通策略梯度法的解法</h4><ul>
+<li>设定策略为\(\pi_\theta\)，则\(\eta(\pi)\)可表达为一个关于策略参数\(\theta\)的函数\(\eta(\theta)\)，此时可通过梯度上升法（策略梯度法）得到参数更新公式：<br>$$ \theta_{new} = \theta_{old} + \alpha\nabla_{\theta}\eta(\theta) $$</li>
+</ul>
+<h4 id="普通策略梯度法会遇到的问题"><a href="#普通策略梯度法会遇到的问题" class="headerlink" title="普通策略梯度法会遇到的问题"></a>普通策略梯度法会遇到的问题</h4><ul>
+<li>普通策略梯度法可能存在不稳定问题：<ul>
+<li>如果公式更新的步长选取过小，训练速度慢</li>
+<li>如果步长选取过大，那么会导致策略参数更新步子迈得过大，如果更新过渡，可能导致策略变差，从而导致交互样本变差，差的样本进一步导致策略更差，形成恶性循环。</li>
+</ul>
+</li>
+<li>TRPO/PPO的解法：选择一个合适的更新策略，或是如何选择一个合适的步长，使得更新过后的策略一定比当前策略更好</li>
+</ul>
+<h4 id="TRPO-PPO的核心思想"><a href="#TRPO-PPO的核心思想" class="headerlink" title="TRPO/PPO的核心思想"></a>TRPO/PPO的核心思想</h4><ul>
+<li>TRPO/PPO的核心是使用一个约束优化问题来更新策略，这个约束保证了新策略与旧策略之间的差异不会太大</li>
+</ul>
+<hr>
+<h3 id="TRPO-PPO的推导"><a href="#TRPO-PPO的推导" class="headerlink" title="TRPO/PPO的推导"></a>TRPO/PPO的推导</h3><h4 id="策略提升的引入"><a href="#策略提升的引入" class="headerlink" title="策略提升的引入"></a>策略提升的引入</h4><ul>
+<li>回顾强化学习的目标函数<br>$$ \eta(\pi) = \mathbb{E}_{s_0, a_0,\cdots \sim \pi}[\sum\limits_{t=0}^{\infty}\gamma^t r(s_t, a_t)] $$</li>
+<li>两个策略之间的关系（\(\tilde{\pi}\)是新策略，\(\pi\)是旧策略）<br>$$ \eta(\tilde{\pi}) = \eta(\pi) + \mathbb{E}_{s_0,a_0,\cdots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)] $$<ul>
+<li>证明如下：<br>$$<br>\begin{aligned}<br>\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] &amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(Q_\pi(s_t,a_t)-V_\pi (s_t))]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi (s_{t+1})-V_\pi (s_t))]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=1}^\infty\gamma^{t} V_\pi (s_{t})-\sum\limits_{t=0}^\infty\gamma^{t}V_\pi (s_t) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[-V_\pi(s_0) + \sum\limits_{t=0}^\infty\gamma^t r(s_t)] \quad — \sum\limits_{t=0}^\infty\gamma^{t+1} V_\pi (s_{t+1})\\<br>&amp;=-\mathbb{E}_{s_0}[V_\pi(s_0)] + \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t r(s_t)]\\<br>&amp;=-\eta(\pi) + \eta(\tilde{\pi})<br>\end{aligned}<br>$$</li>
+</ul>
+</li>
+<li>显然，如果我们能找到一个策略\(\tilde{\pi}\)使得\(\mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \ge 0\)成立，即可确保策略性能（目标函数）是单调递增的<ul>
+<li>但是，直接求解上式是非常困难的，因为策略\(\tilde{\pi}\)是未知的，无法用这个策略收集数据，下面我们先对这个形式进行变形，再通过其他方法近似求解</li>
+</ul>
+</li>
+</ul>
+<h4 id="策略提升的变形"><a href="#策略提升的变形" class="headerlink" title="策略提升的变形"></a>策略提升的变形</h4><ul>
+<li>变形如下：<br>$$<br>\begin{aligned}<br>\eta({\tilde{\pi}}) - \eta({\pi}) &amp;= \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty\gamma^t A_\pi(s_t,a_t)] \\<br>&amp;=  \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)<br>\end{aligned}<br>$$</li>
+<li>其中有<br>$$ \rho_\pi(s) = P(s_0=s) + \gamma P(s_1=s) + \gamma^2 P(s_2=s) + \ldots $$</li>
+<li>证明如下：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \mathbb{E}_{s_0,a_0,\ldots\sim\tilde{\pi}}[\sum\limits_{t=0}^\infty \gamma^t A_{\pi}(s_t,a_t)]\\<br>  &amp;=\sum\limits_{t=0}^\infty\sum\limits_sP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\\<br>  &amp;=\sum\limits_s\sum\limits_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\\<br>  &amp;=\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a)<br>\end{aligned}<br>$$</li>
+<li>对于\(\sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_\pi(s,a)\)来说，我们仍然难以求解，因为策略\(\tilde{pi}\)是未知的，我们无法用这个策略收集数据，所以我们使用旧的策略\(\pi\)来替换新策略\(\tilde{\pi}\)收集数据</li>
+<li>对于状态部分，当新旧策略特别接近时，他们的状态访问分布会比较接近，我们可以利用MM（Majorization-Minimization）方法构造近似目标函数，可以证明，直接优化目标函数即可优化最优:<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi(\cdot|s)|| \tilde{\pi}(\cdot|s)\right)<br>\end{aligned}<br>$$<ul>
+<li>其中的一些字符含义见下面的描述：在严格证明下，经过一系列推导后，我们可以得到<strong>最终优化问题</strong>是：<br>  $$ \theta = \mathop{\arg\max}_{\theta}\left[ \sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\right] $$<ul>
+<li>其中：<br>  $$<br>  \begin{aligned}<br>  \epsilon &amp;= \max_{s,a} A_\pi(s,a) \quad — s,a是所有可行状态动作，不属于具体分布\\<br>  D_{\text{KL}}^\max(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) &amp;= \max_s D_{\text{KL}}(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)) \quad — s是所有可行状态<br>  \end{aligned}<br>  $$</li>
+<li>对应求解伪代码<img src="/Notes/RL/RL——TRPO-PPO-目标函数基础推导/TRPO-PPO-Optimization.png"></li>
+</ul>
+</li>
+<li>MM方法是一种迭代优化算法，其核心思想是在每一步迭代中构造一个目标函数的下界（或上界），这个下界函数被称为“代理函数”。在每一步迭代中，不是直接优化原始的目标函数，而是优化这个更容易处理的代理函数。通过确保每次迭代都能增加（或减少）目标函数值，最终达到优化目标的目的。</li>
+<li>可以通过严格的MM方法数学证明，保证这种状态分布的近似替换是正确的，即提升替换后的目标函数可以提升原始目标函数。在一些书籍或者博客中，这里可以严格证明，使用旧策略采样的状态分布后，新的目标函数是旧的目标函数的一个下界，且两者在就策略\(\pi\)处的值和梯度均相等（也就是说两者的一阶近似\(f(x) \approx f(x_0) + f’(x_0)(x-x_0)\)相同）（详细证明见：<a href="https://www.cnblogs.com/xingzheai/p/16565686.html" target="_blank" rel="noopener">从TRPO到PPO（理论分析与数学证明）</a>、<a href="https://www.zhihu.com/question/366605427/answer/1048153125" target="_blank" rel="noopener">如何看懂TRPO里所有的数学推导细节? - 小小何先生的回答 - 知乎</a>、<a href="https://www.zhihu.com/question/316004388" target="_blank" rel="noopener">强化学习TRPO模型中，L_pi(.)可逼近rho(.)的证明何解？</a>）。这个证明较为复杂，有时间可以详细看看。</li>
+<li>以上是最优形式，求解比较困难，所以，可以将上面式子的约束进行放松，用KL散度来保证新旧策略之间的差异不会太大即可，之后的TRPO和PPO都是这样做的，接下来的推导（除了重要性采样以外）则都是最优形式的近似</li>
+</ul>
+</li>
+<li>基于KL散度限制新旧策略的距离后我们得到如下的目标<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \\<br>  \text{s.t.} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi}(s)} \left[D_{\text{KL}}(\pi, \tilde{\pi})\right] \le \delta<br>\end{aligned}<br>$$</li>
+<li>进一步地对于动作部分，可以用重要性采样来恢复动作分布，两步总结如下（以下\(\approx\)成立的约束是新旧策略之间的KL散度约束），此外，由于\(\eta(\tilde{\pi})\)的最大化本身与\(\eta(\pi)\)并不直接相关，所以接下来我们只需要关注他们的差值即可：<br>$$<br>\begin{aligned}<br>  \eta(\tilde{\pi}) - \eta(\pi) &amp;= \sum\limits_s\rho_{\tilde{\pi}}(s)\sum\limits_a\tilde{\pi}(a|s)A_{\pi}(s,a) \\<br>  &amp;\approx \sum\limits_s\rho_{\pi}(s)\sum\limits_a\tilde{\pi}(a|s) A_{\pi}(s,a) \quad — 限定新旧策略KL散度后可以约等于\\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a q(a|s)\left[\frac{\tilde{\pi}(a|s)}{q(a|s)} A_{\pi}(s,a)\right] \\<br>  &amp;= \sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]<br>\end{aligned}<br>$$<ul>
+<li>实际上，从重要性采样的视角来看，动作分布可以是基于任意策略\(q(a|s)\)采样得到的，只是一般相近策略进行重要性采样样本效率更高，所以一般都使用旧策略\(\pi(a|s)\)【PS：重要性采样也需要策略分布相近的，当策略分布之间差距过大时，也不利于重要性采样，可能出现样本采样效率低下或者数据稀疏导致的评估不准确的现象】</li>
+</ul>
+</li>
+<li>由于相对\(\eta(\tilde{\pi})\)来说，\(\eta(\pi)\)是常数，所以有最大化\(\eta(\tilde{\pi})\)，等价于最大化\(\sum\limits_s\rho_{\pi}(s)\sum\limits_a\pi(a|s)\left[\frac{\tilde{\pi}(a|s)}{\pi(a|s)} A_{\pi}(s,a)\right]\)即可，考虑到需要保证策略采样到的状态分布不能差距太大，我们的目标可以描述为如下的形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad \sum\limits_s\rho_{\pi_{\theta_\text{old}}}(s)&amp;\sum\limits_a\pi_{\theta_\text{old}}(a|s)\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>\text{s.t. } \quad \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
+<li>一般也会写成期望的等价形式：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}(s), a \sim \pi_{\theta_\text{old}}(a|s)}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}(s)} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$</li>
+<li>或者进一步简写成：<br>$$<br>\begin{aligned}<br>\max_{\theta_\text{new}} \quad &amp;\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_{\theta_\text{new}}(a|s)}{\pi_{\theta_\text{old}}(a|s)} A_{\pi_{\theta_\text{old}}}(s,a)\right] \\<br>&amp;\text{s.t. } \quad \quad \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}, \pi_{\theta_\text{new}})\right] \le \delta<br>\end{aligned}<br>$$<ul>
+<li>目标是原始目标等价的期望形式</li>
+<li>约束则考虑了计算KL散度时在旧策略采样的状态分布上进行验证（个人理解：这里策略之间的KL散度需要指定状态或状态分布才有意义，实际上该状态分布应该是当前策略对应的状态分布，详细展开写应该是\(\mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}} \left[D_{\text{KL}}(\pi_{\theta_\text{old}}(\cdot|s), \pi_{\theta_\text{new}}(\cdot|s))\right]\)，使用状态\(s \sim \rho_{\pi_{\theta_\text{old}}}\)或者\(s \sim \rho_{\pi_{\theta_\text{new}}}\)都可以，因为两者很接近）</li>
+</ul>
+</li>
+<li>至此，目标函数中采样策略（包括状态和动作）变成了之前的旧策略，总结一下有：<ul>
+<li>状态分布替换旧策略是基于新旧策略的差异不大来近似得到的，这个改动是MM（Majorization-Minimization）方法的思想，构造一个可以严格通过MM方法证明的近似目标函数\(\sum\limits_s\rho_{\pi_{\theta_{\text{old}}}}(s)\sum\limits_a\pi_\theta(a|s) A_{\pi_{\theta_{\text{old}}}}(s,a) - \frac{4\epsilon \gamma}{(1-\gamma)^2} \cdot D_{\text{KL}}^\max\left(\pi_{\theta_{\text{old}}}(\cdot|s)|| \pi_\theta(\cdot|s)\right)\)，这个目标函数的优化没有信赖域的概念，所以不是Trust Region方法</li>
+<li>在构造近似目标函数后，进一步简化目标函数的等价形式为KL散度约束下的更简洁形式，此时算是Trust Region方法</li>
+<li>动作分布替换旧策略是基于重要性采样实现的</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="TRPO简单理解"><a href="#TRPO简单理解" class="headerlink" title="TRPO简单理解"></a>TRPO简单理解</h3><h4 id="TRPO名字的由来"><a href="#TRPO名字的由来" class="headerlink" title="TRPO名字的由来"></a>TRPO名字的由来</h4><ul>
+<li>TRPO（Trust Region Policy Optimization）的名字来源于其核心方法——信任域（Trust Region）优化。</li>
+<li>TRPO同时包含了Trust Region算法和MM（Majorization-Minimization）算法的思想：<ul>
+<li>MM算法：推导过程中，在对策略提升部分进行转换时，使用的是MM算法的思想，构造了一个近似目标函数，同时证明了该近似目标函数与原始目标函数的关系（两者的梯度和值在当前策略处相等，且近似目标函数处处小于等于原始目标函数）；</li>
+<li>Trust Region算法：TRPO方法在每次迭代需要在KL散度约束内做更新优化，并且构造了一个KL散度约束的优化问题来近似求解，属于Trust Region方法的思想；</li>
+</ul>
+</li>
+<li>补充问题：MM算法、Trust Region算法、近端梯度下降算法，这三种方法的区别和关系是什么？<ul>
+<li>MM算法 vs Trust Region算法：<ul>
+<li>相同点：两者都是迭代优化方法，每次迭代都通过解决一个较简单的优化问题来逼近原始问题的解。</li>
+<li>异同点：<ul>
+<li>构造方式: MM算法通过构造一个上界函数来近似目标函数，而Trust Region算法通过在一个信赖域内构造一个近似模型来优化目标函数。</li>
+<li>信赖域: Trust Region算法明确使用信赖域来限制每次迭代的步长，而MM算法没有这种信赖域的概念。</li>
+<li>适用范围: MM算法更适合处理凸优化问题，而Trust Region算法在处理非凸优化问题和大规模优化问题时表现更优。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>近端梯度下降：近端梯度下降方法（Proximal Gradient Descent, PGD）是一种用于优化非光滑（nonsmooth）和复合目标函数的优化算法。它结合了梯度下降法和近端算子（proximal operator），可以有效处理带有非光滑正则化项的优化问题。该方法PPO和TRPO都没有用到</li>
+</ul>
+</li>
+</ul>
+<h4 id="TRPO解法思路"><a href="#TRPO解法思路" class="headerlink" title="TRPO解法思路"></a>TRPO解法思路</h4><ul>
+<li>近似求解上述式子，用一阶梯度近似目标，用二阶梯度近似约束，从而得到一个关于参数最优化问题</li>
+<li>基于共轭梯度法可以求解该问题</li>
+</ul>
+<h4 id="GAE"><a href="#GAE" class="headerlink" title="GAE"></a>GAE</h4><ul>
+<li>GAE（Generalized Advantage Estimation，广义优势估计）是一种用于估计策略梯度算法中优势函数的方法。它旨在解决标准优势函数估计方法的高方差问题，通过引入一个可调参数来平衡偏差与方差之间的关系。</li>
+<li>详情可参考<a href="/Notes/RL/RL%E2%80%94%E2%80%94GAE.html">RL——GAE</a></li>
+</ul>
+<hr>
+<h3 id="PPO简单理解"><a href="#PPO简单理解" class="headerlink" title="PPO简单理解"></a>PPO简单理解</h3><h4 id="PPO名字的由来"><a href="#PPO名字的由来" class="headerlink" title="PPO名字的由来"></a>PPO名字的由来</h4><ul>
+<li>PPO（Proximal Policy Optimization）名字中的“Proximal”是指“近端”约束，表示确保新策略不会偏离旧策略太远，从而保证策略更新的稳定性和有效性。跟近端梯度下降（Proximal Gradient Descent）方法没有直接关系。“Proximal”是“最接近的”或“邻近的”。在不同的上下文中，“proximal”可以有不同的具体含义，但其核心概念通常与“接近”或“邻近”有关。</li>
+<li>由于PPO的优化目标推导过程与TRPO相同，都用到了近似目标函数，所以推导过程中也用到了MM的思想和Trust Region的思想，但在解决问题时仅用到了近端（“Proximal”）约束，即每次迭代策略不要更新太多（没有严格遵循Trust Region推导得到的结果），严格来说不属于Trust Region方法</li>
+</ul>
+<h4 id="PPO-Penalty"><a href="#PPO-Penalty" class="headerlink" title="PPO-Penalty"></a>PPO-Penalty</h4><ul>
+<li>又名PPO-惩罚<br>\begin{aligned}<br>\max_{\theta}&amp;\ \  \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a) - \beta D_{KL}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta(\cdot|s))\right]<br>\end{aligned}</li>
+</ul>
+<h4 id="PPO-Clip"><a href="#PPO-Clip" class="headerlink" title="PPO-Clip"></a>PPO-Clip</h4><ul>
+<li>又名PPO截断<br>\begin{aligned}<br>\max_\theta&amp;\ \  \mathbb{E}_{s\sim \rho_{\theta_{\text{old}}},a\sim q(a|s)}\min\left(\frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{q(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+<li>理论上，以上采样分布可以是任意分布，实际上使用原始策略效果更好（样本利用率也更高）<br>\begin{aligned}<br>\max_\theta&amp;\ \  \mathbb{E}_{s \sim \rho_{\pi_{\theta_\text{old}}}, a \sim \pi_{\theta_\text{old}}}\min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A_{\theta_{\text{old}}}(s,a), clip\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\epsilon, 1+\epsilon\right)A_{\theta_{\text{old}}}(a|s)\right)<br>\end{aligned}</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2349,7 +2568,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">289</span>
+                  <span class="site-state-item-count">288</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
