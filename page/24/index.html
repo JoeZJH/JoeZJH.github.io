@@ -275,6 +275,290 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-推导过程.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-推导过程.html" itemprop="url">ML——XGBoost-推导过程</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>XGBoost,全称: Extreme Gradient Boosting</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+
+<hr>
+<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><ul>
+<li>CART回归树是XGBoost的基分类器</li>
+</ul>
+<hr>
+<h3 id="XGBoost模型推导-假设回归树的结构确定"><a href="#XGBoost模型推导-假设回归树的结构确定" class="headerlink" title="XGBoost模型推导(假设回归树的结构确定)"></a>XGBoost模型推导(假设回归树的结构确定)</h3><h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x;w) = \sum_{k=0}^{K} f_{k}(x;w_{k})<br>\end{align}<br>$$</p>
+<ul>
+<li>其中, \(x\)为输入样本, \(f_{k}\)为分类回归树,可以是分类回归树空间中的任意一棵树, \(w_{k}\)是树\(f_{k}\)的参数</li>
+</ul>
+<h4 id="定义损失函数"><a href="#定义损失函数" class="headerlink" title="定义损失函数"></a>定义损失函数</h4><p>$$<br>\begin{align}<br>L^{t} &amp;= \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t}) \\<br>&amp;=  \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+<ul>
+<li>\(L^{t}\): 第 \(t\) 轮迭代的损失函数</li>
+<li>\(l(y_{i},\hat{y}_{i}^{t})\) 表示单个样本的损失函数定义</li>
+<li>\(\hat{y}_{i}^{t} = \hat{y}_{i}^{t-1} + f_{t}(x_{i})\) 表示第 \(t\) 轮 \(x_{i}\) 样本的预测值<ul>
+<li>加法模型: 第 \(t\) 轮预测值 = 第 \(t-1\) 轮预测值 + 第 \(t\) 棵(轮)决策树的预测值</li>
+</ul>
+</li>
+<li>\(\Omega(f_{t})\) 表示正则项<ul>
+<li>\(n\) 表示样本的个数</li>
+<li>\(T\) 表示<strong>叶子结点的个数</strong></li>
+<li>\(w_{j}\) 表示<strong>叶节点分数</strong>, 即任意样本落到第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点时的预测值(可称为第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点的预测值)</li>
+<li>\(\gamma\)和\(\lambda\)都是正则项参数</li>
+</ul>
+</li>
+</ul>
+<h4 id="第-t-轮训练的目标"><a href="#第-t-轮训练的目标" class="headerlink" title="第 \(t\) 轮训练的目标"></a>第 \(t\) 轮训练的目标</h4><ul>
+<li>找到一个最优的分类器 \(f_t^{\star}(x)\), 满足<br>$$<br>\begin{align}<br>f_t^{\star}(x) &amp;= \mathop{\arg\max}_{f_t(x)}L^{t} \\<br>&amp;= \mathop{\arg\max}_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t})\right) \\<br>&amp;= \mathop{\arg\max}_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \right)<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="最小化损失函数推导"><a href="#最小化损失函数推导" class="headerlink" title="最小化损失函数推导"></a>最小化损失函数推导</h4><p><em>损失函数<strong>二阶泰勒展开</strong></em></p>
+<ul>
+<li><p>回忆传统泰勒展开:<br>$$<br>\begin{aligned}<br>f(x) &amp;= f(x_0) + f’(x_0)(x-x_0) + \frac{f’’(x_0)}{2!}(x-x_0)^2 + \cdots + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n \\<br>&amp; = \sum\limits_{n=0}^{\infty}\frac{f^{(n)}x_0}{n!}(x - x_0)^n<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>二阶泰勒展开公式<br>$$<br>\begin{align}<br>f(x+\Delta x) \approx f(x) + f’(x)\Delta x + \frac{1}{2}f’’(x)\Delta x^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>在我们的场景中,令</p>
+<ul>
+<li>\(x = \hat{y}_{i}^{t-1}\)</li>
+<li>\(\Delta x = f_{t}(x_{i})\)</li>
+</ul>
+</li>
+<li><p>则有对单个样本能得到<br>$$<br>\begin{align}<br>l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) \approx l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)<br>\end{align}<br>$$</p>
+<ul>
+<li>\(l’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li><p>我们第 \(t\) 轮的目标是找到一个最优的分类器 \(f_t^{\star}(x)\)最小化损失函数 \(L^{t}\)<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>显然上面式子中的 \(l(y_i,\hat{y}_i^{t-1})\) 与 \(f_t(x_i)\) 无关,可以移除,于是有<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+</ul>
+</li>
+<li><p>则有:<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>做一个重要的<strong>转换</strong>:<br>$$f_t(x_i) = w_j, \quad s.t. \ x_i \in I_j$$</p>
+<ul>
+<li>上面的式子前半部分成立的条件是 \(x_i\) 落在叶子结点 \(j\) 上</li>
+<li>我们将条件\(x_i\) 落在叶子结点 \(j\) 上表示为 \(\ x_i \in I_j\)</li>
+</ul>
+</li>
+<li><p>于是: 我们可以<strong>将前面对样本的累加变成对叶子结点的累加</strong><br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i)w_j^2\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx  \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(G_j = \sum_{i \in I_j}g_i\)</li>
+<li>\(H_j = \sum_{i \in I_j}h_i\)</li>
+</ul>
+</li>
+<li><p>则有<br>$$<br>\begin{align}<br>L^{t} \approx  \sum_{j=1}^{T}\left(G_jw_j + \frac{1}{2}(H_j + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>\(L^t\) 对 \(w_j\) 求偏导有<br>$$<br>\begin{align}<br>\frac{\partial L^{t}}{\partial w_j} = G_j + (H_j + \lambda)w_j<br>\end{align}<br>$$</p>
+</li>
+<li><p>令导数 \(\frac{\partial L^{t}}{\partial w_j} = 0\) 可得<br>$$<br>\begin{align}<br>w_j^{\star} = -\frac{G_j}{H_j+\lambda}<br>\end{align}<br>$$</p>
+</li>
+<li><p>同时<br>$$<br>\begin{align}<br>L^{\star^t} &amp;\approx min(L^t) \\<br>&amp;\approx \sum_{j=1}^{T}\left(G_j\cdot (-\frac{G_j}{H_j+\lambda}) + \frac{1}{2}(H_j + \lambda)\cdot(-\frac{G_j}{H_j+\lambda})^2\right) + \gamma T \\<br>&amp;\approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>目标函数的计算示例: 目标分数越小越好</p>
+<img src="/Notes/ML/Models/ML——XGBoost-推导过程/example_of_xgboost.png">
+
+</li>
+</ul>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><ul>
+<li>在<strong>第 \(t\) 轮回归树的结构确定后</strong>,我们得到的<strong>最优叶节点分数</strong>与结构无关 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\)</li>
+<li>最小损失与第 \(t\) 轮回归树的结构的复杂度(叶节点数量)相关</li>
+<li>我们<strong>还需要</strong>确定第 \(t\) 轮回归树的结构</li>
+</ul>
+<hr>
+<h3 id="回归树的结构确定"><a href="#回归树的结构确定" class="headerlink" title="回归树的结构确定"></a>回归树的结构确定</h3><h4 id="普通决策树树结构的确定"><a href="#普通决策树树结构的确定" class="headerlink" title="普通决策树树结构的确定"></a>普通决策树树结构的确定</h4><ul>
+<li>详细情况可参考: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
+</ul>
+<h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>最大化信息增益来选择分裂特征</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>最大化信息增益比来选择分裂特征</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><h6 id="分类树"><a href="#分类树" class="headerlink" title="分类树"></a>分类树</h6><ul>
+<li>最小化基尼指数来选择分裂特征</li>
+</ul>
+<h6 id="回归树"><a href="#回归树" class="headerlink" title="回归树"></a>回归树</h6><ul>
+<li>最小化平方误差来选择分裂特征</li>
+</ul>
+<h4 id="XGBoost结点分裂前后的信息增益"><a href="#XGBoost结点分裂前后的信息增益" class="headerlink" title="XGBoost结点分裂前后的信息增益"></a>XGBoost结点分裂前后的信息增益</h4><ul>
+<li>信息增益应该与前面的损失函数相关, 损失越小越好</li>
+<li>原始损失函数为<br>$$<br>\begin{align}<br>L^{\star^t} \approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</li>
+<li>显然,要使得损失函数最小,我们需要使得下面的式子最大:<br>$$<br>\begin{align}<br>\frac{G_j^2}{H_j+\lambda}<br>\end{align}<br>$$</li>
+<li>一个结点分裂后的信息为<br>$$<br>\begin{align}<br>\frac{G_L^2}{H_L+\lambda} + \frac{G_R^2}{H_R+\lambda}<br>\end{align}<br>$$<ul>
+<li>左子树的信息 + 右子树的信息</li>
+</ul>
+</li>
+<li>一个结点分裂前信息为<br>$$<br>\begin{align}<br>\frac{(G_L + G_R)^2}{H_L+ H_R + \lambda}<br>\end{align}<br>$$</li>
+<li>从而我们定义一个结点分列前后的信息增益为:<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>Gain 越大说明当前结点的当前分裂方式越好</li>
+<li>其中 \(\gamma\) 是一个超参数用于防止<strong>过拟合</strong>,可以理解为有两层含义:<ul>
+<li>用于对叶节点数目进行控制</li>
+<li>用于增大分裂前后Gain的阈值</li>
+<li>事实上 \(\gamma\) 不是凭空来的,开始的定义中 \(\gamma\) 就是L1正则化(叶节点数量)的系数, 这里分裂后叶节点数量多了1个, 我们希望树的叶节点越少越好(模型越简单越好),而这个的信息增益越大越好, 所以减去 \(\gamma\) 值,防止结点分裂得太多</li>
+<li>对于每个特征的每个分裂点, \(\gamma\) 值都相同,所以 \(\gamma\) 值对特征和分裂点的选择没有影响,只是影响了某个结点是否能够被分裂(信息增益太小或者为负时我们可以选择不分裂)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost树节点分裂"><a href="#XGBoost树节点分裂" class="headerlink" title="XGBoost树节点分裂"></a>XGBoost树节点分裂</h4><h5 id="精确分裂算法"><a href="#精确分裂算法" class="headerlink" title="精确分裂算法"></a>精确分裂算法</h5><ul>
+<li><strong>单个</strong>叶节点<strong>精确</strong>计算信息增益<strong>分裂流程</strong>(特征和特征分裂取值的选择, 假设一共m个特征)<ul>
+<li>注意: 每次只对叶节点分裂,已经分裂了的就不是叶节点了,不能二次分裂</li>
+<li>原图来自: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a><img src="/Notes/ML/Models/ML——XGBoost-推导过程/exact_greedy_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="近似分裂算法"><a href="#近似分裂算法" class="headerlink" title="近似分裂算法"></a>近似分裂算法</h5><ul>
+<li>将每个特征的取值划分为多个分位点</li>
+<li>每次考察特征时值考察分位点,减少计算复杂度</li>
+<li>其他的步骤与前面的精确分裂算法相同,包括分数计算和选择最大分数等<img src="/Notes/ML/Models/ML——XGBoost-推导过程/approximate_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+<h5 id="分桶策略与GBDT的不同"><a href="#分桶策略与GBDT的不同" class="headerlink" title="分桶策略与GBDT的不同"></a>分桶策略与GBDT的不同</h5><ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-推导过程/split_point_method_weighted_in_xgboost.png"></li>
+<li>详细推导解释,为什么选择损失函数在当前样本的二阶导数作为权重?<br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(2\frac{g_i}{h_i}f_t(x_i) + f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(f_t(x_i) - \frac{g_i}{h_i}\right)^2 + \sum_{i=1}^{n}\left ( \frac{g_i^2}{2h_i} - 2g_if_t(x_i) \right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>\end{align}<br>$$<ul>
+<li>上面的式子中第二项在原文中用constant来表示,可以被看成某种正则项</li>
+<li>第一项是一个平方误差表达式,样本 \(x_i\) 对应的输出值为 \(\frac{g_i}{h_i}\), 而样本权重就是 \(h_i\)</li>
+<li>权重代表概率,概率越大说明该点出现的次数或者该点附近的值出现的次数就越多.</li>
+</ul>
+</li>
+<li>XGBoost分桶流程<ul>
+<li>[待更新]</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost整棵树分裂流程"><a href="#XGBoost整棵树分裂流程" class="headerlink" title="XGBoost整棵树分裂流程"></a>XGBoost整棵树分裂流程</h4><ul>
+<li>初始化\(f^0(x)\)</li>
+<li>for t=1 to M:<ul>
+<li>计算损失函数对每个训练样本点的一阶导数 \(g_i\) ,二阶导数 \(h_i\)</li>
+<li>递归对叶子节点运用树分裂算法生成一颗决策树 \(f^t(x)\),    <ul>
+<li>(这一步包括叶子节点的分数 \(w_j\) 也都确定下来)</li>
+<li>(这一步可以使用近似分裂算法加快训练速度)</li>
+</ul>
+</li>
+<li>把新生成的决策树加入到模型中, \(\hat{y}^t = \hat{y}^{t-1} + f_m(x)\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——BN-LN-IN-GN-LRN-WN.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1749,174 +2033,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——为什么Dropout能防止过拟合.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——为什么Dropout能防止过拟合.html" itemprop="url">DL——为什么Dropout能防止过拟合</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li>参考博客: <a href="https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571" target="_blank" rel="noopener">https://blog.csdn.net/dQCFKyQDXYm3F8rB0/article/details/81976571</a></li>
-</ul>
-<hr>
-<h3 id="关于Dropout"><a href="#关于Dropout" class="headerlink" title="关于Dropout"></a>关于Dropout</h3><ul>
-<li>用途是防止过拟合,关于过拟合的讲解可参考<ul>
-<li><a href="/DL/DL%E2%80%94%E2%80%94%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E4%B8%AD%E9%99%8D%E4%BD%8E%E8%BF%87%E6%8B%9F%E5%90%88%E7%9A%84%E6%96%B9%E6%B3%95.html">DL——深度学习中降低过拟合的方法</a></li>
-<li><a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">ML——模型的方差与偏差(机器学习中的正则化与过拟合)</a></li>
-</ul>
-</li>
-</ul>
-<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
-<li>dropout是指在深度学习网络的训练过程中，对于神经网络单元，按照一定的概率将其暂时从网络中丢弃。注意是<strong>暂时</strong>，对于随机梯度下降来说，由于是随机丢弃，故而<strong>每一个mini-batch都在训练不同的网络</strong>。(因为每一轮被丢弃的神经元不同)</li>
-</ul>
-<h4 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h4><ul>
-<li>在CNN中防止过拟合的效果明显</li>
-<li>一般选择0.5比较好,因为0.5的时候Dropout随机生成的网络结果最多,但是实际使用中一般需要调节甚至变化<ul>
-<li>亲测: 在使用VGG16模型迁移学习来分类Dogs2Cats数据集时,先使用0.5,然后再使用0.2略优于一直使用0.5的情况</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Why能防止过拟合"><a href="#Why能防止过拟合" class="headerlink" title="Why能防止过拟合?"></a>Why能防止过拟合?</h3><ul>
-<li>虽然Dropout在实际应用中的确能防止过拟合,但是关于Dropout防止过拟合的原理,大家众说纷纭</li>
-<li>下面介绍两个主流的观点</li>
-</ul>
-<h4 id="组合派观点"><a href="#组合派观点" class="headerlink" title="组合派观点"></a>组合派观点</h4><h5 id="集成学习方法论"><a href="#集成学习方法论" class="headerlink" title="集成学习方法论"></a>集成学习方法论</h5><ul>
-<li>传统神经网络的缺点: <strong>费时</strong>, <strong>容易过拟合</strong> </li>
-<li>过拟合是很多机器学习的通病</li>
-<li>一种修改模型的过拟合解决思路是: 采用Ensemble方法的Bagging方法(平均多个模型的结果,从而能够减少模型的方差,同时减轻过拟合)或者Boosting方法(减小模型的偏差,同时能减轻过拟合?[待更新]),即训练多个模型做组合</li>
-<li>但是解决了过拟合后, <strong>费时</strong>就成为一个大问题，不仅训练起来费时，测试起来多个模型也很费时</li>
-<li><strong>Dropout</strong>能同时解决以上问题:<ul>
-<li>Dropout的示意图如下: 左图是原图结构,右图是加入Dropout层的<img src="/Notes/DL/DL——为什么Dropout能防止过拟合/dropout_overview.png"></li>
-<li>从图上可以看出,有了Dropout,训练的模型就可以看成是多个模型的组合,最终预测时丢弃Dropout即可的到所有模型的组合,从而实现类似于Ensemble方法的Bagging方法,实现了多个模型的组合</li>
-</ul>
-</li>
-</ul>
-<h5 id="动机论"><a href="#动机论" class="headerlink" title="动机论"></a>动机论</h5><ul>
-<li><p>虽然直观上看dropout是ensemble在分类性能上的一个近似，然而实际中，dropout毕竟还是在一个神经网络上进行的，只训练出了一套模型参数。那么他到底是因何而有效呢？</p>
-</li>
-<li><p>首先分析一个小故事</p>
-</li>
-</ul>
-<blockquote>
-<p>在自然界中，在中大型动物中，一般是有性繁殖，有性繁殖是指后代的基因从父母两方各继承一半。但是从直观上看，似乎无性繁殖更加合理，因为无性繁殖可以保留大段大段的优秀基因。而有性繁殖则将基因随机拆了又拆，破坏了大段基因的联合适应性。但是自然选择中毕竟没有选择无性繁殖，而选择了有性繁殖，须知物竞天择，适者生存。我们先做一个假设，那就是基因的力量在于混合的能力而非单个基因的能力。不管是有性繁殖还是无性繁殖都得遵循这个假设。为了证明有性繁殖的强大，我们先看一个概率学小知识。</p>
-</blockquote>
-<ul>
-<li><p>基本思想: 有性繁殖的方式不仅仅可以将优秀的基因传下来，还可以降低基因之间的联合适应性，使得复杂的大段大段基因联合适应性变成比较小的一个一个小段基因的联合适应性。</p>
-</li>
-<li><p>dropout也能达到同样的效果，它强迫一个神经单元，和随机挑选出来的其他神经单元共同工作，达到好的效果。消除减弱了神经元节点间的联合适应性，增强了泛化能力。</p>
-</li>
-</ul>
-<h4 id="噪声派观点"><a href="#噪声派观点" class="headerlink" title="噪声派观点"></a>噪声派观点</h4><ul>
-<li>对于每一个dropout后的网络，进行训练时，相当于做了<strong>Data Augmentation</strong>，因为，总可以找到一个样本，使得在原始的网络上也能达到dropout单元后的效果。 比如，对于某一层，dropout一些单元后，形成的结果是(1.5,0,2.5,0,1,2,0)，其中0是被drop的单元，那么总能找到一个样本(<strong>新样本</strong>)，使得结果也是如此。这样，每一次dropout其实都相当于增加了样本。</li>
-</ul>
-<h5 id="噪声派观点总结"><a href="#噪声派观点总结" class="headerlink" title="噪声派观点总结"></a>噪声派观点总结</h5><ul>
-<li>将dropout映射回得样本训练一个完整的网络，可以达到dropout的效果。</li>
-<li>dropout由固定值变为一个区间，可以提高效果</li>
-<li>将dropout后的表示映射回输入空间时，并不能找到一个样本 x 使得所有层都能满足dropout的结果，但可以为每一层都找到一个样本，这样，对于每一个dropout，都可以找到一组样本可以模拟结果。</li>
-</ul>
-<hr>
-<h4 id="其他需要注意的点"><a href="#其他需要注意的点" class="headerlink" title="其他需要注意的点"></a>其他需要注意的点</h4><ul>
-<li>数据量小的时候，dropout效果不好，数据量大了，dropout效果好。</li>
-<li>dropout的缺点就在于训练时间是没有dropout网络的2-3倍。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1969,7 +2085,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">292</span>
+                  <span class="site-state-item-count">293</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1982,7 +2098,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-count">50</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

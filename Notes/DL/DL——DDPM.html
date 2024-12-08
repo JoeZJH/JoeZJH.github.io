@@ -79,21 +79,21 @@
 
 
 
-<meta name="description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读 视频中有部分小bug，评论区已修复">
+<meta name="description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 What are Diffusion Models?：一篇写得非常好的博客 54、Probabilistic Diffusion Model概率扩散">
 <meta name="keywords" content="DL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DL——DDPM">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/DL/DL——DDPM.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读 视频中有部分小bug，评论区已修复">
+<meta property="og:description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 What are Diffusion Models?：一篇写得非常好的博客 54、Probabilistic Diffusion Model概率扩散">
 <meta property="og:locale" content="En/中">
-<meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDPM/ddpm-derivation.webp">
 <meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
-<meta property="og:updated_time" content="2024-12-07T14:15:56.244Z">
+<meta property="og:image" content="https://joezjh.github.io/Notes/DL/DL——DDPM/ddpm-derivation.webp">
+<meta property="og:updated_time" content="2024-12-08T17:39:43.734Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="DL——DDPM">
-<meta name="twitter:description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读 视频中有部分小bug，评论区已修复">
-<meta name="twitter:image" content="https://joezjh.github.io/Notes/DL/DL——DDPM/ddpm-derivation.webp">
+<meta name="twitter:description" content="文本介绍DDPM（Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Denoising Diffusion Probabilistic Models, NeurIPS 2020 What are Diffusion Models?：一篇写得非常好的博客 54、Probabilistic Diffusion Model概率扩散">
+<meta name="twitter:image" content="https://joezjh.github.io/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
 
 
 
@@ -336,6 +336,7 @@
 <ul>
 <li>参考链接：<ul>
 <li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
+<li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a>：一篇写得非常好的博客</li>
 <li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
 <li>视频中有部分小bug，评论区已修复</li>
 </ul>
@@ -348,11 +349,121 @@
 </li>
 </ul>
 <hr>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
-
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><p><em>这部分推导参考自<a href="https://zhuanlan.zhihu.com/p/525106459" target="_blank" rel="noopener">由浅入深了解Diffusion Model - ewrfcas的文章 - 知乎</a>和<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a></em></p>
+<h4 id="Diffusion前向过程"><a href="#Diffusion前向过程" class="headerlink" title="Diffusion前向过程"></a>Diffusion前向过程</h4><h5 id="前向过程的整体描述"><a href="#前向过程的整体描述" class="headerlink" title="前向过程的整体描述"></a>前向过程的整体描述</h5><ul>
+<li>给定真实图片\(x_0 \sim q(x_0)\)，Diffusion前向过程通过\(T\)次对其添加高斯噪声，得到\(x_T\)，第\(t\)次加噪后得到的样本为\(x_t\)</li>
+<li>加噪过程是增加一个服从高斯分布的误差，每一步中高斯分布方差的超参数是提前设定的 \(\{\beta_t \in (0,1)\}_{t=1}^T\)。</li>
+<li>前向过程由于每个时刻\(t\)只与\(t-1\)时刻有关，所以也可以看做马尔科夫过程<br>  $$<br>  \begin{align}<br>  q(x_t|x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t}x_{t-1}, \beta_t\mathbf{I}) \\<br>  q(x_{1:T}|x_0) = \prod_{t=1}^T q(x_t|x_{t-1}) \\<br>  \end{align}<br>  $$</li>
+<li>实际实现中\(\{\beta_t \in (0,1)\}_{t=1}^T\)中的元素是递增的，即\(\beta_1 &lt; \beta_2 &lt; \cdots &lt; \beta_T\)，DDPM实验时设置了\(T=1000\)，且\(\beta_t\)是\([0.0001, 0.02]\)之间的线性的固定值，即\(\beta_1 = 0.0001 \ \text{to} \ \beta_T = 0.02\)</li>
+<li>加噪过程中，随着加噪时间步骤\(t\)的增加，\(x_t\)越来越接近纯随机噪声，且\(T \rightarrow \infty\)时，\(x_T\)完全是噪声</li>
+</ul>
+<h5 id="可以用-x-0-和方差-beta-来表示-x-t"><a href="#可以用-x-0-和方差-beta-来表示-x-t" class="headerlink" title="可以用\(x_0\)和方差\(\beta\)来表示\(x_t\)"></a>可以用\(x_0\)和方差\(\beta\)来表示\(x_t\)</h5><ul>
+<li>即\(\forall t, \ x_t = f(x_0, \{\beta_i\}_{i=1}^t)\) \(x_t\)</li>
+<li>引入新变量\(\alpha_t = 1- \beta_t\)，且\(\overline{\alpha}_t = \prod_{i=1}^t\alpha_i\)（理解：\(\alpha_t\)和\(\overline{\alpha}_t\)都随着扩散时间步逐步变小）</li>
+<li>将\(x_t\)进行展开可得得到<strong>用\(x_0\)和方差\(\beta\)来表示\(x_t\)</strong>：<br>  $$<br>  \begin{align}<br>  \mathbf{x}_t<br>  &amp;= \sqrt{\alpha_t}\mathbf{x}_{t-1} + \sqrt{1 - \alpha_t}\mathbf{\epsilon}_{t-1} &amp; \text{ ;where } \mathbf{\epsilon}_{t-1}, \mathbf{\epsilon}_{t-2}, \dots \sim \mathcal{N}(\mathbf{0}, \mathbf{I}) \\<br>  &amp;= \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}\mathbf{x}_{t-2} + \sqrt{1 - \alpha_{t-1}}\mathbf{\epsilon}_{t-2}) + \sqrt{1 - \alpha_t}\mathbf{\epsilon}_{t-1} \\<br>  &amp;= \sqrt{\alpha_t \alpha_{t-1}}\mathbf{x}_{t-2} + (\sqrt{\alpha_t(1 - \alpha_{t-1})}\mathbf{\epsilon}_{t-2} + \sqrt{1 - \alpha_t}\mathbf{\epsilon}_{t-1}) \\<br>  &amp;= \sqrt{\alpha_t \alpha_{t-1}} \mathbf{x}_{t-2} + \sqrt{1 - \alpha_t \alpha_{t-1}} \bar{\mathbf{\epsilon}}_{t-2} &amp; \text{ ;where } \bar{\mathbf{\epsilon}}_{t-2} \text{ merges two Gaussians (*).} \\<br>  &amp;\quad \vdots \\<br>  &amp;= \sqrt{\bar{\alpha}_t}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_t}\mathbf{\epsilon} \\<br>  q(\mathbf{x}_t \vert \mathbf{x}_0) &amp;= \mathcal{N}(\mathbf{x}_t; \sqrt{\bar{\alpha}_t} \mathbf{x}_0, (1 - \bar{\alpha}_t)\mathbf{I})<br>  \end{align}<br>  $$<ul>
+<li>推导中两个高斯分布的合并使用使用到：\(\mathcal{N}(\mu_1,\sigma_1^2\mathbf{I}) + \mathcal{N}(\mu_2,\sigma_2^2\mathbf{I}) \sim \mathcal{N}\Big((\mu_1+\mu_2),(\sigma_1^2+\sigma_2^2)\mathbf{I}\Big)\)</li>
+<li>显然，当\(T \rightarrow \infty\)时，\(x_T\)完全是噪声，因为\(\sqrt{\overline{\alpha}_T} \rightarrow 0,\ \sqrt{1-\overline{\alpha}_T} \rightarrow 1\)</li>
+<li>Merge后的噪声\(\epsilon\)也是高斯噪声，且服从标准正态分布\(\epsilon \sim \mathcal{N}(0,\mathbf{I})\)</li>
+</ul>
+</li>
+<li>同时，也<strong>可以用\(x_t\)和方差\(\beta\)来表示\(x_0\)</strong>：<br>  $$ x_0 = \frac{1}{\sqrt{\overline{\alpha}_t}}(x_t - \sqrt{1-\overline{\alpha}_t}\epsilon) $$</li>
+</ul>
+<ul>
+<li>问题：为什么前向过程的需要使用\(\sqrt{1-\beta_t}x_{t-1}\)来表示均值？<ul>
+<li>回答：因为这样可以使得\(x_T\)的均值中不含有原始样本\(x_0\)的信息，也就是说，这样使得\(x_T\)接近噪声</li>
+<li>补充问题：使用其他小于0的数\(\)替代\(1-\beta_t\)吗？</li>
+</ul>
+</li>
+</ul>
+<h4 id="Diffusion逆向过程"><a href="#Diffusion逆向过程" class="headerlink" title="Diffusion逆向过程"></a>Diffusion逆向过程</h4><ul>
+<li><p>为了与其他文章常用习惯保持一致，本文在前向过程中使用\(q(x_t|x_0)\)，逆向过程中\(q(x_0|x_t)\)，需要按照区分前后下标大小来区分前向过程和后向过程</p>
+</li>
+<li><p>逆向过程是前向过程的相反过程，其目标是从随机噪声\(x_T \sim \mathcal{N}(0, \mathbf{I})\)中一步步恢复得到原始样本\(x_0\)</p>
+</li>
+<li><p>思考：如果能够得到\(q(x_{t-1}|x_t)\)，则可以一步步恢复出来原始样本\(x_0\)</p>
+<ul>
+<li>注：【TODO: <a href>On the theory of stochastic processes, with particular reference to applications.?</a>】可以证明，如果\(q(x_t|x_{t-1})\)是高斯分布且方差\(\beta_t\)足够小，那么\(q(x_{t-1}|x_t)\)也还是一个高斯分布</li>
+</ul>
+</li>
+<li><p>所以，我们使用\(p_\theta(x_{t-1}|x_t)\)来拟合逆向分布，由于\(p_\theta(x_{t-1}|x_t)\)是高斯分布，所以可以拆解成建模均值\(\mu_\theta(x_t, t)\)和方差\(\Sigma_\theta(x_t, t)\)即可<br>  $$<br>  \begin{align}<br>  p_\theta(\mathbf{x}_{0:T}) &amp;= q(\mathbf{x}_T) \prod^T_{t=1} p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) \\<br>  p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) &amp;= \mathcal{N}(\mathbf{x}_{t-1}; \mathbf{\mu}_\theta(\mathbf{x}_t, t), \mathbf{\Sigma}_\theta(\mathbf{x}_t, t))<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>但是实际上，我们是无法直接得到\(q(x_{t-1}|x_t)\)的（理解：不知道\(x_0\)的情况下，噪声并不知道要朝着什么方向去生成\(x_0\)）</p>
+</li>
+<li><p>如果\(x_0\)已知，结合\(x_t \sim q(x_t|x_0) = \mathcal{N}(\mathbf{x}_t; \sqrt{\bar{\alpha}_t} \mathbf{x}_0, (1 - \bar{\alpha}_t)\mathbf{I})\)，则可以通过贝叶斯公式求得\(q(x_{t-1}|x_t,x_0)\):<br>  $$q(x_{t-1}|x_t,x_0) = \mathcal{N}(x_{t-1};\tilde{\mu}(x_t, x_0), \tilde{\beta}_t\mathbf{I})$$</p>
+<ul>
+<li>\(\tilde{\mu}(x_t,x_0)\)是均值，是\(x_t,x_0\)的函数，而\(\tilde{\beta}_t\)是方差，与\(x_t,x_0\)无关，仅与时间片有关</li>
+</ul>
+</li>
+<li><p>至此，我们的目标是求得 \(\tilde{\mu}(x_t, x_0)\) 和 \(\tilde{\beta}_t\)，为了这个目标，我们首先将\(q(x_{t-1}|x_t,x_0)\)展开：<br>  $$<br>  \begin{aligned}<br>  q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)<br>  &amp;= \frac{q(x_{t-1},x_t,x_0)}{q(x_t, x_0)} \\<br>  &amp;= \frac{q(x_t|x_{t-1},x_0) \cdot q(x_{t-1},x_0)}{q(x_t, x_0)}  \\<br>  &amp;= q(x_t|x_{t-1},x_0) \frac{q(x_{t-1}|x_0) \cdot q(x_0)}{q(x_t| x_0) \cdot q(x_0)}  \\<br>  &amp;= q(\mathbf{x}_t \vert \mathbf{x}_{t-1}, \mathbf{x}_0) \frac{ q(\mathbf{x}_{t-1} \vert \mathbf{x}_0) }{ q(\mathbf{x}_t \vert \mathbf{x}_0) } \\<br>  &amp;= q(\mathbf{x}_t \vert \mathbf{x}_{t-1}) \frac{ q(\mathbf{x}_{t-1} \vert \mathbf{x}_0) }{ q(\mathbf{x}_t \vert \mathbf{x}_0) } \quad \text{；马尔科夫性}\\<br>  &amp;\propto \exp \Big(-\frac{1}{2} \big(\frac{(\mathbf{x}_t - \sqrt{\alpha_t} \mathbf{x}_{t-1})^2}{\beta_t} + \frac{(\mathbf{x}_{t-1} - \sqrt{\bar{\alpha}_{t-1}} \mathbf{x}_0)^2}{1-\bar{\alpha}_{t-1}} - \frac{(\mathbf{x}_t - \sqrt{\bar{\alpha}_t} \mathbf{x}_0)^2}{1-\bar{\alpha}_t} \big) \Big) \\<br>  &amp;= \exp \Big(-\frac{1}{2} \big(\frac{\mathbf{x}_t^2 - 2\sqrt{\alpha_t} \mathbf{x}_t \color{blue}{\mathbf{x}_{t-1}} \color{black}{+ \alpha_t} \color{red}{\mathbf{x}_{t-1}^2} }{\beta_t} + \frac{ \color{red}{\mathbf{x}_{t-1}^2} \color{black}{- 2 \sqrt{\bar{\alpha}_{t-1}} \mathbf{x}_0} \color{blue}{\mathbf{x}_{t-1}} \color{black}{+ \bar{\alpha}_{t-1} \mathbf{x}_0^2}  }{1-\bar{\alpha}_{t-1}} - \frac{(\mathbf{x}_t - \sqrt{\bar{\alpha}_t} \mathbf{x}_0)^2}{1-\bar{\alpha}_t} \big) \Big) \\<br>  &amp;= \exp\Big( -\frac{1}{2} \big( \color{red}{(\frac{\alpha_t}{\beta_t} + \frac{1}{1 - \bar{\alpha}_{t-1}})} \mathbf{x}_{t-1}^2 - \color{blue}{(\frac{2\sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t + \frac{2\sqrt{\bar{\alpha}_{t-1}}}{1 - \bar{\alpha}_{t-1}} \mathbf{x}_0)} \mathbf{x}_{t-1} \color{black} + C(\mathbf{x}_t, \mathbf{x}_0) \big) \Big)<br>  \end{aligned}<br>  $$</p>
+<ul>
+<li>其中\(C(\mathbf{x}_t, \mathbf{x}_0)\)是与\(x_{t-1}\)无关的常数，在指数上，可以变成乘法，所以能忽略</li>
+</ul>
+</li>
+<li><p>然后结合常见高斯分布的概率密度的指数部分是\(\exp\Big( -\frac{(x-\mu)^2}{2\sigma^2} \Big) = \exp\Big( -\frac{1}{2}(\frac{1}{\sigma^2}x^2 - \frac{2\mu}{\sigma^2}x + \frac{\mu^2}{\sigma^2})\Big) \)，上面的推导结果可以进一步得到\(\tilde{\mu}(x_t, x_0)\) 和 \(\tilde{\beta}_t\)：<br>  $$<br>  \begin{aligned}<br>  \text{由} &amp;\quad \frac{1}{\sigma^2} = \frac{1}{\tilde{\beta}_t} = (\frac{\alpha_t}{\beta_t} + \frac{1}{1 - \bar{\alpha}_{t-1}}) \\<br>  \text{得} &amp;\quad \color{red}{\tilde{\beta}_t} = 1/(\frac{\alpha_t}{\beta_t} + \frac{1}{1 - \bar{\alpha}_{t-1}})<br>  = 1/(\frac{\alpha_t - \bar{\alpha}_t + \beta_t}{\beta_t(1 - \bar{\alpha}_{t-1})})<br>  = \color{green}{\frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t} ; \quad \quad \quad \quad \quad  \quad \quad \quad \quad \quad  \\<br>  \text{由} &amp;\quad \frac{2\mu}{\sigma^2} = \frac{2\tilde{\mu}(x_t,x_0)}{\tilde{\beta}_t} = \frac{2\sqrt{\alpha_t}} {\beta_t} \mathbf{x}_t + \frac{2\sqrt{\bar{\alpha}_{t-1}}}{1 - \bar{\alpha}_{t-1}} \\<br>  \text{得} &amp;\quad \color{red}{\tilde{\boldsymbol{\mu}} (\mathbf{x}_t, \mathbf{x}_0)} = (\frac{\sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t + \frac{\sqrt{\bar{\alpha}_{t-1} }}{1 - \bar{\alpha}_{t-1}} \mathbf{x}_0)/(\frac{\alpha_t}{\beta_t} + \frac{1}{1 - \bar{\alpha}_{t-1}}) \\<br>  &amp;\quad \quad \quad \quad \quad \ = (\frac{\sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t + \frac{\sqrt{\bar{\alpha}_{t-1} }}{1 - \bar{\alpha}_{t-1}} \mathbf{x}_0) \color{green}{\frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t} \\<br>  &amp;\quad \quad \quad \quad \quad \  = \frac{\sqrt{\alpha_t}(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t} \mathbf{x}_t + \frac{\sqrt{\bar{\alpha}_{t-1}}\beta_t}{1 - \bar{\alpha}_t} \mathbf{x}_0 \\<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>至此，结合<strong>用\(x_t\)和方差\(\beta\)来表示\(x_0\)的公式</strong>：\(x_0 = \frac{1}{\sqrt{\overline{\alpha}_t}}(x_t - \sqrt{1-\overline{\alpha}_t}\epsilon) \)</p>
+</li>
+<li><p>我们可以进一步可以将\(\tilde{\mu}(x_t,x_0)\)中的\(x_0\)，得到\(\tilde{\mu}(x_t)\)：<br>  $$<br>  \begin{aligned}<br>  \color{red}{\tilde{\boldsymbol{\mu}}(x_t)}<br>  &amp;= \frac{\sqrt{\alpha_t}(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t} \mathbf{x}_t + \frac{\sqrt{\bar{\alpha}_{t-1}}\beta_t}{1 - \bar{\alpha}_t} \frac{1}{\sqrt{\bar{\alpha}_t}}(\mathbf{x}_t - \sqrt{1 - \bar{\alpha}_t}\boldsymbol{\epsilon}) \\<br>  &amp;= \color{red}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon} \Big)}<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>其中\(\epsilon\)是使用深度学习预测得到的混合噪声，表示\(x_0 \rightarrow x_t\)过程中添加的 \(t\) 个噪声的Merge结果（仍然是一个高斯噪声且服从标准正太分布），可以表示为\(\epsilon_\theta(x_t, t)\)</p>
+</li>
+<li><p>于是，采样（生成）过程可以总结为如下的流程（下面的流程表示已知\(x_t\)和时间步\(t\)时采样\(x_{t-1}\)的步骤）：</p>
+<ul>
+<li>计算均值\(\tilde{\boldsymbol{\mu}}(x_t, t)\)：将\(x_t\)和时间步\(t\)输入神经网络预测\(x_0 \rightarrow x_t\)过程中添加的 \(t\) 个噪声的Merge结果\(\epsilon_\theta(x_t, t)\)，接着将\(\epsilon_\theta(x_t, t)\)带入\(\tilde{\boldsymbol{\mu}}(x_t) = \color{red}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(x_t, t) \Big)}\)得到均值</li>
+<li>计算方差\(\Sigma_\theta(x_t,t)\)：在DDPM中，使用固定值作为方差\(\Sigma_\theta(x_t,t) = \tilde{\beta}_t\)，同时在实践中，使用\(\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t \approx \beta_t \)，即\(\tilde{\beta}_t = \beta_t \)（其他有些文章会使用可学习的神经网络表示\(\Sigma_\theta(x_t, t)\)，比如<a href="https://arxiv.org/pdf/2112.10741" target="_blank" rel="noopener">GLIDE: Towards Photorealistic Image Generation and Editing with Text-Guided Diffusion Models</a>）</li>
+<li>采样\(x_{t-1} \sim \mathcal{N}(\tilde{\boldsymbol{\mu}}(x_t, t), \Sigma_\theta(x_t,t))\)，即\(x_{t-1} = \tilde{\boldsymbol{\mu}}(x_t, t) + \Sigma_\theta(x_t,t)\cdot \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="Diffusion模型训练目标函数推导"><a href="#Diffusion模型训练目标函数推导" class="headerlink" title="Diffusion模型训练目标函数推导"></a>Diffusion模型训练目标函数推导</h4><ul>
+<li><p>之前已经知道了，我们Diffusion模型的目标是通过训练学习\(\mu_\theta(x_t,t)\)和\(\Sigma_\theta(x_t,t)\)，这个模型训练时的目标是在已知数据集中数据出现的概率最大（极大似然法），即优化在分布\(x_0 \sim q(x_0)\)下\(p_\theta(x_0)\)的交叉熵：<br>  $$ L(\theta) = \mathbb{E}_{x_0 \sim q(x_0)}[-\log p_\theta(x_0)] = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] $$</p>
+</li>
+<li><p>其中(下面的推导使用了Jenson不等式)：<br>  $$<br>  \begin{aligned}<br>  - \log p_\theta(\mathbf{x}_0)<br>  &amp;\leq - \log p_\theta(\mathbf{x}_0) + D_\text{KL}(q(\mathbf{x}_{1:T}\vert\mathbf{x}_0) | p_\theta(\mathbf{x}_{1:T}\vert\mathbf{x}_0) ) \\<br>  &amp;= -\log p_\theta(\mathbf{x}_0) + \mathbb{E}_{\mathbf{x}_{1:T}\sim q(\mathbf{x}_{1:T} \vert \mathbf{x}_0)} \Big[ \log\frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T}) / p_\theta(\mathbf{x}_0)} \Big] \\<br>  &amp;= -\log p_\theta(\mathbf{x}_0) + \mathbb{E}_{\mathbf{x}_{1:T}\sim q(\mathbf{x}_{1:T} \vert \mathbf{x}_0)} \Big[ \log\frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} + \log p_\theta(\mathbf{x}_0) \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{1:T}\sim q(\mathbf{x}_{1:T} \vert \mathbf{x}_0)} \Big[ \log \frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} \Big] \\<br>  \text{Let }L_\text{VLB}<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ \log \frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} \Big] \geq - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} [\log p_\theta(\mathbf{x}_0)]<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>交叉熵损失函数(下面的推导使用到了重积分中的<a href="https://zh.wikipedia.org/wiki/%E5%AF%8C%E6%AF%94%E5%B0%BC%E5%AE%9A%E7%90%86" target="_blank" rel="noopener">Fubini定理</a>和Jenson不等式)<br>  $$<br>  \begin{aligned}<br>  L_\text{CE}<br>  &amp;= - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} \Big[\log p_\theta(\mathbf{x}_0) \Big]\\<br>  &amp;= - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} \Big[\log \Big( \int p_\theta(\mathbf{x}_{0:T}) d\mathbf{x}_{1:T} \Big)\Big] \\<br>  &amp;= - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} \Big[\log \Big( \int q(\mathbf{x}_{1:T} \vert \mathbf{x}_0) \frac{p_\theta(\mathbf{x}_{0:T})}{q(\mathbf{x}_{1:T} \vert \mathbf{x}_{0})} d\mathbf{x}_{1:T} \Big)\Big] \\<br>  &amp;= - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} \Big[\log \Big( \mathbb{E}_{\mathbf{x}_{1:T} \sim  q(\mathbf{x}_{1:T} \vert \mathbf{x}_0)} \frac{p_\theta(\mathbf{x}_{0:T})}{q(\mathbf{x}_{1:T} \vert \mathbf{x}_{0})} \Big)\Big] \\<br>  &amp;\leq - \mathbb{E}_{x_0 \sim q(\mathbf{x}_0)} \Big[\mathbb{E}_{\mathbf{x}_{1:T} \sim  q(\mathbf{x}_{1:T} \vert \mathbf{x}_0)}\Big[ \log \frac{p_\theta(\mathbf{x}_{0:T})}{q(\mathbf{x}_{1:T} \vert \mathbf{x}_{0})}\Big]\Big] \\<br>  &amp;= - \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[\log \frac{p_\theta(\mathbf{x}_{0:T})}{q(\mathbf{x}_{1:T} \vert \mathbf{x}_{0})} \Big]\\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})}\Big[\log \frac{q(\mathbf{x}_{1:T} \vert \mathbf{x}_{0})}{p_\theta(\mathbf{x}_{0:T})} \Big] = L_\text{VLB}<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>进一步推导：<br>  $$<br>  \begin{aligned}<br>  L_\text{VLB}<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ \log\frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ \log\frac{\prod_{t=1}^T q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{ p_\theta(\mathbf{x}_T) \prod_{t=1}^T p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t) } \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=1}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \Big( \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)}\cdot \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1}\vert\mathbf{x}_0)} \Big) + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1} \vert \mathbf{x}_0)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{q(\mathbf{x}_1 \vert \mathbf{x}_0)} + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} \Big[ \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_T)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} - \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1) \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_{0:T} \sim q(\mathbf{x}_{0:T})} [\underbrace{D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T))}_{L_T} + \sum_{t=2}^T \underbrace{D_\text{KL}(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t))}_{L_{t-1}} \underbrace{- \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)}_{L_0} ]<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>我们可以进一步将上面的表达式简化写为下面的形式：<br>  $$<br>  \begin{aligned}<br>  L_\text{VLB} &amp;= L_T + L_{T-1} + \dots + L_0 \\<br>  \text{where } L_T &amp;= D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T)) \\<br>  L_t &amp;= D_\text{KL}(q(\mathbf{x}_t \vert \mathbf{x}_{t+1}, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_t \vert\mathbf{x}_{t+1})) \text{ for }1 \leq t \leq T-1 \\<br>  L_0 &amp;= - \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)<br>  \end{aligned}<br>  $$</p>
+<ul>
+<li>\(L_T\)：由于前向过程\(q(x_T|x_0)\)没有可学习参数，且\(x_T\)是纯粹的高斯噪声，所以优化参数\(\theta\)时\(L_T\)可以当做常数忽略</li>
+<li>\(L_0\)：\(\mathcal{N}(\mathbf{x}_0; \boldsymbol{\mu}_\theta(\mathbf{x}_1, 1), \boldsymbol{\Sigma}_\theta(\mathbf{x}_1, 1))\)</li>
+<li>\(L_t\)：\(L_t\)可以看做是两个高斯分布的KL散度，\(q(x_{t-1}|x_t,x_0) = \mathcal{N}(x_{t-1};\tilde{\mathbf{\mu}}(x_t,x_0),\tilde{\beta}_t\mathbf{I})\)和\(p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) = \mathcal{N}(\mathbf{x}_{t-1}; \boldsymbol{\mu}_\theta(\mathbf{x}_t, t), \boldsymbol{\Sigma}_\theta(\mathbf{x}_t, t))\)，其中\(\tilde{\boldsymbol{\mu}}(x_t,t) = \frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_t \Big)\)<ul>
+<li>参照\(\tilde{\boldsymbol{\mu}}(x_t,t) = \frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_t \Big)\)的定义，可以将\(\mu_\theta(x_t,t)\)定义为如下形式（也就是说，只需要学习噪声\(\epsilon_\theta(x_t, t)\)即可）：<br>  $$<br>  \begin{aligned}<br>  \boldsymbol{\mu}_\theta(\mathbf{x}_t, t) &amp;= \color{red}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t) \Big)} \\<br>  \text{Thus }\mathbf{x}_{t-1} &amp;= \mathcal{N}(\mathbf{x}_{t-1}; \frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t) \Big), \boldsymbol{\Sigma}_\theta(\mathbf{x}_t, t))<br>  \end{aligned}<br>  $$ </li>
+<li>使得KL散度最小，可以直接使得两者的均值和方差尽可能相等，其中均值目标可以进一步优化为（DDPM中方差直接使用固定值）<br>  $$\begin{aligned}<br>  L_t<br>  &amp;= \mathbb{E}_{\mathbf{x}_0, \boldsymbol{\epsilon}} \Big[\frac{1}{2 | \boldsymbol{\Sigma}_\theta(\mathbf{x}_t, t) |^2_2} | \color{blue}{\tilde{\boldsymbol{\mu}}_t(\mathbf{x}_t, \mathbf{x}_0)} - \color{green}{\boldsymbol{\mu}_\theta(\mathbf{x}_t, t)} |^2 \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_0, \boldsymbol{\epsilon}} \Big[\frac{1}{2  |\boldsymbol{\Sigma}_\theta |^2_2} | \color{blue}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_t \Big)} - \color{green}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\boldsymbol{\epsilon}}_\theta(\mathbf{x}_t, t) \Big)} |^2 \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_0, \boldsymbol{\epsilon}} \Big[\frac{ (1 - \alpha_t)^2 }{2 \alpha_t (1 - \bar{\alpha}_t) | \boldsymbol{\Sigma}_\theta |^2_2} |\boldsymbol{\epsilon}_t - \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t)|^2 \Big] \\<br>  &amp;= \mathbb{E}_{\mathbf{x}_0, \boldsymbol{\epsilon}} \Big[\frac{ (1 - \alpha_t)^2 }{2 \alpha_t (1 - \bar{\alpha}_t) | \boldsymbol{\Sigma}_\theta |^2_2} |\boldsymbol{\epsilon}_t - \boldsymbol{\epsilon}_\theta(\sqrt{\bar{\alpha}_t}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_t}\boldsymbol{\epsilon}_t, t)|^2 \Big]<br>  \end{aligned}<br>  $$</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>最终训练时的目标函数可以表示为：<br>  $$<br>  \begin{aligned}<br>  L_t^\text{simple}<br>  &amp;= \mathbb{E}_{t \sim [1, T], \mathbf{x}_0, \boldsymbol{\epsilon}_t} \Big[|\boldsymbol{\epsilon}_t - \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t)|^2 \Big] \\<br>  &amp;= \mathbb{E}_{t \sim [1, T], \mathbf{x}_0, \boldsymbol{\epsilon}_t} \Big[|\boldsymbol{\epsilon}_t - \boldsymbol{\epsilon}_\theta(\sqrt{\bar{\alpha}_t}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_t}\boldsymbol{\epsilon}_t, t)|^2 \Big]<br>  \end{aligned}<br>  $$</p>
+</li>
+<li><p>如果考虑\(L_T\)和\(L_0\)，则有：<br>  $$ L_\text{simple} = L_t^\text{simple} + C $$</p>
+</li>
+</ul>
 <hr>
-<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png">
-
+<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><ul>
+<li>训练和推理伪代码：<img src="/Notes/DL/DL——DDPM/ddpm-training-and-sampling.png"></li>
+<li>训练过程：<ul>
+<li>从数据集中挑选出一个样本\(x_0 \sim q(x_0)\)</li>
+<li>均匀采样，随机选择一个扩散时间步 \(t \sim \text{Uniform}(\{ 1,\cdots,T \})\)（扩散时间步的总长度是提前设置的）</li>
+<li>从标准正态分布采样误差\(\epsilon \sim \mathcal{N}(0, \mathbf{I})\)，注意这里的误差跟样本\(x_0\)维度相同</li>
+<li>使用梯度下降训练Diffusion的误差模型\(\epsilon_\theta(x_t,t)\)：\(L(\theta) = \mathbb{E}_{t,x_0,\epsilon}[|\epsilon - \epsilon_\theta(\sqrt{\overline{\alpha}}x_0+\sqrt{1-\overline{\alpha}}\epsilon, t)|]^2 \)</li>
+</ul>
+</li>
+<li>采样过程：<ul>
+<li>从标准正态分布采样加噪后的样本\(x_T\)：\(x_T \sim \mathcal{N}(0, \mathbf{I})\)，注：可以这样采样的原因是实际上加噪后的样本可以看做是已经变成了随机值了</li>
+<li>逆向过程包含\(T\)步，\(t = T,\cdots,1\)：<ul>
+<li>如果\(t &gt; 0\)，则采样\(z \sim \mathcal{N}(0, \mathbf{I})\)，否则\(z = 0\)</li>
+<li>恢复\(x_{t-1}\)：\(x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\Big( x_t - \frac{1-\alpha_t}{\sqrt{1-\overline{\alpha}_t}}\epsilon_\theta(x_t, t) \Big) + \sigma_t z\) <ul>
+<li>其中\(\epsilon_\theta(x_t, t)\)的含义是在预测从\(x_0 \rightarrow x_t\)的过程中加入的\(t\)个混合噪声，\(\sigma_t\)是方差，DDPM中直接取近似值\(\sigma_t = \beta_t\)</li>
+<li>\(z\)是为了添加生成图片的随机性加入的，与\(\epsilon_\theta(x_t, t)\)没有任何关系，如果在每一步中保持\(z=0\)，对于相同的噪声\(x_T\)，生成的图片\(x_0\)将是固定的，且图片质量往往不好</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <hr>
 <h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><ul>
 <li>待更新</li>
@@ -360,16 +471,16 @@
 <hr>
 <h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
 <li>关于\(\epsilon_{\theta}(x_t, t)\)的含义<ul>
-<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪音，还是从\(x_{t-1}\)到\(x_t\)加的噪音？<ul>
-<li>回答：是从\(x_0\)到\(x_t\)加的噪音，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪音，而损失函数的目标就是让\(\epsilon_{\theta}\rightarrow\epsilon\)。</li>
+<li>训练时预估的\(\epsilon_{\theta}(x_t, t)\)的含义是什么？学到的是从\(x_0\)到\(x_t\)加的噪声，还是从\(x_{t-1}\)到\(x_t\)加的噪声？<ul>
+<li>回答：是从\(x_0\)到\(x_t\)加的噪声，本质是多个噪声Merge以后得结果(还是高斯噪声)，因为从训练流程的公式就可以看出，\(\epsilon_{\theta}(x_t, t)\)中的\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，其中\(\epsilon\)就是从\(x_0\)到\(x_t\)加的噪声，而损失函数的目标就是让\(\epsilon_{\theta}\rightarrow\epsilon\)。</li>
 </ul>
 </li>
-<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪音，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
-<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(p(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
+<li>在推理时，既然\(\epsilon_{\theta}(x_t, t)\)是从\(x_0\)到\(x_t\)加的累计噪声，为什么可以使用\(\epsilon_{\theta}(x_t, t)\)来完成从\(x_{t}\)到\(x_{t-1}\)的过程？<ul>
+<li>回答：因为这里从\(x_{t}\)到\(x_{t-1}\)的本质也是分两步的，第一步是从\(x_{t}\)到\(x_{0}\)(由\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta}\)反推即可得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)，注意这里得到的\(x_0\)可能质量不太好，不能直接作为最终结果)；第二步是已知从\(x_{t}\)和\(x_{0}\)后，可以得到\(x_{t-1}\)的分布\(q(x_{t-1}|x_t,x_0)\)，进一步对分布进行采样，就能得到一个\(x_{t-1}\)的实例。两步合并以后就是DDPM的采样伪代码中的公式</li>
 </ul>
 </li>
 <li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
-<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = N(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
+<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = \mathcal{N}(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
 <li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
 <li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
 </ul>
@@ -384,6 +495,12 @@
 </ul>
 </li>
 </ul>
+<hr>
+<h3 id="附录：其他推导过程参考"><a href="#附录：其他推导过程参考" class="headerlink" title="附录：其他推导过程参考"></a>附录：其他推导过程参考</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
+
+
+
+
 
       
     </div>
@@ -414,8 +531,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/DL/DL——IDDPM.html" rel="next" title="DL——IDDPM">
-                <i class="fa fa-chevron-left"></i> DL——IDDPM
+              <a href="/Notes/DL/DL——DDIM.html" rel="next" title="DL——DDIM">
+                <i class="fa fa-chevron-left"></i> DL——DDIM
               </a>
             
           </div>
@@ -424,8 +541,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/DL/DL——DDIM.html" rel="prev" title="DL——DDIM">
-                DL——DDIM <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/Others/CSDN——打印博客.html" rel="prev" title="CSDN——打印博客">
+                CSDN——打印博客 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -505,7 +622,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">292</span>
+                  <span class="site-state-item-count">293</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -518,7 +635,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">48</span>
+                  <span class="site-state-item-count">50</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
@@ -567,7 +684,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">1.</span> <span class="nav-text">推导过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练和推理"><span class="nav-number">2.</span> <span class="nav-text">训练和推理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码实现"><span class="nav-number">3.</span> <span class="nav-text">代码实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题和解答"><span class="nav-number">4.</span> <span class="nav-text">一些问题和解答</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#推导过程"><span class="nav-number">1.</span> <span class="nav-text">推导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Diffusion前向过程"><span class="nav-number">1.1.</span> <span class="nav-text">Diffusion前向过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#前向过程的整体描述"><span class="nav-number">1.1.1.</span> <span class="nav-text">前向过程的整体描述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#可以用-x-0-和方差-beta-来表示-x-t"><span class="nav-number">1.1.2.</span> <span class="nav-text">可以用\(x_0\)和方差\(\beta\)来表示\(x_t\)</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Diffusion逆向过程"><span class="nav-number">1.2.</span> <span class="nav-text">Diffusion逆向过程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Diffusion模型训练目标函数推导"><span class="nav-number">1.3.</span> <span class="nav-text">Diffusion模型训练目标函数推导</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练和推理"><span class="nav-number">2.</span> <span class="nav-text">训练和推理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码实现"><span class="nav-number">3.</span> <span class="nav-text">代码实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题和解答"><span class="nav-number">4.</span> <span class="nav-text">一些问题和解答</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#附录：其他推导过程参考"><span class="nav-number">5.</span> <span class="nav-text">附录：其他推导过程参考</span></a></li></ol></div>
             
 
           </div>
