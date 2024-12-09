@@ -80,7 +80,7 @@
 
 
 <meta name="description" content="本博客主要用于记录个人学习笔记">
-<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git, DL,">
+<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jiahong的个人博客">
 <meta property="og:url" content="https://JoeZJH.github.io/page/16/index.html">
@@ -161,7 +161,7 @@
       </a>
     </div>
       
-        <p class="site-subtitle">凡事预则立，不预则废</p>
+        <p class="site-subtitle">凡事预则立不预则废</p>
       
   </div>
 
@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——奇异值分解-SVD.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,11 +294,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——奇异值分解-SVD.html" itemprop="url">Math——奇异值分解-SVD</a></h1>
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程.html" itemprop="url">ML——GBDT-梯度提升树-推导过程</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -330,67 +346,512 @@
       
         
           
-            <p><em>本文从不同角度给出奇异值分解的物理意义</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>本文介绍梯度提升树(族)的推导过程,包括传统的GBDT,XGBoost等</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
+<hr>
+<h3 id="参数空间的优化"><a href="#参数空间的优化" class="headerlink" title="参数空间的优化"></a>参数空间的优化</h3><ul>
+<li>参数空间中我们使用梯度下降法(一阶导数)和牛顿迭代法(二阶导数)来优化</li>
+<li>关于无约束参数优化方法参考<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%9C%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95-%E6%97%A0%E7%BA%A6%E6%9D%9F%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">无约束参数优化方法</a></li>
+</ul>
+<hr>
+<h3 id="从参数空间优化到函数空间的优化"><a href="#从参数空间优化到函数空间的优化" class="headerlink" title="从参数空间优化到函数空间的优化"></a>从参数空间优化到函数空间的优化</h3><ul>
+<li>函数空间中我们使用GBDT(一阶导数)和XGBoost(二阶导数)来优化</li>
+<li>函数空间的优化完全类比参数空间的优化<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientDescend2GradientBoosting.png">
+<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/NewtonsMethod2NewtonBoosting.png">
+
+</li>
+</ul>
+<hr>
+<h3 id="Boosting是一种加法模型"><a href="#Boosting是一种加法模型" class="headerlink" title="Boosting是一种加法模型"></a>Boosting是一种加法模型</h3><p><em>加法模型：additive training</em><br>$$<br>\begin{align}<br>F(x) = \sum_{t=0}^{T}f_{t}(x)<br>\end{align}<br>$$</p>
 <ul>
-<li>参考知乎回答1:<a href="https://www.zhihu.com/collection/244516557" target="_blank" rel="noopener">奇异值的物理意义是什么？</a></li>
-<li>参考知乎回答2:<a href="https://www.zhihu.com/question/263722514/answer/272977924" target="_blank" rel="noopener">人们是如何想到奇异值分解的？</a></li>
+<li>上式中\(f_{t}(x)\)为基分类器, 我们通常采用回归树[Friedman 1999] 和逻辑回归<br>[Friedman 2000]</li>
+<li>树模型的优缺点可以参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
 </ul>
 <hr>
-<h3 id="公式说明"><a href="#公式说明" class="headerlink" title="公式说明"></a>公式说明</h3><p>$$A=U\Sigma V^{T}$$</p>
+<h3 id="GBDT算法原理"><a href="#GBDT算法原理" class="headerlink" title="GBDT算法原理"></a>GBDT算法原理</h3><p><em>这里只原论文中的Gradient Boosting Tree算法</em><br><em>Friedman于论文”GreedyFunctionApproximation…”中最早 出GBDT</em></p>
+<h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x) &amp;= \sum_{t=0}^{T}\alpha_{t} h_{t}(x;w_{t}) \\<br>&amp;= \sum_{t=0}^{T} f_{t}(x;w_{t})<br>\end{align}<br>$$</p>
 <ul>
-<li>\(U,V\)都是正交矩阵,\(\Sigma\)是对角矩阵,对角上的元素是矩阵\(A\)的奇异值</li>
-<li>若保留对角元素最大的K个值<ul>
-<li>\(K=r=Rank(A)\)时为紧奇异值分解,对应的是无损压缩,此时由于奇异值保留数量与原始矩阵相同,能做到对原始矩阵A的完全还原</li>
-<li>\(K&lt; r=Rank(A)\)时为截断奇异值分解,对应的是有损压缩,此时由于奇异值保留数量比原始矩阵的小,做不到对原始矩阵A的完全还原,但是如果K足够大就能做到对矩阵A的较完美近似</li>
+<li>其中, \(x\)为输入样本, \(h_{t}\)为分类回归树, \(w_{t}\)是树\(h_{t}\)的参数, \(\alpha_{t}\)是树\(h_{t}\)的权重</li>
+</ul>
+<h4 id="损失函数的定义"><a href="#损失函数的定义" class="headerlink" title="损失函数的定义"></a>损失函数的定义</h4><p>$$<br>\begin{align}<br>F^{\star} = \arg\max_{F}\sum_{i=1}^{N}L(y_{i}, F(x_{i};w))<br>\end{align}<br>$$</p>
+<ul>
+<li>其中，\(N\)为样本数量，所有样本的损失总和为总的损失函数</li>
+<li>最小化损失函数即可得到最优模型</li>
+</ul>
+<h4 id="最优模型的求解"><a href="#最优模型的求解" class="headerlink" title="最优模型的求解"></a>最优模型的求解</h4><ul>
+<li>直接列举所有可能的树——<strong>NP难问题</strong></li>
+<li>所以GBDT算法使用<strong>贪心法, 迭代求局部最优解</strong></li>
+<li>详细的Gradient Boosting Tree迭代过程如下<img src="/Notes/ML/Models/ML——GBDT-梯度提升树-推导过程/GradientBoostingTreeProcess.png"></li>
+<li>上面的推导中<ul>
+<li>2.1中：\(\tilde{y}_{i}\)是当前的损失函数\(L(y_{i}, F(x_{i})\)关于当前函数\(F(x)\)(模型)在\(F(x)=F_{t-1}(x)\)处的负梯度(每个样本都有一个负梯度)<ul>
+<li>这个损失函数在使用不同回归方法时时定义各不相同</li>
+<li>原始论文中提到两个损失函数定义,根据损失函数的不同,对应的归回方法不同: <strong>最小二乘归回</strong>或者<strong>最小绝对误差回归</strong></li>
+</ul>
+</li>
+<li>2.2中：\(w^{\star}\)是指能够拟合当前负梯度的树\(h_{t}(x;w^{\star})\)的最佳参数，这里我们认为最佳参数就是最小二乘的最佳参数，实际上这个地方可以使用其他测拟合标准(这个标准是拟合当前负梯度的拟合标准，与后面的损失函数\(L(y, F(x;w))\)无关)，只是这里最小二乘是最简单也是最自然的选择<ul>
+<li>原始论文中这里使用的基函数是\(\beta h(x;w)\)，其中\(\beta\)是当前基函数\(h(x;w)\)的权重，这里我认为直接使用\(h(x;w)\)作为基函数即可,权重\(\beta\)会自动被基函数学到的(可能原始论文中\(h(x;w)\)指的是简单的基函数，是不含权重学习功能的)</li>
+<li>但是需要注意的是,如果我们使用的基分类器是逻辑回归,那么这里每个基分类器的结果都是在[0-1]之间的数,是需要前面的\(\beta\)的</li>
+<li>这里我们推导的时候假定了基分类器是回归树,所以不需要使用 \(\beta\)</li>
+</ul>
+</li>
+<li>2.3中：由于\(w^{\star}\)只能保证当前树\(h_{t}(x;w^{\star})\)是能拟合负梯度的，不能保证把当前这棵树添加到模型中时模型的损失函数是最小的，所以我们加了一个步长参数\(\rho\)，用来表示得到当前树的最优权重<ul>
+<li>损失函数是平方损失函数时，这里的参数为\(\rho\)就是1，无需计算</li>
+</ul>
+</li>
+<li>2.4中：将当前树的最优树(包括权重)一起加入到模型中</li>
+</ul>
+</li>
+</ul>
+<h4 id="不同损失函数和基函数对应不同的算法"><a href="#不同损失函数和基函数对应不同的算法" class="headerlink" title="不同损失函数和基函数对应不同的算法"></a>不同损失函数和基函数对应不同的算法</h4><p><em>上述式子中推导用到的基函数为树模型，实际使用中也可以使用逻辑回归模型[Friedman 2000]等基函数</em><br><em>本小节将介绍不同损失函数或者基函数带来的不同算法</em></p>
+<ul>
+<li>注意:包括Adaboost和GBDT在内<strong>Boosting框架中，基函数(基分类器)都不能使用线性模型</strong><ul>
+<li>理解: Boosting框架本质上是一个加法模型，是对多个基函数的线性组合，得到更优的分类器，可以证明线性模型的线性组合还是线性模型，如果Boosting框架中使用线性模型，那么我们最终得到的分类器也是线性模型，这就局限了我们的整体模型的表达能力</li>
+</ul>
+</li>
+</ul>
+<h5 id="最小二乘回归-损失函数"><a href="#最小二乘回归-损失函数" class="headerlink" title="最小二乘回归(损失函数)"></a>最小二乘回归(损失函数)</h5><p><em>Least-Squares Regression</em></p>
+<h6 id="损失函数定义"><a href="#损失函数定义" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = \frac{1}{2}(y-F(x))^{2}<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程"><a href="#进一步理解推导过程" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=y_{i}-F_{t-1}(x_{i})\)，这里直接对损失函数求导即可的到<br>$$<br>\begin{align}<br>\tilde{y_{i}} &amp;= -\left [\frac{\partial L(y,F(x_{i}))}{\partial F(x_{i})}\right ]_{F(x) = F_{t-1}(x)} \\<br>&amp;= -\left [\frac{\partial L(y,F_{t-1}(x_{i}))}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= -\left [\frac{\partial \frac{1}{2}(y_{i}-F_{t-1}(x_{i}))^{2}}{\partial F_{t-1}(x_{i})}\right ] \\<br>&amp;= 2 \cdot -\frac{1}{2}(y_{i}-F_{t-1}(x_{i})) \cdot -1 \\<br>&amp;= y_{i}-F_{t-1}(x_{i})<br>\end{align}<br>$$</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)是常数1，推导如下<br>$$<br>\begin{align}<br>L(y,F_{t}(x)) &amp;= \sum_{i=1}^{N}L(y_{i}, F_{t}(x_{i})) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t}(x_{i}))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((y_{i}-F_{t-1}(x_{i}) - h_{t}(x_{i};w))^{2}) \\<br>&amp;= \frac{1}{2}\sum_{i=1}^{N}((\tilde{y}_{i}-h_{t}(x_{i};w))^{2}) \\<br>\end{align}<br>$$</li>
+<li>显然，这个式子和2.2中拟合目标完全相同(只差着2倍常数权重)，所以2.2中得到的最优基函数\(h_{t}(x;w^{\star})\)就是2.3中使得模型损失函数\(L(y,F_{t}(x))\)最小的最优基函数，无需添加任何的权重系数</li>
+</ul>
+<h5 id="最小绝对偏差回归-损失函数"><a href="#最小绝对偏差回归-损失函数" class="headerlink" title="最小绝对偏差回归(损失函数)"></a>最小绝对偏差回归(损失函数)</h5><p><em>Least Absolute Deviation Regression, LAD</em></p>
+<h6 id="损失函数定义-1"><a href="#损失函数定义-1" class="headerlink" title="损失函数定义"></a>损失函数定义</h6><ul>
+<li>此时损失函数定义为<br>$$<br>\begin{align}<br>L(y,F(x)) = |y-F(x)|<br>\end{align}<br>$$</li>
+</ul>
+<h6 id="进一步理解推导过程-1"><a href="#进一步理解推导过程-1" class="headerlink" title="进一步理解推导过程"></a>进一步理解推导过程</h6><ul>
+<li>2.1中\(\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))\)<ul>
+<li>绝对值的导数就是1或者-1,当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>-1</code>,负梯度为<code>1</code></li>
+<li>同理得到，当<br>$$y_{i}-F_{t-1}(x_{i}) &gt; 0$$</li>
+<li>对损失函数求导得到<code>1</code>,负梯度为<code>-1</code></li>
+<li>总结得到负梯度为<br>$$\tilde{y}_{i}=sign(y_{i}-F_{t-1}(x_{i}))$$</li>
+</ul>
+</li>
+<li>2.2中正常拟合(使用线性回归和CART回归树均可)</li>
+<li>2.3中基函数的权重\(\rho^{\star}\)不再是常数，推导如下</li>
+<li>待更新*<br>$$<br>\begin{align}<br>待更新<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="回归树-基函数"><a href="#回归树-基函数" class="headerlink" title="回归树(基函数)"></a>回归树(基函数)</h5><p><em>Regression Trees</em></p>
+<ul>
+<li><strong>传统GBDT</strong>中原始论文使用<strong>树回归</strong>,论文见<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Firedman 1999</a>,后来作者提出可以使用<strong>逻辑回归</strong>,论文见<a href="https://web.stanford.edu/~hastie/Papers/AdditiveLogisticRegression/alr.pdf" target="_blank" rel="noopener">Friedman 2000</a></li>
+<li>回归树和逻辑回归的优缺点比较<ul>
+<li><strong>树模型优点</strong>:<ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(混合类型特征指的是数值型和类别型均可处理)</li>
+<li>具有伸缩不变性(无需特征归一化: 神经网络和逻辑回归都需要,逻辑回归中是为了保证随机梯度下降的方向正确,速度快)</li>
+<li>可自然的处理缺失值, C4.5树处理缺失值默认使用的方法是先用未缺失样本计算信息增益确定分裂结点,然后将缺失值的每个样本按照权重(当前叶子节点未缺失样本数量 / 未缺失样本总数)分配到各个结点</li>
+<li>对异常点鲁棒(不用去除异常点,LR不具有这个优点)</li>
+<li>有特征选择的作用</li>
+<li>可扩展性强,容易并行(并行是最好的,用来解释为什么XGBoost等都用树模型)</li>
+</ul>
+</li>
+<li><strong>树模型缺点</strong>:<ul>
+<li>缺乏平滑性(回归预测时输出值只能输出若干种数值,而不是连续的数值,所以不平滑[不平滑即离散])</li>
+<li>不适合处理高维稀疏数据(当数据量太少时,非常容易过拟合,树的深度太深,从而模型变得太复杂)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="图像处理方面"><a href="#图像处理方面" class="headerlink" title="图像处理方面"></a>图像处理方面</h3><ul>
-<li>直观上可以理解为奇异值分解是将矩阵分解为若干个秩一矩阵之和,用公式表示就是:<br>$$A=\sigma_{1}u_{1}v_{1}^{T}+\sigma_{2}u_{2}v_{2}^{T}+…+\sigma_{r}u_{r}v_{r}^{T}$$<ul>
-<li>式子中每一项的系数\(\sigma\)就是奇异值</li>
-<li>\(u,v\)都是列向量,每一个\(uv^{T}\)都是秩为1的矩阵</li>
-<li>奇异值按照从小到大排列</li>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
 </ul>
-</li>
-<li>从公式中按照从大到小排序后,保留前面系数最大的项目后效果<ul>
-<li>对于一张450x333的图片,只需要保留前面的50项即可得到相当清晰的图像</li>
-<li>从保留项1到50,图片越来越清晰</li>
-</ul>
-</li>
-<li>结论: <ul>
-<li><strong>奇异值越大的项,越能体现出来图片的效果</strong>,奇异值隐含着某种对于A矩阵来说很重要的信息</li>
-<li>加权的秩一矩阵能体现整个大矩阵的值,<strong>奇异值就是对应秩一矩阵对于A矩阵的权重</strong></li>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——GBDT-梯度提升树-概念性总结.html" itemprop="url">ML——GBDT-梯度提升树-概念性总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>GBDT(GradientBoostingDecisionTree), 梯度提升树</em><br><em>GBDT泛指所有梯度提升树，包括XGBoost(XGBoost是GBDT的变种),平时为了进行区分,GBDT特指“Greedy Function Approximation:A Gradient Boosting Machine”(GBDT论文原文)提出的算法,只利用了一阶导数信息(XGBoost利用了二阶导数信息)<br>*梯度的数学定义:函数上升最快的方向</em></p>
+<p>参考论文:<a href="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" title="https://statweb.stanford.edu/~jhf/ftp/trebst.pdf" target="_blank" rel="noopener">Greedy Function Approximation: A Gradient Boosting Machine</a><br>一篇很详细的论文阅读笔记:<a href="http://xtf615.com/paper/GBM.html" title="http://xtf615.com/paper/GBM.html" target="_blank" rel="noopener">GBM Paper Reading</a></p>
+<p>引用一个常见的通俗例子:<strong>GBDT的思想可以用一个通俗的例子解释，假如有个人30岁，我们首先用20岁去拟合，发现损失有10岁，这时我们用6岁去拟合剩下的损失，发现差距还有4岁，第三轮我们用3岁拟合剩下的差距，差距就只有一岁了（残差作为下一轮拟合的数据的理解）。如果我们的迭代轮数还没有完，可以继续迭代下面，每一轮迭代，拟合的岁数误差都会减小,最终预测时使用他们的结果</strong></p>
+<hr>
+<h3 id="五种简称"><a href="#五种简称" class="headerlink" title="五种简称"></a>五种简称</h3><ul>
+<li>各种简称,都是同一种算法:<ul>
+<li>GBDT(Gradient Boosting Decision Tree)</li>
+<li>MART(Multiple Additive Regression Tree)</li>
+<li>GBT(Gradient Boosting Tree)</li>
+<li>GTB(Gradient Tree Boosting)</li>
+<li>GBRT(Gradient Boosting Regression Tree)</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="线性变换方面"><a href="#线性变换方面" class="headerlink" title="线性变换方面"></a>线性变换方面</h3><h4 id="几何含义"><a href="#几何含义" class="headerlink" title="几何含义"></a>几何含义</h4><ul>
-<li>对于任何的一个矩阵，我们要找到一组两两正交单位向量序列，使得矩阵作用在此向量序列上后得到新的向量序列保持两两正交.奇异值的几何含义为:<strong>这组变换后的新的向量序列的长度</strong></li>
+<h3 id="模型原理"><a href="#模型原理" class="headerlink" title="模型原理"></a>模型原理</h3><h4 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h4><ul>
+<li>使用CART作为基础模型(GDBT只能使用CART,不能使用其他树C4.5和ID3等), 后来作者提出也可以使用逻辑回归模型</li>
+<li>每棵树学习的是前一棵树的残差(预测值与真实值的差)[这里是当损失函数是均方误差(平方损失, square loss)时可直接使用残差,其他类似的学习算法中若]</li>
+<li>残差 = 真实值 - 预测值</li>
 </ul>
-<h4 id="更直观的几何含义"><a href="#更直观的几何含义" class="headerlink" title="更直观的几何含义"></a>更直观的几何含义</h4><ul>
-<li>公式:<br>  $$\mathbb{E}_{m}={y\in C^{m}: y=Ax, x\in C^{n},\left | x\right |_{2}=1}$$</li>
-<li>二维矩阵A:<ul>
-<li>矩阵A将二维平面中的单位圆变换为椭圆,而<strong>两个奇异值正好是椭圆的半轴长度</strong>.</li>
+<h4 id="与AdaBoost不同"><a href="#与AdaBoost不同" class="headerlink" title="与AdaBoost不同"></a>与AdaBoost不同</h4><ul>
+<li><p>AdaBoost是通过利用前一轮弱学习器的误差率来更新训练集的权重</p>
+<ul>
+<li>增大分类错误的样本权重,从而使得样本更加关注上一步中分类错误的样本</li>
 </ul>
 </li>
-<li>m维矩阵<ul>
-<li>矩阵A将高维平面中的单位球变换为超椭球,<strong>矩阵的奇异值恰好就是超椭球的每条半轴长度</strong>.</li>
+<li><p>GBDT是通过学习上一轮学习器的残差来实现对真实结果的不断逼近</p>
+<ul>
+<li>上一步中预测越接近真实结果的样本,残差越接近0,下一轮中对该样本的关注度越低</li>
+<li>上一步中预测越不接近真实结果的样本,残差越大,下一轮中对该样本的关注度越高</li>
+</ul>
+</li>
+<li><p>GBDT的弱学习器只能使用CART回归树,只能用回归树这一点与AdaBoost和RF均不同</p>
+<ul>
+<li>因为我们的目标是拟合上一若学习器的残差</li>
+<li>而残差往往是数值,不是类别,所以只能使用回归树CART</li>
+</ul>
+</li>
+</ul>
+<h4 id="GBDT分类"><a href="#GBDT分类" class="headerlink" title="GBDT分类"></a>GBDT分类</h4><h5 id="二分类"><a href="#二分类" class="headerlink" title="二分类"></a>二分类</h5><ul>
+<li>GBDT实现二分类时可以每轮迭代直接用一个模型去学残差</li>
+<li>此时类别可编码为一个一维向量,取值0或1</li>
+</ul>
+<h5 id="多分类"><a href="#多分类" class="headerlink" title="多分类"></a>多分类</h5><ul>
+<li>GBDT实现多分类时每轮使用一个模型不够了,因为三个模型时使用1,2,3编码显然是不科学的,类别之间不应该有这种数值大小关系</li>
+<li>此时三分类模型的类别可编码为一个三维向量,每一维的取值为0或1</li>
+<li>在每一轮迭代时,为每个类训练一个CART树,每棵CART树是相互独立的</li>
+<li>然后每个模型每轮分别学习当前特征的残差</li>
+<li>每个模型都会用到所有的样本<ul>
+<li>比如一个标记为标记为类别2的样本(x, y=2)</li>
+<li>编码为(x, [0,1,0])</li>
+<li>对于CART1和CART3(类别1和类别3的CART树)来说,该样本对应输入为(x, y=0)</li>
+<li>对于CART2(类别2CART树)来说,该样本对应输入为(x, y=1)</li>
+</ul>
+</li>
+<li>可以理解为把一个三分类问题转化成了3个二分类问题解决了</li>
+<li>最后预测时<ul>
+<li>给定一个未标记样本</li>
+<li>每个类对应的模型(每个类的模型个数是该类上模型的迭代次数)都对应给出该类的打分</li>
+<li>最后选择分数最高的一个类为最终分类即可</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="奇异值分解的降维理解"><a href="#奇异值分解的降维理解" class="headerlink" title="奇异值分解的降维理解"></a>奇异值分解的降维理解</h3><h4 id="代码编写"><a href="#代码编写" class="headerlink" title="代码编写"></a>代码编写</h4><ul>
-<li><p>代码</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">##encoding=utf-8</span><br><span class="line">import numpy as np</span><br><span class="line"></span><br><span class="line">A = np.array([[4, 5, 6], [4, 5, 6], [8, 10, 12], [4, 5, 6]])</span><br><span class="line"></span><br><span class="line">print(&quot;原始矩阵:&quot;)</span><br><span class="line">print(A)</span><br><span class="line"></span><br><span class="line">U, Sigma, Vt = np.linalg.svd(A)</span><br><span class="line">U = np.array(U)</span><br><span class="line">Sigma = np.array(Sigma)</span><br><span class="line">Vt = np.array(Vt)</span><br><span class="line"></span><br><span class="line">print(&quot;分解后的原始U，S，V：&quot;)</span><br><span class="line">print(U)</span><br><span class="line">Sigma_ = np.zeros((4, 3), dtype=np.float64)</span><br><span class="line">Sigma_[:3][:3] = np.diag(Sigma)</span><br><span class="line">print Sigma_</span><br><span class="line">print(Vt)</span><br><span class="line"></span><br><span class="line"># 不做任何处理，直接恢复原始矩阵</span><br><span class="line">A_ = np.dot(np.dot(U, Sigma_), Vt)</span><br><span class="line">print(A_)</span><br><span class="line"></span><br><span class="line"># 原始矩阵的秩为1，所以可以拆解到只剩下一个奇异值，压缩到一维，也能完整恢复原始矩阵，实现将4x3的矩阵变成两个向量+一个数字，当矩阵维度变大时，这里的压缩会更加明显</span><br><span class="line">U = U[:, :1]</span><br><span class="line">Sigma_ = Sigma_[:1, :1]</span><br><span class="line">Vt = Vt[:1, :]</span><br><span class="line"></span><br><span class="line">print(&quot;降维后的U，S，V：&quot;)</span><br><span class="line">print(U)</span><br><span class="line">print(Sigma_)</span><br><span class="line">print(Vt)</span><br><span class="line">A_ = np.dot(np.dot(U, Sigma_), Vt)</span><br><span class="line">print(&quot;降维后的恢复矩阵，与原矩阵相同：&quot;)</span><br><span class="line">print(A_)</span><br></pre></td></tr></table></figure>
+<h3 id="GDBT-LR"><a href="#GDBT-LR" class="headerlink" title="GDBT + LR"></a>GDBT + LR</h3><ul>
+<li>为什么在广告CTR预估中, GDBT+LR能够提升效果?<ul>
+<li>和LR对比: 线性模型</li>
+<li>和GBDT对比: </li>
+</ul>
 </li>
-<li><p>结果</p>
-<blockquote>
-<p>原始矩阵:<br>[[ 4  5  6]<br>[ 4  5  6]<br>[ 8 10 12]<br>[ 4  5  6]]<br>分解后的原始U，S，V：<br>[[-3.77964473e-01 -9.25820100e-01  1.52792960e-16  0.00000000e+00]<br>[-3.77964473e-01  1.54303350e-01  9.12870929e-01  0.00000000e+00]<br>[-7.55928946e-01  3.08606700e-01 -3.65148372e-01 -4.47213595e-01]<br>[-3.77964473e-01  1.54303350e-01 -1.82574186e-01  8.94427191e-01]]<br>[[2.32163735e+01 0.00000000e+00 0.00000000e+00]<br>[0.00000000e+00 1.22295087e-15 0.00000000e+00]<br>[0.00000000e+00 0.00000000e+00 5.18334466e-32]<br>[0.00000000e+00 0.00000000e+00 0.00000000e+00]]<br>[[-0.45584231 -0.56980288 -0.68376346]<br>[ 0.02454097  0.75988299 -0.64959647]<br>[-0.88972217  0.31289378  0.3324033 ]]<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]<br>降维后的U，S，V：<br>[[-0.37796447]<br>[-0.37796447]<br>[-0.75592895]<br>[-0.37796447]]<br>[[23.21637353]]<br>[[-0.45584231 -0.56980288 -0.68376346]]<br>降维后的恢复矩阵，与原矩阵相同：<br>[[ 4.  5.  6.]<br>[ 4.  5.  6.]<br>[ 8. 10. 12.]<br>[ 4.  5.  6.]]</p>
-</blockquote>
+</ul>
+<hr>
+<h3 id="GBDT和神经网络的优劣"><a href="#GBDT和神经网络的优劣" class="headerlink" title="GBDT和神经网络的优劣"></a>GBDT和神经网络的优劣</h3><h4 id="深度神经网络"><a href="#深度神经网络" class="headerlink" title="深度神经网络"></a>深度神经网络</h4><ul>
+<li>通过不同层级和类型的网络可以对时空信息建模</li>
+<li>适合图像, 声音, 文字等带有时序特质的数据</li>
+</ul>
+<h4 id="GBDT"><a href="#GBDT" class="headerlink" title="GBDT"></a>GBDT</h4><ul>
+<li>基于树模型的GBDT则能很好地处理表格数据</li>
+<li>模型的可解释性</li>
+<li>输入数据的不变性(几乎不用格式化数据)</li>
+<li>更易于调参等特质更适合数值型数据</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——RF-随机森林.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——RF-随机森林.html" itemprop="url">ML——RF</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>随机森林是一种集成学习(Ensemble)方法,属于集成学习中的Bagging族,是一种典型的Bagging方法</em></p>
+<hr>
+<h3 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h3><h4 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h4><ul>
+<li>假设训练集总大小为N,特征总数为K</li>
+<li>有放回抽样N个训练样本<ul>
+<li>说明:这种有放回的抽样技术又称为自助法(Bootstrap)重采样技术 </li>
+</ul>
+</li>
+<li><strong>随机</strong>从所有特征中<strong>选取k个特征</strong>(k一般远小于总特征数K)</li>
+<li>用bootstrap采样的结果(N个样本)和k个特征训练一棵决策树(训练时不剪枝,每棵树都尽可能生长)</li>
+<li>重复上述三个步骤:bootstrap采样和训练新的决策树,直到生成m棵决策树</li>
+<li>将m棵决策树组合成随机森林</li>
+</ul>
+<h4 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h4><ul>
+<li>对于一个确定的未标记样本</li>
+<li>经过每一棵决策树预测</li>
+<li>投票产生结果,确定最终分类</li>
+</ul>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>避免过拟合(bootstrap采样[随机]和随机选择部分特征)</li>
+<li>便于处理高维度的数据</li>
+<li>对高维度的数据无需做特征选择,全部保留也无所谓</li>
+<li>可并行计算 </li>
+<li>模型实现简单</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>模型训练多棵树,所以训练时间长</li>
+<li>预测时经过多棵树,预测时间长</li>
+</ul>
+<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><ul>
+<li>决策树类型: 三种(ID3,C4.5,CART)均可选,默认均分的三种算法混合到一起<ul>
+<li>决策树详细信息可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT.html" title="/Notes/ML/Models/ML——DT.html">ML——DT</a></li>
+</ul>
+</li>
+<li>树的数量m:<ul>
+<li>n_estimators</li>
+<li>int i: n_estimators = i</li>
+<li>默认为10</li>
+</ul>
+</li>
+<li>特征个数k(以Sklearn库为例):<ul>
+<li>max_features = k</li>
+<li>int i: k = i</li>
+<li>float f: k = f * K</li>
+<li>sqrt: k = sqrt(K)</li>
+<li>log2: k = log2(K)</li>
+<li>None: k = K </li>
+<li>Sklearn.ensemble.RandomRorestClassifier默认是”auto”,也就是sqrt(K)</li>
+</ul>
+</li>
+<li>树的深度: <ul>
+<li>max_depth</li>
+<li>单棵树的深度</li>
+<li>默认是None,不做限制</li>
+<li>int i: 指定树的深度为i</li>
+</ul>
+</li>
+<li>叶子节点最小样本数:<ul>
+<li>int i: min_samples_leaf = i</li>
+<li>float f: min_samples_leaf = f * N</li>
+<li>默认为1</li>
+</ul>
+</li>
+</ul>
+<h4 id="问题-随机森林的随机体现在哪里"><a href="#问题-随机森林的随机体现在哪里" class="headerlink" title="问题: 随机森林的随机体现在哪里?"></a>问题: 随机森林的随机体现在哪里?</h4><ul>
+<li>个人理解<ul>
+<li>体现在<strong>每棵树的训练样本随机</strong>,有放回采样(自助法(Bootstrap)重采样技术)</li>
+<li>体现在<strong>每棵树的训练样本的特征随机</strong>, 对每棵树而言,随机从K个特征中选取k个特征,当前树的每个叶节点分裂时只能从这k个特征中选择</li>
+</ul>
 </li>
 </ul>
 
@@ -441,7 +902,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——最优化问题和KKT条件.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——CTR-CVR的预估模型.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -460,11 +921,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——最优化问题和KKT条件.html" itemprop="url">Math——最优化问题和KKT条件</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——CTR-CVR的预估模型.html" itemprop="url">RS——CTR-CVR的预估模型</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-12T00:00:00+08:00">
+                2018-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -496,82 +973,981 @@
       
         
           
-            <p><em>凸优化&amp;拉个朗日对偶性的直观理解</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>本文主要广告计算领域用于CTR,CVR预估的模型</em></p>
+<hr>
+<h3 id="计算广告领域的术语"><a href="#计算广告领域的术语" class="headerlink" title="计算广告领域的术语"></a>计算广告领域的术语</h3><h4 id="一些术语"><a href="#一些术语" class="headerlink" title="一些术语"></a>一些术语</h4><ul>
+<li>CPA(Cost Per Action): <ul>
+<li>一种广告计费模式</li>
+<li>按照行为(Action)来计费</li>
+<li>这里的行为可以是注册,咨询,放入购入车等</li>
+</ul>
+</li>
+<li>CPC(Cost Per Click)<ul>
+<li>一种广告计费模式</li>
+<li>按照点击(Click)次数</li>
+</ul>
+</li>
+</ul>
+<h4 id="衡量指标"><a href="#衡量指标" class="headerlink" title="衡量指标"></a>衡量指标</h4><ul>
+<li>点击率CTR(click-through rate), 又名点击通过率:<br>$$CTR = \frac{Count_{click}}{Count_{show}} $$<ul>
+<li>分母是广告的实际展示次数</li>
+<li>分子是广告的实际点击次数</li>
+</ul>
+</li>
+<li>转化率CVR(conversion rate), 一种CPA衡量指标<br>$$CVR= \frac{Count_{conversion}}{Count_{click}}$$<ul>
+<li>分母是广告的实际点击次数</li>
+<li>分子是广告的转化次数,不同场景对转化成功的定义不同,比如手机号码注册用户为一次有效转化,那么这里CVR统计的就是所有点击了广告的人中有多少进行了实际的手机号注册</li>
+</ul>
+</li>
+</ul>
+<h3 id="预估CTR-CVR的模型"><a href="#预估CTR-CVR的模型" class="headerlink" title="预估CTR,CVR的模型"></a>预估CTR,CVR的模型</h3><h4 id="人工特征工程-LR"><a href="#人工特征工程-LR" class="headerlink" title="人工特征工程+LR"></a>人工特征工程+LR</h4><ul>
+<li>人工提取当前广告的特征</li>
+<li>LR模型预估用户是否会点击该广告或者注册该网站(二分类)</li>
+</ul>
+<h4 id="GBDT-LR"><a href="#GBDT-LR" class="headerlink" title="GBDT+LR"></a>GBDT+LR</h4><ul>
+<li>参考博客: <a href="https://www.jianshu.com/p/96173f2c2fb4" target="_blank" rel="noopener">https://www.jianshu.com/p/96173f2c2fb4</a></li>
+<li>Facebook paper中的一个例子<img src="/Notes/RecommenderSystem/RS——CTR-CVR的预估模型/GBDT+LR.png">
+<ul>
+<li>图中的GBDT只包含两棵树,实际上使用时可包含更多</li>
+<li>LR的特征数量(样本维度)就是所有树的叶节点树,样本落到当前叶节点则,当前叶节点对应的特征值为1,否则为0</li>
+<li>用于LR训练的特征维度共num_trees * num_leaves(也就是所有树叶节点的总数)</li>
+<li>由于有多棵树,每个原始样本在每棵树都会落到一个叶节点上,所以得到的新样本中可能有很多个特征值为1</li>
+<li>实践中原始输出时可能维度是树的棵数,每个数表示当前树中样本落到第几个叶节点上,对每棵树分别使用OneHot编码即可的到上面的 (num_trees * num_leaves) 维数据</li>
+</ul>
+</li>
+</ul>
+<h4 id="FM"><a href="#FM" class="headerlink" title="FM"></a>FM</h4><ul>
+<li>参考博客<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FM-因子分解机</a></li>
+</ul>
+<h4 id="FFM"><a href="#FFM" class="headerlink" title="FFM"></a>FFM</h4><ul>
+<li>参考博客<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
+</ul>
 
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——XGBoost-推导过程.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/Models/ML——XGBoost-推导过程.html" itemprop="url">ML——XGBoost-推导过程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-18T00:00:00+08:00">
+                2018-02-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>XGBoost,全称: Extreme Gradient Boosting</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <hr>
-<h3 id="凸优化相关书籍"><a href="#凸优化相关书籍" class="headerlink" title="凸优化相关书籍"></a>凸优化相关书籍</h3><ul>
-<li>参考链接：<a href="https://git.nju.edu.cn/201300035/NJUAI-Notes/-/tree/master/%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95" target="_blank" rel="noopener">优化方法-资料集合</a></li>
+<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><ul>
+<li>CART回归树是XGBoost的基分类器</li>
 </ul>
-<h3 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h3><ul>
-<li>一般优化问题的定义:</li>
-</ul>
-<p>$$<br>\begin{align}<br>\min_{x}\quad  &amp;f(x) \\<br>s.t. \quad &amp;g_{i}(x) \leq 0, i = 1,2,\dots,k \\<br>      &amp;h_{j}(x) = 0, j = 1,2,\dots,l<br>\end{align}<br>$$</p>
-<h4 id="凸优化问题"><a href="#凸优化问题" class="headerlink" title="凸优化问题"></a>凸优化问题</h4><ul>
-<li>如果原始优化问题满足:<ul>
-<li>\(f(x)\)和\(g_{i}(x)\)都是\(\mathbb{R}^{n}\)上连续可微的凸函数</li>
-<li>\(h_{j}(x)\)为\(\mathbb{R}^{n}\)上的仿射函数 (仿射函数是满足\(h_{j}(x) = a\cdot x + b\)的函数)</li>
-</ul>
-</li>
-<li>那么,原始优化问题是<strong>凸优化问题</strong></li>
-</ul>
-<h4 id="凸二次优化问题"><a href="#凸二次优化问题" class="headerlink" title="凸二次优化问题"></a>凸二次优化问题</h4><ul>
-<li>若上述<strong>凸优化问题</strong>还满足:<ul>
-<li>\(f(x)\)是二次函数</li>
-<li>\(g_{i}(x)\)是\(\mathbb{R}^{n}\)上的仿射函数</li>
-</ul>
-</li>
-<li>那么,原始优化问题是<strong>凸二次优化问题</strong></li>
-</ul>
-<h4 id="朗格朗日对偶性"><a href="#朗格朗日对偶性" class="headerlink" title="朗格朗日对偶性"></a>朗格朗日对偶性</h4><h5 id="拉格朗日对偶性的推导"><a href="#拉格朗日对偶性的推导" class="headerlink" title="拉格朗日对偶性的推导"></a>拉格朗日对偶性的推导</h5><ul>
-<li>原始问题定义为</li>
-</ul>
-<p>$$<br>\begin{align}<br>\min_{x}\quad  &amp;f(x) \\<br>s.t. \quad &amp;g_{i}(x) \leq 0, i = 1,2,\dots,k \\<br>      &amp;h_{j}(x) = 0, j = 1,2,\dots,l<br>\end{align}<br>$$</p>
+<hr>
+<h3 id="XGBoost模型推导-假设回归树的结构确定"><a href="#XGBoost模型推导-假设回归树的结构确定" class="headerlink" title="XGBoost模型推导(假设回归树的结构确定)"></a>XGBoost模型推导(假设回归树的结构确定)</h3><h4 id="模型-F-的加法定义："><a href="#模型-F-的加法定义：" class="headerlink" title="模型\(F\)的加法定义："></a>模型\(F\)的加法定义：</h4><p>$$<br>\begin{align}<br>F(x;w) = \sum_{k=0}^{K} f_{k}(x;w_{k})<br>\end{align}<br>$$</p>
 <ul>
-<li><p>引进拉格朗日函数有<br>$$<br>\begin{align}<br>L(x,\alpha, \beta) = f(x) + \sum_{i=1}^{k}\alpha_{i}g_{i}(x) + \sum_{j=1}^{l}\beta_{j}h_{j}(x)<br>\end{align}<br>$$</p>
-</li>
-<li><p>考虑到<br>$$<br>\begin{align}<br>\max_{\alpha,\beta:\alpha_{i}\geq 0}L(x,\alpha, \beta)<br>\end{align}<br>$$</p>
+<li>其中, \(x\)为输入样本, \(f_{k}\)为分类回归树,可以是分类回归树空间中的任意一棵树, \(w_{k}\)是树\(f_{k}\)的参数</li>
+</ul>
+<h4 id="定义损失函数"><a href="#定义损失函数" class="headerlink" title="定义损失函数"></a>定义损失函数</h4><p>$$<br>\begin{align}<br>L^{t} &amp;= \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t}) \\<br>&amp;=  \sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
 <ul>
-<li>当\(x\)满足原始问题的解时,上面的式子等价与\(f(x)\)</li>
-<li>否则上面的式子等于无穷大\(+\infty\)</li>
+<li>\(L^{t}\): 第 \(t\) 轮迭代的损失函数</li>
+<li>\(l(y_{i},\hat{y}_{i}^{t})\) 表示单个样本的损失函数定义</li>
+<li>\(\hat{y}_{i}^{t} = \hat{y}_{i}^{t-1} + f_{t}(x_{i})\) 表示第 \(t\) 轮 \(x_{i}\) 样本的预测值<ul>
+<li>加法模型: 第 \(t\) 轮预测值 = 第 \(t-1\) 轮预测值 + 第 \(t\) 棵(轮)决策树的预测值</li>
 </ul>
 </li>
-<li><p>所以假设原始问题的最优值为\(p^{\star}\),那么<br>$$<br>\begin{align}<br>p^{\star} = \min_{x}\max_{\alpha,\beta:\alpha_{i}\geq 0}L(x,\alpha, \beta)<br>\end{align}<br>$$</p>
+<li>\(\Omega(f_{t})\) 表示正则项<ul>
+<li>\(n\) 表示样本的个数</li>
+<li>\(T\) 表示<strong>叶子结点的个数</strong></li>
+<li>\(w_{j}\) 表示<strong>叶节点分数</strong>, 即任意样本落到第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点时的预测值(可称为第 \(t\) 棵(轮)决策树的第 \(j\) 叶子结点的预测值)</li>
+<li>\(\gamma\)和\(\lambda\)都是正则项参数</li>
+</ul>
+</li>
+</ul>
+<h4 id="第-t-轮训练的目标"><a href="#第-t-轮训练的目标" class="headerlink" title="第 \(t\) 轮训练的目标"></a>第 \(t\) 轮训练的目标</h4><ul>
+<li>找到一个最优的分类器 \(f_t^{\star}(x)\), 满足<br>$$<br>\begin{align}<br>f_t^{\star}(x) &amp;= \arg\max_{f_t(x)}L^{t} \\<br>&amp;= \arg\max_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t}) + \Omega(f_{t})\right) \\<br>&amp;= \arg\max_{f_t(x)}\left(\sum_{i=1}^{n}l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \right)<br>\end{align}<br>$$</li>
+</ul>
+<h4 id="最小化损失函数推导"><a href="#最小化损失函数推导" class="headerlink" title="最小化损失函数推导"></a>最小化损失函数推导</h4><p><em>损失函数<strong>二阶泰勒展开</strong></em></p>
 <ul>
-<li>(\(p^{\star}\)不是最优参数,是最优参数对应的函数值,参数应该用\(\mathop{\arg\max}_{x}\)而不是\(\max_{x}\))</li>
+<li><p>回忆传统泰勒展开:<br>$$<br>\begin{aligned}<br>f(x) &amp;= f(x_0) + f’(x_0)(x-x_0) + \frac{f’’(x_0)}{2!}(x-x_0)^2 + \cdots + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n \\<br>&amp; = \sum\limits_{n=0}^{\infty}\frac{f^{(n)}x_0}{n!}(x - x_0)^n<br>\end{aligned}<br>$$</p>
+</li>
+<li><p>二阶泰勒展开公式<br>$$<br>\begin{align}<br>f(x+\Delta x) \approx f(x) + f’(x)\Delta x + \frac{1}{2}f’’(x)\Delta x^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>在我们的场景中,令</p>
+<ul>
+<li>\(x = \hat{y}_{i}^{t-1}\)</li>
+<li>\(\Delta x = f_{t}(x_{i})\)</li>
 </ul>
 </li>
-<li><p>定义对偶问题为:<br>$$<br>\begin{align}<br>&amp;\max_{\alpha,\beta:\alpha_{i}\geq 0}\min_{x}L(x,\alpha, \beta) \\<br>&amp;s.t.\quad \alpha_{i} \geq 0,\quad i=1,2,\dots,k<br>\end{align}<br>$$</p>
-</li>
-<li><p>假设原始问题的最优解为\(d^{\star}\),则原始问题与对偶问题的关系为:<br>$$<br>\begin{align}<br>d^{\star} = \max_{\alpha,\beta:\alpha_{i}\geq 0}\min_{x}L(x,\alpha, \beta) = \min_{x}\max_{\alpha,\beta:\alpha_{i}\geq 0}L(x,\alpha, \beta) = p^{\star}<br>\end{align}<br>$$</p>
-</li>
-</ul>
-<h5 id="KKT条件"><a href="#KKT条件" class="headerlink" title="KKT条件"></a>KKT条件</h5><ol>
-<li><strong>原始可行性</strong>：\(g_{i}(x) \leq 0\), \(h_{j}(x) = 0\)<ul>
-<li>所有原始约束必须满足。</li>
+<li><p>则有对单个样本能得到<br>$$<br>\begin{align}<br>l(y_{i},\hat{y}_{i}^{t-1} + f_{t}(x_{i})) \approx l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)<br>\end{align}<br>$$</p>
+<ul>
+<li>\(l’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
 </ul>
 </li>
-<li><strong>对偶可行性</strong>：\(\alpha_i \geq 0\)<ul>
-<li>所有的<strong>不等式约束</strong>对应的拉格朗日乘子大于等于0</li>
+<li><p>我们第 \(t\) 轮的目标是找到一个最优的分类器 \(f_t^{\star}(x)\)最小化损失函数 \(L^{t}\)<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l(y_i,\hat{y}_i^{t-1}) + l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>显然上面式子中的 \(l(y_i,\hat{y}_i^{t-1})\) 与 \(f_t(x_i)\) 无关,可以移除,于是有<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(l’(y_i,\hat{y}_i^{t-1})f_t(x_i) + \frac{1}{2}l’’(y_i,\hat{y}_i^{t-1})f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(g_i = l’(y_i,\hat{y}_i^{t-1})\) 为 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的一阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
+<li>\(h_i = l’’(y_i,\hat{y}_i^{t-1})\) 是 \(l(y_i,\hat{y}_i)\) 对 \(\hat{y}_i\) 的二阶导数在 \(\hat{y}_i = \hat{y}_i^{t-1}\) 处的值 </li>
 </ul>
 </li>
-<li><strong>互补松弛性</strong>：\(\alpha_i g_i(x) = 0\)<ul>
-<li>对于<strong>每个不等式约束</strong> \(g_i(x)\)，都有\(\alpha_i g_i(x) = 0\)，这意味着如果一个约束是紧约束（即 \(g_i(x) = 0\)），那么对应的 \(\alpha_i\) 可以是非零的；如果一个约束是松的（即 \(g_i(x) &lt; 0\)），那么对应的 \(\alpha_i\) 必须为零。</li>
+<li><p>则有:<br>$$<br>\begin{align}<br>L^{t} \approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2<br>\end{align}<br>$$</p>
+</li>
+<li><p>做一个重要的<strong>转换</strong>:<br>$$f_t(x_i) = w_j, \quad s.t. \ x_i \in I_j$$</p>
+<ul>
+<li>上面的式子前半部分成立的条件是 \(x_i\) 落在叶子结点 \(j\) 上</li>
+<li>我们将条件\(x_i\) 落在叶子结点 \(j\) 上表示为 \(\ x_i \in I_j\)</li>
 </ul>
 </li>
-<li><strong>梯度条件</strong>：\(\nabla_x L(x^<em>, \alpha^</em>, \beta^*) = 0\)<ul>
-<li>在最优解处，拉格朗日函数关于 \(x\) 的<strong>梯度</strong>必须为零</li>
+<li><p>于是: 我们可以<strong>将前面对样本的累加变成对叶子结点的累加</strong><br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i)w_j^2\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx  \sum_{j=1}^{T}\left((\sum_{i \in I_j}g_i)w_j + \frac{1}{2}(\sum_{i \in I_j}h_i + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>令:</p>
+<ul>
+<li>\(G_j = \sum_{i \in I_j}g_i\)</li>
+<li>\(H_j = \sum_{i \in I_j}h_i\)</li>
+</ul>
+</li>
+<li><p>则有<br>$$<br>\begin{align}<br>L^{t} \approx  \sum_{j=1}^{T}\left(G_jw_j + \frac{1}{2}(H_j + \lambda)w_j^2\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>\(L^t\) 对 \(w_j\) 求偏导有<br>$$<br>\begin{align}<br>\frac{\partial L^{t}}{\partial w_j} = G_j + (H_j + \lambda)w_j<br>\end{align}<br>$$</p>
+</li>
+<li><p>令导数 \(\frac{\partial L^{t}}{\partial w_j} = 0\) 可得<br>$$<br>\begin{align}<br>w_j^{\star} = -\frac{G_j}{H_j+\lambda}<br>\end{align}<br>$$</p>
+</li>
+<li><p>同时<br>$$<br>\begin{align}<br>L^{\star^t} &amp;\approx min(L^t) \\<br>&amp;\approx \sum_{j=1}^{T}\left(G_j\cdot (-\frac{G_j}{H_j+\lambda}) + \frac{1}{2}(H_j + \lambda)\cdot(-\frac{G_j}{H_j+\lambda})^2\right) + \gamma T \\<br>&amp;\approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</p>
+</li>
+<li><p>目标函数的计算示例: 目标分数越小越好</p>
+<img src="/Notes/ML/Models/ML——XGBoost-推导过程/example_of_xgboost.png">
+
+</li>
+</ul>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><ul>
+<li>在<strong>第 \(t\) 轮回归树的结构确定后</strong>,我们得到的<strong>最优叶节点分数</strong>与结构无关 \(w_j^{\star} = -\frac{G_j}{H_j+\lambda}\)</li>
+<li>最小损失与第 \(t\) 轮回归树的结构的复杂度(叶节点数量)相关</li>
+<li>我们<strong>还需要</strong>确定第 \(t\) 轮回归树的结构</li>
+</ul>
+<hr>
+<h3 id="回归树的结构确定"><a href="#回归树的结构确定" class="headerlink" title="回归树的结构确定"></a>回归树的结构确定</h3><h4 id="普通决策树树结构的确定"><a href="#普通决策树树结构的确定" class="headerlink" title="普通决策树树结构的确定"></a>普通决策树树结构的确定</h4><ul>
+<li>详细情况可参考: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html">ML——DT-决策树</a></li>
+</ul>
+<h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>最大化信息增益来选择分裂特征</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>最大化信息增益比来选择分裂特征</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><h6 id="分类树"><a href="#分类树" class="headerlink" title="分类树"></a>分类树</h6><ul>
+<li>最小化基尼指数来选择分裂特征</li>
+</ul>
+<h6 id="回归树"><a href="#回归树" class="headerlink" title="回归树"></a>回归树</h6><ul>
+<li>最小化平方误差来选择分裂特征</li>
+</ul>
+<h4 id="XGBoost结点分裂前后的信息增益"><a href="#XGBoost结点分裂前后的信息增益" class="headerlink" title="XGBoost结点分裂前后的信息增益"></a>XGBoost结点分裂前后的信息增益</h4><ul>
+<li>信息增益应该与前面的损失函数相关, 损失越小越好</li>
+<li>原始损失函数为<br>$$<br>\begin{align}<br>L^{\star^t} \approx -\frac{1}{2}\sum_{j=1}^{T}\left(\frac{G_j^2}{H_j+\lambda}\right) + \gamma T<br>\end{align}<br>$$</li>
+<li>显然,要使得损失函数最小,我们需要使得下面的式子最大:<br>$$<br>\begin{align}<br>\frac{G_j^2}{H_j+\lambda}<br>\end{align}<br>$$</li>
+<li>一个结点分裂后的信息为<br>$$<br>\begin{align}<br>\frac{G_L^2}{H_L+\lambda} + \frac{G_R^2}{H_R+\lambda}<br>\end{align}<br>$$<ul>
+<li>左子树的信息 + 右子树的信息</li>
+</ul>
+</li>
+<li>一个结点分裂前信息为<br>$$<br>\begin{align}<br>\frac{(G_L + G_R)^2}{H_L+ H_R + \lambda}<br>\end{align}<br>$$</li>
+<li>从而我们定义一个结点分列前后的信息增益为:<br>$$<br>\begin{align}<br>Gain = \frac{G_L^2}{H_L+ \lambda} + \frac{G_R^2}{H_R+ \lambda} - \frac{(G_L + G_R)^2}{H_L+ H_R + \lambda} - \gamma<br>\end{align}<br>$$<ul>
+<li>Gain 越大说明当前结点的当前分裂方式越好</li>
+<li>其中 \(\gamma\) 是一个超参数用于防止<strong>过拟合</strong>,可以理解为有两层含义:<ul>
+<li>用于对叶节点数目进行控制</li>
+<li>用于增大分裂前后Gain的阈值</li>
+<li>事实上 \(\gamma\) 不是凭空来的,开始的定义中 \(\gamma\) 就是L1正则化(叶节点数量)的系数, 这里分裂后叶节点数量多了1个, 我们希望树的叶节点越少越好(模型越简单越好),而这个的信息增益越大越好, 所以减去 \(\gamma\) 值,防止结点分裂得太多</li>
+<li>对于每个特征的每个分裂点, \(\gamma\) 值都相同,所以 \(\gamma\) 值对特征和分裂点的选择没有影响,只是影响了某个结点是否能够被分裂(信息增益太小或者为负时我们可以选择不分裂)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost树节点分裂"><a href="#XGBoost树节点分裂" class="headerlink" title="XGBoost树节点分裂"></a>XGBoost树节点分裂</h4><h5 id="精确分裂算法"><a href="#精确分裂算法" class="headerlink" title="精确分裂算法"></a>精确分裂算法</h5><ul>
+<li><strong>单个</strong>叶节点<strong>精确</strong>计算信息增益<strong>分裂流程</strong>(特征和特征分裂取值的选择, 假设一共m个特征)<ul>
+<li>注意: 每次只对叶节点分裂,已经分裂了的就不是叶节点了,不能二次分裂</li>
+<li>原图来自: <a href="https://www.cnblogs.com/massquantity/p/9794480.html" target="_blank" rel="noopener">https://www.cnblogs.com/massquantity/p/9794480.html</a><img src="/Notes/ML/Models/ML——XGBoost-推导过程/exact_greedy_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="近似分裂算法"><a href="#近似分裂算法" class="headerlink" title="近似分裂算法"></a>近似分裂算法</h5><ul>
+<li>将每个特征的取值划分为多个分位点</li>
+<li>每次考察特征时值考察分位点,减少计算复杂度</li>
+<li>其他的步骤与前面的精确分裂算法相同,包括分数计算和选择最大分数等<img src="/Notes/ML/Models/ML——XGBoost-推导过程/approximate_algorithm_for_split_finding.png">
+
+</li>
+</ul>
+<h5 id="分桶策略与GBDT的不同"><a href="#分桶策略与GBDT的不同" class="headerlink" title="分桶策略与GBDT的不同"></a>分桶策略与GBDT的不同</h5><ul>
+<li>传统的GBDT分桶时每个样本的权重都是相同的</li>
+<li>XGBoost中每个样本的权重为损失函数在该样本点的二阶导数(对不同的样本,计算得到的损失函数的二阶导数是不同的), 这里优点AdaBoost的思想,重点关注某些样本的感觉</li>
+<li>这里影响的是划分点的位置(我们划分划分点[桶]时都是均匀划分样本到桶里面,当不同样本的权重不同时,每个桶里面的样本数量可能会不同)</li>
+<li>下图是一个示例<img src="/Notes/ML/Models/ML——XGBoost-推导过程/split_point_method_weighted_in_xgboost.png"></li>
+<li>详细推导解释,为什么选择损失函数在当前样本的二阶导数作为权重?<br>$$<br>\begin{align}<br>L^{t} &amp;\approx \sum_{i=1}^{n}\left(g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(2\frac{g_i}{h_i}f_t(x_i) + f_t^2(x_i)\right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>&amp;\approx \sum_{i=1}^{n}\frac{1}{2}h_i\left(f_t(x_i) - \frac{g_i}{h_i}\right)^2 + \sum_{i=1}^{n}\left ( \frac{g_i^2}{2h_i} - 2g_if_t(x_i) \right) + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T}w_{j}^2 \\<br>\end{align}<br>$$<ul>
+<li>上面的式子中第二项在原文中用constant来表示,可以被看成某种正则项</li>
+<li>第一项是一个平方误差表达式,样本 \(x_i\) 对应的输出值为 \(\frac{g_i}{h_i}\), 而样本权重就是 \(h_i\)</li>
+<li>权重代表概率,概率越大说明该点出现的次数或者该点附近的值出现的次数就越多.</li>
+</ul>
+</li>
+<li>XGBoost分桶流程<ul>
+<li>[待更新]</li>
+</ul>
+</li>
+</ul>
+<h4 id="XGBoost整棵树分裂流程"><a href="#XGBoost整棵树分裂流程" class="headerlink" title="XGBoost整棵树分裂流程"></a>XGBoost整棵树分裂流程</h4><ul>
+<li>初始化\(f^0(x)\)</li>
+<li>for t=1 to M:<ul>
+<li>计算损失函数对每个训练样本点的一阶导数 \(g_i\) ,二阶导数 \(h_i\)</li>
+<li>递归对叶子节点运用树分裂算法生成一颗决策树 \(f^t(x)\),    <ul>
+<li>(这一步包括叶子节点的分数 \(w_j\) 也都确定下来)</li>
+<li>(这一步可以使用近似分裂算法加快训练速度)</li>
+</ul>
+</li>
+<li>把新生成的决策树加入到模型中, \(\hat{y}^t = \hat{y}^{t-1} + f_m(x)\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="传统GDBT与XGBoost的比较"><a href="#传统GDBT与XGBoost的比较" class="headerlink" title="传统GDBT与XGBoost的比较"></a>传统GDBT与XGBoost的比较</h3><ul>
+<li>参考博客: <a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94XGBoost-vs-%E4%BC%A0%E7%BB%9FGBDT.html">ML——XGBoost-vs-传统GBDT</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——BN-LN-IN-GN-LRN-WN.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——BN-LN-IN-GN-LRN-WN.html" itemprop="url">DL——BN-LN-IN-GN-LRN-WN</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-17T00:00:00+08:00">
+                2018-02-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍各种不同的Normalization方法</em></p>
+<ul>
+<li>BN: Batch Normalization</li>
+<li>LN: Layer Normalization</li>
+<li>IN: Instance Normalization</li>
+<li>GN: Group Normalization</li>
+<li>LRN: Local Response Normalization</li>
+<li>WN: Weight Normalization<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+</li>
+</ul>
+<hr>
+<h3 id="Normalization总体介绍"><a href="#Normalization总体介绍" class="headerlink" title="Normalization总体介绍"></a>Normalization总体介绍</h3><ul>
+<li>BN,LN,IN的归一化的步骤都是使用下面的公式:<br>$$<br>\begin{align}<br>u &amp;= \frac{1}{m}\sum_{k\in S}x_k \\<br>\sigma &amp;= \sqrt{\frac{1}{m}\sum_{k\in S}(x_k-u) + \epsilon} \\<br>\hat{x} &amp;= \frac{1}{\sigma}(x-u) \\<br>y &amp;= \gamma \hat{x} + \beta<br>\end{align}<br>$$<ul>
+<li>\(u\) 为均值</li>
+<li>\(\sigma\) 为标准差</li>
+<li>\(\gamma\) 和 \(beta\) 是可以训练的参数</li>
+<li>\(\epsilon\) 是平滑因子, 防止分母为0</li>
+<li>BN,LN,IN三种不同的归一化方法, 对应的数据集 \(S\)不同<ul>
+<li>BN对同一批数据进行归一化, 不管其他神经元, 只针对某个神经元的Mini Batch个样本输出值做归一化</li>
+<li>LN对同一个样本的同一层输出进行归一化, 不依赖其他样本, 每次只依赖当前样本本身</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="BN"><a href="#BN" class="headerlink" title="BN"></a>BN</h3><p><em>Batch Normalization</em></p>
+<ul>
+<li>对一批数据实行归一化</li>
+<li>对某个具体的神经元的Mini Batch个样本输出做归一化, 与其他神经元的输出无关<img src="/Notes/DL/DL——BN-LN-IN-GN-LRN-WN/Batch_Normalization.jpg"></li>
+<li>代码:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mu = np.mean(x,axis=0)</span><br><span class="line">sigma2 = np.var(x,axis=0)</span><br><span class="line">x_hat = (x-mu)/np.sqrt(sigma2+eps)</span><br><span class="line">out = gamma*x_hat + beta</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="LN"><a href="#LN" class="headerlink" title="LN"></a>LN</h3><p><em>Layer Normalization</em></p>
+<ul>
+<li>对单个训练样本的同一层所有神经元的输入做归一化</li>
+<li>与其他样本无关<img src="/Notes/DL/DL——BN-LN-IN-GN-LRN-WN/Layer_Normalization.jpg">
+
+
+</li>
+</ul>
+<h4 id="BN的作用和说明"><a href="#BN的作用和说明" class="headerlink" title="BN的作用和说明"></a>BN的作用和说明</h4><ul>
+<li>Batch Normalization把网络每一层的输出Y固定在一个变化范围的作用</li>
+<li>BN都能显著提高训练速度</li>
+<li>BN可以解决梯度消失问题<ul>
+<li>归一化操作将每一层的输出从饱和区拉到了非饱和区(导数),从而解决了梯度消失问题</li>
+</ul>
+</li>
+<li>普通的优化器加上BN后效果堪比Adam<br>  $$ ReLU + Adam \approx ReLU + SGD + BN$$</li>
+<li>如果对于具有<strong>分布极不平衡</strong>的<strong>二分类</strong>测试任务, <strong>不要使用BN</strong></li>
+<li>BN一定程度上有归一化作用<ul>
+<li>BN本身就能提高网络模型的泛化能力</li>
+<li>使用BN后,不用太依赖Dropout, L2正则化等,可以将L2正则化的参数变小一点</li>
+</ul>
+</li>
+</ul>
+<h3 id="WN"><a href="#WN" class="headerlink" title="WN"></a>WN</h3><p><em>Weight Normalization</em></p>
+<ul>
+<li>对参数做归一化</li>
+<li>与数据无关<img src="/Notes/DL/DL——BN-LN-IN-GN-LRN-WN/Weight_Normalization.jpg">
+
+</li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><h4 id="BN和WN对比"><a href="#BN和WN对比" class="headerlink" title="BN和WN对比"></a>BN和WN对比</h4><ul>
+<li>BN是对对一个mini batch的数据在同一个神经元计算均值和方差</li>
+<li>WN对网络的网络权值 W 进行归一化(L2归一化)</li>
+</ul>
+<h4 id="BN和LN对比"><a href="#BN和LN对比" class="headerlink" title="BN和LN对比"></a>BN和LN对比</h4><ul>
+<li>BN高度依赖于mini-batch的大小，实际使用中会对mini-Batch大小进行约束，不适合类似在线学习（mini-batch为1）情况；</li>
+<li>BN不适用于RNN网络中normalize操作：<ul>
+<li>BN实际使用时需要计算并且保存某一层神经网络mini-batch的均值和方差等统计信息，对于对一个固定深度的前向神经网络（DNN，CNN）使用BN，很方便；</li>
+<li>但对于RNN来说，sequence的长度是不一致的，换句话说RNN的深度不是固定的，不同的time-step需要保存不同的statics特征，可能存在一个特殊sequence比其的sequence长很多，这样training时，计算很麻烦</li>
+</ul>
+</li>
+<li>但LN可以有效解决上面这两个问题</li>
+<li>LN适用于LSTM的加速，但用于CNN加速时并没有取得比BN更好的效果</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/PyTorch/PyTorch——关于Variable类和Tensor类的类型判断.html" itemprop="url">PyTorch——关于Variable类和Tensor类的类型判断</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-07T00:00:00+08:00">
+                2018-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><h4 id="requires-grad-True"><a href="#requires-grad-True" class="headerlink" title="requires_grad=True"></a><code>requires_grad=True</code></h4><p><em>等价于<code>requires_grad=a</code>, <code>a</code>为任意非0整数,不能为浮点数</em><br><em>浮点数会报错: TypeError: integer argument expected, got float</em></p>
+<ul>
+<li><p>测试代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.], requires_grad=True)</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/home/jiahong/JupyterWorkspace/test.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    print(variable.numpy())</span><br><span class="line">RuntimeError: Can&apos;t call numpy() on Variable that requires grad. Use var.detach().numpy() instead.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>从上面的测试用例可以看出:</p>
+<ul>
+<li><code>Variable</code>和<code>Tensor</code>在判断类型时都是<code>torch.Tensor</code><ul>
+<li><code>type(tensor) == type(variable) == torch.Tensor</code> </li>
+</ul>
+</li>
+<li>几乎所有操作都相同<ul>
+<li><code>tensor.data == variable.data</code></li>
+<li><code>tensor.data.numpy() == varible.data.numpy()</code></li>
+</ul>
+</li>
+<li>直接输出变量结果不相同<ul>
+<li><code>tensor</code>输出时没有<code>requires_grad=True</code></li>
+<li><code>variable</code>输出时有<code>requires_grad=True</code></li>
+</ul>
+</li>
+<li><code>variable</code>不能直接调用函数<code>variable.numpy()</code>,会报异常<ul>
+<li>异常描述为: 当前<code>Variable</code>变量要求<code>requires grad</code>,也就是<code>requires_grad</code>属性为真时,变量不能直接使用</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="requires-grad-False"><a href="#requires-grad-False" class="headerlink" title="requires_grad=False"></a><code>requires_grad=False</code></h4><p><em>等价于<code>requires_grad=0</code></em><br><em>不等价于<code>requires_grad=None</code>, <code>None</code>会报错: TypeError: an integer is required</em></p>
+<ul>
+<li><p>测试代码:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import torch</span><br><span class="line">from torch.autograd import Variable</span><br><span class="line"></span><br><span class="line">tensor = torch.ones(1)</span><br><span class="line">variable = Variable(tensor, requires_grad=False)</span><br><span class="line">print(tensor)</span><br><span class="line">print(variable)</span><br><span class="line">print(&quot;type1: &quot;, type(tensor), type(variable))</span><br><span class="line">print(tensor.data)</span><br><span class="line">print(variable.data)</span><br><span class="line">print(&quot;type2: &quot;, type(tensor.data), type(variable.data))</span><br><span class="line">print(tensor.data.numpy())</span><br><span class="line">print(variable.data.numpy())</span><br><span class="line">print(&quot;type3: &quot;, type(tensor.data.numpy()), type(variable.data.numpy()))</span><br><span class="line">print(tensor.numpy())</span><br><span class="line">print(variable.numpy())</span><br><span class="line">print(&quot;type4: &quot;, type(tensor.numpy()), type(variable.numpy()))</span><br><span class="line"></span><br><span class="line"># Output:</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type1: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">tensor([1.])</span><br><span class="line">tensor([1.])</span><br><span class="line">(&apos;type2: &apos;, &lt;class &apos;torch.Tensor&apos;&gt;, &lt;class &apos;torch.Tensor&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type3: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br><span class="line">[1.]</span><br><span class="line">[1.]</span><br><span class="line">(&apos;type4: &apos;, &lt;type &apos;numpy.ndarray&apos;&gt;, &lt;type &apos;numpy.ndarray&apos;&gt;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>从上面的测试用例可以看出:</p>
+<ul>
+<li>当<code>variable</code>变量的<code>requires_grad=False</code>时,<code>variable</code>完全退化为<code>tensor</code><ul>
+<li>直接输出变量时没有<code>requires_grad=False</code>属性</li>
+<li>可以直接使用<code>variable.numpy()</code>函数</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="Variable的三种等价定义"><a href="#Variable的三种等价定义" class="headerlink" title="Variable的三种等价定义"></a><code>Variable</code>的三种等价定义</h4><p><em>下面三种定义的<code>Variable</code>类型变量<code>varible</code>等价</em></p>
+<ul>
+<li><p><code>requires_grad=False</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=False)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>没有<code>requires_grad</code>参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>requires_grad=True</code>,然后<code>variable = variable.detach()</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">variable = Variable(tensor, requires_grad=True)</span><br><span class="line">variable = variable.detach()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>上面三种定义都等价于原始的<code>tensor</code></p>
+<ul>
+<li>这里的等价并未经过详细测试,但是至少以下方面等价:<ul>
+<li>自身类型相同<code>type</code>, 类型为<code>torch.Tensor</code></li>
+<li>可以调用属性<code>.data</code>,类型为<code>torch.Tensor</code></li>
+<li>可以调用<code>.grad</code>,只不过都为<code>None</code></li>
+<li>直接输出对象完全相同,都不包含<code>requires_grad=True</code>属性</li>
+<li>可以调用相同的函数<code>.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
+<li>可以调用相同的函数<code>.data.numpy()</code>, 类型为<code>numpy.ndarray</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Attention.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——Attention.html" itemprop="url">DL——Attention</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍Attention的原理和变种</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<ul>
+<li>参考博客(其中有些错误,本文已经修正): <a href="https://zhuanlan.zhihu.com/p/47063917" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/47063917</a></li>
+<li>参考论文: <a href="https://arxiv.org/pdf/1811.05544.pdf" target="_blank" rel="noopener">An Introductory Survey on Attention Mechanisms in NLP Problems</a></li>
+<li>强烈推荐一篇写得非常好的动画讲解: <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/" target="_blank" rel="noopener">基于Attention的Seq2Seq可视化神经机器翻译机</a></li>
+<li>另一篇不错的Attention和Transformer讲解<a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">自然语言处理中的自注意力机制(Self-Attention Mechanism)</a></li>
+</ul>
+<hr>
+<h3 id="RNN的局限-Encoder-Decoder模型"><a href="#RNN的局限-Encoder-Decoder模型" class="headerlink" title="RNN的局限: Encoder-Decoder模型"></a>RNN的局限: Encoder-Decoder模型</h3><ul>
+<li>RNN 结构<img src="/Notes/DL/DL——Attention/rnn_overview.jpg"></li>
+<li>Encoder-Decoder结构<img src="/Notes/DL/DL——Attention/encoder_decoder_overview.jpg">
+
+</li>
+</ul>
+<hr>
+<h3 id="Attention机制的引入"><a href="#Attention机制的引入" class="headerlink" title="Attention机制的引入"></a>Attention机制的引入</h3><ul>
+<li>Attention机制的根本优势在于对不同的</li>
+<li>引入Attention前后的Encoder和Decoder对比图<img src="/Notes/DL/DL——Attention/traditional_encoder_decoder_vs_attention.png">
+<ul>
+<li>使用 Attention 前: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}})\)</li>
+<li>使用 Attention 后: \(\vec{h_{t}^{out}} = f(\vec{h_{t-1}^{out}},\vec{y_{t-1}}, \vec{c_{t}})\)<ul>
+<li>\(\vec{c_{t}} = q(\vec{h_{1}^{in}}, \dots, \vec{h_{T}^{in}})\)</li>
+<li>\(q\) 是个多层的运算,有多重不同实现,详情参考后面的讲解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>动态图理解 Attention 机制</li>
+</ul>
+<img src="/Notes/DL/DL——Attention/attention_overview.gif">
+<pre><code>* 图中线条越清晰说明对当前结点的影响越大,不清晰说明影响较小</code></pre>
+<ul>
+<li>进一步看结构图<img src="/Notes/DL/DL——Attention/attention_details.jpg"></li>
+<li>上图中Encoder使用的是双层双向的RNN<ul>
+<li>第一层倒序从后\(X_T\)到前\(X_1\)生成, 反方向编码器</li>
+<li>第二层正序从前\(X_1\)到后\(X_T\)生成, 正方向编码器</li>
+<li>二者combine为一个更高维度的向量, 这个更高维度的向量整个作为Encoder的隐藏层</li>
+</ul>
+</li>
+<li>流程说明:<ul>
+<li>利用 RNN 结构得到 Encoder中的 Hidden State (\(\vec{h_1}, \vec{h_2},\dots, \vec{h_T}\))</li>
+<li>假设当前 Decoder 的Hidden State 是 \(\vec{s_{t-1}}\), 计算每一个 \(\vec{h_j}\) 与当前输入位置的关联性 \(e_{ij} = a(\vec{s_{t-1}}, \vec{h_j})\), 得到向量 \(\vec{e_t} = (a(\vec{s_{t-1}}, \vec{h_1}), \dots, a(\vec{s_{t-1}}, \vec{h_T})) \)<ul>
+<li>这里的 \(a\) 是相关性的(函数)运算符, 常用的可以用向量内积(点成),加权点乘等<ul>
+<li>内积点乘: \(e_{tj} = \vec{s_{t-1}}^T\cdot\vec{h_j}\)</li>
+<li>加权点乘: \(e_{tj} = \vec{s_{t-1}}^TW\vec{h_j}\) (一般使用这个)</li>
+<li>更复杂的: \(e_{tj} = \vec{v}^Ttanh(W_1\vec{s_{t-1}}^T + W_2\vec{h_j})\)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对 \(\vec{e_t}\) 进行 softmax 操作,将其归一化得到 Attention 的分布, \(\vec{\alpha_t} = softmax(\vec{e_t})\)</li>
+<li>利用 \(\vec{\alpha_t}\), 我们可以进行加权求和得到相应的上下文向量(context verctor) \(\vec{c_t} = \sum_{j=1}^T\alpha_{tj}\vec{h_j}\)</li>
+<li>计算 Decoder 的下一个 Hidden State \(\vec{s_t} = f_h(\vec{s_{t-1}}, \vec{y_{j-1}}, \vec{c_t})\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention的变种"><a href="#Attention的变种" class="headerlink" title="Attention的变种"></a>Attention的变种</h3><p><em>这里的总结参考博客<a href="http://xtf615.com/2019/01/06/attention/" target="_blank" rel="noopener">Attention</a></em></p>
+<ul>
+<li>基于强化学习的注意力机制：选择性的Attend输入的某个部分</li>
+<li>全局&amp;局部注意力机制：其中，局部注意力机制可以选择性的Attend输入的某些部分</li>
+<li>多维度注意力机制：捕获不同特征空间中的Attention特征。</li>
+<li>多源注意力机制：Attend到多种源语言语句</li>
+<li>层次化注意力机制：word-&gt;sentence-&gt;document</li>
+<li>注意力之上嵌一个注意力：和层次化Attention有点像。</li>
+<li>多跳注意力机制：和前面两种有点像，但是做法不太一样。且借助残差连接等机制，可以使用更深的网络构造多跳Attention。使得模型在得到下一个注意力时，能够考虑到之前的已经注意过的词。</li>
+<li>使用拷贝机制的注意力机制：在生成式Attention基础上，添加具备拷贝输入源语句某部分子序列的能力。</li>
+<li>基于记忆的注意力机制：把Attention抽象成Query，Key，Value三者之间的交互；引入先验构造记忆库。</li>
+<li>自注意力机制：自己和自己做attention(这里的自己只每个文档自身)，使得每个位置的词都有全局的语义信息，有利于建立长依赖关系。</li>
+</ul>
+<hr>
+<h3 id="广义的Attention机制"><a href="#广义的Attention机制" class="headerlink" title="广义的Attention机制"></a>广义的Attention机制</h3><p><em>参考博客: <a href="https://www.sohu.com/a/226596189_500659" target="_blank" rel="noopener">https://www.sohu.com/a/226596189_500659</a></em></p>
+<ul>
+<li>Attention的本质: <ul>
+<li>一个Attention函数可以被描述为<strong>一个把查询(Query)和键-值(Key-Value)对集合变换成输出(Attention Value)的映射</strong> </li>
+<li>简单的讲就是一个把 (Query,[Key-Value]s) 映射成一个 Attention Value (输出)</li>
+<li>An attention function can be described as Mapping aquery and a set of key-value pairs to an output<img src="/Notes/DL/DL——Attention/essence_of_attention.jpeg"></li>
+</ul>
+</li>
+<li>表示成数学公式如下<img src="/Notes/DL/DL——Attention/math_of_attention.jpeg"></li>
+<li>如上图所示,在计算 Attention 时主要分为三步<ul>
+<li>第一步是将 Query 和每个 Key 进行相似度计算得到权重，常用的相似度函数有点积，拼接，感知机等</li>
+<li>第二步一般是使用一个 Softmax 函数对这些权重进行归一化</li>
+<li>第三步将权重和相应的键值 Value 进行加权求和得到最后的 Attention</li>
+</ul>
+</li>
+<li>Attention过程还可以大致分为两步理解:<ul>
+<li><ol>
+<li><strong>将Query和Key经过相似度计算(某种数学运算)的结果通过 Softmax 激活函数激活得到上文所说的权重得分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\)</strong><ul>
+<li>变换一般包括 <ul>
+<li>点乘(Dot): \(f(Q,K_i) = Q^TK_i\)</li>
+<li>加权点乘(General): \(f(Q,K_i) = Q^TW_{\alpha}K_i\), \(W_{\alpha}\) 对不同的 \(\alpha_i\)</li>
+<li>拼接(Concat): \(f(Q,K_i) = W[Q^T;K_i]\)</li>
+<li>感知机(Perceptorn): \(f(Q,K) = \boldsymbol{v}^T tanh(W_Q, UK_i)\)</li>
+</ul>
+</li>
+<li>Query和Key在不同任务中是不同的东西<ul>
+<li>在阅读理解中: Query指的是问题,Key指的是文档</li>
+<li>在简单的文本分类中: Query和Key可以是同一个句子(这也就是Self Attention), 也就是句子自己和自己做两个词之间的相似度计算的到权重分布</li>
+</ul>
+</li>
 </ul>
 </li>
 </ol>
-<ul>
-<li>其他理解:<ul>
-<li>对KKT条件其他角度的理解可参考周志华&lt;&lt;机器学习&gt;&gt;P404</li>
+</li>
+<li><ol start="2">
+<li><strong>将权重分布 \(\vec{\alpha} = (\alpha_1\dots \alpha_n)\) 对Value做加权求和得到最终的特征表示</strong><ul>
+<li>在当前<strong>NLP</strong>任务中, 基本上 <strong>Key == Value</strong></li>
+<li>阅读理解任务中, Value指的就是前面的Key, 是文档</li>
+<li>简单文本分类中, Value指句子</li>
+<li>在 <strong>Self Attention</strong> 机制中, 由于之前提到过, <strong>Query == Key</strong>, 所以有<strong>Key == Value == Query</strong><ul>
+<li>输入一个句子，那么里面的每个词都要和该句子中的所有词进行 Attention 计算, 然后Softmax得到当前句子中每个词的权重,进而对句子中的词求和, 输出当前句子在当前模型中的Attention表示(Attention Value), 即$$\boldsymbol{Y_{AttentionOutput}} = Self Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = Attention(\boldsymbol{X},\boldsymbol{X},\boldsymbol{X})$$</li>
 </ul>
 </li>
 </ul>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Attention研究发展趋势"><a href="#Attention研究发展趋势" class="headerlink" title="Attention研究发展趋势"></a>Attention研究发展趋势</h3><img src="/Notes/DL/DL——Attention/NLP_trend.png">
 
           
         
@@ -620,7 +1996,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——样本均值方差和总体均值方差的关系.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——NNLM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -639,11 +2015,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——样本均值方差和总体均值方差的关系.html" itemprop="url">Math——样本均值方差和总体均值方差的关系</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——NNLM.html" itemprop="url">DL——NNLM</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -675,189 +2067,91 @@
       
         
           
-            <p><em>本文介绍随机变量样本均值方差和整体均值方差的关系，同时还介绍样本和均值的方差和总体方差的关系</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>神经网络语言模型(Nerual Network Language Model, NNLM)</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
+<p>参考论文: <a href="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" title="http://jmlr.org/papers/volume3/bengio03a/bengio03a.pdf" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a><br>参考博客: <a href="https://blog.csdn.net/lilong117194/article/details/82018008" title="https://blog.csdn.net/lilong117194/article/details/82018008" target="_blank" rel="noopener">神经网路语言模型(NNLM)的理解</a></p>
+<hr>
+<h3 id="概率模型"><a href="#概率模型" class="headerlink" title="概率模型"></a>概率模型</h3><ul>
+<li>传统的n元语言模型: $$(p(w_{t}|w_{t-(n-1)},…,w_{t-1}))$$</li>
+<li>一般来说可以通过前n-1个词将预测第n个词的概率分布</li>
+</ul>
+<hr>
+<h3 id="NNLM模型原理"><a href="#NNLM模型原理" class="headerlink" title="NNLM模型原理"></a>NNLM模型原理</h3><ul>
+<li>NNLM模型直接通过一个神经网络结构对n元条件概率进行评估</li>
+</ul>
+<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><ul>
+<li>NNLM网络结构图如下：</li>
+</ul>
+<img src="/Notes/DL/DL——NNLM/NNLM_Overview.png" title="NNLM_Overview">
+
+<h4 id="数据集预处理"><a href="#数据集预处理" class="headerlink" title="数据集预处理"></a>数据集预处理</h4><ul>
+<li>对于给定的预料库，我们需要生成训练数据集(大量训练样本的集合)，单个样本如下是长度为n的序列\((w_{1},…,w_{n})\)，其中\((w_{1},…,w_{n-1})\)对应训练样本特征值，训练样本标记为\(w_{n}\)，通常可以用One-Hot编码(一个维度为|V|的向量)</li>
+</ul>
+<h4 id="模型分析"><a href="#模型分析" class="headerlink" title="模型分析"></a>模型分析</h4><p><em>模型分析主要介绍前向传播过程</em></p>
+<h5 id="输入与输出"><a href="#输入与输出" class="headerlink" title="输入与输出"></a>输入与输出</h5><ul>
+<li>将构造的数据集作为训练样本集</li>
+<li>其中每个样本输入为\((w_{1},…,w_{n-1})\)，输出为一个向量(维度为|V|)，向量代表词的分布，该分布应该与词\(w_{n}\)的One-Hot编码(也是一个|V|维向量)尽量匹配，输出误差就是这两个向量的差异大小(不同损失函数均通过将上述两个向量作为输入，输出一个标量等(也可能n为向量，此时按照不同维度分别计算，或者是其他的值)从而实现当前样本损失的计算</li>
+</ul>
+<h5 id="模型结构分析"><a href="#模型结构分析" class="headerlink" title="模型结构分析"></a>模型结构分析</h5><ul>
+<li><p>\(x=(C_{j|w_{j}=w_{1}};…;C_{j|w_{j}=w_{n-1}})\)</p>
 <ul>
-<li>其他参考链接：<a href="https://www.zhihu.com/question/357835857/answer/2728936255" target="_blank" rel="noopener">在统计学里如何理解样本均值的方差等于总体方差➗n? - 蘇雲的回答 - 知乎</a></li>
+<li>x为输入向量，\(x\in R^{(n-1)m}\)，x是词序列\((w_{1},…,w_{n-1})\)对应的拼接向量，其中每个词都会先被矩阵C映射成一个m维的向量，将(n-1)维的向量拼接起来就得到了x</li>
 </ul>
-<h3 id="样本均值的方差与总体方差的关系"><a href="#样本均值的方差与总体方差的关系" class="headerlink" title="样本均值的方差与总体方差的关系"></a>样本均值的方差与总体方差的关系</h3><!-- * 详细推导如下，有时间再重新用文字梳理一下
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population.png"> -->
+</li>
+<li><p>\(y=b+Wx+Utanh(d+Hx)\)</p>
 <ul>
-<li>其他证明方式：<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-mean-of-samples-vs-var-of-population-v2.png">
-<ul>
-<li>上式中，如果总体方差未知，想要用样本方差来作为总体方差的无偏估计，则样本方差的定义是应该是 \(S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2\)，（此时样本方差是总体方差的无偏估计）</li>
+<li>y为输出向量，\(y\in R^{|V|}\)，\(y_{i}\)表示\(w_{i}\)是第n个单词的概率</li>
 </ul>
 </li>
 </ul>
-<h3 id="样本方差为什么要除以n-1"><a href="#样本方差为什么要除以n-1" class="headerlink" title="样本方差为什么要除以n-1?"></a>样本方差为什么要除以n-1?</h3><ul>
-<li>样本方差的定义：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\bar{X})^2<br>$$</li>
-<li>为什么样本方差是乘以\(\frac{1}{n-1}\)而不是\(\frac{1}{n}\)？<ul>
-<li>因为这样使用\(\frac{1}{n}\)会低估总体方差，此时样本方差不是总体方差的无偏估计</li>
-<li>样本方差低估了总体方差的原因是因为从总体里面抽出来的数据会更倾向于集中，极端情况下，一个样本对应的方差为0</li>
-</ul>
+<h5 id="模型参数分析"><a href="#模型参数分析" class="headerlink" title="模型参数分析"></a>模型参数分析</h5><ul>
+<li><p>C:映射矩阵\(C\in R^{|V|\times m}\),其中矩阵的第j行\(C_{j}\)是词\(w_{j}\)对应的特征向量，m为特征向量的维度</p>
 </li>
-<li>换个视角想，是因为我们不知道总体的均值，所以计算方差时使用的均值也是从样本中求平均得到的，这使得我们基于该均值得到的方差不够离散（因为使用了样本均值，所以自由度需要减一），也就是低估了总体方差<ul>
-<li>怎么理解自由度？<ul>
-<li>采样一个样本以后无法计算方差，此时方差为0，因为此时均值就等于样本本身，此时自由度为0</li>
-<li>采样两个样本以后得到的方差只根第二个样本到第一个样本的距离有关（样本均值与这两个样本强相关），此时自由度为1</li>
-<li>当采样的样本数非常多（假设为n）时，实际上单个样本与均值的关系很小了，此时自由度为n-1</li>
-</ul>
+<li><p>H:输入层到隐含层的权重矩阵\(H\in R^{(n-1)m\times h}\),其中h为隐含层神经元的数量</p>
 </li>
-</ul>
+<li><p>W:输入层到输出层的权重矩阵\(W\in R^{(n-1)m\times |V|}\),W是可选参数，对应模型结构图中的绿色虚线，如果输入层输出层不直接相连，则直接令\(W=0\)即可</p>
 </li>
-<li>当已知总体均值\(\mu\)时（个人理解：这里的\(\mu\)可以是其他采样方式下获得的近似均值，只要不跟当前用于计算方差的样本相关即可），样本方差可以使用：<br>$$<br>\sigma^2 \approx S^2 = \frac{1}{n-1}\sum_i^n(X_i-\mu)^2<br>$$</li>
-<li>样本方差经过\(\frac{1}{n-1}\)修正以后可以用来估计总体方差（修正以后是总体方差的无偏估计）<ul>
-<li>这个修正叫做贝塞尔修正</li>
-</ul>
+<li><p>U:隐含层到输出层的权重矩阵\(U\in R^{h\times |V|}\)</p>
+</li>
+<li><p>b:输出层的偏执参数</p>
+</li>
+<li><p>d:隐含层的偏执参数</p>
 </li>
 </ul>
-<!-- * 证明方式1：
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population.png">
-<pre><code>* 最后那里使用约等于符号的原因是在n不够大的时候，用样本估计总体总是估计不准确的（但是经过修正的样本方差是总体方差的无偏估计），所以用了约等于</code></pre>
-<ul>
-<li>证明方式2：<a href="https://zhuanlan.zhihu.com/p/315504747">统计学——样本方差和总体方差 - 我是一双烂胶鞋的文章 - 知乎</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v2.png"> -->
-<li>证明 from ：<a href="https://www.bilibili.com/video/BV1pq4y1p7nu/?vd_source=2679bd500199d28bea912c94f550dd3c" target="_blank" rel="noopener">Bilibili-样本方差为什么除以n-1?</a><img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3-aux.png">
-<img src="/Notes/Math/Math——样本均值方差和总体均值方差的关系/var-of-sampels-vs-var-of-population-v3.png">
-
-</li>
-
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——概率密度函数的理解.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——概率密度函数的理解.html" itemprop="url">Math——概率密度函数的理解</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍概率密度函数的理解</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<h3 id="概率密度函数的定义"><a href="#概率密度函数的定义" class="headerlink" title="概率密度函数的定义"></a>概率密度函数的定义</h3><ul>
-<li><p>概率密度函数（Probability Density Function, PDF）是概率论和统计学中用来描述连续型随机变量的概率分布的一种函数。对于一个连续型随机变量 \(X\)，其概率密度函数 \(f(x)\) 具有以下性质：</p>
-<ul>
-<li><strong>非负性</strong>：对于所有的实数 \(x\)，有 \(f(x) \geq 0\)</li>
-<li><strong>归一化</strong>：在整个可能值域内，\(f(x)\) 的积分等于1，即 \(\int_{-\infty}^{\infty} f(x) , dx = 1\)</li>
-<li><strong>概率计算</strong>：如果 \(a &lt; b\)，那么随机变量 \(X\) 落在区间 \([a, b]\) 内的概率可以通过 \(f(x)\) 在该区间上的积分来计算，即 \(P(a \leq X \leq b) = \int_{a}^{b} f(x) , dx\)。</li>
+<h4 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h4><h5 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h5><ul>
+<li>似然函数:\(L(\theta)=\prod_{t=1}^{T} p(w_{t-(n-1)},…,w_{t-1},w_{t}|\theta)+R(\theta)\)<ul>
+<li>T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>\(R(\theta)\)是正则项</li>
 </ul>
 </li>
-<li><p>需要注意的是，概率密度函数 \(f(x)\) 在某一点的值并不直接表示该点的概率，因为对于连续型随机变量来说，取任何一个具体值的概率实际上是0。相反，\(f(x)\) 更多地用于描述随机变量落在某个区间的概率大小。通过观察 \(f(x)\) 的形状，可以了解随机变量取值的集中趋势和分散程度等特征。</p>
+<li>对数似然函数:\(L(\theta)=\sum_{t=1}^{T} log(p(w_{t-(n-1)},…,w_{t-1},w_{t})|\theta) + R(\theta)\),其中T为训练集D中的样本总数，即\(T=|D|\)</li>
+<li>我们选择优化对数似然函数，原因如下：<ul>
+<li>似然函数连乘操作造成浮点数溢出，乘积越来越小(概率值都在[0,1]之间)</li>
+<li>似然函数连乘操作耗时大于对数似然函数的连加操作</li>
+<li>取对数的操作可以同时把函数中其他的指数项(比如出现在正则项\(R(\theta)\)中)中的处理成连加，减少运算量</li>
+<li>对数似然函数的单调性与似然函数相同，最大化对数似然函数等价于最大化似然函数(最重要的一点)</li>
+</ul>
 </li>
 </ul>
-<h3 id="概率密度函数在某点的值-f-x-0-frac-1-2-的意义"><a href="#概率密度函数在某点的值-f-x-0-frac-1-2-的意义" class="headerlink" title="概率密度函数在某点的值 \( f(x_0) = \frac{1}{2} \) 的意义"></a>概率密度函数在某点的值 \( f(x_0) = \frac{1}{2} \) 的意义</h3><ul>
-<li>当我们说概率密度函数 \( f(x) \) 在某点 \( x_0 \) 的值等于 \( \frac{1}{2} \)，即 \( f(x_0) = \frac{1}{2} \)，其意义如下：</li>
+<h5 id="训练目标"><a href="#训练目标" class="headerlink" title="训练目标"></a>训练目标</h5><ul>
+<li>最大化对数似然函数(等价于最大化似然函数)</li>
 </ul>
-<h4 id="概率密度函数的值"><a href="#概率密度函数的值" class="headerlink" title="概率密度函数的值"></a>概率密度函数的值</h4><ul>
-<li>概率密度函数 \( f(x) \) 在某点 \( x_0 \) 的值 \( f(x_0) \) 并不直接表示在 \( x_0 \) 点取得某个具体值的概率。对于连续型随机变量，在某个具体点取值的概率实际上是零，即：<br>$$ P(X = x_0) = 0 $$</li>
+<h5 id="参数迭代"><a href="#参数迭代" class="headerlink" title="参数迭代"></a>参数迭代</h5><ul>
+<li>使用梯度上升法，每轮迭代时朝着正梯度方向移动<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
 </ul>
-<h4 id="概率密度的意义"><a href="#概率密度的意义" class="headerlink" title="概率密度的意义"></a>概率密度的意义</h4><ul>
-<li>概率密度函数 \( f(x) \) 在点 \( x_0 \) 的值 \( f(x_0) \) 表示在 \( x_0 \) 附近的值的相对可能性。更具体地说，它表示在 \( x_0 \) 附近的一个小区间的长度和该区间内的概率的比值。比如，对于一个非常小的区间 \( [x_0 - \epsilon, x_0 + \epsilon] \)，其概率可以近似表示为：<br>$$ P(x_0 - \epsilon \leq X \leq x_0 + \epsilon) \approx f(x_0) \cdot 2\epsilon $$</li>
+</li>
 </ul>
-<h4 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h4><ul>
-<li>假设一个随机变量 \( X \) 的概率密度函数在某点 \( x_0 \) 处为 \( \frac{1}{2} \)，即 \( f(x_0) = \frac{1}{2} \)。这意味着在 \( x_0 \) 附近的一个小区间内的概率可以近似计算。例如，对于一个非常小的区间 \( [x_0 - 0.01, x_0 + 0.01] \)，其概率可以近似为：<br>$$ P(x_0 - 0.01 \leq X \leq x_0 + 0.01) \approx \frac{1}{2} \cdot 0.02 = 0.01 $$</li>
-</ul>
+<hr>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>概率密度函数 \( f(x) \) 在某点 \( x_0 \) 的值 \( f(x_0) = \frac{1}{2} \) 并不表示在 \( x_0 \) 处取值的概率，而是表示在 \( x_0 \) 附近的值的相对可能性。</li>
-<li>对于连续型随机变量，在某个具体点取值的概率是零。</li>
-<li>概率密度函数的值可以用于近似计算在某个小区间内的概率。</li>
+<li>NNLM模型使用了低维连续的词向量对上文进行表示，这解决了词袋模型带来的数据稀疏、语义鸿沟等问题</li>
+<li>相比传统模型，NNLM是一种更好的n元语言模型(NNLM的n元不是由神经元决定，而是在根据语料库生成训练数据时单个训练样本中包含的词数，也就是窗口大小)<ul>
+<li>n元模型指的是跟军前n-1个词预测第n个词的语言模型，而不是根据前n个词生成第n+1个词的模型</li>
+</ul>
+</li>
+<li>根据相似的上下文语境，NNLM模型可以预测出相似的目标词，而传统模型无法做到这一点</li>
 </ul>
 
           
@@ -907,7 +2201,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——调和级数的和.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DeepFM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -926,11 +2220,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——调和级数的和.html" itemprop="url">Math——调和级数的和</a></h1>
+                <a class="post-title-link" href="/Notes/DL/DL——DeepFM.html" itemprop="url">DL——DeepFM</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-02-04T00:00:00+08:00">
+                2018-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -962,762 +2272,62 @@
       
         
           
-            <p><em>调和级数的和是发散的,并不收敛,但是这又是一个非常常用的级数,本文总结了调和级数的和的求法</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="一个事实"><a href="#一个事实" class="headerlink" title="一个事实"></a>一个事实</h3><ul>
-<li>调和级数的和与n的自然对数的差值收敛到欧拉-马歇罗尼常数<br>$$<br>\begin{align}<br>lim_{n \to \infty}(\sum_{i=1}^{n}\frac{1}{i} - ln(n)) = \gamma<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)为欧拉-马歇罗尼常数<ul>
-<li>(欧拉常数又称欧拉-马斯克若尼常数，近似值为γ≈0.57721 56649 01532 86060 65120 90082 40243 10421 59335)</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="证明"><a href="#证明" class="headerlink" title="证明"></a>证明</h4><ul>
-<li>事实上,调和级数的和为<br>$$<br>\begin{align}<br>\sum_{i=1}^{n}\frac{1}{i} = ln(n) + \gamma + \epsilon_{n}<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)为欧拉-马歇罗尼常数</li>
-<li>\(\epsilon_{n}\)约等于\(\frac{1}{2n}\),随着n的不断增大,\(\epsilon_{n}\)趋于0</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h3><ul>
-<li>两个不同的调和数之间的差值永远不是整数</li>
-<li>除了n=1时以外,没有任何一个调和数是整数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——线性规划的直观理解.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——线性规划的直观理解.html" itemprop="url">Math——线性规划的直观理解</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文是对线性规划的直观理解，不严谨，后续有新的问题/理解持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
+            <p><em>文本介绍DeepFM的理论和实现</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 <ul>
-<li>参考链接：<ul>
-<li><a href="https://www.zhihu.com/question/27471863/answer/123244103" target="_blank" rel="noopener">运筹学中应该如何理解互补松弛性。这条性质又该如何运用?</a></li>
-<li><a href="https://github.com/Operations-Research-Science/Ebook-Linear_Programming/blob/master/docs/chapter4/chapter4.md" target="_blank" rel="noopener">第4章 对偶理论和敏感度分析</a></li>
-<li><a href="https://www.zhihu.com/question/426396827/answer/2052511472" target="_blank" rel="noopener">线性规划对偶问题的定义，有什么直觉上的解释吗？</a>：原始问题到对偶问题最好的一种很简洁的解释</li>
+<li>原始论文: <a href="https://www.ijcai.org/proceedings/2017/0239.pdf" target="_blank" rel="noopener">DeepFM: A Factorization-Machine based Neural Network for CTR Prediction, IJCAI 2017</a></li>
+<li>参考博客: <a href="https://www.jianshu.com/p/6f1c2643d31b" target="_blank" rel="noopener">https://www.jianshu.com/p/6f1c2643d31b</a></li>
+</ul>
+<h3 id="回顾特征组合的问题"><a href="#回顾特征组合的问题" class="headerlink" title="回顾特征组合的问题"></a>回顾特征组合的问题</h3><h4 id="传统解决方案"><a href="#传统解决方案" class="headerlink" title="传统解决方案"></a>传统解决方案</h4><ul>
+<li>FM: (Factorization Machines, FM)因子分解机</li>
+<li>FMM: (Field Factorization Machines, FFM)</li>
+</ul>
+<h5 id="存在问题"><a href="#存在问题" class="headerlink" title="存在问题"></a>存在问题</h5><ul>
+<li>只能二阶特征组合,无法做到高阶特征组合<ul>
+<li>理论上来讲FM经过简单的拓展后可以组合高阶特征,但是那样的话参数会爆炸增加,所以实际上使用时一般只是二阶特征.</li>
 </ul>
 </li>
 </ul>
-<h3 id="原始问题"><a href="#原始问题" class="headerlink" title="原始问题"></a>原始问题</h3><ul>
-<li>问题描述：<ul>
-<li>假设你是一个木匠有200单位的木头和90单位的时间</li>
-<li>木匠可以制作桌子或者椅子<ul>
-<li>桌子成本为5单位木头+2单位时间，售价10元</li>
-<li>椅子成本为2单位木头+1单位时间，售价3元</li>
+<h4 id="DNN建模高阶组合特征"><a href="#DNN建模高阶组合特征" class="headerlink" title="DNN建模高阶组合特征"></a>DNN建模高阶组合特征</h4><h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
+<li>理论上DNN建模高阶组合特征是可行的</li>
 </ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>由于离散特征中我们使用One-Hot编码,会导致输入维度增加,网络参数很多<img src="/Notes/DL/DL——DeepFM/too_many_parameters_in_DNN.png">
+
 </li>
 </ul>
-</li>
-<li>目标：在已有资源情况下，最大化收入，应该生产多少桌子和椅子？</li>
-<li>问题形式化描述:<ul>
-<li>假设应该生产\(x_1\)把桌子和\(x_1\)把椅子<br>$$<br>\begin{align}<br>\max \ \ 10x_1 &amp;+ 3x_2 \\<br>5x_1 + 2x_2 &amp;&lt;= 200 \\<br>3x_1 + \ \  x_2 &amp;&lt;= 90 \\<br>x_1,x_2 &amp;&gt;= 0 \\<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>作图法可求得最优解为\(x_1^* = 30, x_2^*=0\)，此时最大收益为300<ul>
-<li>在二维坐标轴上先画出可行域，然后按照目标直线斜率找到最优点</li>
-</ul>
-</li>
-</ul>
-<h3 id="对偶问题"><a href="#对偶问题" class="headerlink" title="对偶问题"></a>对偶问题</h3><ul>
-<li>对偶问题描述：<ul>
-<li>上述原始问题可以换一个视角看</li>
-<li>假设现在你是一个原材料收购商（想要以最低价格收购木匠的原材料）</li>
-<li>目标：对单位木头和单位时间进行出价，以最低的价格买完木匠的资源（假设木匠愿意卖出的前提是收购上出价的最小值不小于木匠原始问题中收益的最大值）<ul>
-<li>实际上最好是刚好等于木匠原始问题的最大收益</li>
-</ul>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><ul>
+<li>利用<strong>FFM</strong>中的思想,<strong>特征</strong>分为不同的<strong>Field</strong></li>
+<li>基本思想是从One-Hot编码换成Dense Vector<img src="/Notes/DL/DL——DeepFM/one_hot2dense_vector.png"></li>
+<li>进一步加上两个全连接层(隐藏层),让刚刚学到的Dense Vector进行组合,于是得到高阶组合特征<img src="/Notes/DL/DL——DeepFM/add2hiden_layers.png"></li>
+<li>此时,高阶和低阶的特征体现在隐藏层中,我们希望把低阶特征组合单独建模,然后融合高阶特征组合<img src="/Notes/DL/DL——DeepFM/split_low_gram_features.png"></li>
+<li>将DNN与FM进行一个合理的融合<img src="/Notes/DL/DL——DeepFM/merge_dnn_and_fm.png"></li>
+<li>二者的融合分两种方式: 串行结构和并行结构<img src="/Notes/DL/DL——DeepFM/two_merge_methods.png">
+
 </li>
 </ul>
+<h3 id="DeepFM"><a href="#DeepFM" class="headerlink" title="DeepFM"></a>DeepFM</h3><ul>
+<li><p>是一种并行化的解决方案</p>
+<img src="/Notes/DL/DL——DeepFM/deepfm_overview.png">
 </li>
-<li>对偶问题形式化描述<br>$$<br>\begin{align}<br>\min \ \ 200p_1 &amp;+ 90p_2 \quad  – 总付款 \\<br>5p_1 + 3p_2 &amp;&gt;= 10 \quad    – 一张桌子的资源售价不低于一张桌子的收益 \\<br>2p_1 + \ \  p_2 &amp;&gt;= 3 \quad   – 一张椅子的资源售价不低于一张椅子的收益 \\<br>p_1,p_2 &amp;&gt;= 0 \quad     – 售价不为负数 \\<br>\end{align}<br>$$</li>
-<li>其中\(p_1, p_2\)分别称为单位木头和单位时间的<strong>影子价格</strong></li>
-<li>作图法可求得最优解为\(p_1^* = 0, p_2^* = 3.3\)，此时最小支付金额为300</li>
+<li><p>包含 <strong>FM</strong> 和 <strong>DNN</strong> 两个部分, <strong>FM</strong> 负责<strong>低阶组合特征</strong>的提取,<strong>DNN</strong> 负责<strong>高阶组合特征</strong>的提取,两部分<strong>共享同样的输入</strong></p>
+</li>
+<li><p>DeepFM的预测结果可以表示为如下的形式<br>$$\hat{y} = sigmoid(y_{FM} + y_{DNN})$$</p>
+</li>
 </ul>
-<h3 id="互补松弛定理的理解"><a href="#互补松弛定理的理解" class="headerlink" title="互补松弛定理的理解"></a>互补松弛定理的理解</h3><h4 id="从原始问题的约束视角出发"><a href="#从原始问题的约束视角出发" class="headerlink" title="从原始问题的约束视角出发"></a>从原始问题的约束视角出发</h4><p><em>等价于从对偶问题的解出发</em></p>
+<h4 id="FM部分"><a href="#FM部分" class="headerlink" title="FM部分"></a>FM部分</h4><img src="/Notes/DL/DL——DeepFM/fm_component.png">
 <ul>
-<li>对偶问题中，最优解是\(p_1^* = 0, p_2^* = 3.3\)<ul>
-<li>\(p_1^* = 0\)意味着我们的木材过量了，其实不需要这么多木材，原始问题中，最优解对应的木材约束是松的（\(5x_1^* + 2x_2^*=150 &lt; 200\)）</li>
-<li>\(p_2^* = 3.3\)说明时间资源非常紧俏，原始问题中，最优解对应的时间约束是紧的（\(3x_1^* + \ \  x_2^* = 90\)）</li>
+<li>输出如下<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$</li>
 </ul>
-</li>
-<li>对应互补松弛的含义：<ul>
-<li>如果在最优条件下一个约束不等式是松的（木材），那么这个约束对应的影子价格为0。</li>
-<li>反过来说，如果某个约束对应的影子价格严格大于0，那么这个约束不等式一定是紧的。</li>
-<li>总的来说，原始问题的约束和对偶问题变量(影子价格)总有一个要为0</li>
-</ul>
-</li>
-</ul>
-<h4 id="从对偶问题的约束视角出发"><a href="#从对偶问题的约束视角出发" class="headerlink" title="从对偶问题的约束视角出发"></a>从对偶问题的约束视角出发</h4><p><em>等价于从原始问题的解出发</em></p>
+<h4 id="DNN部分"><a href="#DNN部分" class="headerlink" title="DNN部分"></a>DNN部分</h4><img src="/Notes/DL/DL——DeepFM/dnn_component.png">
 <ul>
-<li>原始问题中，最优解是\(x_1^* = 30, x_2^*=0\)<ul>
-<li>\(x_1^* = 30\)意味着桌子非常合算，应该多生产桌子，对偶问题中，桌子约束是紧的（\(5p_1^* + 3p_2^* = 10\)）</li>
-<li>\(x_2^*=0\)以为这椅子不合算，不应该生产椅子，对偶问题中，椅子的约束是松的（\(2p_1^* + \ \  p_2^* = 3.3 &gt; 3\)）</li>
+<li>DNN部分是一个前馈神经网络</li>
+<li>与图像语音的区别:<ul>
+<li>图像语音输入为连续且密集的</li>
+<li>CTR中使用的一般是稀疏的</li>
 </ul>
 </li>
-<li>补充互补松弛的含义：<ul>
-<li>如果在对偶最优条件下一个约束不等式是松的（椅子），那么这个约束对应的原始问题变量最优解（\(x_2^*\)）为0。</li>
-<li>反过来说，如果某个原始问题变量（桌子）对应的解（\(x_1^*\)）严格大于0，那么对偶问题中这个约束不等式一定是紧的。</li>
-<li>总的来说，对偶问题的约束和对应原始问题变量总有一个要为0</li>
-</ul>
-</li>
-</ul>
-<h4 id="互补松弛定理的公式化"><a href="#互补松弛定理的公式化" class="headerlink" title="互补松弛定理的公式化"></a>互补松弛定理的公式化</h4><p>$$<br>(5p_1^* + 3p_2^* - 10)x_1^* = 0 \\<br>(2p_1^* + p_2^* - 3)x_2^* = 0 \\<br>(5x_1^* + 2x_2^* - 200)p_1^* = 0 \\<br>(3x_1^* + x_2^* - 90)p_2^* = 0 \\<br>$$</p>
-<hr>
-<h3 id="其他相关补充"><a href="#其他相关补充" class="headerlink" title="其他相关补充"></a>其他相关补充</h3><p><em>持续更新</em></p>
-<h4 id="线性规划相关论文推导"><a href="#线性规划相关论文推导" class="headerlink" title="线性规划相关论文推导"></a>线性规划相关论文推导</h4><ul>
-<li><a href="https://www.arvinzyy.cn/2022/06/18/A-Unified-Solution-to-Constrained-Bidding-in-Online-Display-Advertising/" target="_blank" rel="noopener">《A Unified Solution to Constrained Bidding in Online Display Advertising》——论文阅读</a><ul>
-<li>这篇文章的约束很多，每个商家都有自己的约束</li>
-<li>推导时用到的对偶变换和互补松弛定理均可由本文推导得出【有时间再详细推导】</li>
-</ul>
-</li>
-<li><a href="https://arxiv.org/pdf/1802.08365.pdf" target="_blank" rel="noopener">《Budget Constrained Bidding by Model-free Reinforcement Learning in Display Advertising》——论文原文</a><ul>
-<li>这篇文章中的问题定义比较简单，整体只有一个预算约束<img src="/Notes/Math/Math——线性规划的直观理解/Budget-Constrained-Bidding-Paper-Problem.png"></li>
-<li>上述结果详细的推导可以参考：<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/532453764" target="_blank" rel="noopener">智能出价——BCB求解</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/588970232" target="_blank" rel="noopener">互联网广告算法漫谈——浅谈广告中的出价技术</a>。注意：该参考链接中没有把预算约束相关的互补松弛定理写出来，且2.3中存在一些较为明显的小bug，但整体求解思路和结论没问题</li>
-</ul>
-</li>
-<li>推导结果\(bid = \frac{v_i}{\lambda}\)与常用的方法(RL-MPCA)结果不一致，但可以证明本质是等价的<img src="/Notes/Math/Math——线性规划的直观理解/Budget-Constrained-Bidding-Paper-Derivation.png"></li>
-</ul>
-</li>
-<li>单位置拍卖的CPM计费场景，CPC约束下最大化商家点击量的推导：<ul>
-<li>推导过程可参考论文<a href="https://arxiv.org/abs/1905.10928" target="_blank" rel="noopener">Bid Optimization by Multivariable Control in Display Advertising</a></li>
-<li>基本推导思路：先通过拉格朗日乘子法得到最优解的形式，再将原始问题转换成对偶问题，进一步分情况讨论得到最终解<img src="/Notes/Math/Math——线性规划的直观理解/CPC-Constrained-Max-Click.png">
-
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——统计学中的Bootstrap方法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——统计学中的Bootstrap方法.html" itemprop="url">Math——统计学中的Bootstrap方法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li><p>参考链接：</p>
-<ul>
-<li><a href="https://zhuanlan.zhihu.com/p/24851814" target="_blank" rel="noopener">【机器学习】Bootstrap详解 - 文兄的文章 - 知</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/107978939" target="_blank" rel="noopener">Bootstrapping算法（附python代码） - 商胜彭的文章 - 知乎</a></li>
-</ul>
-</li>
-<li><p>Bootstrap: 原意为，独自创立；靠一己之力做成，在统计学中特指通过多批次重复采样估计统计量的方法</p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——运筹优化开源求解器-GLPK的使用.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——运筹优化开源求解器-GLPK的使用.html" itemprop="url">Math——运筹优化开源求解器-GLPK的使用</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍各种运筹优化开源求解器-GLPK的使用</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<ul>
-<li>GLPK是一款完全开源免费的运筹优化求解器，可以任意商用</li>
-</ul>
-<h3 id="Ubuntu安装GLPK"><a href="#Ubuntu安装GLPK" class="headerlink" title="Ubuntu安装GLPK"></a>Ubuntu安装GLPK</h3><ul>
-<li><p>据说Ubuntu安装较为方便，所以建议首选Ubuntu</p>
-</li>
-<li><p>在网站下载文件：<a href="https://ftp.gnu.org/gnu/glpk/" target="_blank" rel="noopener">https://ftp.gnu.org/gnu/glpk/</a></p>
-<ul>
-<li>可以下载任意版本，建议选最新</li>
-</ul>
-</li>
-<li><p>安装命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tar -xzvf glpk-xxx.tar.gz</span><br><span class="line">./configure</span><br><span class="line">make</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装后直接执行可能出现错误</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error while loading shared libraries: libglpk.so.36:...</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解决方案（<a href="https://groups.google.com/g/humann-users/c/rFtEV6vXZR8?pli=1" target="_blank" rel="noopener">原始解决方案地址</a>）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://github.com/rstudio/renv/issues/1881</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h3 id="Ubuntu下GLPK的使用"><a href="#Ubuntu下GLPK的使用" class="headerlink" title="Ubuntu下GLPK的使用"></a>Ubuntu下GLPK的使用</h3><ul>
-<li><p>下列式子参考了：<a href="https://www.cnblogs.com/Iambda/archive/2012/12/12/3933510.html" target="_blank" rel="noopener">线性规划工具　GLPK 的安装及基本使用</a></p>
-</li>
-<li><p>创建问题描述文件<code>glpkDemo.mod</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">/* Variables */</span><br><span class="line">var x1 &gt;= 0;</span><br><span class="line">var x2 &gt;= 0;</span><br><span class="line">var x3 &gt;= 0;</span><br><span class="line"></span><br><span class="line">/* Object function */</span><br><span class="line">maximize z: 3*x1 + x2 +2*x3;</span><br><span class="line"></span><br><span class="line">/* Constrains */</span><br><span class="line">s.t. con1: x1 + x2 + 3*x3 &lt;= 30;</span><br><span class="line">s.t. con2: 2*x1 +2*x2 + 5*x3 &lt;= 24;</span><br><span class="line">s.t. con3: 4*x1 + x2 + 2*x3 &lt;= 36;</span><br><span class="line"></span><br><span class="line">end;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>执行命令解决问题</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">glpsol -m glpkDemo.mod -o ./output/glpkDemo.sol</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>输出文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">Problem:    glpkDemo</span><br><span class="line">Rows:       4</span><br><span class="line">Columns:    3</span><br><span class="line">Non-zeros:  12</span><br><span class="line">Status:     OPTIMAL</span><br><span class="line">Objective:  z = 28 (MAXimum)</span><br><span class="line"></span><br><span class="line">   No.   Row name   St   Activity     Lower bound   Upper bound    Marginal</span><br><span class="line">------ ------------ -- ------------- ------------- ------------- -------------</span><br><span class="line">     1 z            B             28                             </span><br><span class="line">     2 a            B             12                          30 </span><br><span class="line">     3 b            NU            24                          24      0.166667 </span><br><span class="line">     4 c            NU            36                          36      0.666667 </span><br><span class="line"></span><br><span class="line">   No. Column name  St   Activity     Lower bound   Upper bound    Marginal</span><br><span class="line">------ ------------ -- ------------- ------------- ------------- -------------</span><br><span class="line">     1 x1           B              8             0               </span><br><span class="line">     2 x2           B              4             0               </span><br><span class="line">     3 x3           NL             0             0                   -0.166667 </span><br><span class="line"></span><br><span class="line">Karush-Kuhn-Tucker optimality conditions:</span><br><span class="line"></span><br><span class="line">KKT.PE: max.abs.err = 0.00e+00 on row 0</span><br><span class="line">        max.rel.err = 0.00e+00 on row 0</span><br><span class="line">        High quality</span><br><span class="line"></span><br><span class="line">KKT.PB: max.abs.err = 0.00e+00 on row 0</span><br><span class="line">        max.rel.err = 0.00e+00 on row 0</span><br><span class="line">        High quality</span><br><span class="line"></span><br><span class="line">KKT.DE: max.abs.err = 2.22e-16 on column 1</span><br><span class="line">        max.rel.err = 3.17e-17 on column 1</span><br><span class="line">        High quality</span><br><span class="line"></span><br><span class="line">KKT.DB: max.abs.err = 0.00e+00 on row 0</span><br><span class="line">        max.rel.err = 0.00e+00 on row 0</span><br><span class="line">        High quality</span><br><span class="line"></span><br><span class="line">End of output</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>Activity这一列就是想要的解</p>
-</li>
-<li><p>其他输出项如何理解？</p>
-</li>
-</ul>
-<h3 id="自动化生成问题"><a href="#自动化生成问题" class="headerlink" title="自动化生成问题"></a>自动化生成问题</h3><ul>
-<li>使用shell或者Python自动生成<code>.mod</code>文件，然后自然解析<code>.sol</code>文件，实现自动化测试参数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/控制系统——PID相关.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/控制系统——PID相关.html" itemprop="url">控制系统——PID相关</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>PID相关笔记</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="PID相关参考"><a href="#PID相关参考" class="headerlink" title="PID相关参考"></a>PID相关参考</h3><ul>
-<li>一个简短的PID描述：<a href="https://www.bilibili.com/video/BV1GD4y1x7bV" target="_blank" rel="noopener">PID控制原理，看了开头，你就会看到结尾！</a><ul>
-<li>包含修改参数带来的系统输出变化可视化示例</li>
-</ul>
-</li>
-<li>非常详细的讲解：<a href="https://www.bilibili.com/video/BV1B54y1V7hp" target="_blank" rel="noopener">从不懂到会用！PID从理论到实践~</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/熵——机器学习中各种熵的总结.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/熵——机器学习中各种熵的总结.html" itemprop="url">熵——机器学习中各种熵的总结</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>机器学习中的熵一般包括信息熵,条件熵,交叉熵几种</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="信息熵"><a href="#信息熵" class="headerlink" title="信息熵"></a>信息熵</h3><h4 id="为什么信息熵中有log"><a href="#为什么信息熵中有log" class="headerlink" title="为什么信息熵中有log?"></a>为什么信息熵中有log?</h4><p><em>参考博客:<a href="https://www.cnblogs.com/kyrieng/p/8694705.html" target="_blank" rel="noopener">https://www.cnblogs.com/kyrieng/p/8694705.html</a></em></p>
-<h5 id="自信息-I-x"><a href="#自信息-I-x" class="headerlink" title="自信息\(I(x)\)"></a>自信息\(I(x)\)</h5><ul>
-<li>一条信息的信息量大小和它的不确定性有直接的关系, 信息量的度量就等于不确定性的多少</li>
-<li>考虑一个离散随机变量\(x\),随机变量的信息量由概率分布\(p(x)\)确定</li>
-<li>我们的目标是找到一个函数\(I(x) = f(p(x))\)(自变量是\(p(x)\),因为随机变量的信息量由概率分布确定),能够衡量\(x\)信息内容的多少<ul>
-<li>且必须是概率分布\(p(x)\)的单调函数?</li>
-</ul>
-</li>
-<li>现在考虑同时出现两个相互独立的随机变量\(x\)和\(y\),那么他们的信息量和应该是<br>$$I(x,y) = I(x)+I(y) = f(p(x)) + f(p(y))$$<ul>
-<li>同时他们的联合概率分布为<br>$$p(x,y) = p(x)p(y)$$</li>
-</ul>
-</li>
-<li>由上面的两个表达式可以知道\(f(\cdot)\)应该是一个对数相关的函数,因为<br>$$log_{a}(MN) = log_{a}M + log_{a}N$$</li>
-<li>所以我们可以考虑把原始信息量定义为<br>$$I(x) = f(p(x)) = -log p(x)$$<ul>
-<li>其中负号是用来保证信息量是正数或者零</li>
-<li>log 函数基的选择是任意的（信息论中基常常选择为2，因此信息的单位为比特bits；而机器学习中基常常选择为自然常数，因此单位常常被称为奈特nats）</li>
-</ul>
-</li>
-<li>\(I(x)\)也被称为随机变量\(x\)的自信息(self-information)，描述的是随机变量的某个事件发生所带来的信息量<img src="/Notes/Others/熵——机器学习中各种熵的总结/self-information.png">
-
-</li>
-</ul>
-<h5 id="信息熵-H-x"><a href="#信息熵-H-x" class="headerlink" title="信息熵\(H(x)\)"></a>信息熵\(H(x)\)</h5><ul>
-<li>现在假设一个发送者想传送一个随机变量的值给接收者</li>
-<li>那么在这个过程中，他们传输的平均信息量可以通过求 \(I(x)=−logp(x)\)关于概率分布\(p(x)\)的期望得到:<br>$$<br>\begin{align}<br>H(x) &amp;= \sum_{x}p(x)(-logp(x)) \\<br>&amp;= -\sum_{x}p(x)logp(x) \\<br>&amp;= -\sum_{i=1}^{n}p(x_{i})logp(x_{i})<br>\end{align}<br>$$</li>
-<li>\(H(X)\)就被称为随机变量\(x\)的熵,它是表示随机变量不确定的度量，是对所有可能发生的事件产生的信息量的期望</li>
-<li>从公式可得，随机变量的取值个数越多，状态数也就越多，信息熵就越大，混乱程度就越大,当随机分布为均匀分布时，熵最大，且<br>$$0 ≤ H(X) ≤ logn$$<ul>
-<li>证明<br>$$p(1)+p(2)+\dots+p(n)=1$$</li>
-<li>目标函数<br>$$f(p(1),p(2),\dots,p(n))=-(p(1)logp(1)+p(2)logp(2)+\dots+p(n)logp(n))$$</li>
-<li>约束条件<br>$$g(p(1),p(2),\dots,p(n),\lambda)=p(1)+p(2)+\dots+p(n)-1=0$$</li>
-<li>定义拉格朗日函数<br>$$<br>L(p(1),p(2),\dots,p(n),\lambda)=-(p(1)logp(1)+p(2)logp(2)+\dots+p(n)logp(n))+\lambda(p(1)+p(2)+\dots+p(n)-1)<br>$$</li>
-<li>对\(p(i)\)和\(\lambda\)求偏导,并令其等于0得<br>$$p(1)=p(2)=\dots=p(n)=\displaystyle\frac{1}{n}$$</li>
-<li>带入目标函数得<br>$$<br>\begin{align}<br>f(\displaystyle\frac{1}{n},\frac{1}{n},\dots,\frac{1}{n}) &amp;= -(\frac{1}{n}log\frac{1}{n} + \frac{1}{n}log\frac{1}{n} + \dots + \frac{1}{n}log\frac{1}{n}) \\<br>&amp; = -log(\frac{1}{n}) \\<br>&amp; =\log(n)<br>\end{align}<br>$$</li>
-</ul>
-</li>
+<li>在进入隐藏层之前,使用一个嵌入层(DenseEmbeddings): 将<strong>高维稀疏输入向量</strong>压缩为<strong>低维稠密向量</strong><img src="/Notes/DL/DL——DeepFM/dnn_component_embedding_part.png"></li>
 </ul>
 
           
@@ -1758,7 +2368,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/15/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><span class="page-number current">16</span><a class="page-number" href="/page/17/">17</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><a class="extend next" rel="next" href="/page/17/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/15/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><span class="page-number current">16</span><a class="page-number" href="/page/17/">17</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/17/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1806,7 +2416,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">293</span>
+                  <span class="site-state-item-count">195</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1819,7 +2429,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">49</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

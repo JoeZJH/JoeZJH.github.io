@@ -80,7 +80,7 @@
 
 
 <meta name="description" content="本博客主要用于记录个人学习笔记">
-<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git, DL,">
+<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jiahong的个人博客">
 <meta property="og:url" content="https://JoeZJH.github.io/index.html">
@@ -161,7 +161,7 @@
       </a>
     </div>
       
-        <p class="site-subtitle">凡事预则立，不预则废</p>
+        <p class="site-subtitle">凡事预则立不预则废</p>
       
   </div>
 
@@ -275,1381 +275,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/NLP/NLP——困惑度-Perplexity.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/NLP/NLP——困惑度-Perplexity.html" itemprop="url">NLP——困惑度-Perplexity</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文主要介绍困惑度在语言模型评估中的作用</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="如何评价一个语言模型的好坏"><a href="#如何评价一个语言模型的好坏" class="headerlink" title="如何评价一个语言模型的好坏"></a>如何评价一个语言模型的好坏</h3><h4 id="直接评估法"><a href="#直接评估法" class="headerlink" title="直接评估法"></a>直接评估法</h4><ul>
-<li>将语言模型应用到实际的具体问题中去,比如机器翻译,词性标注,拼写矫正等</li>
-<li>评估语言模型在这些实际问题中的具体表现</li>
-</ul>
-<h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ul>
-<li>准确</li>
-<li>能精确评估在具体应用场景中的效果</li>
-</ul>
-<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
-<li>费时</li>
-<li>难以操作</li>
-</ul>
-<h4 id="困惑度-Perplexity"><a href="#困惑度-Perplexity" class="headerlink" title="困惑度(Perplexity)"></a>困惑度(Perplexity)</h4><h5 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h5><ul>
-<li>给<strong>测试集</strong>的句子赋予较高概率值的语言模型较好</li>
-<li>当一个语言模型训练完成后,测试集中的句子(正常的自然语言句子)出现概率越高越好</li>
-</ul>
-<h5 id="困惑度的定义"><a href="#困惑度的定义" class="headerlink" title="困惑度的定义"></a>困惑度的定义</h5><ul>
-<li>如果存在测试文本\(d = (w_{1}, w_{2},,,w_{N})\),那么该文本在模型Model中的困惑度为:<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= P(d|Model)^{-\frac{1}{N}} \\<br>&amp;= P(w_{1}, w_{2},,,w_{N}|Model)^{-\frac{1}{N}} \\<br>&amp;= \sqrt[N]{\frac{1}{P(w_{1}, w_{2},,,w_{N}|Model)}}<br>\end{align}<br>$$</li>
-<li>两边取log有<br>$$<br>\begin{align}<br>Log(Perplexity(d|Model)) &amp;= -\frac{1}{N}\log P(w_{1}, w_{2},,,w_{N}|Model) \\<br>\end{align}<br>$$</li>
-<li>一般来说计算时使用公式<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= e^{-\frac{1}{N}\log P(w_{1}, w_{2},,,w_{N}|Model)} \\<br>&amp;= exp\left (-\frac{1}{N}\log P(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>\end{align}<br>$$</li>
-<li>如果在已知模型Model参数时,文档\(d\)中的词独立,即\(w_{1},w_{2},,,w_{N}\)互相独立,则有:<br>$$<br>\begin{align}<br>P(w_{1}, w_{2},,,w_{N}|Model) = \prod_{n=1}^{N}P(w_{n}|Model) \\<br>\end{align}<br>$$</li>
-<li>进一步有<br>$$<br>\begin{align}<br>Perplexity(d|Model) &amp;= exp\left (-\frac{1}{N}\log P(w_{1}, w_{2},,,w_{N}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}\log\prod_{n=1}^{N}P(w_{n}|Model)\right ) \\<br>&amp;= exp\left (-\frac{1}{N}\sum_{n=1}^{N}\log P(w_{n}|Model)\right ) \\<br>\end{align}<br>$$</li>
-<li>以上是一个文档的表述,对于多个文档\(D = (d_{1}, d_{2},,,d_{M})\)<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= P(D|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \prod_{m=1}^{M} P(d_{m}|Model)^{-\frac{1}{\sum_{m=1}^{M}N_{m}}} \\<br>&amp;= \sqrt[(\sum_{m=1}^{M}N_{m})]{\frac{1}{\prod_{m=1}^{M}P(d_{m}|Model)}}<br>\end{align}<br>$$</li>
-<li>两边取log<br>$$<br>\begin{align}<br>Log(Perplexity(D|Model)) &amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\log(\prod_{m=1}^{M}P(d_{m}|Model)) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(d_{m}|Model) \\<br>&amp;= -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \\<br>\end{align}<br>$$</li>
-<li>一般来说计算公式<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right )<br>\end{align}<br>$$</li>
-<li>如果在已知Model参数的情况下,每个文档中的词都相互独立,即任取文档\(d_{m}\)有\(w_{1}^{m},w_{2}^{m},,,w_{N_{m}}^{m}\)互相独立,则有<br>$$<br>\begin{align}<br>P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) = \prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \\<br>\end{align}<br>$$</li>
-<li>进一步可得<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log\prod_{n=1}^{N_{m}}P(w_{n}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}\log P(w_{n}^{m}|Model) \right ) \\<br>\end{align}<br>$$</li>
-<li>注意,多个文档的困惑度<strong>不等于</strong>所有文档困惑度的<strong>积</strong>,而是等于<strong>把所有文档合并成一个大文档,大文档的困惑度则是最终所有文档的困惑度</strong></li>
-</ul>
-<ul>
-<li>在给定模型中,<strong>测试句子</strong>出现的概率越大,对应的困惑度越小,模型越好</li>
-</ul>
-<h5 id="LDA的困惑度"><a href="#LDA的困惑度" class="headerlink" title="LDA的困惑度"></a>LDA的困惑度</h5><ul>
-<li>LDA中\(w_{1},w_{2},,,w_{n}\)在参数已知的情况下是互相独立的,则有<br>$$<br>\begin{align}<br>Perplexity(D|Model) &amp;= e^{-\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model)} \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log P(w_{1}^{m}, w_{2}^{m},,,w_{N_{m}}^{m}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log\prod_{n=1}^{N_{m}}P(w_{n}|Model) \right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}P(w_{n}=t|z_{n}=k;Model)P(z_{n}=k|d=d_{m};Model)\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log\prod_{n=1}^{N_{m}}\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\log\prod_{n=1}^{N_{m}}\theta_{m,:}\phi_{:,t}\right ) \\<br>&amp;= exp \left ( -\frac{1}{\sum_{m=1}^{M}N_{m}}\sum_{m=1}^{M}\sum_{n=1}^{N_{m}}\log\theta_{m,:}\phi_{:,t}\right ) \\<br>\end{align}<br>$$</li>
-<li>其中\(\phi_{k,t}\)表示单词t在主题k中出现的概率,\(\theta_{m,k}\)表示主题k在文档m中出现的概率</li>
-<li>\(\sum_{k=1}^{K}\theta_{m,k}\phi_{k,t} = (\theta_{m,:}\phi_{:,t})\)就是单词t出现在文档m中的概率(对隐变量主题k积分)</li>
-<li>上面式子中\((\theta_{m,:}\phi_{:,t})\)就是两个向量的内积,在这里:\(\theta_{m,:}\)代表行向量,表示当前文档\(d_{m}\)的主题分布,\(\phi_{:,t}\)代表列向量,表示当前每个主题生成词\(w_{t}\)的概率</li>
-<li>计算公式的代码可参考L-LDA模型的实现<a href="https://github.com/JoeZJH/Labeled-LDA-Python/blob/master/model/labeled_lda.py" target="_blank" rel="noopener">GitHub仓库: Labeled-LDA-Python</a> 中的<code>perplexity</code>函数和<code>log_perplexity</code>函数</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/趣味题——同距运动员.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Others/趣味题——同距运动员.html" itemprop="url">趣味题——同距运动员</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h3><ul>
-<li>有27个参加跑步的人，每3人一组，分成9组，同一组用同一个号。就是1号3个，2号3个，3号3个……现在假设第一组的赢得了比赛，每次只有一个人到达。所有人到达的时候满足规律，1号参赛者之间都间隔一个人，2号参赛者之间都间隔2个人，3号参赛者之间都间隔3个人…9号参赛者之间都间隔9人。问27个人的到达顺序是否有解？如果有，解是什么？</li>
-</ul>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">def check_row(row, gap):</span><br><span class="line">    a = abs(row[0] - row[1]) == gap</span><br><span class="line">    b = abs(row[1] - row[2]) == gap</span><br><span class="line">    c = abs(row[2] - row[0]) == gap</span><br><span class="line">    abc = [a, b, c]</span><br><span class="line">    if sum([1 if e else 0 for e in abc]) != 2:</span><br><span class="line">        return False</span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def generate_conds(ri, rest_number):</span><br><span class="line">    size = len(rest_number)</span><br><span class="line">    gap = ri + 2</span><br><span class="line">    conds = list()</span><br><span class="line">    for i in range(size):</span><br><span class="line">        for j in range(i+1, size):</span><br><span class="line">            for k in range(j+1, size):</span><br><span class="line">                row = rest_number[i], rest_number[j], rest_number[k]</span><br><span class="line">                if check_row(row, gap):</span><br><span class="line">                    conds.append(row)</span><br><span class="line">    return conds</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def backtrace(maze, ri, rest_number, all_maze):</span><br><span class="line">    if not rest_number:</span><br><span class="line">        data_ = [[e for e in row] for row in maze]</span><br><span class="line">        all_maze.append(data_)</span><br><span class="line">        return True</span><br><span class="line">    conds = generate_conds(ri, rest_number)</span><br><span class="line">    if not conds:</span><br><span class="line">        return False</span><br><span class="line">    for row in conds:</span><br><span class="line">        local_rest = [e for e in rest_number]</span><br><span class="line">        for e in row:</span><br><span class="line">            # print(&quot;local rest: %s and e: %s&quot; % (local_rest, e))</span><br><span class="line">            local_rest.remove(e)</span><br><span class="line">        maze[ri] = [e for e in row]</span><br><span class="line">        backtrace(maze, ri + 1, local_rest, all_maze)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def solution():</span><br><span class="line">    maze = list()</span><br><span class="line">    for i in range(9):</span><br><span class="line">        row = [0 for _ in range(3)]</span><br><span class="line">        maze.append(row)</span><br><span class="line">    rest_number = list(range(1, 28))</span><br><span class="line">    maze[0][0] = 1</span><br><span class="line">    maze[0][1] = 3</span><br><span class="line">    maze[0][2] = 5</span><br><span class="line">    rest_number.remove(1)</span><br><span class="line">    rest_number.remove(3)</span><br><span class="line">    rest_number.remove(5)</span><br><span class="line">    all_maze = list()</span><br><span class="line">    # print(rest_number)</span><br><span class="line">    # print(maze)</span><br><span class="line">    backtrace(maze, 1, rest_number, all_maze)</span><br><span class="line">    for maze in all_maze:</span><br><span class="line">        print(maze)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    solution()</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——BCQ.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——BCQ.html" itemprop="url">RL——BCQ</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/369524801" target="_blank" rel="noopener">【笔记】BCQ详解</a><ul>
-<li>原作者的PPT</li>
-</ul>
-</li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/272152582" target="_blank" rel="noopener">BCQ姊妹篇：Discrete BCQ - Metaqiang的文章 - 知乎</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/206489894" target="_blank" rel="noopener">【代码速读】（RL）1.BCQ - 一条的文章 - 知乎</a></li>
-</ul>
-<hr>
-<h3 id="BCQ整体介绍"><a href="#BCQ整体介绍" class="headerlink" title="BCQ整体介绍"></a>BCQ整体介绍</h3><ul>
-<li>BCQ（Batch-Constrained deep Q-learning）分为连续版本（<a href="https://proceedings.mlr.press/v97/fujimoto19a/fujimoto19a.pdf" target="_blank" rel="noopener">Off-Policy Deep Reinforcement Learning without Exploration</a>，2019年8月）和离散版本（<a href="https://arxiv.org/pdf/1910.01708" target="_blank" rel="noopener">Benchmarking   Batch Deep Reinforcement Learning Algorithms</a>，2019年10月）两篇文章，一作是同一个作者  </li>
-<li><strong>外推误差(Extrapolation Error)的定义：off-policy值学习中，当前策略真实状态动作访问分布和数据集中的状态动作分布不匹配导致的一种误差</strong><blockquote>
-<p>Extrapolation error is an error in off-policy value learning which is introduced by the mismatch between the dataset and true state-action visitation of the current policy</p>
-</blockquote>
-</li>
-<li>背景：off-policy的策略理论上可以从任意行为策略采样的数据中学习最优策略，但是直接将off-policy策略应用到Offline RL（也称为Batch RL）场景中可能面临，<strong>Absent Data</strong>（状态动作对缺失），<strong>Training Mismatch</strong>（训练预测分布不一致），<strong>Model Bias</strong>（随机MDP的状态转移概率有偏差）等问题</li>
-<li>BCQ的基本思想：采取保守策略，让学到的策略对应的状态动作访问空间尽量只在出现过的数据集上，或者相近的数据上<ul>
-<li>基本方法：主要通过限制\(Q(s’,\pi(s’))\)中的\(\pi(s’)\)不要偏离数据集太多来实现</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="BCQ连续版本"><a href="#BCQ连续版本" class="headerlink" title="BCQ连续版本"></a>BCQ连续版本</h3><h4 id="关键实验"><a href="#关键实验" class="headerlink" title="关键实验"></a>关键实验</h4><ul>
-<li><p>实验设置：</p>
-<ul>
-<li>第一个实验(Final Buffer)，使用DDPG算法在线训练一个智能体，将<strong>智能体训练过程中与环境交互的所有数据</strong>保存下来，利用这些数据训练另一个离线DDPG智能体</li>
-<li>第二个实验(Concurrent)，使用DDPG算法在线训练一个智能体，训练时每次从经验回放池中采样，并用相同的数据<strong>同步训练</strong>离线DDPG智能体，甚至保持训练时使用的数据和数据顺序都完全相同</li>
-<li>第三个实验(Imitation)，使用DDPG算法在线训练一个智能体，将该智能体作为专家，与环境交互采集大量数据，利用这些数据训练另一个离线DDPG智能体</li>
-</ul>
-</li>
-<li><p>实验结果：</p>
-  <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png" title height="50%" width="50%">
-  <!-- <img src="/Notes/RL/RL——BCQ/BCQ-DDPG-Experiments.png"> -->
-
-<ul>
-<li>第三个实验中使用的样本最好，但是训练得到的离线智能体效果最差，原因分析主要是<strong>外推误差</strong>导致</li>
-<li>三个实验的离线DDPG智能体都有不同情况的Q值高估问题，其中第三个实验的Q值高估问题最为严重（注意图2中看起来高估问题大于图1中，其实不是，是因为图二的量纲较小导致的）</li>
-</ul>
-</li>
-</ul>
-<h4 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h4><ul>
-<li>对于给定的真实MDP和数据集\(\mathcal{B}\)，定义外推误差<br>$$\epsilon_\text{MDP}(s,a) = Q^\pi(s,a) - Q_{\mathcal{B}}^\pi(s,a)$$</li>
-<li>则有外推误差可推导得到如下结论：<img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png" title height="80%" width="80%">
-<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Extrapolation-Error.png"> -->
-
-</li>
-</ul>
-<h4 id="训练流程"><a href="#训练流程" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
-<li><p>整体流程概览:</p>
-<img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png" title height="80%" width="80%">
-<!-- <img src="/Notes/RL/RL——BCQ/BCQ-Algorithm.png"> -->
-</li>
-<li><p>训练流程解释：</p>
-<ul>
-<li>训练时，使用4个Q网络（其中两个是Target Q网络），1个策略网络和扰动网络</li>
-<li>两个Q网络的用途是在计算Q值目标时做他们最大最小值的凸组合（实际上就是最大最小值的加权平均），类似Twin Q中取两个Q的最小值的方法，\(y\)值计算方法（流程中\(\color{red}{\text{公式(13)}}\)）<br>$$ y = r + \gamma \max_{a_i}\Big[ \lambda \min_{j=1,2}Q_{\theta_j}(s’,a_i) + (1-\lambda)\max_{j=1,2}Q_{\theta_j}(s’,a_i) \Big] $$</li>
-</ul>
-</li>
-</ul>
-<h4 id="Serving步骤"><a href="#Serving步骤" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
-<li>给定一个状态\(s\)</li>
-<li>\(\{ a_i \sim G_w(s) \}_{i=1}^n\)：通过conditional VAE网络 \(G_w(s)\) 采样\(n\)个动作</li>
-<li>\(\xi_{\phi}(s,a_i,\Phi)\)：将这些状态和动作经过扰动网络，扰动网络输出是在\([-\Phi,\Phi]\)内的，得到的扰动值</li>
-<li>将扰动添加到原始动作上，再将动作经过Q网络，选取能使Q value最大的动作</li>
-<li>最终总结如下：<br>$$ \pi(s) = \mathop{\arg\max}_{a_i + \xi_{\phi}(s,a_i,\Phi)} Q_\theta(s, a_i + \xi_{\phi}(s,a_i,\Phi)), \quad with \quad \{ a_i \sim G_w(s) \}_{i=1}^n $$</li>
-<li>训练流程解释：<ul>
-<li>相对普通的DQN，主要改进点在于学习Q的目标值选择时动作受到限制，动作与行为策略（离线数据集）的动作差异不能太大</li>
-<li>学习Q值时，使用的是Huber Loss<br>$$<br>l_{\mathcal{k}}(\delta) =<br>\begin{cases}<br>\ 0.5\delta^2&amp; \text{if}\ \delta \le \mathcal{k}\\<br>\mathcal{k}(|\delta| - 0.5\mathcal{k})&amp; \text{otherwise.}<br>\end{cases}<br>$$</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="BCQ离散版本"><a href="#BCQ离散版本" class="headerlink" title="BCQ离散版本"></a>BCQ离散版本</h3><h4 id="训练流程-1"><a href="#训练流程-1" class="headerlink" title="训练流程"></a>训练流程</h4><ul>
-<li>整体流程概览:<img src="/Notes/RL/RL——BCQ/Discrete-BCQ-Algorithm.png">
-
-</li>
-</ul>
-<h4 id="Serving步骤-1"><a href="#Serving步骤-1" class="headerlink" title="Serving步骤"></a>Serving步骤</h4><ul>
-<li>按照如下策略决策：</li>
-</ul>
-<p>$$ \pi(s) = \mathop{\arg\max}_{a\vert\frac{G_w(a|s)}{\max_\hat{a} G_w(\hat{a}|s)} \gt \tau} Q_\theta(s,a) $$</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——CQL.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——CQL.html" itemprop="url">RL——CQL</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/hash/0d2b2061826a5df3221116a5085a6052-Abstract.html" target="_blank" rel="noopener">NIPS 2020, Conservative q-learning for offline reinforcement learning</a>  </li>
-<li><a href="https://mp.weixin.qq.com/s?__biz=Mzg4MDU2MTM1Mg==&mid=2247485320&idx=1&sn=56be21b854a8d13e0c6d585d6121d035" target="_blank" rel="noopener">【论文分享】Conservative Q-Learning for Offline Reinforcement Learning</a>     </li>
-<li><a href="https://paperexplained.cn/articles/article/sdetail/10af9066-de83-4d62-8253-282f5e04fb5a/" target="_blank" rel="noopener">Conservative Q-Learning for Offline Reinforcement Learning</a>：手打公式    </li>
-<li><a href="https://hackmd.io/@l-7O3seyTuaQ8JjAyLP2Ng/BJWLxRcXc" target="_blank" rel="noopener">离线强化学习系列3(算法篇): 值函数约束-CQL算法详解与实现</a>：手打公式    </li>
-<li><a href="https://github.com/aviralkumar2907/CQL" target="_blank" rel="noopener">github.com/aviralkumar2907/CQL</a>：CQL实现源码  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="CQL在解决什么问题？"><a href="#CQL在解决什么问题？" class="headerlink" title="CQL在解决什么问题？"></a>CQL在解决什么问题？</h3><ul>
-<li><strong>分布偏移（distribution shift）</strong>：分布偏移主要是模型训练和预测时的分布存在差异，即训练数据集中的数据分布（训练）与实际决策策略下环境反馈的数据分布（预测）之间的差异。 <ul>
-<li>这种差异可能导致学习到的策略在实际应用中表现不佳，因为该策略是在一个与实际环境不完全相同的数据分布上学习得到的</li>
-<li>离线强化学习中这种问题会放大，特别地，会导致OOD问题</li>
-</ul>
-</li>
-<li><strong>OOD（Out-of-distribution）</strong>：OOD通常指在训练集中没有被观察到过的样本（状态或状态-动作对），实际上，出现频率极低的样本也可以算作一定程度上的OOD样本<ul>
-<li>OOD问题是由于<strong>分布偏移</strong>导致的，理论上，<strong>没有分布偏移问题就不存在OOD问题</strong>，因为模型不会遇到这些未观察过的样本</li>
-</ul>
-</li>
-<li><strong>OOD问题容易导致值高估（Overestimation of values）问题</strong>：强化学习的迭代公式一般都是找时的动作最大的动作，这本身导致的容易值高估的现象</li>
-</ul>
-<hr>
-<h3 id="CQL相关推导"><a href="#CQL相关推导" class="headerlink" title="CQL相关推导"></a>CQL相关推导</h3><h4 id="一些定义"><a href="#一些定义" class="headerlink" title="一些定义"></a>一些定义</h4><ul>
-<li>数据集\(\mathcal{D}  \sim d^{\pi_{\beta}}(\mathbf{s})\pi_{\beta}(\mathbf{a} \mid \mathbf{s})\)，即数据是行为策略\(\pi_\beta\)与环境交互来得到的</li>
-<li>对于任意\((s_0, a_0) \in \mathcal{D}\)，有经验行为策略（empirical behavior policy）为：<br>$$ \hat{\pi}_\beta(a_0\vert s_0) = \frac{\sum_{(s,a) \in \mathcal{D}}\mathbf{1}(s=s_0,a=a_0)}{\sum_{s\in \mathcal{D}}\mathbf{1}(s=s_0)} $$</li>
-</ul>
-<h4 id="回顾贝尔曼算子"><a href="#回顾贝尔曼算子" class="headerlink" title="回顾贝尔曼算子"></a>回顾贝尔曼算子</h4><ul>
-<li>一般的贝尔曼算子(Bellman Operator)，写作\(\mathcal{B}^\pi\)，重复对\(Q(s,a)\)使用\(\mathcal{B}^\pi\)，持续迭代可收敛到策略\(\pi\)对应的Q值\(Q^{\pi}(s,a)\)值:<br>$$<br>\mathcal{B}^\pi Q = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim p(s^\prime \vert s, a), a^\prime \sim \pi(a^\prime\vert s^\prime)}[Q (s^\prime, a^\prime)]<br>$$</li>
-<li>Q-Learning的迭代公式，相当于策略是找Q值最优的那个动作，通过对Q重复使用如下贝尔曼最优算子（Bellman Optimality Operator），写作\(\mathcal{B}^{\pi^*}\)或者\(\mathcal{B}^*\)：<br>$$ \mathcal{B}^{*} Q(\mathbf{s}, \mathbf{a})=r(\mathbf{s}, \mathbf{a})+\gamma \mathbb{E}_{\mathbf{s}^{\prime} \sim P\left(\mathbf{s}^{\prime} \mid \mathbf{s}, \mathbf{a}\right)}\left[\max _{\mathbf{a}^{\prime}} Q\left(\mathbf{s}^{\prime}, \mathbf{a}^{\prime}\right)\right] $$</li>
-</ul>
-<h4 id="Offline中的贝尔曼算子"><a href="#Offline中的贝尔曼算子" class="headerlink" title="Offline中的贝尔曼算子"></a>Offline中的贝尔曼算子</h4><ul>
-<li>在Offline RL中，我们定义新的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，即更新只在固定数据集上进行，即对于给定的数据集\(\mathcal{D} = { (s,a,r,s’)} \sim \pi_\beta\)，\(\hat{\mathcal{B}}^\pi\)的更新都发生在数据集上</li>
-<li>对于给定数据集\(\mathcal{D} \sim \pi_\beta\)上的贝尔曼算子\(\hat{\mathcal{B}}^\pi\)，我们定义\(\hat{\mathcal{B}}^\pi\)如下：<br>$$<br>\hat{\mathcal{B}}^\pi \hat{Q} = r(s, a) + \gamma \mathbb{E}_{s^\prime \sim \mathcal{D}, a^\prime \sim \pi(a^\prime\vert s^\prime)}[\hat{Q} (s^\prime, a^\prime)]<br>$$</li>
-</ul>
-<h4 id="如果在Offline-RL中使用常规AC方法会发生什么？"><a href="#如果在Offline-RL中使用常规AC方法会发生什么？" class="headerlink" title="如果在Offline RL中使用常规AC方法会发生什么？"></a>如果在Offline RL中使用常规AC方法会发生什么？</h4><ul>
-<li>Actor-Critic的策略迭代定义为（这种限定数据集的做法是被迫的，因为没法与环境交互）：<br>  $$<br>  \begin{align}<br>  \hat{Q}^{k+1} &amp;\leftarrow \mathop{\arg\min}_{Q} \mathbb{E}_{s,a,s^\prime \sim \mathcal{D}}\left[ \left( r(s,a) + \gamma\mathbb{E}_{a^\prime \sim \hat{\pi}^{k}(a^\prime| s^\prime)}[\hat{Q}^k(s^\prime, a^\prime)] - Q(s, a) \right)^2 \right] \ &amp;\text{(policy evaluation)}\\<br>   \hat{\pi}^{k+1} &amp;\leftarrow \mathop{\arg\max}_{\pi} \mathbb{E}_{s\sim \mathcal{D}, a\sim \pi(a\vert s)}\left[ \hat{Q}^{k+1} (s,a) \right] \ &amp;\text{(policy improvement)}<br>  \end{align}<br>  $$<ul>
-<li>以上公式来自论文，原始论文中使用的是\(a \sim \pi^k(a|s)\)，这里应该改成\(a \sim \pi(a|s)\)更合适，因为argmax的目标参数是\(\pi\)，所以我改成了\(a \sim \pi(a|s)\)表示找到最优的策略\(\pi\)，使得按照这个策略决策（采样或者选择动作）得到的期望收益Q值是最大的</li>
-<li>其实AC方法中，包含了DQN的迭代思路，策略迭代部分，\(a’\)始终取上一轮Q值最大的动作即可</li>
-<li>policy evaluation实际上就是在重复对Q使用贝尔曼算子，只是使用最小化均方误差的形式去实现了</li>
-</ul>
-</li>
-<li>问题：Offline RL场景中直接使用上面的策略迭代会面临<strong>分布偏移问题</strong>，从而导致高估：<ul>
-<li>理解：<strong>1）</strong> 目标Q值的计算应该使用当前策略\(\pi^k\)，但是数据集中只有从数据集\(\mathcal{D}\)中采样到的样本，对应策略\(\pi_\beta\)，极端情况下，策略\(\pi^k\)采样到的动作\(a’ \sim \pi^k\)可能从未在数据集中出现过，此时模型是无法准确评估\(Q(s’,a’)\)的；2）常规的迭代方法中，一般都包含着\(a’ = \mathop{\arg\max}_a Q(s,a)\)或者隐式的包含了\(Q(s, a) = r + \max_{a} Q(s^\prime, a)\)这样的思想，此时预估值\(Q(s’,a’)\)低估不会出现问题，但是\(Q(s’,a’)\)一旦高估，该动作就会被选中作为目标值；3）Offline RL场景中没有机会引入新样本来重新修正\(Q(s’,a’)\)的高估</li>
-<li>在Online RL的场景中，一般不存在该问题，因为一个动作被错误的高估以后，往往会在策略跟环境的交互中选中该动作，从而使得该动作被修正</li>
-</ul>
-</li>
-<li>总结一下：<strong>对于策略\(\pi\)，我们的真实Q值是\(Q^\pi\)，在固定的数据集下学到的是\(\hat{Q}^\pi\)，但该值一般往往会高估，我们的目标是让\(\hat{Q}^\pi\)尽量接近真实值\(Q^\pi\)，那么面临的往往是高估这个问题，CQL算法的核心思想就是解决这个问题</strong></li>
-</ul>
-<h4 id="改进一：打压未知动作的Q值"><a href="#改进一：打压未知动作的Q值" class="headerlink" title="改进一：打压未知动作的Q值"></a>改进一：打压未知动作的Q值</h4><ul>
-<li><p>对于任意的未知策略\(\mu\)，在行为策略\(\pi_\beta\)交互收集到的数据集\(\mathcal{D}\)中进行训练，其状态动作对访问分布为\(\mu(s, a)=d^{\pi_\beta}(s) \mu(a \mid s)\)，我们的目标通过最小化未知策略采样到的动作对应的Q值，来实现Q值的保守学习：<br>$$\hat{Q}^{k+1} \leftarrow \arg \min_{Q} \color{red}{\alpha} \mathbb{E}_{\mathbf{s} \sim \mathcal{D}, \mathbf{a} \sim \mu(\mathbf{a} \mid \mathbf{s})}[Q(\mathbf{s}, \mathbf{a})]+\frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
-</li>
-<li><p>使用\(\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}\)的原因是因为想强调\(\hat{\mathcal{B}}^{\pi}\)使用的\(s’\)不是按照环境的状态转移概率算的，而是直接使用的数据集中的内容</p>
-</li>
-<li><p>上面的迭代公式学到的是\(\hat{Q}^\pi\)(其中\(\hat{Q}^\pi := \lim_{k\rightarrow \infty}\hat{Q}^k\))</p>
-</li>
-<li><p>为了方便表达，一些论文或博客会使用\(\mathcal{L}_{Bellman}(Q) = \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]\)来替换等号后面的式子</p>
-</li>
-<li><p>这里论文中给出了证明（Theorem 3.1）：</p>
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png" title height="80%" width="80%">
-  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_1.png"> -->
-
-<ul>
-<li>上式说明：<ul>
-<li>当\(supp\ \mu \subset supp\ \pi\)（\(supp\ \mu\)表示支持集），且\(\alpha\)足够大时，\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即对于任意的分布\(\mu\)，只要我们这里\(\alpha\)取得足够大，总能学到一个比真实值\(Q^\pi(s,a)\)小的Q值</li>
-<li>当\(supp\ \mu \subset supp\ \pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，对\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)成立。即如果我们的数据集可以反映真实的数据分布，那么数据偏移就不存在了，我们直接令\(\alpha=0\)，退化到常规的贝尔曼算子对应的损失函数即可（注：此时的数据集\(\mathcal{D}\)是从当前策略采样的，故\(\alpha=0\)后的式子就是常规贝尔曼算子对应的损失函数）</li>
-</ul>
-</li>
-<li>在概率论和机器学习中，当我们说两个离散概率分布 \(\mu(a|s)\) 和 \(\pi(a|s)\) 满足 \(supp\ \mu \subset supp\ \pi\)，这意味着 \(\mu(a|s)\) 的支持集（即 \(\mu(a|s)\) 分配了正概率的所有动作 \(a\) 的集合）是 \(\pi(a|s)\) 支持集的子集。换句话说，对于所有 \(\mu(a|s)\) 给予正概率的动作 \(a\)，\(\pi(a|s)\) 也必须给予正概率。简而言之，如果某个动作在 \(\mu(a|s)\) 下是可能发生的（即它有非零的概率），那么在 \(\pi(a|s)\) 下这个动作也是可能发生的。但是，\(\pi(a|s)\) 可能包括一些 \(\mu(a|s)\) 不考虑的动作，这些动作在 \(\pi(a|s)\) 中有正概率但在 \(\mu(a|s)\) 中没有或者为零概率。</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进二：打压补偿"><a href="#改进二：打压补偿" class="headerlink" title="改进二：打压补偿"></a>改进二：打压补偿</h4><ul>
-<li><p>改进一学到了\(Q^\pi(s,a)\)的逐点下界\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)，但直观上看，打压过于严格了，甚至行为策略采样到的状态动作对都会打压（其实这些地方我们能估准的），为了缓解这个问题，我们对改进一的打压做一些补偿：<br>$$\hat{Q}^{k+1} = \mathop{\arg\min}_Q \color{red}{\alpha} \left(\mathbb{E}_{s\sim \mathcal{D}, a\sim \mu(a\vert s)}[Q(s, a)] - \color{red} { \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)] } \right) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]$$</p>
-</li>
-<li><p>这里论文中给出了证明（Theorem 3.2）：</p>
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png" title height="80%" width="80%">
-  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_2.png"> -->
-
-<ul>
-<li>上式说明：<ul>
-<li>当\(\mu=\pi\)（注意，改进一种不需要这个约束），且\(\alpha\)较大时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
-<li>当\(\mu=\pi\)，且\(\hat{B^\pi} = \mathcal{B}^\pi, \ \alpha &gt; 0\)时，有\(\forall \ s\in\mathcal{D}\)，均有\(\hat{V}^\pi(s) \le V^\pi(s)\)</li>
-</ul>
-</li>
-<li>此时虽然不能再保证学到了\(Q^\pi(s,a)\)的逐点下界：\(\forall \ s\in\mathcal{D},a\in \mathcal{A}\)，均有\(\hat{Q}^\pi(s,a) \le Q^\pi(s,a)\)</li>
-<li>但可以保证学到了\(Q^\pi(s,a)\)的期望下界：\(\mathbb{E}_{\pi(a|s)}[\hat{Q}^\pi(s,a)] \le V^\pi(s) = \mathbb{E}_{\pi(a|s)}[Q^\pi(s,a)]\)</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进三：CQL-mathcal-R"><a href="#改进三：CQL-mathcal-R" class="headerlink" title="改进三：CQL(\(\mathcal{R}\))"></a>改进三：CQL(\(\mathcal{R}\))</h4><ul>
-<li>一个遗留问题：论文中提到改进二需要进一步改进，但为什么不能直接用策略二，令\(\mu=\pi\)，然后直接使用改进二的公式更新？原始论文关于改进二的缺点描述（原始论文中对这里的描述不够具体，缺乏说服力）<ul>
-<li>改进二已经说明了在\(\mu=\pi\)时，可以学到一个合适的下界，但是由于改进二中需要对策略\(\mu\)（\(\mu=\pi\)）进行采样，即每次迭代Q值时都需要上一轮的策略\(\pi\)来采样，这样的话，智能交替进行策略评估和策略提升，且策略评估需要迭代足够长的步骤才能收敛，所以非常耗时（问题，常规的AC不都是这么实现的吗？其实也没有问题吧）</li>
-<li>补充：CQL原始论文的描述截图</li>
-</ul>
-</li>
-<li>接下来，我们先假定论文中提到的改进二中的公式确实存在缺点，需要改进，那么可以做如下改进</li>
-<li>我们可以进一步地优化，考虑到\(\pi\)是使得Q值最大的策略，所以我们使用使得Q值最大的\(\mu\)去拟合，改进二的公式可以优化为下面这样：<br>$$\hat{Q}^{k+1} = \min_Q \max_\mu \color{red}{\alpha} (\mathbb{E}_{s\sim \mathcal{D}, a\sim \color{red}{\mu(a\vert s)} }[Q(s, a)] - \mathbb{E}_{s\sim \mathcal{D}, a\sim\hat{\pi}_\beta(a\vert s)}[Q(s, a)]) + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right] + \color{red}{\mathcal{R}(\mu)} $$<ul>
-<li>为了防止寻找Q值最大化的\(\mu\)时出现过拟合，我们增加正则项\(\mathcal{R}(\mu)\)，一般取\(\mathcal{R}(\mu) = - D_{KL} (\mu| \rho)\)，其中\(\rho\)是一个已知分布</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进四：CQL-mathcal-rho"><a href="#改进四：CQL-mathcal-rho" class="headerlink" title="改进四：CQL(\(\mathcal{\rho}\))"></a>改进四：CQL(\(\mathcal{\rho}\))</h4><ul>
-<li>在CQL(\(\mathcal{R}\))中，求解\(\mu\)相当于要求解下面的优化问题<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{a \sim \mu(a|s)}[Q(s,a)]&amp;\color{red}{-}D_{\mathrm{KL}}(\mu | \rho) \\<br>\text { s.t. } \quad \sum_{a} \mu(a|s)&amp;=1 \\<br>\mu(a|s) &amp;\geq 0, \ \forall \mathbf{a} .<br>\end{align}<br>$$<ul>
-<li>注意：论文附录中错误地将\(-D_{\mathrm{KL}}(\mu | \rho)\)写成了\(+D_{\mathrm{KL}}(\mu | \rho)\)（因为上述公式的本意是最小化KL散度），需要修正过来</li>
-</ul>
-</li>
-<li>上述优化问题的最优解是：<br>$$<br>\mu^{*}(a|s)=\frac{1}{Z} \rho(a|s) \exp (Q(s,a))<br>$$<ul>
-<li>其中\(Z=\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))\)，\(Z\)也被称为归一化因子（normalizing factor）</li>
-<li>以上优化问题求解的详细证明与<a href="https://arxiv.org/pdf/1910.00177.pdf" target="_blank" rel="noopener">AWR论文</a>相似。更一般地，将以上变量\(a\)替换成\(x\)，即\(Q(s,a)\)替换成\(f(x)\)均可成立  </li>
-</ul>
-</li>
-<li>最终我们有CQL(\(\mathcal{\rho}\))的表达形式：<br>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim d^{\pi_\beta}(s)} \left[ \mathbb{E}_{a\sim \rho(a\vert s)} \left[ Q(s, a) \cfrac{\exp(Q(s, a))}{Z} \right ] - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$<ul>
-<li>原始论文中使用\(s\sim d^{\pi_\beta}(s)\)，实际上与\(s \sim \mathcal{D}\)等价，其他形式都是使用\(s \sim \mathcal{D}\)</li>
-<li>论文中，实验时取\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)，实验表格中的CQL(\(\mathcal{\rho}\))就是这个含义</li>
-</ul>
-</li>
-</ul>
-<h4 id="改进五：CQL-mathcal-H"><a href="#改进五：CQL-mathcal-H" class="headerlink" title="改进五：CQL(\(\mathcal{H}\))"></a>改进五：CQL(\(\mathcal{H}\))</h4><ul>
-<li>当CQL(\(\mathcal{\rho}\))中的\(\rho\)是均匀分布时，有最优解：<br>$$<br>\begin{align}<br>\mu^*(a\vert s) &amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))} \\<br>&amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\rho(a\vert s) \sum_a \exp(Q(s, a))} \\<br>&amp;= \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))}<br>\end{align}<br>$$</li>
-<li>将\(\mu^*(a\vert s) = \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))} \)带入CQL(\(\mathcal{R}\))，可得CQL(\(\mathcal{H}\))：<br>$$<br>\hat{Q}^{k+1} = \min_Q \color{red}{\alpha} \mathbb{E}_{s\sim\mathcal{D}} \left[ \log \sum_a \exp(Q(s, a)) - \mathbb{E}_{a \sim \hat{\pi}_\beta(a\vert s)}[Q(s, a)] \right] + \frac{1}{2} \mathbb{E}_{\mathbf{s}, \mathbf{a}, \mathbf{s’} \sim \mathcal{D}}\left[\left(Q(\mathbf{s}, \mathbf{a})-\hat{\mathcal{B}}^{\pi} \hat{Q}^{k}(\mathbf{s}, \mathbf{a})\right)^{2}\right]<br>$$<ul>
-<li>论文中，取\(\rho(a \vert s)\)是均匀分布(即\(\rho(a|s)=\text{Unif}(a)\))时，相当于最大化策略熵，故称此时的更新方式为CQL(\(\mathcal{H}\))</li>
-</ul>
-</li>
-</ul>
-<!-- #### 其他
-$$
-\mathbb{E}\_{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}\left[\frac{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})}-1\right] \geq \max\_{\mathbf{a} \text { s.t. } \hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})>0}\left(\frac{\pi\_{\hat{Q}^{k}}(\mathbf{a} \mid \mathbf{s})}{\hat{\pi}\_{\beta}(\mathbf{a} \mid \mathbf{s})}\right) \cdot \varepsilon
-$$ -->
-
-<h4 id="CQL伪代码"><a href="#CQL伪代码" class="headerlink" title="CQL伪代码"></a>CQL伪代码</h4><ul>
-<li><p>伪代码流程如下，其中CQL(\(\mathcal{R}\))可以是CQL(\(\mathcal{H}\))，也可以是CQL(\(\mathcal{\rho}\))：</p>
-<img src="/Notes/RL/RL——CQL/CQL-Algorithm.png" title height="60%" width="60%">
-<!-- <img src="/Notes/RL/RL——CQL/CQL-Algorithm.png"> -->
-</li>
-<li><p>如果是Q-learning模式：仅更新Q值即可，最后定义\(\mu(s) = \mathop{\arg\max}_a Q(s,a)\)作为最终的策略</p>
-</li>
-<li><p>如果是Actor-Critic模式：需要使用SAC的训练方式额外训练actor</p>
-</li>
-</ul>
-<h4 id="实践说明"><a href="#实践说明" class="headerlink" title="实践说明"></a>实践说明</h4><ul>
-<li>\(\alpha\)的选择：</li>
-<li>\(\alpha\)可以变成可学习的值？</li>
-<li>\(\log\sum_a \exp(Q(s,a))\)的计算：</li>
-<li>CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))谁更好？<ul>
-<li>一般来说 CQL(\(\mathcal{H}\))优于CQL(\(\mathcal{\rho}\))，当动作空间特别大时logsumexp预测方差变得很大，此时使用CQL(\(\mathcal{\rho}\))效果更好</li>
-</ul>
-</li>
-<li>一些超参数的设置：</li>
-</ul>
-<hr>
-<h3 id="一些说明和思考"><a href="#一些说明和思考" class="headerlink" title="一些说明和思考"></a>一些说明和思考</h3><ul>
-<li><p>CQL原始论文中符号使用有点混乱比如CQL(\(\mathcal{R}\)),CQL(\(\mathcal{H}\))和CQL(\(\mathcal{\rho}\))三者的定义不清晰，特别是CQL(\(\mathcal{\rho}\))在正文中没有得到明确的定义，附录里面才有定义，而伪代码中强调的公式4：CQL(\(\mathcal{R}\))，实际上公式4是CQL(\(\mathcal{H}\))，这里我们特别对三个方法的定义进行辨析：</p>
-<ul>
-<li>CQL(\(\mathcal{R}\))：CQL原始形式</li>
-<li>CQL(\(\mathcal{\rho}\))：CQL变体，对任意\(\rho\)均可使用这个表述，包含了后面的CQL(\(\mathcal{H}\))，论文中实验时使用的是\(\rho(a \vert s) = \hat{\pi}^{k-1}(a \vert s)\)</li>
-<li>CQL(\(\mathcal{H}\))：CQL变体，当CQL(\(\mathcal{\rho}\))中\(\rho\)取均匀分布时的更新形式</li>
-</ul>
-</li>
-<li><p>原始论文中\(s\sim d^{\pi_\beta}(s)\)和\(s \sim \mathcal{D}\)混用，比较公式时容易对不齐，实际上两者是等价的</p>
-</li>
-<li><p>从推导可以看出，数据越充足，需要的\(\alpha\)就越小</p>
-</li>
-<li><p>问题：为什么直接更新<strong>改进二</strong>中的更新公式不可以？为什么训练耗时长？普通的AC不都是这么实现的吗？</p>
-<ul>
-<li>普通AC确实是这样实现的，但是在Offline RL场景，不希望迭代效率过慢？</li>
-</ul>
-</li>
-<li><p>问题：为什么使用均匀分布以后，可以推导出CQL(\(\mathcal{H}\))的形式?</p>
-<ul>
-<li>详请见附录推导</li>
-</ul>
-</li>
-<li><p>CQL算法得到的策略一定很优秀吗？答案是不会比行为策略差太多</p>
-  <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png" title height="80%" width="80%">
-  <!-- <img src="/Notes/RL/RL——CQL/CQL-Theorem3_6.png"> -->
-
-<ul>
-<li>具体来说(Theorem 3.6)：CQL算法得到的策略\(\pi^*(a|s)\)是一个策略\(\hat{\pi}_\beta\)的\(\zeta\)-safe policy improvement，即有\(1-\zeta\)的概率可以保证\(J(\pi^*, M) \ge J(\hat{\pi}_\beta, M) - \zeta\)</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="附录：证明约束优化问题"><a href="#附录：证明约束优化问题" class="headerlink" title="附录：证明约束优化问题"></a>附录：证明约束优化问题</h3><ul>
-<li>目标是求解下面的约束问题<br>$$<br>\begin{align}<br>\max {\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})]&amp;-D_{\mathrm{KL}}(\mu | \rho) \\<br>\text { s.t. } \quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
-<li>需要证明上述式子的最优解为：<br>$$\mu^{*}(\mathbf{x})=\frac{1}{Z} \rho(\mathbf{x}) \exp (f(\mathbf{x}))$$<ul>
-<li>其中\(Z = \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (f(\mathbf{x}))\)</li>
-</ul>
-</li>
-<li>证明前，我们先将上述问题修改成更一般的形式（更一般的形式更常用一些），在更一般的形式下，\(D_{\mathrm{KL}}(\mu | \rho)\)经常会加上温度系数\(\alpha\)或出现在约束中：<br>$$<br>\begin{align}<br>\max_{\mu} \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) &amp;\le \epsilon \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x})&amp;=1\\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
-<li>求解上面的问题可以先转换成构造拉格朗日函数<ul>
-<li>原始问题变形<br>$$<br>\begin{align}<br>\min_{\mu} - \mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[&amp;f(\mathbf{x})] \\<br>\text { s.t. } \quad D_{\mathrm{KL}}(\mu | \rho) - \epsilon &amp;\le 0 \\<br>\quad \sum_{\mathbf{x}} \mu(\mathbf{x}) - 1 &amp;= 0 \\<br>\mu(\mathbf{x}) &amp;\geq 0, \ \forall \mathbf{x}.<br>\end{align}<br>$$</li>
-<li>拉格朗日函数如下<br>$$<br>\begin{align}<br>L(\mu,\alpha,\beta) &amp;= -\mathbb{E}_{\mathbf{x} \sim \mu(\mathbf{x})}[f(\mathbf{x})] + \alpha(D_{\mathrm{KL}}(\mu | \rho)-\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log\frac{\mu(\mathbf{x})}{\rho(\mathbf{x})} -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>L(\mu,\alpha,\beta) &amp;= -\sum_x \mu(\mathbf{x})f(\mathbf{x}) + \alpha( \sum_x \mu(\mathbf{x}) \log \mu(\mathbf{x}) - \sum_x \mu(\mathbf{x}) \log \rho(\mathbf{x}) -\epsilon) + \beta(\sum_{\mathbf{x}} \mu(\mathbf{x})-1) \\<br>\end{align}<br>$$</li>
-</ul>
-</li>
-<li>对上式微分并令微分结果等于0有:<br>$$<br>\begin{align}<br>\frac{\partial L(\mu,\alpha,\beta)}{\partial \mu(x)} &amp;= -\sum_x f(\mathbf{x}) + \alpha \sum_x ( \log \mu(\mathbf{x}) + 1) - \alpha \sum_x \log \rho(\mathbf{x}) + \sum_x \beta \\<br>&amp;= \sum_x (- f(\mathbf{x}) + \alpha \log \mu(\mathbf{x}) + 1 - \alpha \log \rho(\mathbf{x}) + \beta) \\<br>&amp;= 0<br>\end{align}<br>$$<ul>
-<li>上式中求导使用到了\(\frac{\partial \log \mu(x)}{\partial \mu(x)} = \frac{1}{\mu(x)}\)</li>
-</ul>
-</li>
-<li>进一步可以得到<br>$$<br>- f(\mathbf{x}) + \alpha \log \mu(\mathbf{x}) + 1 - \alpha \log \rho(\mathbf{x}) + \beta = 0<br>$$</li>
-<li>即<br>$$<br>\begin{align}<br>\alpha \log \mu(\mathbf{x}) &amp;= f(\mathbf{x}) + \alpha \log \rho(\mathbf{x}) - (\beta + 1) \\<br>\log \mu(\mathbf{x}) &amp;= \frac{1}{\alpha}f(\mathbf{x}) + \log \rho(\mathbf{x}) + \frac{- (\beta + 1)}{\alpha} \\<br>\mu(\mathbf{x}) &amp;= exp(\frac{1}{\alpha}f(\mathbf{x}) + \log \rho(\mathbf{x}) + \frac{- (\beta + 1)}{\alpha}) \\<br>\mu(\mathbf{x}) &amp;= exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\log \rho(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha}) \\<br>\mu(\mathbf{x}) &amp;= \rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha}) \\<br>\end{align}<br>$$</li>
-<li>由于\(exp(\frac{- (\beta + 1)}{\alpha})\)包含拉格朗日乘子，是未知的，所以我们进一步化简，尝试将这部分替换为已知式子，对上述结果最后一步两边同时积分有<br>$$<br>\begin{align}<br>\sum_x \mu(\mathbf{x}) &amp;= \sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha})) \\<br>1 &amp;= exp(\frac{- (\beta + 1)}{\alpha}) \sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x}))) \\<br>exp(\frac{- (\beta + 1)}{\alpha}) &amp;= \frac{1}{\sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})))} \\<br>\end{align}<br>$$</li>
-<li>将\(exp(\frac{- (\beta + 1)}{\alpha}) = \frac{1}{\sum_x (\rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})))}\)的结果带入\(\mu(\mathbf{x}) = \rho(\mathbf{x})exp(\frac{1}{\alpha}f(\mathbf{x})) \cdot exp(\frac{- (\beta + 1)}{\alpha})\)可以解的最终解：<br>$$\mu^{*}(\mathbf{x})=\frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))$$<ul>
-<li>其中\(Z = \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))\)</li>
-</ul>
-</li>
-<li>回到最初的问题：我们令\(\alpha=1\)即可退回到原始问题</li>
-</ul>
-<hr>
-<h3 id="附录：最优策略形式的使用方式"><a href="#附录：最优策略形式的使用方式" class="headerlink" title="附录：最优策略形式的使用方式"></a>附录：最优策略形式的使用方式</h3><ul>
-<li>从上面的证明，我们已经得到了最优策略的一般形式\(\mu^{*}(\mathbf{x})=\frac{\rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))}{\sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))} \)，但这个形式难以直接使用<ul>
-<li>难以直接使用的原因（个人理解）：<ul>
-<li>离线强化场景中\(\rho\)未知，无法直接使用；</li>
-<li>在线强化学习场景中，难以用于状态维度高或动作空间大（包括连续状态或动作）的场景。状态和动作空间有限时，\(\rho\)是上一布步的策略或者历史混合策略\(f(\mathbf{x})\)一般是\(A^\rho(s,a)\)，理论上如果按照on-policy更新或者记录policy和样本以后按照off-policy更新均可，但是实际更新时，这种非参数化的策略，不同状态的策略是隔离的（没有状态泛化能力），针对每个状态都要更行才能做到该状态上的策略迭代\(\mu^{*}(\mathbf{a|s})=\frac{\rho(\mathbf{a|s}) \exp (\frac{1}{\alpha}f(\mathbf{a|s}))}{\sum_{\mathbf{a}} \rho(\mathbf{a|s}) \exp (\frac{1}{\alpha}f(\mathbf{a|s}))} \)，相当于每次迭代需要收集大量的样本才能足够更新各个状态上的效果，否则在下一轮中遇到其他状态时，这里相当于没有被更新。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>一般来说，可以用神经网络去表示策略，实际上还可以进一步推导，不同的算法，目标函数不同，推导得到的结果也不同。</li>
-<li>对于CQL来说，由于目标是两步min max，需要进一步将最优解带入原始目标得到最终的目标</li>
-<li>对于<a href="https://arxiv.org/pdf/1910.00177.pdf" target="_blank" rel="noopener">AWR</a>，<a href="https://arxiv.org/pdf/2006.09359" target="_blank" rel="noopener">AWAC</a>和IQL(复用了AWR方法)等论文，这里会直接使用一个神经网络去拟合策略，并尝试求这个策略的参数更新公式<br>$$<br>\begin{align}<br>\theta^* &amp;= \mathop{\arg\min}_{\theta} D_{\mathrm{KL}}(\mu^*(\mathbf{x}) | \pi_\theta(\mathbf{x})) \\<br>&amp;= \mathop{\arg\min}_{\theta}  D_{\mathrm{KL}}\Big( \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) | \pi_\theta(\mathbf{x})\Big) \\<br>&amp;= \mathop{\arg\min}_{\theta}  \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{ \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x}))} {\pi_\theta(\mathbf{x})} \\<br>&amp;= \mathop{\arg\min}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\min}_{\theta} - \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \frac{1}{Z} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_{\mathbf{x}} \rho(\mathbf{x}) \exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \quad \quad \text{Z与策略参数\theta无关，可以消掉} \\<br>&amp;= \mathop{\arg\max}_{\theta} \mathbb{E}_{\mathbf{x} \sim \rho(\mathbf{x})} \Big[\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x}) \Big] \\<br>\end{align}<br>$$</li>
-<li>此时，最优解求解目标变成了从已知策略\(\rho(\mathbf{x} )\)中采样，并最大化\(\exp (\frac{1}{\alpha}f(\mathbf{x})) \log \pi_\theta(\mathbf{x})\)即可，此时的目标是可以直接对策略求梯度的，非常容易迭代</li>
-</ul>
-<hr>
-<h3 id="附录：证明logsumexp公式"><a href="#附录：证明logsumexp公式" class="headerlink" title="附录：证明logsumexp公式"></a>附录：证明logsumexp公式</h3><ul>
-<li><p>参考：<a href="https://zhuanlan.zhihu.com/p/546193376" target="_blank" rel="noopener">CQL算法logsumexp公式推导</a>  </p>
-</li>
-<li><p>当CQL(\(\mathcal{\rho}\))中的\(\rho\)是均匀分布时，有最优解：<br>$$<br>\begin{align}<br>\mu^*(a\vert s) &amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\sum_a \rho(a\vert s)\cdot \exp(Q(s, a))} \\<br>&amp;= \cfrac{\rho(a\vert s)\cdot \exp(Q(s, a))}{\rho(a\vert s) \sum_a \exp(Q(s, a))} \\<br>&amp;= \cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))}<br>\end{align}<br>$$</p>
-</li>
-<li><p>带入CQL(\(\mathcal{R}\))形式有<br>$$<br>\begin{align}<br>\mathbb{E}_{a \sim \mu^*} [Q(s, a)] - D_{\mathrm{KL}}(\mu^* | \rho) &amp;= \mathbb{E}_{a \sim \mu^*} \left[ \exp(Q(s, a))  - \log(\mu^*) + \log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[Q(s, a)  - \log(\cfrac{\exp(Q(s, a))}{\sum_a \exp(Q(s, a))} ) +\log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[Q(s, a)  - \log(\exp(Q(s, a))) + \log(\sum_a \exp(Q(s, a))) +\log(\rho)\right]\\<br>&amp;= \mathbb{E}_{a \sim \mu^*} \left[\log(\sum_a \exp(Q(s, a))) + \log(\rho)\right]\\<br>\end{align}<br>$$</p>
-</li>
-<li><p>显然\(\log(\sum_a \exp(Q(s, a))) + \log(\rho)\)此时与策略\(\mu^*\)无关，期望可以消掉，同时\(\rho\)是均匀分布时，有\(\rho(a|s) = \frac{1}{|A|}\)，\(\log(\rho) = -\log(|A|)\)，于是有：<br>$$<br>\begin{align}<br>\mathbb{E}_{a \sim \mu^*} [Q(s, a)] - D_{\mathrm{KL}}(\mu^* | \rho) &amp;= \log \sum_a \exp(Q(s, a)) -\log(|A|)<br>\end{align}<br>$$</p>
-<ul>
-<li>注意，这里需要的是一个\(max_Q f(Q)\)的形式，而\(-\log(|A|)\)这个值是个常数，与优化目标Q无关，可以消去</li>
-</ul>
-</li>
-<li><p>补充问题：为什么CQL(\(\mathcal{\rho}\))中可以直接消掉\(\mathcal{R}(\mu)\)，但是CQL(\(\mathcal{H}\))中不行？</p>
-<ul>
-<li>理论上，CQL(\(\mathcal{\rho}\))中不能直接消掉\(\mathcal{R}(\mu)\)，CQL(\(\mathcal{H}\))中推导才是对的，论文中没有提这一点，实际上，把\(\mathcal{R}(\mu)\)从目标挪到约束上\(\mathcal{R}(\mu) \le \epsilon\)，最终推导的结果可以没有\(\mathcal{R}(\mu)\)，指数权重上会有个温度系数（因为新增约束引入的拉格朗日乘子）</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——IQL.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/RL/RL——IQL.html" itemprop="url">RL——IQL</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接<ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/2110.06169" target="_blank" rel="noopener">ICLR 2022 Poster, Offline reinforcement learning with implicit q-learning</a>  </li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的基本思想"><a href="#IQL的基本思想" class="headerlink" title="IQL的基本思想"></a>IQL的基本思想</h3><ul>
-<li>常规的方法会直接约束策略或者正则来减少OOD问题，IQL则通过SARSA style的方法仅在见过的state-action上进行学习，不直接面对OOD问题</li>
-<li>采样方面使用了AWR（Advantage Weighted Regression）方法</li>
-</ul>
-<hr>
-<h3 id="多步动态规划和Single-step方法"><a href="#多步动态规划和Single-step方法" class="headerlink" title="多步动态规划和Single-step方法"></a>多步动态规划和Single-step方法</h3><h4 id="多步动态规划-Multi-step-DP"><a href="#多步动态规划-Multi-step-DP" class="headerlink" title="多步动态规划(Multi-step DP)"></a>多步动态规划(Multi-step DP)</h4><ul>
-<li>多步动态规划方法（multi-step dynamic programming methods，简写作Multi-step DP）</li>
-<li>已有Offline RL方法的很大一部分是基于约束或正则化的近似动态规划（例如，Q-learning 或 actor-critic 方法），constraint或Regularization用于限制与行为策略的偏差。 我们将这些方法称为多步动态规划(Multi-step DP)算法，因为它们对多次迭代执行真正的动态规划，因此如果提供高覆盖率数据，原则上可以恢复最优策略。通常情况下Multi-step DP问题也可以分为：<ul>
-<li>显式密度模型(explicit density model)：BRAC，BCQ，BEAR等</li>
-<li>隐式差异约束（implicit divergence constraints）：AWAC，CRR，AWR等</li>
-</ul>
-</li>
-<li>如何理解显示密度模型和隐式约束模型的定义？<ul>
-<li>显式密度模型：直接建模State-Action的价值分布，从而得到最优策略</li>
-<li>隐式差异约束：不直接建模State-Action的价值分布，更多是模仿优质策略行为的思想</li>
-</ul>
-</li>
-<li>问题：显示密度模型中的“密度”是什么意思？<ul>
-<li>这里的密度是指概率密度，显示密度模型即会直接定义并学习概率密度函数的模型</li>
-</ul>
-</li>
-</ul>
-<h4 id="Single-step方法"><a href="#Single-step方法" class="headerlink" title="Single-step方法"></a>Single-step方法</h4><ul>
-<li>Single-step方法（Single-step Methods）是指一类方法，这类方法仅依赖于<strong>单步策略迭代</strong>的方法，即对行为策略的价值函数或Q函数进行拟合，然后提取相应的贪心策略，或者完全避免价值函数并利用行为克隆目标。这类方法避免了访问看不见的状态动作对，因为它们要么根本不使用价值函数，要么学习行为策略的价值函数。</li>
-<li>IQL就是一种Single-step方法</li>
-<li>传统的模仿学习也属于Single-step方法</li>
-</ul>
-<h4 id="多步动态规划和Single-step方法的比较"><a href="#多步动态规划和Single-step方法的比较" class="headerlink" title="多步动态规划和Single-step方法的比较"></a>多步动态规划和Single-step方法的比较</h4>
-<ul>
-<li>from <a href="https://zhuanlan.zhihu.com/p/497358947" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/497358947</a>  </li>
-</ul>
-<hr>
-<h3 id="IQL之前的方案"><a href="#IQL之前的方案" class="headerlink" title="IQL之前的方案"></a>IQL之前的方案</h3><h4 id="一般的Offline-RL学习方法"><a href="#一般的Offline-RL学习方法" class="headerlink" title="一般的Offline RL学习方法"></a>一般的Offline RL学习方法</h4><ul>
-<li>思路：按照贝尔曼最优方程迭代</li>
-<li>损失函数：<br>  $$<br>  L_{TD}(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>直接使用上述损失函数存在值高估问题</li>
-<li>大多数最近的离线RL方法修改了上述值函数损失（或直接约束argmax这个策略本身选择动作的方位），以正则化值函数，使其生成的策略接近数据，缓解值高估问题</li>
-</ul>
-</li>
-</ul>
-<h4 id="能避免OOD的学习方法"><a href="#能避免OOD的学习方法" class="headerlink" title="能避免OOD的学习方法"></a>能避免OOD的学习方法</h4><ul>
-<li>思路：按照SARSA-style的方法迭代，即贝尔曼期望方程（\(a’\sim \pi_\beta\)）</li>
-<li>损失函数：SARSA-style的损失函数如下<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ (r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$<ul>
-<li>按照上面的损失函数学习，学到的\(Q_\theta(s,a)\)本质是行为策略对应的Q值，也就是说，当样本无限时，Q值收敛到<br>$$<br>Q_\theta^*(s, a) \approx r(s, a) + \gamma \mathbb{E}_{s’ \sim p(\cdot|s,a), a’ \sim \pi_\beta(\cdot|s’)} \left[ Q_{\theta’}(s’, a’) \right]<br>$$</li>
-</ul>
-</li>
-<li>分析：<ul>
-<li>本质上是在估计数据集上的状态和动作分布下，Q值的期望</li>
-<li>显然上面学到的只是行为策略对应的Q值，不是我们想要的最优Q值（行为策略不一定是最优策略）</li>
-<li>上面的方法更像是在对行为策略进行模仿</li>
-</ul>
-</li>
-</ul>
-<h4 id="Offline-RL的最优Q值目标"><a href="#Offline-RL的最优Q值目标" class="headerlink" title="Offline RL的最优Q值目标"></a>Offline RL的最优Q值目标</h4><ul>
-<li>思路：避免OOD且能学到“最优策略”的迭代形式，限制了argmax动作不访问OOD的状态动作对</li>
-<li>损失函数：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma \max_{a’ \in A, \pi_\beta(a’|s’) &gt; 0} Q_{\theta’}(s’, a’) - Q_\theta(s, a))^2 \right]<br>  $$</li>
-<li>分析：<ul>
-<li>既保证使用的最大Q值对饮动作不超过数据集（避免了OOD），又可以在支持集上最大化当前策略</li>
-<li>上面的定义实际上也可能访问到支持集以外的动作，后续需要使用期望回归来改进为SARSA-style的形式</li>
-</ul>
-</li>
-<li>注意：<strong>IQL并不直接学习上述目标（\(\pi_\beta(a’|s’) &gt; 0\)导致无法学习），只是隐式的学习上述目标</strong>，具体方法是引入期望回归（Expectile Regression）<ul>
-<li>BCQ等方法已经学习过上述目标的改进版本</li>
-<li>上述目标无法直接学习，因为判断\(\pi_\beta(a’|s’) &gt; 0\)需要维护一个表格，统计所有数据，状态动作空间很大时无法实现，除非像BCQ一样，用一个网络去学习概率</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="IQL的解决方案"><a href="#IQL的解决方案" class="headerlink" title="IQL的解决方案"></a>IQL的解决方案</h3><h4 id="期望回归与分位数回归"><a href="#期望回归与分位数回归" class="headerlink" title="期望回归与分位数回归"></a>期望回归与分位数回归</h4><ul>
-<li><p><strong>期望回归（Expectile Regression）</strong>，是估计随机变量的各种统计量的方法，定义如下：</p>
-<ul>
-<li>某个随机变量 \(X\) 的 \(\tau \in (0, 1)\) 期望值定义为以下非对称最小二乘问题的解：<br>$$<br>\mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^2(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^2(u) = |\tau - 1(u &lt; 0)| u^2.<br>$$</li>
-<li>\(L_\tau^2(u)\)也常常写作\(L_\tau^e(u)\)</li>
-<li>给定\(\tau\)，\(m_\tau\)就是在拟合随机变量的某个\(\tau\)期望点，不同的\(\tau\)下\(m_\tau\)也会不同，学到的，比如\(\tau=0.5\)时就是对应期望</li>
-<li>分析：<ul>
-<li>当 \(\tau &gt; 0.5\)时，这种非对称损失函数会降低小于 \(m_\tau\) 的 \(x\) 值的权重，而增加大于 \(m_\tau\) 的 \(x\) 值的权重</li>
-<li>当 \(\tau = 0.5\)时，损失函数退化成对称的，等价于均方误差MSE（这里把\(u\)看做是误差项）<br>$$ L^{\tau=0.5}_{2}(u) = |0.5 - \Bbb{1}(u&lt;0)|u^2 = \frac{1}{2}u^2 $$</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>条件随机变量的期望回归</strong></p>
-<ul>
-<li>对于给定的条件随机变量\(y = f(x)\)，假定\((x,y)\)成对出现在数据集\(\mathcal{D}\)中，则可以定义：<br>$$\mathop{\arg\min}_{m_\tau(x)} \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ L_\tau^2(y - m_\tau(x)) \right]$$</li>
-<li>给定\(\tau\)，\(m_\tau(x)\)是一个关于\(x\)的函数，不同的\(\tau\)得到的拟合函数不同，相同的\(\tau\)，给定不同的\(x\)会得到不同的\(m_\tau(x)\)，\(m_\tau(x)\)本质是在拟合\(y\)，下图中最右侧的图展示了条件随机变量的期望回归<img src="/Notes/RL/RL——IQL/IQL-1.png">
-</li>
-</ul>
-</li>
-<li><p><strong>分位数回归（Quantile Regression）</strong>定义如下:<br>  $$<br>  \mathop{\arg\min}_{m_\tau} \mathbb{E}_{x \sim X} \left[ L_\tau^1(x - m_\tau) \right], \quad \text{其中} \quad L_\tau^1(u) = (\tau - 1(u &lt; 0)) u.<br>  $$</p>
-<ul>
-<li>\(L_\tau^1(u)\)也常常写作\(L_\tau^q(u)\)</li>
-<li>\((\tau - 1(u &lt; 0)) u\)不使用绝对值的原因是此时无论\(u\)取值正负\(L_\tau^1(u) \ge 0\)都成立，相当于已经给整体加了绝对值了，最终目标是类似MAE的形式</li>
-</ul>
-</li>
-<li><p>分位数回归和期望回归的对比</p>
-  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression.png">
-<ul>
-<li>常规的MSE叫做mean，等价于求均值，等价于\(\tau = 0.5\)的期望回归（expectile regression）</li>
-<li>常规的MAE叫做median，等价于求中位数，等价于\(\tau = 0.5\)的分位数回归（quantile regression）</li>
-</ul>
-</li>
-<li><p>更多比较</p>
-  <img src="/Notes/RL/RL——IQL/QuantileRegression-vs-ExpectileRegression-2.png">
-<ul>
-<li>修正：左边第二行需要使用绝对值\(\mathcal{R}_\tau^e(u) = u^2|\tau - \mathbf{1}(u &lt; 0)|\)</li>
-</ul>
-</li>
-<li><p>问题：为什么使用期望回归而不是分位数回归？</p>
-<ul>
-<li>审稿人也有这个疑问，作者的回答是实验得到的，没有正面给出回答？，\(\tau=0.9\)时效果最好</li>
-</ul>
-</li>
-</ul>
-<h4 id="基于期望回归的Q值学习"><a href="#基于期望回归的Q值学习" class="headerlink" title="基于期望回归的Q值学习"></a>基于期望回归的Q值学习</h4><ul>
-<li>借助期望回归来学习Q值：<br>  $$<br>  L(\theta) = \mathbb{E}_{(s,a,s’,a’) \sim D} \left[ L_\tau^2(r(s, a) + \gamma Q_{\theta’}(s’, a’) - Q_\theta(s, a)) \right]<br>  $$</li>
-<li>其中\(\mathcal{D} \sim \pi_\beta\)，选择合适的\(\tau\)后，可以学到一个大于\(Q^{\pi_\beta}(s,a)\)（行为策略对应的Q值）的\(Q(s,a)\)</li>
-<li>理解：给定\((s,a)\)的情况下，存在许多不同的\((s’,a’)\)样本，当\(\tau &gt; 0.5\)时，相当于是通过这种非对称损失函数降低小于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，增加大于 \(Q_\theta(s, a)\) 的动作状态对\((s’, a’)\)所对应的目标值\(r(s, a) + \gamma Q_{\theta’}(s’, a’)\)的权重，从而学到较大的\((s’,a’)\)对应的目标值，极端情况下，学到的是最大值\(r(s, a) + \gamma \max_{(s,a,s’,a’) \sim \mathcal{D}} Q_{\theta’}(s’, a’)\)</li>
-<li>上面的损失函数还存在一些不足，由于环境可能是动态变化的，状态\(s’\)是按照概率\(p(s’|s,a)\)出现，所以以上损失函数还使得Q学到了环境转换的信息。具体来说，学到的Q值高不一定是选到了优秀动作的反应，还可能是因为运气好碰上了转移到一个较好的状态\(s’\)上<ul>
-<li>补充说明1：即使是随机环境，在状态\(s\)下，选择\(a\)后有一定概率得到较优秀的\(s’\)，能说明在状态\(s\)下，选择\(a\)是较为优秀的吗？回答是不一定！因为在这种随机环境的情况下，最优贝尔曼方程里面，我们也需要对\(s’\)计算期望\(\mathbb{E}_{s’\sim p(s’|s,a)}\)而不是取最大\(max_{s’}\)，这是我们的目标是找一个策略，使得按照这个策略交互得到的期望收益最大，而线上推断时，我们不能保证一定能走到最大的\(s’\)，除非是确定性环境，即\((s,a)\)确定后，\(s’\)也是确定的</li>
-<li>补充问题1：如果是确定性的环境，是否可以直接使用上述损失函数？</li>
-</ul>
-</li>
-</ul>
-<h4 id="IQL的Q值学习"><a href="#IQL的Q值学习" class="headerlink" title="IQL的Q值学习"></a>IQL的Q值学习</h4><ul>
-<li>由于基于期望回归的Q值学习引入了状态转移随机偏差，存在问题，所以需要进行改进：</li>
-<li>第一步：使用期望回归去从已知的\(Q_{\hat{\theta}}(s,a)\)中学习\(V(s)\)<br>  $$ L_V(\psi) = \mathbb{E}_{(s,a) \sim D} \left[ L_\tau^2(Q_{\theta’}(s, a) - V_\psi(s)) \right] $$<ul>
-<li>这里可以看出\(V(s)\)学到的是\(max_a Q_{\hat{\theta}}(s,a)\)的思想，即对应V值的贝尔曼最优方程</li>
-</ul>
-</li>
-<li>第二步：使用最优的\(V\)去学习\(Q\)<br>  $$L_Q(\theta) = \mathbb{E}_{(s,a,s’) \sim D} \left[ (r(s, a) + \gamma V_\psi(s’) - Q_\theta(s, a))^2 \right] $$<ul>
-<li>由于\(V\)在上一步已经通过期望回归学到了最优形式，这一步不需要继续使用期望回归了</li>
-</ul>
-</li>
-<li>至此，我们已经实现了通过SARSA-style的形式，隐式的学到了近似最优Q值</li>
-<li>关于参数\(\tau\)的一些分析以及以上贝尔曼方程收敛性见附录</li>
-</ul>
-<h4 id="IQL的策略学习"><a href="#IQL的策略学习" class="headerlink" title="IQL的策略学习"></a>IQL的策略学习</h4><ul>
-<li>虽然我们已经得到了近似最优Q值，但为了避免使用样本外的动作，这里做策略学习时，我们不能直接遍历所有动作</li>
-<li>AWR提供了一种方法从近似最优Q值里面提取策略（因为策略学习并不影响Q值，所以更像是从近似最优Q值中提取策略）：<br>  $$<br>  L_\pi(\phi) = \mathbb{E}_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]<br>  $$<ul>
-<li>其中 \(\beta \ge 0\) 是温度系数。对于较小的超参数值，该目标类似于行为克隆（近似所有样本权重相等的策略梯度，原始策略梯度中，样本权重是温度系数为1的Q值），而对于较大的值，它试图恢复Q函数的最大值（Q值越大，对应的样本权重越大）。正如AWR等先前工作所示，此目标学习一个在分布约束下的最大化Q值的策略</li>
-</ul>
-</li>
-<li>注意，策略学习时Q值收敛以后进行的(Q和V是交替更新)，Q值学习和策略学习是串行的，且Q值学习彻底完成以后才进行策略学习，并不是交替进行</li>
-<li>思考：使用期望回归学到的V值是\(V^{\pi^*} = max_a Q_{\hat{\theta}}(s,a)\)，为什么可以用最优的V值来更新策略\(Q_{\theta’}(s, a) - V_\psi(s)\)？<ul>
-<li>这种做法是可以的，符合优势函数的定义，因为优势函数的定义也是\(A^\pi(s,a) = Q^\pi(s,a) - V^\pi(s)\)</li>
-<li>虽然此时的V值是\(max_a Q_{\hat{\theta}}(s,a)\)，但是\(Q_{\theta’}(s, a) - V_\psi(s)\)依然可以对动作的好坏进行区分。实际上，只要可以保证动作越好，优势函数越大即可，即使所有动作都是负的或者都是正的也没问题，因为策略的实现是一个softmax，大家都降低的时候，降的少的动作上对一个的概率自然会提升</li>
-</ul>
-</li>
-</ul>
-<h4 id="IQL更新总结"><a href="#IQL更新总结" class="headerlink" title="IQL更新总结"></a>IQL更新总结</h4><ul>
-<li>伪代码如下（说明：伪代码中最后一行策略更新公式有问题，应该是加号，或者把损失函数添上负号，因为这里是想要最大化目标， 作者开源代码中是正确的，论文中写错了<a href="https://github.com/ikostrikov/implicit_q_learning/blob/master/actor.py#L24" target="_blank" rel="noopener">github.com/ikostrikov/implicit_q_learning</a> ）：  <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png" title height="80%" width="80%">
-  <!-- <img src="/Notes/RL/RL——IQL/IQL-Algorithm.png"> -->
-
-
-</li>
-</ul>
-<hr>
-<h3 id="附录：为什么AWR和策略梯度法损失函数不同？"><a href="#附录：为什么AWR和策略梯度法损失函数不同？" class="headerlink" title="附录：为什么AWR和策略梯度法损失函数不同？"></a>附录：为什么AWR和策略梯度法损失函数不同？</h3><ul>
-<li>副标题：不同AC框架算法策略更新公式对比分析，为什么相同的目标推导出来完全不同的更新公式？</li>
-<li>问题补充：<ul>
-<li>普通AC（策略梯度法）更新公式是:<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[(Q^{\pi_{\theta_k}}(s,a)-V^{\pi_{\theta_k}}(s))\log\pi_\theta(a|s)\Big]$$</li>
-<li>PPO更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_{\theta_k}}\Big[\frac{\pi_\theta(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) - \beta D_{KL}(\pi_{\theta_{k}}(\cdot|s), \pi_\theta(\cdot|s))\Big]$$</li>
-<li>DDPG更新公式<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{s_t \sim \rho^\beta(s)} [Q_w(s_t,\mu_\theta(s_t))] $$</li>
-<li>SAC更新公式<br>$$\mathop{\arg\max}_{\theta}\mathbb{E}_{s_t \sim \mathcal{D}, \epsilon_t \sim \mathcal{N}}[\log \pi_\theta(f_\theta(\epsilon_t;s_t)\vert s_t) - Q_\theta(s_t, f_\theta(\epsilon_t; s_t))]<br>$$</li>
-<li>AWR更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\frac{1}{\beta}(R_{s,a}^{\mathcal{D}}-V^{\mathcal{D}}(s))\Big)\log\pi_\theta(a|s)\Big]$$<ul>
-<li>其中\(R_{s,a}^{\mathcal{D}} = \sum_{t=0}^\infty \gamma^t r_t\)，不是网络，是真实的轨迹收益</li>
-</ul>
-</li>
-<li>IQL更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp\Big(\beta (Q_{\theta’}(s, a) - V_\psi(s))\Big)\log\pi_\theta(a|s)\Big]$$</li>
-<li>AWAC更新公式：<br>$$\mathop{\arg\max}_{\theta} \mathbb{E}_{(s,a) \sim \pi_\beta}\Big[exp(\frac{1}{\lambda} A^{\pi_{\theta_k}}(s,a))\log\pi_\theta(a|s)\Big]$$</li>
-</ul>
-</li>
-<li>基本推导思路总结：<ul>
-<li><strong>策略梯度法</strong>：推导是直接从最初目标出发，视图求最初目标相对策略的梯度</li>
-<li><strong>PPO</strong>：更新公式是从策略提升的视角出发得到梯度提升的目标，通过限制策略变化幅度和重要性采样分别将未知策略的状态和动作采样的问题切换到已知策略</li>
-<li><strong>DDPG</strong>：直接以最大化Q值为目标来更新，可直接传导策略梯度</li>
-<li><strong>SAC</strong>：的目标中增加了熵，可以看成是DDPG的增加熵的版本</li>
-<li><strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>：更新公式都是相同的形式，是从策略提升的视角出发得到梯度提升的目标，并对该目标进行推导，得到最终的最优策略形式，再带入最优策略形式，从而得到更新公式</li>
-</ul>
-</li>
-<li>也就是说，<strong>AWR</strong>、<strong>IQL</strong>和<strong>AWAC</strong>这三个方法的目标是为了<strong>策略提升量最大化</strong>，而<strong>策略梯度法</strong>的目标是为了原始目标最大化（梯度提升法）</li>
-</ul>
-<hr>
-<h3 id="附录：为什么IQL效果比AWR好？"><a href="#附录：为什么IQL效果比AWR好？" class="headerlink" title="附录：为什么IQL效果比AWR好？"></a>附录：为什么IQL效果比AWR好？</h3><ul>
-<li>IQL和AWR的Q值是不同策略的优势函数，IQL的优势函数是在\(\tau\)分位点期望动作策略分布上的Q和V，即\(A^{\pi^*}(s,a) = Q^{\pi^*}(s,a) - V^{\pi^*}(s)\)，而AWR的优势函数是真实的轨迹回报和V值\(A^{\pi_k}(s,a) = R_{s,a}^{\mathcal{D}} - V^{\pi_k}(s)\)</li>
-<li>IQL不是迭代训练，是先学好Q值（不依赖策略），再利用学好的Q值一次性提取策略</li>
-<li>标准的AWR是off-policy的，是一种迭代训练的流程，V值学习依赖策略与环境交互的轨迹数据，策略学习也依赖上一步的V值，V值，策略，轨迹三者是不断优化的</li>
-<li>如果把AWR直接用到Offline RL场景下，则不再与环境交互，AWR退化到学习一次V值，接着一次性学习策略；<ul>
-<li>Offline RL下学到的V值是行为策略对应的V值，不是最优的V值，但这本身应该没有问题</li>
-<li>基于统计的\(R_{s,a}^{\mathcal{D}}\)方差可能很大</li>
-</ul>
-</li>
-<li>使用公式\(L_\pi(\phi) = \mathbb{E}_{(s,a) \sim D} \left[ \exp(\beta (Q_{\theta’}(s, a) - V_\psi(s))) \log \pi_\phi(a|s) \right]\)来迭代策略时，Q值和V值应该使用什么样的才是最优的？<ul>
-<li>这个公式是从最大化策略提升项得到的，在推导策略提升时，这里使用的A值（对应到Q值和V值）是上一步策略对应的值\(A^\mu(s,a)\)，即旧策略\(\mu\)对应Q值和V值，而我们的目标是在\(\mu\)的基础上有所提升，得到优秀的新策略\(\pi\)，所以Q值和V值最好是优秀的策略对应的Q值和V值，否则可能我们的策略\(\pi\)在不好的策略上提升，结果也可能不是很优秀</li>
-</ul>
-</li>
-<li>补充问题：可以随便使用一个策略来评估优势函数吗？<ul>
-<li>回答是不可以，因为不同策略下，A值选择不同动作以后的值是不同的，显然学到的策略也不同，从推导看，必须使用上一步的才可以</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="附录：贝尔曼方程收敛性及-tau-的分析"><a href="#附录：贝尔曼方程收敛性及-tau-的分析" class="headerlink" title="附录：贝尔曼方程收敛性及\(\tau\)的分析"></a>附录：贝尔曼方程收敛性及\(\tau\)的分析</h3><ul>
-<li><p>关于参数\(\tau\)的一些分析，原始论文中关于\(\tau\)的分析如下：</p>
-<img src="/Notes/RL/RL——IQL/IQL-tau-Analysis.png" title height="80%" width="80%">
-<!-- <img src="/Notes/RL/RL——IQL/IQL-tau-Analysis.png"> -->
-</li>
-<li><p>当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</p>
-</li>
-<li><p>对于任意的\(\tau\)，Q值和V值迭代都会收敛，且Q值和V值会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)，Lamma1中最后两行就是两者的贝尔曼方程，其中\(\mathbb{E}_{a \sim \mu(\cdot|s)}^\tau\)表示\(\mu(\cdot|s)\)分布下的\(\tau\)期望分位值（或\(\tau\)阶期望分位数）。注意，我们在说分位数时，还需要说明是那个随机变量或者哪个分布的分位数，否则没有意义</p>
-</li>
-<li><p>为什么说Q值和V值迭代都会收敛到\(Q_{\tau}(s,a)\)和\(V_{\tau}(s)\)呢？</p>
-<ul>
-<li>理解：这里的\(\tau\)期望分位动作可以视作是一个策略，每次选择动作时，不选择最优动作，也不选择随机动作，而是选择\(\tau\)期望分位点动作，这样，可以得到跟论文中一样的结论：当\(\tau = 0.5\)，相当于是SARSA算法；当\(\tau \rightarrow 1\)，相当于是Q-Learning算法</li>
-<li>证明：定义一个策略如下：<br>$$\pi_\tau(s) = \mathop{\text{arg_expectile}^\tau}_a(Q(s,a))$$<br>该策略表示在状态\(s\)下，该策略会选择使得Q值等于\(Q(s,a)\)关于动作\(a\)的\(\tau\)期望分位点的动作，则期望分位动作策略对应的贝尔曼方程跟普通策略下的贝尔曼方程没有区别</li>
-<li>更详细的来说：<ul>
-<li>Q值：假定已经有了\(V_\tau(s’)\)，此时Q值的更新是学习当前状态\(s\)下，按照当前状态对应的\(\tau\)期望分位动作，以及后续策略也采用\(\tau\)期望分位动作得到的价值\(V_\tau(s’)\)来进行拟合的目标值（注意，这里跟其他贝尔曼方程一样，一旦动作决定了，\(r(s,a)\)就确定了，我们所说的期望分位动作就是对动作\(a\)的分布而言的，\(Q(s,a)\)的拟合只考虑\((s,a)\)状态动作对即可，不需要考虑期望分位动作）；</li>
-<li>V值：假定已经有了\(Q_{\tau}(s,a)\)，V值可以从\(Q_{\tau}(s,a)\)中学到\(V_\tau(s’)\)，这里需要使用\(Q_{\tau}(s,a)\)而不是\(Q_{\pi_\beta(s,a)}\)的原因是，V的本质是\(Q(s,a)\)关于动作\(a\)期望，但直接求期望只到了当前状态\(s\)这一层，如果使用\(Q_{\pi_\beta(s,a)}\)来学习那么学到的不是\(V_\tau(s’)\)（\(V_\tau(s’)\)是指后续的动作也是\(\tau\)期望分位动作来定义的，正如Q值和V值的常规贝尔曼方程一样）</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hadoop/Hadoop——hdfs+dfs和hadoop+fs的区别.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Hadoop/Hadoop——hdfs+dfs和hadoop+fs的区别.html" itemprop="url">Hadoop——hdfs+dfs和hadoop+fs的区别</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>在管理HDFS文件时，我们常用的命令有三个 <code>hadoop fs</code>，<code>hadoop dfs</code>和<code>hdfs dfs</code>【注意没有<code>hdfs fs</code>】</em><br><em>参考：<a href="https://blog.csdn.net/u013019431/article/details/78485555" target="_blank" rel="noopener">https://blog.csdn.net/u013019431/article/details/78485555</a></em></p>
-<hr>
-<h3 id="比较三种命令的区别"><a href="#比较三种命令的区别" class="headerlink" title="比较三种命令的区别"></a>比较三种命令的区别</h3><ul>
-<li><p>hadoop fs:</p>
-<ul>
-<li>FS relates to a generic file system which can point to any file systems like local, HDFS etc. So this can be used when you are dealing with different file systems such as Local FS, HFTP FS, S3 FS, and others</li>
-<li>意思是说该命令可以用于其他文件系统，不止是hdfs文件系统内，也就是说该命令的使用范围更广</li>
-</ul>
-</li>
-<li><p>hadoop dfs</p>
-<ul>
-<li>专门针对hdfs分布式文件系统</li>
-</ul>
-</li>
-<li><p>hdfs dfs</p>
-<ul>
-<li>和上面的命令作用相同，相比于上面的命令更为推荐，并且当使用hadoop dfs时内部会被转为hdfs dfs命令</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Java/Java——Logger变量命名规则.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Java/Java——Logger变量命名规则.html" itemprop="url">Java——Logger变量命名规则</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <hr>
-<h3 id="一般Java常量命名规范"><a href="#一般Java常量命名规范" class="headerlink" title="一般Java常量命名规范"></a>一般Java常量命名规范</h3><ul>
-<li>Java中的常量名称一般用全大写，比如美团，阿里等公司均有相关要求，详情参考<a href="/Backup/Backup/Java/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4Java%E5%BC%80%E5%8F%91%E6%89%8B%E5%86%8C.pdf">阿里巴巴Java开发手册.pdf</a></li>
-</ul>
-<hr>
-<h3 id="一个特殊的例子——Logger"><a href="#一个特殊的例子——Logger" class="headerlink" title="一个特殊的例子——Logger"></a>一个特殊的例子——Logger</h3><h4 id="特殊写法"><a href="#特殊写法" class="headerlink" title="特殊写法"></a>特殊写法</h4><ul>
-<li><p>Spring中Logger对象的名称使用的是小写</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">private static final Logger logger= LoggerFactory.getLogger(BeanFactory.class);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>其他很多公司或者开源工具的代码也跟着这样用，比如美团的RPC开源框架<code>mtthrift</code></p>
-</li>
-</ul>
-<h4 id="Logger对象使用final的原因"><a href="#Logger对象使用final的原因" class="headerlink" title="Logger对象使用final的原因"></a>Logger对象使用final的原因</h4><ul>
-<li>定义成static final,logger变量不可变，读取速度快</li>
-<li>static 修饰的变量是不管创建了new了多少个实例，也只创建一次，节省空间，如果每次都创建Logger的话比较浪费内存；final修饰表示不可更改，常量</li>
-<li>将域定义为static,每个类中只有一个这样的域。而每一个对象对于所有的实例域却都有自己的一份拷贝，用static修饰既节约空间，效率也好。final 是本 logger 不能再指向其他 Logger 对象</li>
-</ul>
-<h4 id="为什么不适用大写"><a href="#为什么不适用大写" class="headerlink" title="为什么不适用大写"></a>为什么不适用大写</h4><ul>
-<li>Spring开发者有自己的编程规范<ul>
-<li>常量引用不用大写？</li>
-<li><code>private</code>修饰的常量不用大写？</li>
-<li>Logger太特殊了，使用特殊定义，仅此一个，别无其他</li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——终端登录其他用户打开图形化窗口.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1673,7 +298,23 @@ $$ -->
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-06-13T00:00:00+08:00">
+                2020-06-13
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1767,7 +408,7 @@ $$ -->
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——AC、A2C和A3C.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——深刻认识URL.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1786,11 +427,27 @@ $$ -->
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——AC、A2C和A3C.html" itemprop="url">RL——AC、A2C和A3C</a></h1>
+                <a class="post-title-link" href="/Notes/Others/General——深刻认识URL.html" itemprop="url">General——深刻认识URL</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-03-06T00:00:00+08:00">
+                2020-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1822,99 +479,26 @@ $$ -->
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-
-<hr>
-<h3 id="策略梯度法的推导结论"><a href="#策略梯度法的推导结论" class="headerlink" title="策略梯度法的推导结论"></a>策略梯度法的推导结论</h3><ul>
-<li>策略梯度法推导结论是<br>  $$<br>  \begin{align}<br>  \nabla_\theta J(\theta) &amp;= \mathbb{E}_{\tau \sim p_\theta(\tau)} [R(\tau) \nabla_\theta \log p_\theta(\tau)] \\<br>  &amp; = \mathbb{E}_{\tau \sim p_\theta(\tau)} \left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) R(\tau)  \right] \\<br>  &amp; = \mathbb{E}_{\tau \sim p_\theta(\tau)} \left[\sum_t \psi_t \nabla_\theta \log \pi_\theta(a_t|s_t) \right] \\<br>  \end{align}<br>  $$<ul>
-<li>推导详情见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
-<li>\(\psi_t\)来替换\(R(\tau)\)的理由是可以考虑用一个与时间相关的变量来替换与时间无关的累计收益</li>
+            <p><em>你真的认识URL了吗？</em></p>
+<h3 id="URL中的-字符"><a href="#URL中的-字符" class="headerlink" title="URL中的#字符"></a>URL中的<code>#</code>字符</h3><ul>
+<li><code>#</code>在URL中与服务器无关，也就是说正常访问服务器的URL不包含<code>#</code></li>
+<li><code>#</code>仅仅与本地浏览器对网页的定位相关</li>
+<li><code>#</code>由于不影响对远程服务器的访问，自然也不会存在于软件包的下载连接中</li>
 </ul>
+<h3 id="URL的正则表达式"><a href="#URL的正则表达式" class="headerlink" title="URL的正则表达式"></a>URL的正则表达式</h3><p><em>参考博客：<a href="https://blog.csdn.net/qq_25384945/article/details/81219075" target="_blank" rel="noopener">https://blog.csdn.net/qq_25384945/article/details/81219075</a></em></p>
+<ul>
+<li><p>Python</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+</span><br></pre></td></tr></table></figure>
 </li>
-<li>进一步地，其中的\(\psi_t\)可以换成不同的形式，包括：<ul>
-<li>\(\sum_{t’=0}^T \gamma^t r_{t’}\)：完成的轨迹收益</li>
-<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)：从第\(t\)步开始的轨迹收益，理由是策略主要影响的是\(t\)步开始收益，对前面步骤的收益影响不大</li>
-<li>\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’} - b(s_t)\)：进一步降低方差，详细证明见<a href="/Notes/RL/RL%E2%80%94%E2%80%94%E7%AD%96%E7%95%A5%E6%A2%AF%E5%BA%A6%E6%B3%95.html">RL——策略梯度法</a></li>
-<li>\(Q^{\pi_\theta}(s_t,a_t)\)：动作价值函数，是\(\sum_{t’=t}^T \gamma^{t’-t} r_{t’}\)的估计值</li>
-<li>\(A^{\pi_\theta}(s_t,a_t)\)：优势函数，仅考虑当前状态\(s_t\)下不同动作带来的收益，忽略状态本身的价值</li>
-<li>\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)：V值的TD-Error形式，即贝尔曼残差，本质等价于优势函数</li>
-</ul>
+<li><p>JavaScript</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/((([A-Za-z]&#123;3,9&#125;:(?:\/\/)?)(?:[\-;:&amp;=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&amp;=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&amp;;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/</span><br></pre></td></tr></table></figure>
 </li>
-<li>问题：将\(\psi_t\)换成\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)可以吗？<ul>
-<li>答案是不可以。理由是\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数\(A(s,a)\)，也不是\(Q(s,a)\)没有别的含义，只有Q值自身更新时的TD-Error</li>
-<li>证明：如果\(a_{t+1} \sim \pi_\theta\)，则\(Q^{\pi_\theta}(s_{t+1}, a_{t+1}) = V^{\pi_\theta}(s_{t+1})\)；但是因为\(Q^{\pi_\theta}(s_{t}, a_t) \neq V^{\pi_\theta}(s_{t})\)（因为\(a_t\)是已经发生的事实），故而\( r_t + \gamma Q^{\pi_\theta}(s_{t+1}, a_{t+1}) - Q^{\pi_\theta}(s_{t}, a_t) \)本身不是优势函数，也能等价于优势函数</li>
-<li>改进：如果非要用Q值来作为Actor Critic的价值网络，则需要求解策略\(\pi_{\theta^*} = \mathop{\arg\max}_{\pi_\theta} \mathbb{E}_{a_t \sim \pi_\theta(\cdot|s_t)} [Q(s_t, a_t)]\)，比如DDPG就是如此</li>
-</ul>
+<li><p>Java</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">^(https?|ftp|file)://[-a-zA-Z0-9+&amp;@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&amp;@#/%=~_|]</span><br></pre></td></tr></table></figure>
 </li>
-</ul>
-<hr>
-<h3 id="AC算法"><a href="#AC算法" class="headerlink" title="AC算法"></a>AC算法</h3><ul>
-<li>普通AC（Actor Critic）算法一般是直接使用\(Q(s_t,a_t)\)来替换\(\psi_t\)</li>
-</ul>
-<h4 id="Critic网络的更新"><a href="#Critic网络的更新" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma Q^{\bar{w}}(s_{t+1}, a_{t+1}) - Q^{w}(s_{t}, a_t)) ^ 2<br>$$ </p>
-<ul>
-<li>这里要求\(a_{t+1} \sim \pi_\theta\)，\(Q^{w}\)值拟合的目标是策略\(\pi_\theta\)对应的Q值\(Q^{\pi_\theta}(s_{t}, a_t)\)</li>
-</ul>
-<h4 id="Actor网络的更新"><a href="#Actor网络的更新" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum Q^{w}(s_{t}, a_t) \log \pi_\theta(a_t|s_t) \\<br>Q^{w}(s_{t}, a_t) &amp;= \text{Stop_Gradient}(Q^{w}(s_{t}, a_t))<br>\end{align}<br>$$</p>
-<ul>
-<li>这里面的\(Q^{w}(s_{t}, a_t)\)是不参与Actor参数的更新的</li>
-<li>\(a_t \sim \pi_\theta(\cdot|s_t)\)</li>
-</ul>
-<h4 id="AC算法的问题"><a href="#AC算法的问题" class="headerlink" title="AC算法的问题"></a>AC算法的问题</h4><ul>
-<li>AC算法虽然是直接优化策略的，但是由于它是on-policy的，样本利用率很低，导致训练缓慢</li>
-</ul>
-<hr>
-<h3 id="A2C算法"><a href="#A2C算法" class="headerlink" title="A2C算法"></a>A2C算法</h3><ul>
-<li>A2C（Advantage Actor Critic）算法是使用\( r_t + \gamma V^{\pi_\theta}(s_{t+1}) - V^{\pi_\theta}(s_{t}) \)来替换\(\psi_t\)的方法</li>
-<li>很多书籍里面会直接使用A2C算法</li>
-</ul>
-<h4 id="Critic网络的更新-1"><a href="#Critic网络的更新-1" class="headerlink" title="Critic网络的更新"></a>Critic网络的更新</h4><p>$$<br>Loss_{\text{critic}} = \sum (r_t + \gamma V^{\bar{w}}(s_{t+1}) - V^{w}(s_{t})) ^ 2<br>$$ </p>
-<ul>
-<li>这里V值拟合的目标是策略\(\pi_\theta\)对应的V值\(V^{\pi_\theta}\)</li>
-</ul>
-<h4 id="Actor网络的更新-1"><a href="#Actor网络的更新-1" class="headerlink" title="Actor网络的更新"></a>Actor网络的更新</h4><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum \delta \log \pi_\theta(a_t|s_t) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
-<ul>
-<li>这里面的\(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t})\)是不参与Actor参数的更新的</li>
-</ul>
-<h4 id="A2C算法的问题"><a href="#A2C算法的问题" class="headerlink" title="A2C算法的问题"></a>A2C算法的问题</h4><ul>
-<li>A2C算法是同步更新的，需要每个Worker都收集完成数据才能执行一次更新，很多时候数据交互完成的时间是很不一致的，训练也较慢</li>
-</ul>
-<hr>
-<h3 id="A3C算法"><a href="#A3C算法" class="headerlink" title="A3C算法"></a>A3C算法</h3><ul>
-<li>A3C（Asynchronous Advantage Actor Critic），是Actor Critic方法的异步版本</li>
-</ul>
-<h4 id="A3C的主要优化点"><a href="#A3C的主要优化点" class="headerlink" title="A3C的主要优化点"></a>A3C的主要优化点</h4><h5 id="异步训练框架优化："><a href="#异步训练框架优化：" class="headerlink" title="异步训练框架优化："></a>异步训练框架优化：</h5><ul>
-<li>一个全局网络（包括V网络和Actor网络）和多个相互独立的Local网络（即Worker）</li>
-<li>训练时：使用多个Worker并行的和环境分别交互，各自收集数据、计算梯度、异步更新全局网络参数</li>
-<li>inference时：仅适用全局网络中的Actor网络就可以</li>
-</ul>
-<h5 id="策略更新损失增加熵"><a href="#策略更新损失增加熵" class="headerlink" title="策略更新损失增加熵"></a>策略更新损失增加熵</h5><p>$$<br>\begin{align}<br>Loss_{\text{actor}} &amp;= \sum \delta \log \pi_\theta(a_t|s_t) + c H(\pi_\theta(a|s)) \\<br>\delta &amp;= \text{Stop_Gradient}(r_t + \gamma V^{w}(s_{t+1}) - V^{w}(s_{t}))<br>\end{align}<br>$$</p>
-<ul>
-<li>增加熵相当于是一种正则，与SAC思想相似</li>
-</ul>
-<hr>
-<h3 id="AC-A2C-A3C的区别"><a href="#AC-A2C-A3C的区别" class="headerlink" title="AC/A2C/A3C的区别"></a>AC/A2C/A3C的区别</h3><ul>
-<li>AC（Actor-Critic）、A2C（Advantage Actor-Critic）和A3C（Asynchronous Advantage Actor-Critic）三者可以从名字上看出来算法的区别</li>
-</ul>
-<h4 id="AC（Actor-Critic）"><a href="#AC（Actor-Critic）" class="headerlink" title="AC（Actor-Critic）"></a>AC（Actor-Critic）</h4><ul>
-<li>Actor-Critic 方法结合了值函数方法和策略梯度方法的优点。它由两部分组成：一个称为“actor”的网络负责学习采取什么行动；另一个称为“critic”的网络评估采取的动作的好坏，即这个动作的价值</li>
-</ul>
-<h4 id="A2C（Advantage-Actor-Critic）"><a href="#A2C（Advantage-Actor-Critic）" class="headerlink" title="A2C（Advantage Actor-Critic）"></a>A2C（Advantage Actor-Critic）</h4><ul>
-<li><strong>关键词：Advantage</strong></li>
-<li>A2C 是 Actor-Critic 方法的一个变种，它引入了优势函数（advantage function）的概念来代替直接使用价值函数</li>
-<li>优势函数 (A(s, a)) 定义为执行特定动作相对于遵循当前策略下的平均行为所能获得的优势或劣势。这种方法有助于更准确地估计哪些动作比其他动作更好，从而提高学习效率</li>
-</ul>
-<ul>
-<li><strong>更新方式</strong>：A2C 使用同步的方式更新参数，可以考虑使用多个网Actor分别于环境进行交互，然后共同的样本一起<strong>同步更新主网络</strong>，这意味着所有代理（agents）共享同一个模型，并且在每个训练步骤结束时同步更新模型权重</li>
-</ul>
-<h4 id="A3C（Asynchronous-Advantage-Actor-Critic）"><a href="#A3C（Asynchronous-Advantage-Actor-Critic）" class="headerlink" title="A3C（Asynchronous Advantage Actor-Critic）"></a>A3C（Asynchronous Advantage Actor-Critic）</h4><ul>
-<li><strong>关键词：Asynchronous</strong></li>
-<li>A3C 是 A2C 的异步版本，它允许多个代理同时在不同的环境中学习</li>
-<li><strong>更新方式</strong>：每个代理都有自己的环境副本和局部模型副本，它们独立地探索环境并收集经验。然后，这些经验被用来异步地更新全局模型，这样可以增加数据多样性并加快学习速度</li>
-<li><strong>优点</strong>：通过异步更新，A3C 可以有效利用多核处理器的能力，实现更快的学习速度和更好的性能</li>
+<li><p>Python</p>
+<pre><code></code></pre>
+</li>
 </ul>
 
           
@@ -1964,7 +548,7 @@ $$ -->
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RL/RL——Decision-Diffuser.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——挖矿病毒kdevtmpfsi查杀经历.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1983,11 +567,27 @@ $$ -->
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/RL/RL——Decision-Diffuser.html" itemprop="url">RL——Decision-Diffuser</a></h1>
+                <a class="post-title-link" href="/Notes/Linux/Centos——挖矿病毒kdevtmpfsi查杀经历.html" itemprop="url">Centos——挖矿病毒kdevtmpfsi查杀经历</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-01-08T00:00:00+08:00">
+                2020-01-08
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -2019,17 +619,1525 @@ $$ -->
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <hr>
+<h3 id="挖矿病毒kdevtmpfsi查杀经历"><a href="#挖矿病毒kdevtmpfsi查杀经历" class="headerlink" title="挖矿病毒kdevtmpfsi查杀经历"></a>挖矿病毒kdevtmpfsi查杀经历</h3><h4 id="问题简介"><a href="#问题简介" class="headerlink" title="问题简介"></a>问题简介</h4><ul>
+<li>服务器: 阿里云主机服务器</li>
+<li>系统: Centos7</li>
+<li>表现: kdevtmpfsi进程占用400%(8核心处理器)CPU</li>
+<li>时间: 2020-01-07报警, 2020-01-08处理</li>
+</ul>
+<h4 id="查杀经过"><a href="#查杀经过" class="headerlink" title="查杀经过"></a>查杀经过</h4><ul>
+<li><p>使用<code>clamscan</code>命令搜索所有文件, clamav详情见我之前的博客<a href="/Notes/Linux/Centos%E2%80%94%E2%80%94clamav%E5%AE%89%E8%A3%85%E4%B8%8E%E6%9D%80%E6%AF%92.html">clamav安装与杀毒</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup clamscan / -r --infected -l clamscan.log &gt; clamscan.out &amp;</span><br></pre></td></tr></table></figure>
 
-<p><em>Decision-Diffuser</em></p>
 <ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://arxiv.org/pdf/2211.15657" target="_blank" rel="noopener">Is Conditional Generative Modeling all you need for Decision-Making?</a>  </li>
-<li>源码：</li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/659867627" target="_blank" rel="noopener">Diffusion Model + RL 系列技术科普博客（2）：Decision Diffuser - DILab决策实验室的文章 - 知乎</a> </li>
+<li>这一步比较花时间</li>
 </ul>
 </li>
+<li><p>查看扫描结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat clamscan.log | grep FOUND</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<blockquote>
+<p>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/merged/tmp/kdevtmpfsi: Multios.Coinminer.Miner-6781728-2 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/merged/tmp/red2.so: Unix.Trojan.Gafgyt-6981174-0 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/upper/tmp/kdevtmpfsi: Multios.Coinminer.Miner-6781728-2 FOUND<br>/var/lib/docker/overlay/bdd049c71596d743907224a8dd6fdb3fb4ca76e3af8dfd6eee2d034de2be45a1/upper/tmp/red2.so: Unix.Trojan.Gafgyt-6981174-0 FOUND</p>
+</blockquote>
+<ul>
+<li><p>删除这四个文件,这里直接到相关目录下查看发现<code>../tmp</code>目录下往往都是病毒文件(与<code>kinsing</code>相关,全部删除)</p>
+</li>
+<li><p><code>top</code>查看CPU信息确定挖矿进程kdevtmpfsi的进程号[pid]</p>
+</li>
+<li><p>确定启动信息中启动命令,并删除(在这里查到的信息是文件已经被删除了)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls /proc/[pid] -ali</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查找父进程进程号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status [pid]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<blockquote>
+<p>● docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope - libcontainer container be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161<br>   Loaded: loaded (/run/systemd/system/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope; static; vendor preset: disabled)<br>  Drop-In: /run/systemd/system/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope.d<br>           └─50-BlockIOAccounting.conf, 50-CPUAccounting.conf, 50-DefaultDependencies.conf, 50-Delegate.conf, 50-Description.conf, 50-MemoryAccounting.conf, 50-Slice.conf<br>   Active: active (running) since Mon 2019-11-11 11:24:17 UTC; 1 months 27 days ago<br>    Tasks: 38<br>   Memory: 2.3G<br>   CGroup: /system.slice/docker-be9fcab033e6158f8ff7d6ac07d28cfd918375178c27e016aa800cbeef985161.scope<br>           ├─ 4475 redis-server *:6379<br>           ├─ 8528 sh -c /tmp/.ICEd-unix/vJhOU<br>           ├─ 8529 /tmp/.ICEd-unix/vJhOU<br>           └─22822 /tmp/kdevtmpfsi</p>
+</blockquote>
+<p>Warning: Journal has been rotated since unit was started. Log output is incomplete or unavailable.</p>
+<ul>
+<li><p>杀死不需要的相关进程,如上面的<code>4475</code>,<code>8528</code>, <code>8529</code>, <code>22822</code></p>
+</li>
+<li><p>查看是否还有需要杀死的进程,如果有,则杀死该进程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep kinsing</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>top</code>确定挖矿进程已经被杀死</p>
+</li>
+</ul>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>查杀病毒两个小时未发现服务器有明显异常</li>
+<li>第二天出现了,需要进一步查看,重启机器后问题没有再出现</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——WideAndDeep.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——WideAndDeep.html" itemprop="url">CA——WideAndDeep</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-28T00:00:00+08:00">
+                2019-12-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>一般来说，模型最重要的是 Memorization 和 Generalization <ul>
+<li>Memorization: 可以不精确地定义为学习 items 或者特征的频繁共现，并且从历史数据里面开发(exploiting)</li>
+<li>Generalization: 基于相关性的传递性(transitivity of correlation), 探索发现一些新的特征组合(从我出现或很少出现的组合)</li>
+</ul>
+</li>
+</ul>
+<h3 id="Wide"><a href="#Wide" class="headerlink" title="Wide"></a>Wide</h3><ul>
+<li>注重记忆能力</li>
+<li>手动特征交叉组合(实现低阶的特征组合)</li>
+</ul>
+<h3 id="Deep"><a href="#Deep" class="headerlink" title="Deep"></a>Deep</h3><ul>
+<li>泛化能力</li>
+<li>高阶特征</li>
+<li>低维稠密embedding</li>
+</ul>
+<h3 id="Wide-and-Deep"><a href="#Wide-and-Deep" class="headerlink" title="Wide and Deep"></a>Wide and Deep</h3><ul>
+<li>结合了Wide和Deep两个模型</li>
+<li>不是模型的集成(Ensemble)，这里称为联合训练(Joint Training)<ul>
+<li>集成的两个模型是分开独立训练的，然后预测的时候合并了两个模型的预测</li>
+<li>联合训练是两个模型同时训练，训练时是加权相加的，每次训练时损失是一起传递</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction.html" itemprop="url">CA——Google-Ad-Click-Prediction</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-23T00:00:00+08:00">
+                2019-12-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考文献：<a href="https://dl.acm.org/doi/pdf/10.1145/2487575.2488200?download=true" target="_blank" rel="noopener">Google KDD 2013，Ad Click Prediction: a View from the Trenches</a>(引用量500+)</li>
+<li>介绍了截止到2013年之前的点击率预估常用算法</li>
+<li>在线优化算法的发展历程：SGD-&gt;TG-&gt;FOBOS-&gt;RDA-&gt;FTRL-Proximal<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+</li>
+</ul>
+<h3 id="核心贡献"><a href="#核心贡献" class="headerlink" title="核心贡献"></a>核心贡献</h3><ul>
+<li>基于传统的逻辑回归算法(Regularized Logistic Regression，正则化的逻辑回归)在点击率预估时的不足，提出一种<strong>在线逻辑回归</strong>算法，FTRL(Follow The Regularized Leader)</li>
+<li>per-coordinate learning rate</li>
+</ul>
+<h3 id="一些模型的比较和介绍"><a href="#一些模型的比较和介绍" class="headerlink" title="一些模型的比较和介绍"></a>一些模型的比较和介绍</h3><ul>
+<li>传统逻辑回归算法中使用OGD(Online Gradient Descent)是非常高效的，使用很小的计算资源就能得到较好的精确度.</li>
+<li>但是OGD在生成系数模型方面表现不好(OGD + L1)</li>
+<li>其他在稀疏性方面表现良好的方法有FOBOS, 截断梯度（Truncated Gradient）和 RDA（Regularized Dual Averaging)<ul>
+<li>RDA在精确度和稀疏性方面做tradeoff， 效果好于FOBOS</li>
+</ul>
+</li>
+<li>FTRL-Proximal号称可以同时获得RDA的稀疏性和OGD的精确度</li>
+<li>RDA模型是微软提出的一种在线优化算法，与OGD完全不同，能得到更加稀疏的模型，但是精确度不如OGD</li>
+</ul>
+<h3 id="FTRL-Proximal-Learning-Online-Learning-And-Sparsity"><a href="#FTRL-Proximal-Learning-Online-Learning-And-Sparsity" class="headerlink" title="FTRL-Proximal Learning (Online Learning And Sparsity)"></a>FTRL-Proximal Learning (Online Learning And Sparsity)</h3><ul>
+<li>也是通过L1正则化控制模型的稀疏度</li>
+</ul>
+<h4 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h4><h5 id="FTL-Follow-The-Leader-的介绍"><a href="#FTL-Follow-The-Leader-的介绍" class="headerlink" title="FTL(Follow The Leader)的介绍"></a>FTL(Follow The Leader)的介绍</h5><h5 id="OGD的更新方式"><a href="#OGD的更新方式" class="headerlink" title="OGD的更新方式"></a>OGD的更新方式</h5><ul>
+<li>更新规则：<br>$$<br>\begin{align}<br>\mathbf{w}_{t+1} &amp;= \mathbf{w}_t-\eta_t\mathbf{g}_t<br>\end{align}<br>$$</li>
+</ul>
+<h5 id="FTLR-Follow-The-Regularized-Leader"><a href="#FTLR-Follow-The-Regularized-Leader" class="headerlink" title="FTLR(Follow The Regularized Leader)"></a>FTLR(Follow The Regularized Leader)</h5><p><em>加上正则项的FTL</em></p>
+<ul>
+<li>更新规则：<br>$$<br>\begin{align}<br>\mathbf{w}_{t+1} &amp;= \arg\min_{\mathbf{w}}\left ( \mathbf{g}_{1:t}\cdot \mathbf{w} + \frac{1}{2}\sum_{s=1}^t \sigma_s || \mathbf{w} - \mathbf{w}_s||_2^2 + \lambda_1||\mathbf{w}||_1 \right ) \\<br>\mathbf{g}_{1:t} &amp;= \sum_{i=1}^t\mathbf{g}_i<br>\end{align}<br>$$<ul>
+<li>第一项是对损失函数梯度的贡献的一个估计</li>
+<li>第二项是控制参数\(\mathbf{w}\)在每次迭代中变化不要太大</li>
+<li>第三项是L1正则化，用于使模型变得稀疏</li>
+<li>\(\sigma_s\)是学习速率</li>
+<li>这个学习速率可以用Per-Coordinate Learning Rate:<br>$$<br>\begin{align}<br>\eta_{t, i} &amp;= \frac{\alpha}{\beta + \sqrt{\sum_{s=1}^t g_{s,i}^2}} \\<br>\mathbf{g}_s &amp;= \nabla l_s(\mathbf{w})<br>\end{align}<br>$$</li>
+</ul>
+</li>
+</ul>
+<h3 id="Per-Coordinate-Learning-Rates"><a href="#Per-Coordinate-Learning-Rates" class="headerlink" title="Per-Coordinate Learning Rates"></a>Per-Coordinate Learning Rates</h3><ul>
+<li>对参数的每一维度分开训练，每个维度有自己的学习率</li>
+<li>某个特征出现的次数越多，说明当前该特征对应的参数值越可信，学习率就应该越小</li>
+<li>考虑了数据在每个特征上的分布不均匀性<ul>
+<li>参数某个维度上的样本数越少，这些样本就会得到越大的利用(具体表现就是该特征的学习率会比较大)</li>
+</ul>
+</li>
+</ul>
+<h3 id="一个思考"><a href="#一个思考" class="headerlink" title="一个思考"></a>一个思考</h3><ul>
+<li>问题：为什么机器学习中的学习率都是越来越小？</li>
+<li>答案：因为刚开始训练时，参数的值不太可信（也就是说最终参数与当前参数的置信度比较低），所以更新时应该更新的步骤大一些，让当前的参数变化大一些，训练到后来，随着参数的值越来越可信（当前参数的置信度比较高），更新的步骤就应该小一些，让当前的变化小一些</li>
+</ul>
+<h3 id="一些工程上的Trick"><a href="#一些工程上的Trick" class="headerlink" title="一些工程上的Trick"></a>一些工程上的Trick</h3><h4 id="Saving-Memory-at-Massive-Scale"><a href="#Saving-Memory-at-Massive-Scale" class="headerlink" title="Saving Memory at Massive Scale"></a>Saving Memory at Massive Scale</h4><h5 id="Probabilistic-Feature-Inclusion"><a href="#Probabilistic-Feature-Inclusion" class="headerlink" title="Probabilistic Feature Inclusion"></a>Probabilistic Feature Inclusion</h5><ul>
+<li>在高维数据中，大量的特征是出现频率非常低的(rare)，半数的唯一特征甚至只出现一次</li>
+<li>统计这些特征的代价是非常昂贵的，有些特征可能永远不会被实际使用(这里如何理解昂贵？也就是说训练了也没用？)</li>
+<li>额外的读写数据是昂贵的，如果能丢弃一部分出现评论特别低的特征(比如出现频率低于k次)</li>
+<li>实现稀疏可以使用L1正则化，也可以使用Probabilistic Feature Inclusion</li>
+<li>关于Probabilistic Feature Inclusion的做法<ul>
+<li>当一个特征第一次出现时，以一定的概率接受这个新特征</li>
+<li>效果作用于数据预处理阶段，但是可以在在线执行中设置</li>
+</ul>
+</li>
+</ul>
+<h6 id="Possion-Inclusion"><a href="#Possion-Inclusion" class="headerlink" title="Possion Inclusion"></a>Possion Inclusion</h6><ul>
+<li>对于新的特征，以概率p添加入模型</li>
+<li>对于已经存在模型中的特征，正常更新其系数</li>
+</ul>
+<h6 id="Bloom-Filter-Inclusion"><a href="#Bloom-Filter-Inclusion" class="headerlink" title="Bloom Filter Inclusion"></a>Bloom Filter Inclusion</h6><ul>
+<li>用布隆过滤器仅仅保留出现次数在n次以上的特征</li>
+</ul>
+<img src="/Notes/ComputationalAdvertising/CA——Google-Ad-Click-Prediction/inclusion_methods.png">
+
+<h5 id="Encoding-Values-with-Fewer-Bits"><a href="#Encoding-Values-with-Fewer-Bits" class="headerlink" title="Encoding Values with Fewer Bits"></a>Encoding Values with Fewer Bits</h5><ul>
+<li>常用的OGD使用32或者64位浮点数编码来存储模型的系数</li>
+<li>Google提出可以使用16位浮点数来存储系数，同时加上一些策略</li>
+<li>实验结果：将64位的浮点值换为为系数存储节省了75%的RAM内存空间(这还用实验？直接计算就得到了啊)</li>
+</ul>
+<h5 id="Training-Many-Similar-Models"><a href="#Training-Many-Similar-Models" class="headerlink" title="Training Many Similar Models"></a>Training Many Similar Models</h5><ul>
+<li>同时训练多个模型是超参数选择常用的方法</li>
+<li>将可以共享的东西共享</li>
+<li>在节省内存的同时，还可以节约网络带宽(存储一份Per-coordinate学习率，节省内存和带宽等)，CPU(用同一个hash表检索特征，节省CPU)和硬盘空间</li>
+</ul>
+<h5 id="A-Single-Value-Structure"><a href="#A-Single-Value-Structure" class="headerlink" title="A Single Value Structure"></a>A Single Value Structure</h5><ul>
+<li>有时候我们希望评估大量的模型在只有少量的特征组(groups of features)添加或者删除时的变化</li>
+<li>对于每一维度(coordinate),仅仅存储一个系数值而不是多个(正常应该为每个模型存储一个)</li>
+<li>存储该维度对应特征组的模型共享该系数</li>
+<li>对每个特征，训练时每个模型都会计算自己的值，然后所有模型的取平均作为所有包含该维度特征模型的共享</li>
+</ul>
+<h5 id="Computing-Learning-Rates-with-Counts"><a href="#Computing-Learning-Rates-with-Counts" class="headerlink" title="Computing Learning Rates with Counts"></a>Computing Learning Rates with Counts</h5><ul>
+<li>对于每个特征来说，<strong>梯度和</strong>以及<strong>梯度平方和</strong>是必须计算的</li>
+<li>梯度的计算必须准确，但是计算学习率却是可以粗糙计算的</li>
+<li>仅仅统计样本出现次数(Counts)就能大概计算学习率</li>
+</ul>
+<h6 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h6><ul>
+<li>假设包含一个给定特征的所有事件(events)具有有相同的概率(一般来说，这个近似是不可能的，但是在这个目标里面是可行的)<ul>
+<li>如何理解这个假设的意义呢？<strong>对于具有某个特征的所有样本，其取值为(正负例)是的概率是相等的，正例(click)概率都为\(p\)</strong></li>
+</ul>
+</li>
+<li>进一步假设模型已经精确地学习到了概率</li>
+<li>如果有分别有\(P，N\)个正负样本(events),则有\(p=\frac{P}{N+P}\)</li>
+<li>则有对于逻辑回归(\(p(1-p)\))来说，正例的梯度为\(p-1\),负例的梯度为\(p\)<br>$$<br>\begin{align}<br>\sum g_{t,i}^2 &amp;= \sum_{positive \ events}(1-p_t)^2 + \sum_{negative \ events}p_t^2 \\<br>&amp;\approx P(1-\frac{P}{N+P})^2 + N(\frac{P}{N+P})^2 \\<br>&amp;= \frac{PN}{N+P}<br>\end{align}<br>$$</li>
+<li>也就是说，为了近似计算\(\sum g_{t,i}^2\)，我们仅需要记录\(P，N\)即可</li>
+</ul>
+<h5 id="Subsampling-Traning-Data"><a href="#Subsampling-Traning-Data" class="headerlink" title="Subsampling Traning Data"></a>Subsampling Traning Data</h5><ul>
+<li>典型的CTRs是远远低于50%，数据偏差很大，正例(点击)的样本很稀疏</li>
+<li>在模型训练中正例样本相对而言更有价值</li>
+<li>使用下采样：很大程度上降低数据量，同时保证对精度最小程度的影响</li>
+</ul>
+<h6 id="采样方法："><a href="#采样方法：" class="headerlink" title="采样方法："></a>采样方法：</h6><ul>
+<li>保留所有至少被点击过一次的请求(Query，也就是样本)</li>
+<li>以一定比例\(r\in(0, 1]\)采样没有被点击过的请求</li>
+<li>因为包含通用的特征(Feature Phase)计算，所以这种方法是合理的，但是需要纠偏(直接用采样后的样本训练会造成预测偏差)</li>
+<li>加入一个重要性权重\(w_t\)<ul>
+<li>\(w_t = 1\) for clicked queries</li>
+<li>\(w_t = \frac{1}{r}\) for queries with no clicks</li>
+<li>本质上可以理解为这里是将采样时造成的负例比例偏差补齐</li>
+</ul>
+</li>
+</ul>
+<h3 id="模型性能评估"><a href="#模型性能评估" class="headerlink" title="模型性能评估"></a>模型性能评估</h3><h4 id="Progressive-Validation"><a href="#Progressive-Validation" class="headerlink" title="Progressive Validation"></a>Progressive Validation</h4><ul>
+<li>Progressive验证又称为在线损失(online loss)</li>
+<li>与交叉验证(cross-validation)或留出法(hold out)验证是不同的</li>
+<li>在服务查询中，在线损失能很好的代表我们的精度，因为在训练模型前，它仅仅在最新数据上评估其性能(因为这准确的模拟了当模型进行服务查询时发生了什么)</li>
+<li>由于用了100%的数据作为训练和测试，在线损失比留出法验证有更好的统计数据</li>
+<li>绝对指标往往会带来误导<ul>
+<li>即使预测是完美的，对数损失和其他指标的差异也依赖着问题的困难程度</li>
+<li>不同的国家，不同请求的点击率不同(同为对数损失的最佳实践，50%的点击率会好于2%的点击率)</li>
+</ul>
+</li>
+<li>所以使用相对变化，看指标相对于base line改变了多少</li>
+<li>从经验来看，相对指标在整个时间段内都很稳定</li>
+<li>相同的指标计算应该对应在完全相同的数据(比如不同时段的损失比较是没有意义的)</li>
+</ul>
+<h3 id="置信度评估-Confidence-Estimates"><a href="#置信度评估-Confidence-Estimates" class="headerlink" title="置信度评估(Confidence Estimates)"></a>置信度评估(Confidence Estimates)</h3><ul>
+<li>对很多应用来说，除了评估广告的CTR，还要量化预测的期望精确度(the expected accuracy of the prediction)</li>
+</ul>
+<h3 id="校正预测-Calibrating-Predictions"><a href="#校正预测-Calibrating-Predictions" class="headerlink" title="校正预测(Calibrating Predictions)"></a>校正预测(Calibrating Predictions)</h3><ul>
+<li>系统偏差(Systematic Bias)指平均预测CTR(Average Predicted CTR)和观测CTR(Observed CTR)的差异</li>
+<li>造成系统偏差的原因包括：<ul>
+<li>不精确的模型假设</li>
+<li>学习算法的缺陷</li>
+<li>在训练或者服务(预测)时不可用的隐藏特征</li>
+</ul>
+</li>
+<li>解决方案：<ul>
+<li>添加一个校正层将预测CTRs与观测CTR做匹配(match predicted CTRSs to observed click-through rates)</li>
+<li>暂时不能提供有效的保证，保证校正影响的有效</li>
+<li>校正的本质是找到(拟合)一个函数映射\(g\),使得模型输出值与真实概率值一一对应</li>
+<li>逻辑回归中的sigmoid函数可以看做是一个校正预测的函数吗？</li>
+</ul>
+</li>
+<li>更多参考<ul>
+<li><a href="https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">风险模型 - 概率校准</a></li>
+<li><a href="https://www.cnblogs.com/lc1217/p/7069000.html" target="_blank" rel="noopener">机器学习：概率校准</a>, 文中有代码示例</li>
+<li><a href="https://blog.csdn.net/fjsd155/article/details/84382838?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">概率校准 Probability Calibration</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="一些说明"><a href="#一些说明" class="headerlink" title="一些说明"></a>一些说明</h4><p><em>参考博客：<a href="https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">https://blog.csdn.net/fzcoolbaby/article/details/99174601?utm_source=distribute.pc_relevant.none-task</a></em></p>
+<ul>
+<li>概率模型的搭建过程中，由于抽样与正则化等原因，导致模型的输出概率值明显偏离真实概率值<ul>
+<li>[待更新：为什么抽样和正则化会影响模型的输出概率发生变化？]</li>
+</ul>
+</li>
+<li>此时的模型输出概率值仅仅有排序的意义，其绝对值没有意义(定序值，而非定距数值)</li>
+<li>校正预测的过程就是把模型输出概率值的校正成真实的概率的过程，使得校正后的概率有绝对值意义</li>
+</ul>
+<h3 id="自动特征管理-Automated-Feature-Management"><a href="#自动特征管理-Automated-Feature-Management" class="headerlink" title="自动特征管理(Automated Feature Management)"></a>自动特征管理(Automated Feature Management)</h3><ul>
+<li>将特征空间描绘成上下文和语义信号，每个信号都可以被翻译成一个在学习时有真实值的特征集合</li>
+<li>[待更新]</li>
+</ul>
+<h3 id="一些不成功的实验记录-Unsuccessful-Experiments"><a href="#一些不成功的实验记录-Unsuccessful-Experiments" class="headerlink" title="一些不成功的实验记录(Unsuccessful Experiments)"></a>一些不成功的实验记录(Unsuccessful Experiments)</h3><p><em>本节记录google的一些失败的尝试方向(有些可能会让人很惊讶)，这些方向模型没有明显收益</em></p>
+<h4 id="Aggressive-Feature-Hashing"><a href="#Aggressive-Feature-Hashing" class="headerlink" title="Aggressive Feature Hashing"></a>Aggressive Feature Hashing</h4><p><em>关于特征哈希(Feature Hashing)的相关知识可参考<a href="/Notes/ComputationalAdvertising/CA%E2%80%94%E2%80%94Feature-Hashing.html">Feature-Hashing</a></em></p>
+<ul>
+<li><a href="http://alex.smola.org/papers/2009/Weinbergeretal09.pdf" target="_blank" rel="noopener">Feature Hashing for Large Scale Multitask Learning</a>论文指出，Feature Hashing方法效果显著<ul>
+<li>报告显示使用特征hashing技巧，可以能将学习一个垃圾邮件过滤模型的特征空间映射成包含\(2^24\)个特征的特征空间(疑问：这里的特征原来不止\(2^24\)个吗？)</li>
+</ul>
+</li>
+<li>但是实验证明，使用 Feature Hashing 方法并不能提升我们的方法，所以建议保留 interpretable(non-hashed)的特征向量</li>
+</ul>
+<h4 id="Dropout"><a href="#Dropout" class="headerlink" title="Dropout"></a>Dropout</h4><ul>
+<li>Google用网格搜索的方法测试了从0.1到0.5的Dropout特征丢弃概率</li>
+<li>所有情况均没有带来任何收益(包括精度指标和泛化能力)，还往往给模型带来损害(detriment)</li>
+<li>Google给出的一个解释是：Dropout在图像领域取得较好收益的原因是因为图像领域的数据特征分布与计算广告领域不同<ul>
+<li>图像领域：稠密特征，此时Dropout把结果(effect)从强相关的特征中分离开来，从而得到泛化效果更好的分类器</li>
+<li>计算广告：稀疏特征，且有噪音</li>
+</ul>
+</li>
+</ul>
+<h4 id="Feature-Bagging"><a href="#Feature-Bagging" class="headerlink" title="Feature Bagging"></a>Feature Bagging</h4><ul>
+<li>对特征进行overlapping采样(注意，样本Bagging和特征Bagging不同)，然后训练多个独立的模型，最后取平均值</li>
+<li>实验证明模型的的AucLoss降低了0.1%-0.6%</li>
+</ul>
+<h4 id="Feature-Vector-Normalization"><a href="#Feature-Vector-Normalization" class="headerlink" title="Feature Vector Normalization"></a>Feature Vector Normalization</h4><ul>
+<li>\(\mathbf{x} = \frac{\mathbf{x}}{||\mathbf{x}||}\)</li>
+<li>开始有一点精度上的收益，但是后面也出现了一定程度的detriment</li>
+<li>Google的解释是可能是由于per-coordinate learning rates和正则化的影响</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Hexo/Hexo——Next主题搜索窗口无法弹出.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Hexo/Hexo——Next主题搜索窗口无法弹出.html" itemprop="url">Hexo——Next主题搜索窗口无法弹出</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-20T00:00:00+08:00">
+                2019-12-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考博客： <a href="https://www.sqlsec.com/2017/12/hexosearch.html" target="_blank" rel="noopener">https://www.sqlsec.com/2017/12/hexosearch.html</a></li>
+</ul>
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><ul>
+<li>有时候会遇到在Mac上Next主题窗口无法弹出的问题</li>
+<li>问题分为两类<ul>
+<li>一类为找不到 <code>search.xml</code> 文件：加载 <code>search.xml</code> 时错误为404</li>
+<li>另一类为文章中有特殊字符：加载 <code>search.xml</code> 检查时错误为304</li>
+</ul>
+</li>
+</ul>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><h4 id="404类"><a href="#404类" class="headerlink" title="404类"></a>404类</h4><ul>
+<li><p>修改最外层配置文件<code>./_config.yml</code>,添加以下语句(实测这一步非必须)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">search:</span><br><span class="line">  path: search.xml</span><br><span class="line">  field: post</span><br><span class="line">  format: html</span><br><span class="line">  limit: 10000</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装搜索插件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="304类"><a href="#304类" class="headerlink" title="304类"></a>304类</h4><ul>
+<li>304状态说明是加载文件存在，但是无法正常解析文件</li>
+<li>直接用浏览器访问 <code>search.xml</code> 文件链接，然后查看文件解析异常出现在哪个地方，然后删除特殊字符即可<ul>
+<li>个人理解，从哪个文件不能搜索，特殊字符就出现在哪个文件中</li>
+<li>说明：目前还没遇到过这种情况，后面遇到会再补充</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ComputationalAdvertising/CA——Feature-Hashing.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ComputationalAdvertising/CA——Feature-Hashing.html" itemprop="url">CA——Feature-Hashing</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-08T00:00:00+08:00">
+                2019-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li>参考文献: <a href="http://alex.smola.org/papers/2009/Weinbergeretal09.pdf" target="_blank" rel="noopener">Feature Hashing for Large Scale Multitask Learning</a></li>
+<li>特征哈希(Feature Hashing)常用于数据特征降维，同时尽量保留原始特征的表达能力<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+</li>
+</ul>
+<h3 id="论文贡献"><a href="#论文贡献" class="headerlink" title="论文贡献"></a>论文贡献</h3><ul>
+<li>给出了一种高维数据降维方法，特征哈希(Feature Hashing)</li>
+<li>严格证明了特征哈希的可用性</li>
+</ul>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ul>
+<li>一种构造组合特征的方法是笛卡尔乘积</li>
+<li>计算广告领域往往有数十亿的高维特征</li>
+<li>一种表达方式是使用词表法，对每个特征从词表里面进行查询<ul>
+<li>缺陷一：拓展问题，每次拓展词表时难度较大(难以进行模型升级，因为特征维度在变化)</li>
+<li>缺陷二：无法处理词表中不存在的特征(Unknown特征)</li>
+</ul>
+</li>
+<li>一般的降维方法容易带来特征表达能力的损失</li>
+</ul>
+<h3 id="特征哈希"><a href="#特征哈希" class="headerlink" title="特征哈希"></a>特征哈希</h3><ul>
+<li><p>哈希函数定义(参考自博客：<a href="https://blog.csdn.net/qjf42/article/details/82387559" target="_blank" rel="noopener">https://blog.csdn.net/qjf42/article/details/82387559</a>)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">def feature_hashing(features, m):</span><br><span class="line">	&quot;&quot;&quot;</span><br><span class="line">	Args:</span><br><span class="line">		features: 输入特征序列，可以是数字，字符串(本质还是数字)</span><br><span class="line">		m: 输出的特征维度，通常是2**26(vw),2**20(scikit-learn)</span><br><span class="line">	Returns:</span><br><span class="line">		m维的（稀疏）向量</span><br><span class="line">	&quot;&quot;&quot;</span><br><span class="line">	# 这里的x一般是稀疏表示的（如：scipy.sparse.csr_matrix），这里是为了方便说明</span><br><span class="line">    x = np.zeros(m)</span><br><span class="line">    for feature in features:</span><br><span class="line">    	# hash_func_1保证散列尽量平均且散列速度快</span><br><span class="line">        idx = hash_func_1(feature) % m </span><br><span class="line">        # 这里在原始论文中</span><br><span class="line">        sign = hash_func_2(feature) % 2</span><br><span class="line">        if sign == 1:</span><br><span class="line">            x[idx] += 1</span><br><span class="line">        else:</span><br><span class="line">            x[idx] -= 1</span><br><span class="line">    return x</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>输出特征维度一般为\(m = 2^24\)等，是一个认为给定的数字</li>
+</ul>
+</li>
+<li><p>与词表法比较：</p>
+<ul>
+<li>解决了模型升级时的特征拓展问题(增加新特征时，特征的维度不会变化)</li>
+<li>解决了Unknown特征问题(个人理解：因为hash函数不管是什么特征，都可以一视同仁)</li>
+<li>无需查表，节省了查表的时间(个人理解：其实查表时一般实现方式也是用哈希表构建索引，所以这里不能算是优势)</li>
+<li>完成了降维(这里是把字典法里面对邮件或者文档的id也算作一个特征，这个特征one hot表示一下将会造成数据维度变得非常大？但是id算做特征有什么意义吗？)</li>
+</ul>
+</li>
+</ul>
+<h3 id="一些说明"><a href="#一些说明" class="headerlink" title="一些说明"></a>一些说明</h3><ul>
+<li>冲突总会发生，也就是说不同一个特征总有一定的概率被映射到同一个维度(即两个不同特征的<code>idx</code>值可能相等)上</li>
+<li>Paper中的垃圾邮件过滤模型实验证明：冲突造成的损失漏召率在\(m=2^22\)时影响约为1%，接近不做hash时的效果(特征维度在不做hash约为\(2^{25}\))且在\(m=2^{18}\)时为1.12%，也只升高了一点点</li>
+<li>另外：无论如何，总有特殊情况，比如重要的特征如用户的性别特征“男”和“女”二者可能被映射到同一个维度上<ul>
+<li>这里编码时是男:<code>(1, 0)</code>, 女<code>(0, 1)</code>这样的，所以如果二者映射到同一个维度上，那么这两个特征丢失了原本的表达能力</li>
+<li>真实环境中如果遇到这些问题将会很难调试，如果找到了相关的问题，可以通过修改映射函数的输入参数字符串等方式来错开两个特征</li>
+</ul>
+</li>
+<li>特征哈希本身可以类比于机器学习中的核技巧,所以特征哈希也称为哈希技巧</li>
+</ul>
+<h3 id="一些理解"><a href="#一些理解" class="headerlink" title="一些理解"></a>一些理解</h3><h4 id="知乎用户"><a href="#知乎用户" class="headerlink" title="知乎用户"></a>知乎用户</h4><ul>
+<li>参考<a href="https://www.zhihu.com/people/ainika-peng" target="_blank" rel="noopener">Ainika Peng</a>的博客：<a href="https://www.zhihu.com/question/264165760/answer/279676705" target="_blank" rel="noopener">https://www.zhihu.com/question/264165760/answer/279676705</a></li>
+<li>一般而言这类技术是为了解决两个问题：<ul>
+<li>一是<strong>将categorical的特征编码为模型可理解的格式</strong>, 这是个基础问题。One-Hot Serializing就可以达到这个效果，例如将训练样本中出现过的的每个deviceid按顺序递增编号（比如deviceid@xxx:1 -&gt; feature@10000:1）。<ul>
+<li>缺点1：这个映射表需要传递给引擎端，在prediction的时候照着再查一遍，数据量大且数据结构设计不好的时候很费时间；</li>
+<li>缺点2：有些频次很低的特征置信度不高，单独出现对模型无益（甚至over-fitting）。这时候可以使用按频次截断技术进行降维。比如微软在deep crossing中提到的特征工程方法：只保留曝光最多的10k个campaign id编码为0-9999，其余的id全部编码为10000，但辅以poCTR等连续特征作为辅助。事实上这是一种手工的Hashing方法。</li>
+</ul>
+</li>
+<li>二是<strong>尽可能在保留有效信息的基础上降低训练和预测过程的时间复杂度</strong></li>
+</ul>
+</li>
+<li>自动Hashing方法的好处是：<ul>
+<li>只要训练和预测时使用的hashing方法一致，对同一个特征的编码结果即一致，因此引擎预测或提供数据dump的时候无需查找编码表。所以其最大优点在于数据一致性和速度提升，这在极大规模特征和在线学习中至关重要。</li>
+</ul>
+</li>
+<li>我们说的Hashing算法一般而言均特意设计为低碰撞率。<ul>
+<li>因此一般hashing算法本身不会大幅降低特征维度，自然也不会大幅损失特征信息。真正可能存在问题的是hashing之后的降维过程。</li>
+<li>一个非常常见的陷阱是string哈希到int64后取模m，试图将特征压缩至m维one-hot空间。在这种情况下，对于不知情的随机hashing过程，不同特征的碰撞率为1/m。举个例子，对于“性别”特征，将male哈希为一个int64，female哈希为另一个int64，很难发生碰撞；但如果你试图使用mod2将其压缩，如果你的算法哈希出的这两个int64奇偶性相同，则会导致特征失效。在你有很多feature需要哈希而又不清楚hashing算法细节的情况下，这在概率意义上是很容易发生的。<ul>
+<li>这里的mod2是极端举例，其实m的取值小于原始维度的情况下都有一定概率造成冲突</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>因此我们会更倾向于所谓的embedding算法<ul>
+<li>例如将70万维的userid通过weight embedding到32维的连续值特征上（不同于传统hashing的低维离散值特征）。这意味着训练过程更加复杂（有更多的weight需要optimize）；但对于预测过程，其特征性能十分良好且时间复杂度得以降低。同时，由于连续值特征空间的表达能力大幅高于离散值特征空间，整个模型的表达能力并不会明显下降，也基本不会发生离散hashing的碰撞问题。</li>
+<li>当然，如果是<strong>FM这类倾向于接受离散值的模型，手工serializing+精心设计的hashing是较好的选择</strong>。</li>
+</ul>
+</li>
+<li>优点：<ul>
+<li>训练和预测的时间复杂度大幅降低；</li>
+<li>数据的一致性强，不存在同一个特征今天编码成这个、明天编码成那个的情况，便于跟踪单特征效果；</li>
+<li>对new feature可以直接编码并加入训练，无需等待编码表统计并反馈；</li>
+<li>降低feature space大小，（精心设计可以）降低over-fitting的几率。</li>
+</ul>
+</li>
+<li>缺点<ul>
+<li>在不清楚hashing function细节的情况下，容易导致特征碰撞失效，且难以排查；</li>
+<li>难以通过hashing出的特征反推源特征；</li>
+<li>embedding会降低模型的可解释性。</li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种包的管理总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/General——各种包的管理总结.html" itemprop="url">General——各种包的管理总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-09T00:00:00+08:00">
+                2019-11-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="编程语言相关"><a href="#编程语言相关" class="headerlink" title="编程语言相关"></a>编程语言相关</h3><ul>
+<li>参考链接: <a href="https://help.github.com/en/github/managing-packages-with-github-packages/about-github-packages#supported-clients-and-formats" target="_blank" rel="noopener">https://help.github.com/en/github/managing-packages-with-github-packages/about-github-packages#supported-clients-and-formats</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Package client</th>
+<th align="left">Language</th>
+<th align="left">Package format</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">npm</td>
+<td align="left">JavaScript</td>
+<td align="left">package.json</td>
+<td align="left">Node package manager</td>
+</tr>
+<tr>
+<td align="left">gem</td>
+<td align="left">Ruby</td>
+<td align="left">Gemfile</td>
+<td align="left">RubyGems package manager</td>
+</tr>
+<tr>
+<td align="left">mvn</td>
+<td align="left">Java</td>
+<td align="left">pom.xml</td>
+<td align="left">Apache Maven project management and comprehension tool</td>
+</tr>
+<tr>
+<td align="left">gradle</td>
+<td align="left">Java</td>
+<td align="left">build.gradle or build.gradle.kts</td>
+<td align="left">Gradle build automation tool for Java</td>
+</tr>
+<tr>
+<td align="left">docker</td>
+<td align="left">N/A</td>
+<td align="left">Dockerfile</td>
+<td align="left">Docker container management platform</td>
+</tr>
+<tr>
+<td align="left">nuget</td>
+<td align="left">.NET</td>
+<td align="left">nupkg</td>
+<td align="left">NuGet package management for .NET</td>
+</tr>
+<tr>
+<td align="left">pip</td>
+<td align="left">Python</td>
+<td align="left">requirements.txt</td>
+<td align="left">use <code>pip install -r requirements.txt</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="操作系统"><a href="#操作系统" class="headerlink" title="操作系统"></a>操作系统</h3><ul>
+<li>参考链接: <a href="https://www.iteye.com/blog/justcoding-1937171" target="_blank" rel="noopener">https://www.iteye.com/blog/justcoding-1937171</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">软件管理方式</th>
+<th align="left">线下安装命令</th>
+<th align="left">线上安装命令</th>
+<th align="left">distribution 操作系统</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">RPM</td>
+<td align="left">rpm, rpmbuild</td>
+<td align="left">yum</td>
+<td align="left">Red Hat/Fedora</td>
+</tr>
+<tr>
+<td align="left">DPKG</td>
+<td align="left">dpkg</td>
+<td align="left">apt, apt-get</td>
+<td align="left">Debian/Ubuntu</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="rpm和dpkg常用命令总结"><a href="#rpm和dpkg常用命令总结" class="headerlink" title="rpm和dpkg常用命令总结"></a>rpm和dpkg常用命令总结</h3><ul>
+<li>参考链接: <a href="http://cha.homeip.net/blog/archives/2005/08/rpm_vs_dpkg.html" target="_blank" rel="noopener">http://cha.homeip.net/blog/archives/2005/08/rpm_vs_dpkg.html</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">操作描述</th>
+<th align="center">rpm</th>
+<th align="center">dpkg</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">安装指定套件</td>
+<td align="center">rpm -i pkgfile.rpm</td>
+<td align="center">dpkg -i pkgfile.deb</td>
+</tr>
+<tr>
+<td align="left">显示所有已安装的套件名称</td>
+<td align="center">rpm -qa</td>
+<td align="center">dpkg -l</td>
+</tr>
+<tr>
+<td align="left">显示套件包含的所有档案</td>
+<td align="center">rpm -ql [softwarename]</td>
+<td align="center">dpkg -L [softwarename]</td>
+</tr>
+<tr>
+<td align="left">显示特定档案所属套件名称</td>
+<td align="center">rpm -qf [/path/to/file]</td>
+<td align="center">dpkg -S [/path/to/file]</td>
+</tr>
+<tr>
+<td align="left">显示制定套件是否安装</td>
+<td align="center">rpm -q [softwarename]</td>
+<td align="center">dpkg -l [softwarename], -s或-p显示详细咨询, -l只列出简洁咨询</td>
+</tr>
+<tr>
+<td align="left">移除指定套件</td>
+<td align="center">rpm -e [softwarename]</td>
+<td align="center">dpkg -r softwarename, -r 留下套件设定, -P完全移除</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="apt和yum常用命令总结"><a href="#apt和yum常用命令总结" class="headerlink" title="apt和yum常用命令总结"></a>apt和yum常用命令总结</h3><ul>
+<li>参考博客: <a href="https://cnblogs.com/lanbosm/p/9130211.html" target="_blank" rel="noopener">https://cnblogs.com/lanbosm/p/9130211.html</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">操作描述</th>
+<th align="center">yum</th>
+<th align="center">apt</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">软件源配置文件路径</td>
+<td align="center">/etc/yum.conf</td>
+<td align="center">/etc/apt/sources.list</td>
+</tr>
+<tr>
+<td align="left">安装软件包</td>
+<td align="center">yum install [package]</td>
+<td align="center">apt-get install [package]</td>
+</tr>
+<tr>
+<td align="left">删除软件包</td>
+<td align="center">yum uninstall [package]</td>
+<td align="center">apt-get remove [package]</td>
+</tr>
+<tr>
+<td align="left">删除有依赖关系的软件包和配置文件</td>
+<td align="center">yum uninstall [package]</td>
+<td align="center">apt-get autoremove [package] –purge</td>
+</tr>
+<tr>
+<td align="left">查看安装包信息</td>
+<td align="center">yum info [package]</td>
+<td align="center">apt-cache show [package]</td>
+</tr>
+<tr>
+<td align="left">更新软件包列表</td>
+<td align="center">yum update</td>
+<td align="center">apt-get update</td>
+</tr>
+<tr>
+<td align="left">清空缓存</td>
+<td align="center">yum clean</td>
+<td align="center">apt-get clean</td>
+</tr>
+<tr>
+<td align="left">搜索包名</td>
+<td align="center">yum</td>
+<td align="center">apt-cahce search</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="一些特殊命令"><a href="#一些特殊命令" class="headerlink" title="一些特殊命令"></a>一些特殊命令</h3><h4 id="apt"><a href="#apt" class="headerlink" title="apt"></a>apt</h4><ul>
+<li><p>列出所有可用包名</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-cache pkgnames</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>通过描述列出包名</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-cache search [keys]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>指定包的版本号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install [package]=[version]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="yum"><a href="#yum" class="headerlink" title="yum"></a>yum</h4><ul>
+<li><p>搜索包的可用版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum --showduplicates list [package] | expand</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>expand</code>命令用于将文件的制表符<code>tab</code>转换成空格符<code>space</code><ul>
+<li>默认一个<code>tab</code>对应8个<code>space</code></li>
+<li>若不指定文件名(或者文件名为<code>-</code>), 则<code>expand</code>会从标准输入读取数据</li>
+</ul>
+</li>
+<li><code>unexpand</code>命令与expand相反</li>
+</ul>
+</li>
+<li><p>安装时指定包的版本号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install [package]-[version]</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="yum和apt安装的常用参数"><a href="#yum和apt安装的常用参数" class="headerlink" title="yum和apt安装的常用参数"></a>yum和apt安装的常用参数</h4><ul>
+<li><code>-y</code>: 指定在询问是否安装时均选择<code>yes</code></li>
+<li><code>-q</code>: <code>quiet</code>,安装途中不打印log信息</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Others/General——各种压缩方式总结.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Others/General——各种压缩方式总结.html" itemprop="url">General——各种压缩方式总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-09T00:00:00+08:00">
+                2019-11-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <hr>
+<h3 id="tar-gz"><a href="#tar-gz" class="headerlink" title=".tar.gz"></a>.tar.gz</h3><h3 id="tar-bz2"><a href="#tar-bz2" class="headerlink" title=".tar.bz2"></a>.tar.bz2</h3><h3 id="tar-xz"><a href="#tar-xz" class="headerlink" title=".tar.xz"></a>.tar.xz</h3><h3 id="tgz"><a href="#tgz" class="headerlink" title=".tgz"></a>.tgz</h3>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Centos——clamav安装与杀毒.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/Linux/Centos——clamav安装与杀毒.html" itemprop="url">Centos——clamav安装与杀毒</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-03T00:00:00+08:00">
+                2019-11-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>clam是一款Linux上免费的杀毒软件</em></p>
+<hr>
+<h3 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h3><h4 id="命令行安装"><a href="#命令行安装" class="headerlink" title="命令行安装"></a>命令行安装</h4><p><em>命令行安装clamav会自动创建clamav用户和clamav组</em></p>
+<ul>
+<li><p>Centos</p>
+</li>
+<li><p>在Centos7亲测*</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install –y clamav clamav-update</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>ubuntu</p>
+</li>
+<li><p>在Ubuntu16.04上亲测*</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install clamav</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h4 id="源码安装"><a href="#源码安装" class="headerlink" title="源码安装"></a>源码安装</h4><p><em>如果因为某些原因无法从命令行安装,可以尝试用源码安装,此时需要首先手动创建相关组和用户</em></p>
+<h5 id="安装前的配置"><a href="#安装前的配置" class="headerlink" title="安装前的配置"></a>安装前的配置</h5><ul>
+<li><p>创建clamav组</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">groupadd clamav</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建用户并添加到clamav组</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -g clamav clamav</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h5 id="源码下载和安装"><a href="#源码下载和安装" class="headerlink" title="源码下载和安装"></a>源码下载和安装</h5><ul>
+<li><p>下载</p>
+<ul>
+<li>下载链接: <a href="http://www.clamav.net/downloads" target="_blank" rel="noopener">http://www.clamav.net/downloads</a>, 因为版本可能会有更新,这里我们直接给出网站下载地址,可以随时查看版本信息</li>
+<li>找到软件包下载链接后,使用wget下载即可,比如<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://www.clamav.net/downloads/production/clamav-0.102.0.tar.gz</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>安装</p>
+<ul>
+<li><p>解压</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -xf clamav-0.102.0.tar.gz</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换目录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd clamav-0.102.0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装依赖</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum/apt install gcc openssl openssl-devel</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><h4 id="升级病毒库"><a href="#升级病毒库" class="headerlink" title="升级病毒库"></a>升级病毒库</h4><ul>
+<li><p>升级命令</p>
+<ul>
+<li><p>命令行安装后更新命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">freshclam</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>源码安装后更新命令, 也可以建立软连接后直接使用上面的命令行启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/clamav/bin/freshclam</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>建立链接指令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s [source path] [target path]</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="查找病毒文件"><a href="#查找病毒文件" class="headerlink" title="查找病毒文件"></a>查找病毒文件</h4><ul>
+<li><p>常用命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup clamscan / -r --infected -l clamscan.log &gt; clamscan.out &amp;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-r</code> 指明递归查杀</li>
+<li><code>--infected</code> 表示仅仅输出被感染的部分文件, 否则没有被感染的文件会输出<code>文件名: OK</code>这样无用的信息</li>
+<li><code>-l</code> 指明日志文件路径</li>
+<li><code>/</code> 是查找的目标目录,如果是整个机器查找则使用<code>/</code></li>
+<li>由于查杀病毒需要很长时间,所以建议使用后台进程进行, 如果是远程, 建议使用<code>nohup</code></li>
+<li>由于输出非常多,所以一般我们使用<code>clamscan.out</code>和<code>clamscan.log</code>分别存储输出和日志</li>
+</ul>
+</li>
+<li><p>列出被感染文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat clamscan.out | grep FOUND</span><br></pre></td></tr></table></figure></li>
 </ul>
 
           
@@ -2070,7 +2178,7 @@ $$ -->
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2118,7 +2226,7 @@ $$ -->
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">293</span>
+                  <span class="site-state-item-count">195</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2131,7 +2239,7 @@ $$ -->
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">49</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

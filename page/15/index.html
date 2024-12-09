@@ -80,7 +80,7 @@
 
 
 <meta name="description" content="本博客主要用于记录个人学习笔记">
-<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git, DL,">
+<meta name="keywords" content="Python, Computer, ML, Linux, Ubuntu, NLP, Git">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jiahong的个人博客">
 <meta property="og:url" content="https://JoeZJH.github.io/page/15/index.html">
@@ -161,7 +161,7 @@
       </a>
     </div>
       
-        <p class="site-subtitle">凡事预则立，不预则废</p>
+        <p class="site-subtitle">凡事预则立不预则废</p>
       
   </div>
 
@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Linux/Linux——find命令详解.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——最小二乘与梯度下降.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -294,11 +294,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Linux/Linux——find命令详解.html" itemprop="url">Linux——find命令详解</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——最小二乘与梯度下降.html" itemprop="url">ML——最小二乘与梯度下降</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -330,392 +346,129 @@
       
         
           
-            <p><em>本文介绍Linux下find命令的使用方法</em></p>
-<ul>
-<li>参考博客: <a href="https://www.cnblogs.com/weijiangbao/p/7653588.html" target="_blank" rel="noopener">https://www.cnblogs.com/weijiangbao/p/7653588.html</a></li>
+            <p><em>本文持续更新，主要总结各种与最小二乘和梯度下降相关的优化方法</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="最小二乘与最小均方误差的区别"><a href="#最小二乘与最小均方误差的区别" class="headerlink" title="最小二乘与最小均方误差的区别"></a>最小二乘与最小均方误差的区别</h3><h4 id="最小二乘法"><a href="#最小二乘法" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
+<li>二乘也就是平方的意思，故又称最小平方法(英文全称Least Square Method, LSM或者LS)</li>
+<li>是一种数学优化技术</li>
+<li>通过最小化误差的平方和寻找数据的最佳函数匹配<ul>
+<li>为什么最小化误差平方和可以得到最佳函数匹配呢？<ul>
+<li>可以证明，只要误差是服从正太分布的，最小化误差平法和就能匹配到最佳函数(这个高斯证明过)</li>
+<li>可以证明，误差的确是服从正太分布的，细节可以参考<a href="https://www.matongxue.com/madocs/589.html" title="https://www.matongxue.com/madocs/589.html" target="_blank" rel="noopener">为什么正太分布如此常见</a></li>
+<li>中心极限定理说了，在适当的条件下，大量相互独立随机变量的均值经适当标准化后依分布收敛于正态分布 <ul>
+<li>适当的条件包括三个要素:<ul>
+<li>独立</li>
+<li>随机</li>
+<li>相加</li>
+</ul>
+</li>
+<li>误差满足上面三个要素</li>
+</ul>
+</li>
+<li>综上所述，最小二乘法(最小化误差平法和)可以的到最佳函数匹配</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>最小二乘法通过求导，并令导数为0，直接求得误差平方和(损失函数的一种)取最小值时的参数</li>
+<li>公式:<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="加权最小二乘法"><a href="#加权最小二乘法" class="headerlink" title="加权最小二乘法"></a>加权最小二乘法</h4><ul>
+<li>加权最小二乘中每个样本的误差前面会乘上相应的权重,然后再求和<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}w_i(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="最小化均方误差"><a href="#最小化均方误差" class="headerlink" title="最小化均方误差"></a>最小化均方误差</h4><ul>
+<li>最小二乘（Least Square, LS）问题是这样一类优化问题，目标函数是若干项的平方和</li>
+<li>LS的一种更复杂也更灵活的变形: 加权最小二乘根据实际问题考虑每个求和项的重要程度，即为每一项加权值w</li>
+<li>均方误(Mean Square Error, MSE)是一种加权最小二乘，它的权值是对应项的概率<br>$$\theta^{\star} = \arg\min_\theta L(x) = \sum_i^{m}\frac{1}{m}(y_i-f(x_i;\theta))^2 = \frac{1}{m}\sum_i^{m}(y_i-f(x_i;\theta))^2$$</li>
+</ul>
+<h4 id="周志华的解释"><a href="#周志华的解释" class="headerlink" title="周志华的解释"></a>周志华的解释</h4><ul>
+<li>基于均方误差最小化来进行模型求解的方法称为最小二乘法 ——《机器学习》(周志华著)<ul>
+<li>理解：周志华的意思应该是把均方误差与误差平方和视为一个东西，也就是说各项的权重相同，所以感觉这里定义其实是比较模糊的，不用太在意最小二乘法与最小化均方误差法的定义</li>
+</ul>
+</li>
+</ul>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>三者可以理解为相同的表达式,其中<ul>
+<li><strong>最小二乘法</strong>(LSM), 权重为1, 每个样本相同</li>
+<li><strong>最小均方误差</strong>(MSE), 权重为\(\frac{1}{m}\), 每个样本相同</li>
+<li><strong>加权最小二乘</strong>, 权重为自定义的值, 每个样本可以不同</li>
+</ul>
+</li>
+<li><strong>最小均方误差</strong>(MSE) 是一种 <strong>加权最小二乘</strong>, 他的权重为样本的概率, 每个样本出现的概率相等, 就都乘以 \(\frac{1}{m}\) 即可</li>
 </ul>
 <hr>
-<h3 id="常用方法说明"><a href="#常用方法说明" class="headerlink" title="常用方法说明"></a>常用方法说明</h3><ul>
-<li><p>find命令用于在给定目录下查找符合给定条件的文件</p>
-</li>
-<li><p>用法: </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Usage: find [-H] [-L] [-P] [-Olevel] [-D help|tree|search|stat|rates|opt|exec] [path...] [expression]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>常用的用法:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">find   path   -option   [   -print ]   [ -exec   -ok   command ]   &#123;&#125; \;</span><br><span class="line">find  目标目录   选项 					查找完成后执行的操作</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>实例:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -name &quot;*a*.py&quot; -exec cat &#123;&#125; \; | grep test</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>解析:将当前文件夹下的名字能匹配<code>*a*.py</code>的文件找出来,并输出其中含有”test”的行<ul>
-<li><code>.</code>对应<code>path</code>参数,代表搜索路径为当前文件夹, 默认会递归搜索</li>
-<li><code>-name &quot;*a*.py&quot;</code>对应选项,指出找文件的筛选条件</li>
-<li><code>-exec cat {} \; | grep test</code>指明找到文件后需要执行的操作,<code>{}</code>用于表示前面被固定下来的接受参数, 由于<code>{}</code>后面必须使用分号<code>;</code>,而命令行中分号需要转义字符转义,所以就是<code>\;</code><ul>
-<li>注意: 这里<code>{} \;</code>中间必须空一格,且<code>{} \;</code>中间不能加任何字符或命令等</li>
+<h3 id="梯度下降与梯度上升"><a href="#梯度下降与梯度上升" class="headerlink" title="梯度下降与梯度上升"></a>梯度下降与梯度上升</h3><h4 id="意义"><a href="#意义" class="headerlink" title="意义"></a>意义</h4><p><strong>为什么需要梯度下降或者梯度上升,而不是用直接对目标函数求导得到最优解?</strong> </p>
+<h5 id="几点说明"><a href="#几点说明" class="headerlink" title="几点说明"></a>几点说明</h5><ul>
+<li>对于凸函数而言:<ul>
+<li>通过函数(损失函数等)对参数求导,令其导数为0,的确可以解得损失函数的最小(最大)值点对应的参数</li>
 </ul>
 </li>
+<li>对于非凸函数而言:<ul>
+<li>相同的方法可能只能得到极值点,而不是最小(最大)值点</li>
+<li>但此时梯度下降法也不能找到最优点</li>
 </ul>
 </li>
+<li>无论是梯度下降函数直接推到求解目标函数最优解,我们都需要求目标函数的导数,并且需要确保目标函数可导,不然是不能用这些方法的</li>
 </ul>
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -maxdepth 1 -name &quot;test*.py&quot; -exec cat &#123;&#125; \;| grep test</span><br></pre></td></tr></table></figure>
-
-<pre><code>* 在前面的基础上指定只从第一层目录中查找,不递归</code></pre>
-<h3 id="参数和选项详解"><a href="#参数和选项详解" class="headerlink" title="参数和选项详解"></a>参数和选项详解</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find   path   -option   [   -print ]   [ -exec   -ok   command ]   &#123;&#125; \;</span><br></pre></td></tr></table></figure>
-
-<h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><ul>
-<li><code>-print</code>： find命令将匹配的文件输出到标准输出。</li>
-<li><code>-exec</code>： find命令对匹配的文件执行该参数所给出的shell命令。相应命令的形式为’command’ { } ;，注意{ }和；之间的空格。</li>
-<li><code>-ok</code>： 和-exec的作用相同，只不过以一种更为安全的模式来执行该参数所给出的shell命令，在执行每一个命令之前，都会给出提示，让用户来确定是否执行</li>
-</ul>
-<h3 id="选项"><a href="#选项" class="headerlink" title="选项"></a>选项</h3><ul>
-<li><code>-name</code>: 按照文件名查找文件。</li>
-<li><code>-perm</code>: 按照文件权限来查找文件。</li>
-<li><code>-prune</code>: 使用这一选项可以使find命令不在当前指定的目录中查找，如果同时使用-depth选项，那么-prune将被find命令忽略。</li>
-<li><code>-user</code>: 按照文件属主来查找文件。</li>
-<li><code>-group</code>: 按照文件所属的组来查找文件。</li>
-<li><code>-mtime -n +n</code>: 按照文件的更改时间来查找文件， - n表示文件更改时间距现在n天以内，+ n表示文件更改时间距现在n天以前。find命令还有-atime和-ctime 选项，但它们都和-m time选项。</li>
-<li><code>-nogroup</code>: 查找无有效所属组的文件，即该文件所属的组在/etc/groups中不存在。</li>
-<li><code>-nouser</code>: 查找无有效属主的文件，即该文件的属主在/etc/passwd中不存在。</li>
-<li><code>-newer file1 ! file2</code>: 查找更改时间比文件file1新但比文件file2旧的文件。</li>
-<li><code>-type</code>: 查找某一类型的文件<ul>
-<li>默认是查找所有类型</li>
-</ul>
-</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th align="center">参数</th>
-<th align="center">文件类型</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">d</td>
-<td align="center">目录</td>
-</tr>
-<tr>
-<td align="center">c</td>
-<td align="center">字符设备文件</td>
-</tr>
-<tr>
-<td align="center">p</td>
-<td align="center">管道文件</td>
-</tr>
-<tr>
-<td align="center">f</td>
-<td align="center">普通文件</td>
-</tr>
-<tr>
-<td align="center">l</td>
-<td align="center">符号链接文件</td>
-</tr>
-<tr>
-<td align="center">b</td>
-<td align="center">块设备文件</td>
-</tr>
-</tbody></table>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Python/Jupyter/Python-Jupyter——将ipynb文件转成py文件.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Python/Jupyter/Python-Jupyter——将ipynb文件转成py文件.html" itemprop="url">Python-Jupyter——将ipynb文件转成py文件</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <pre><code>jupyter nbconvert --to script test.ipynb </code></pre>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——共轭梯度法和最速下降法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/ML/ML——共轭梯度法和最速下降法.html" itemprop="url">ML——共轭梯度法和最速下降法</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>本文介绍共轭梯度法和最速下降法</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<ul>
-<li>最速下降法（Steepest Descent Method）和共轭梯度法（Conjugate Gradient Method, CG）也是求解无约束最优化问题的优化方法，其他无约束优化方法见：<a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%B1%82%E8%A7%A3%E6%97%A0%E7%BA%A6%E6%9D%9F%E6%9C%80%E4%BC%98%E5%8C%96%E9%97%AE%E9%A2%98%E7%9A%84%E4%BC%98%E5%8C%96%E6%96%B9%E6%B3%95.html">ML——求解无约束最优化问题的优化方法</a></li>
-<li>共轭梯度法是以共轭方向为搜索方向的一类算法，最早用于求解线性方程组，后来用于求解无约束最优化问题</li>
-<li>最速下降法和共轭梯度法都仅限于求解正定矩阵对应的方程或正定二次型对应的无约束最优化问题</li>
-</ul>
-<h3 id="优化问题定义"><a href="#优化问题定义" class="headerlink" title="优化问题定义"></a>优化问题定义</h3><ul>
-<li>在满足一定要求的情况下，求解线性方程组的解和求解最优化问题有一定的等价性</li>
-<li>当\(A\)为对称正定矩阵时，有下面的两个问题等价：<ul>
-<li>问题一：求解线性方程组<br>  $$ Ax = b $$</li>
-<li>问题二：求解最优化问题的解<br>  $$ \min_x \frac{1}{2}(x - x^*)^TA(x - x^*)  $$<ul>
-<li>其中\(x^*\)为线性方程组的解</li>
-</ul>
-</li>
-<li>等价原因：正定矩阵\(A\)使得二次型\((x - x^*)^TA(x - x^*) \)一定大于等于0，当二次型\((x - x^*)^TA(x - x^*) = 0 \)时，一定有\(x=x^*\)</li>
-</ul>
-</li>
-<li>对以上最优化问题进一步化简有：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-1.png">
-<ul>
-<li>上图中用到了以下性质：<ul>
-<li>对称正定矩阵的性质：\(A = A^T\)</li>
-<li>\(x^*\)为线性方程组的解：\(Ax^* = b\)</li>
-</ul>
-</li>
-<li>上图中\((Ax,x)\)表示内积</li>
-</ul>
-</li>
-<li>思考：对于参数数量为2的问题，实际上原始优化问题\((x - x^*)^TA(x - x^*)\)的等值线可以理解为是一个椭圆，原始问题的最优解在多个椭圆的圆心<ul>
-<li>为什么是一个椭圆，因为<strong>正定矩阵可以被对角化为一个对角线上元素都是正数的对角矩阵</strong>，即正定二次型一定可以化简为系数全为正的标准型</li>
-<li>假设\(A\)已经是一个对角矩阵，对角线上的数字为\(d_1, d_2\)，那么原始二次型对应的\(c\)等值线为：\((x - x^*)^TA(x - x^*) = d_1x_1^2+d_2x_2^2 = c\)</li>
-</ul>
-</li>
-</ul>
-<h3 id="最速下降法"><a href="#最速下降法" class="headerlink" title="最速下降法"></a>最速下降法</h3><ul>
-<li><p>最速下降法推导</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-1.png">
-<ul>
-<li>上面的式子中，最后一步的推导是直接展开以后得到<br>$$<br>\begin{align}<br>&amp;=\frac{1}{2} (A(x+\alpha r, x+\alpha r)) - (b, (x+\alpha r)) \\<br>&amp;= \frac{1}{2} (x^TA^Tx + \alpha r^TA^Tx + \alpha x^TA^Tr + \alpha^2r^TA^Tr) - (b^Tx+\alpha b^T r) \\<br>&amp;= \frac{1}{2}( 2\alpha r^TA^Tx) + \frac{1}{2}\alpha^2r^TA^Tr - \alpha b^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha (Ax + r)^T r + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx + \frac{1}{2}\alpha^2r^TA^Tr - \alpha x^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \alpha r^TA^Tx - \alpha x^TA^Tr + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= 0 + \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>&amp;= \frac{1}{2}\alpha^2r^TA^Tr + \alpha r^Tr + \frac{1}{2}x^TA^Tx - b^Tx\\<br>\end{align}<br>$$</li>
-<li>上面的推导中使用到了\(b = Ax + r\)，和\(x^TA^Tr = x^TAr = (x, Ar) = (Ar, x) = r^TA^Tx \)</li>
-<li>其中\( \frac{1}{2}x^TA^Tx - b^Tx\)与\(\alpha\)无关</li>
-</ul>
-</li>
-<li><p>最速下降法的流程及收敛性分析</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-2.png">
-<ul>
-<li>收敛速度与特征值有关，当特征值之间的差距过大时，收敛可能会比较慢</li>
-</ul>
-</li>
-<li><p>最速下降法的收敛性图示分析</p>
-<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Steepest-Descent-Method-3.png">
-<ul>
-<li>如果运气好，也可能一步到位，如果运气不好则可能要很久才收敛</li>
-</ul>
-</li>
-</ul>
-<h3 id="共轭梯度法"><a href="#共轭梯度法" class="headerlink" title="共轭梯度法"></a>共轭梯度法</h3><ul>
-<li>共轭梯度法的引入<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-2.png">
-<ul>
-<li>\(p_{k-1}\)是上次迭代的方向， \(p_{k}\)是本次迭代的方向，初始该值设置为\(p_{-1} = 0\)，或第一步按照\(p_0 = r_0\)迭代</li>
-<li>步长推导和最速下降法推导一致</li>
-</ul>
-</li>
-<li>共轭梯度法的方向<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-3.png">
-<ul>
-<li>共轭的含义为：<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugacy.png"></li>
-<li><strong>共轭梯度法名字的由来</strong>：<ul>
-<li><strong>共轭</strong>来自于：\( \forall i, \quad (Ap_{i},p_{k}) = 0\)，每一步迭代的方向与之前的所有步都是共轭相对于矩阵\(A\)共轭的</li>
-<li><strong>梯度</strong>则来自于下降的方向\(r\)是原始目标函数\(\frac{1}{2}(x - x^*)^TA(x - x^*) = \frac{1}{2}(Ax, x)- (b, x)\)的梯度，由于\(r\)同时也是方程\(Ax = b\)的残差\(r = b-Ax\)，所以也会称\(r\)为残差</li>
+<h5 id="几点原因"><a href="#几点原因" class="headerlink" title="几点原因"></a>几点原因</h5><ul>
+<li>有时候目标方程(令导数为0后得到的方程)很复杂,求导数为0的参数的解(根)很难<ul>
+<li>包括时间和空间两方面可能面临困难</li>
+<li>比如大矩阵的乘法,大矩阵的逆等</li>
+<li>求某一点的梯度一般是比较容易的(只要求出导数后将对应点的数值带入即可)<ul>
+<li><em>这里与求导数为0的解难度不一样,在求出函数导数后,求某一点的梯度仅仅需要带入该点的值,而求导数为0的解需要的是很难的解题过程,甚至可能找不到解</em></li>
 </ul>
 </li>
 </ul>
 </li>
-<li>共轭梯度法的性质<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-4.png"></li>
-<li>共轭梯度法的流程<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-5.png">
-<ul>
-<li>注意：第0步使用\(p_0 = r_0\)</li>
+<li>有时候目标方程很奇怪,之前我们没见过,需要我们写新的代码教会计算机如何直接求解函数的根<ul>
+<li>直接使用梯度下降的话是计算机可以理解的</li>
+<li>梯度下降法不用重新写代码来教给计算机</li>
 </ul>
 </li>
-<li>共轭梯度法收敛性<img src="/Notes/ML/ML——共轭梯度法和最速下降法/Conjugate-Gradient-Method-6.png">
-
-
-
-
-
-
-
-
+</ul>
+<h4 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h4><ul>
+<li>梯度下降是最小化目标函数<ul>
+<li>\(\theta=\theta-\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+<li>每轮迭代沿着负梯度方向移动</li>
+</ul>
 </li>
+</ul>
+<h4 id="梯度上升"><a href="#梯度上升" class="headerlink" title="梯度上升"></a>梯度上升</h4><ul>
+<li>梯度上升是最大化目标函数<ul>
+<li>\(\theta=\theta+\lambda\frac{\partial L(\theta)}{\partial\theta}\)</li>
+<li>\(\lambda\)为步长</li>
+<li>每轮迭代验证正梯度方向移动</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="梯度下降-上升-法与最小二乘法"><a href="#梯度下降-上升-法与最小二乘法" class="headerlink" title="梯度下降(上升)法与最小二乘法"></a>梯度下降(上升)法与最小二乘法</h3><h4 id="最小二乘法-1"><a href="#最小二乘法-1" class="headerlink" title="最小二乘法"></a>最小二乘法</h4><ul>
+<li>最小二乘法是一种通过<strong>最小化误差的平方和</strong>寻找数据的<strong>最佳函数匹配</strong>的<strong>数学优化技术</strong></li>
+<li>与最小二乘法并列的是最小话误差的三次方或者四次方等方法<ul>
+<li>这里的<strong>三次方和</strong>和<strong>四次方和</strong>只是为了和<strong>二次方和</strong>作对比，实践中很少遇到这样的优化技术</li>
+</ul>
+</li>
+</ul>
+<h4 id="梯度下降-上升-法"><a href="#梯度下降-上升-法" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h4><ul>
+<li>梯度下降(上升)法的目标是通过迭代(每次朝着最优方向，即梯度下降最快方向前进)不断逼近能使得目标函数最小(最大)时的最优参数值的方法</li>
+<li>梯度下降(上升)是一种迭代法，也就是通过更新参数不停的逼近最优点，可以用来解决各种各样的问题(包括最小二乘问题，最小化误差三次方和等)<ul>
+<li>这里最小二乘问题可以理解为用最小二乘法(最小化误差平法和)来寻找最佳函数的问题</li>
+</ul>
+</li>
+</ul>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>最小二乘法与梯度下降(上升)法不在一个维度，不能对比</li>
+</ul>
+<h5 id="最小二乘法-2"><a href="#最小二乘法-2" class="headerlink" title="最小二乘法"></a>最小二乘法</h5><ul>
+<li>目标：找到(或者逼近)最优函数，使得该函数能最拟合已知数据</li>
+<li>方法：最小化误差平方和</li>
+</ul>
+<h5 id="梯度下降-上升-法-1"><a href="#梯度下降-上升-法-1" class="headerlink" title="梯度下降(上升)法"></a>梯度下降(上升)法</h5><ul>
+<li>目标：找到(或者逼近)最优参数，使得该参数能最小化(最大化)目标函数</li>
+<li>方法：是通过沿梯度方向迭代更新参数</li>
 </ul>
 
           
@@ -765,7 +518,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——损失函数总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型的方差与偏差.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -784,11 +537,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——损失函数总结.html" itemprop="url">ML——损失函数总结</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——模型的方差与偏差.html" itemprop="url">ML——模型的方差与偏差</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -820,251 +589,39 @@
       
         
           
-            <p><em>各种损失函数(Loss Function)总结,持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
+            <p><em>本文讲解机器学习中模型的方差偏差关系</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <hr>
-<h3 id="名词概念"><a href="#名词概念" class="headerlink" title="名词概念"></a>名词概念</h3><p><em>在机器学习和统计学中，成本函数（Cost Function）、经验风险（Empirical Risk）和损失函数（Loss Function）是三个密切相关但又有所区别的概念</em></p>
-<ul>
-<li><strong>损失函数</strong>（Loss Function）： 损失函数衡量的是单个训练样本的预测值与实际值之间的差异。它是模型预测误差的量化表示。常见的损失函数包括均方误差（Mean Squared Error, MSE）、交叉熵损失（Cross-Entropy Loss）等</li>
-<li><strong>成本函数</strong>（Cost Function）： 又名代价函数，等价于损失函数</li>
-<li><strong>期望风险</strong>（Expected Risk）：所有样本（训练样本+验证样本+测试样本+未知样本）的损失函数的期望，用于评估模型的泛化能力</li>
-<li><strong>经验风险</strong>（Empirical Risk）： 经验风险是在给定数据集上（一般是训练集），模型的平均损失。它是所有训练样本损失函数值的平均，用于评估模型在特定数据集上的表现。经验风险可以视为模型在有限数据集上的泛化能力的估计，本质是对期望风险的一种估计</li>
-<li><strong>结构风险</strong>（Structural Risk）：用于平衡模型对样本的拟合能力和复杂度<br>$$<br>结构风险 = 经验风险 + \alpha 正则化项<br>$$</li>
-<li>注意：<strong>在一般的书籍或者博客论文中，尝尝也用 <em>损失函数</em> 或 <em>成本函数</em> 笼统的表达了 <em>成本函数、经验风险、损失函数、成本函数、甚至结构风险</em> 等所有相关概念</strong>，所以本文下面也会比较笼统称为损失函数</li>
-</ul>
-<h3 id="损失函数总体说明"><a href="#损失函数总体说明" class="headerlink" title="损失函数总体说明"></a>损失函数总体说明</h3><ul>
-<li>损失函数(Loss Function)又称为代价函数(Cost Function)</li>
-<li>损失函数用于评估预测值与真实值之间的不一致程度</li>
-<li>损失函数/成本函数是模型的优化目标函数,(神经网络训练的过程就是最小化损失函数的过程)</li>
-<li>损失函数/成本函数越小,说明预测值越接近于真实值,模型表现越好</li>
-</ul>
-<hr>
-<h3 id="各种损失函数介绍"><a href="#各种损失函数介绍" class="headerlink" title="各种损失函数介绍"></a>各种损失函数介绍</h3><h4 id="平方损失函数"><a href="#平方损失函数" class="headerlink" title="平方损失函数"></a>平方损失函数</h4><p><em>最常用的回归损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss = (y - f(x))^{2}$$</li>
-<li>对应模型<ul>
-<li>线性回归<ul>
-<li>使用的均方误差来自于平方损失函数<br>$$loss_{MSE} = \frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2$$</li>
-</ul>
-</li>
-<li>其他扩展，RMSE（Root Mean Squared Error，常用作指标而不是损失函数）<br>$$loss_{RMSE} = \sqrt{\frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2}$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="MSLE-RMSLE损失函数"><a href="#MSLE-RMSLE损失函数" class="headerlink" title="MSLE/RMSLE损失函数"></a>MSLE/RMSLE损失函数</h4><ul>
-<li>MSLE，Mean Squared Logarithmic Error<br>$$loss_{MSLE} = \frac{1}{m}\sum_{i=1}^{m} \left(\log(1+y_{i}) - \log(1+f(x_{i})) \right)^2$$</li>
-<li>RMSLE，Root Mean Squared Logarithmic Error</li>
-<li>损失函数形式<br>$$loss_{RMSLE} = \sqrt{\frac{1}{m}\sum_{i=1}^{m} \left(\log(1+y_{i}) - \log(1+f(x_{i})) \right)^2}$$</li>
-<li>MSLE和RMSLE可缓解长尾变量导致的异常值问题</li>
-</ul>
-<h4 id="MAPE-MSPE-RMAPE-RMSPE损失函数"><a href="#MAPE-MSPE-RMAPE-RMSPE损失函数" class="headerlink" title="MAPE/MSPE/RMAPE/RMSPE损失函数"></a>MAPE/MSPE/RMAPE/RMSPE损失函数</h4><ul>
-<li>MAPE，Mean Absolute Percentage Error<br>$$loss_{MAPE} = \frac{1}{m}\sum_{i=1}^{m} \left|\frac{y_i-f(x_i)}{y_i}\right|$$</li>
-<li>MSPE，Mean Squared Percentage Error<br>$$loss_{MSPE} = \frac{1}{m}\sum_{i=1}^{m} \left(\frac{y_i-f(x_i)}{y_i}\right)^2$$</li>
-<li>RMAPE/RMSPE在MAPE/MSPE的基础上开根号即可</li>
-<li>MAPE/MSPE/RMAPE/RMSPE都可缓解长尾变量导致的异常值问题</li>
-</ul>
-<h4 id="绝对值损失函数"><a href="#绝对值损失函数" class="headerlink" title="绝对值损失函数"></a>绝对值损失函数</h4><p><em>最常用的回归损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss = |y - f(x)|$$</li>
-<li>对应的经验风险:<br>$$loss_{MAE} = \frac{1}{m}\sum_{i=1}^{m}|y_{i} - f(x_{i})|$$</li>
-</ul>
-<h4 id="交叉熵损失函数（对数似然损失函数）"><a href="#交叉熵损失函数（对数似然损失函数）" class="headerlink" title="交叉熵损失函数（对数似然损失函数）"></a>交叉熵损失函数（对数似然损失函数）</h4><p><em>最常见的损失函数<strong>交叉熵损失函数</strong>,又名<strong>对数似然损失函数</strong></em></p>
-<ul>
-<li>基本形式（目标：在已知X时，样本标签Y出现的概率最大化，损失函数在概率前加个负号即可）<br>$$loss=L(P_{\theta}(Y|X))=-logP_{\theta}(Y|X)$$ </li>
-<li><strong>二分类</strong>中的交叉熵损失函数:<br>$$loss_{CE} = \frac{1}{N} \sum_{i}^{N}-y_ilogy_i’ - (1-y_i)log(1-y_i’)$$<ul>
-<li>二分类中对于单个样本的损失一般写为:<br>  $$loss(x_i) = -y_ilogy_i’ - (1-y_i)log(1-y_i’)$$</li>
-<li>写成最容易看清楚的形式为:<br>  $$<br>  \begin{align}<br>  loss(x_i) &amp;= -logy_i’, &amp;\quad y_i = 1 \\<br>  loss(x_i) &amp;= -log(1-y_i’), &amp;\quad y_i = 0<br>  \end{align}<br>  $$<ul>
-<li>\(y_i\) 为样本 \(x_i\)的真实类别</li>
-<li>\(y_i’\) 为样本\(x_i\)在模型中的预测值(这个值在二分类中为Sigmoid函数归一化后的取值,代表样本分类为\(y_i=1\)的概率)</li>
-<li>\(y_i’\) 也可表达为 \(p_{i,1}\), 即样本\(i\) 分类为1的概率</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><strong>多分类</strong>中的交叉熵损失函数:<br>$$loss_{CE} = -\frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta}$$<ul>
-<li>\(y_{i,c} \in \{0, 1\}\)：当样本\(i\)的真实分类是\(c\)时，\(y_{i,c}=1\)，否则\(y_{i,c}=0\)</li>
-<li>\(p_{i,c}^{\theta}\)：表示样本\(i\)为分类\(c\)的预估概率，由 \(y_{i,c} \in \{0, 1\}\)可知损失函数不需要关注样本预测为其他错误类别的概率，仅关注真实样本对应类别的概率即可</li>
-<li>二分类的场景实际上是多分类的特定形式，\(1-y_i’\)可以用来表示分类为0时的概率</li>
-</ul>
-</li>
-<li><strong>凡是极大似然估计作为学习策略的模型,损失函数都为交叉熵损失函数（对数似然损失函数）</strong><ul>
-<li>因为极大化似然函数等价于极小化对数似然损失函数，推导：<br>  $$<br>  \begin{align}<br>  \theta^{*} &amp;= \mathop{\arg\max}_{\theta} \prod_i P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\min}_{\theta} - \sum_i \log P_{\theta}(y_i|x_i) \\<br>  &amp;= \mathop{\arg\min}_{\theta} - \frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta}<br>  \end{align}<br>  $$ </li>
-<li>&lt;&lt;统计学习方法&gt;&gt;第十二章中LR使用的是极大似然估计但是对应的损失函数是逻辑斯蒂损失函数,这里可以证明LR中对数似然损失函数和逻辑斯蒂损失函数完全等价,证明见统计学习方法212页笔记</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>所有使用极大似然估计的模型<ul>
-<li>可以证明，<strong>极大似然估计法最大化样本出现概率</strong>的目标是<strong>最小化真实分布和预估分布的KL散度</strong><ul>
-<li>为了方便证明，下面把\(P_{\theta}(y_i|x_i)\)写作\(P_{\theta}(x_i)\)，这里\(x_i\)包含了样本的label（\(y_i\)）信息<br>$$<br>\begin{align}<br>\theta^{*} &amp;= \mathop{\arg\min}_{\theta} - \frac{1}{N} \sum_{i}^{N}\sum_{c=1}^{C} y_{i,c}\log p_{i,c}^{\theta} &amp;\quad — 交叉熵损失函数\\<br>&amp;= \mathop{\arg\min}_{\theta} - \sum_i \log P_{\theta}(x_i)  &amp;\quad — 交叉熵损失函数\\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(x_i) \\<br>&amp;= \mathop{\arg\max}_{\theta} \prod_i P_{\theta}(x_i) &amp;\quad — 极大似然法\\<br>&amp;= \mathop{\arg\max}_{\theta} \sum_i \log P_{\theta}(x_i) \\<br>&amp;\approx \mathop{\arg\max}_{\theta} \mathbb{E}_{x \sim P_{data}}\log P_{\theta}(x) \\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log P_{\theta}(x) dx \\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log P_{\theta}(x) dx - \int_{x} P_{data}(x) \log P_{data}(x) dx &amp;\quad — 减去一项与\theta无关的项\\<br>&amp;= \mathop{\arg\max}_{\theta} \int_{x} P_{data}(x) \log \frac{P_{\theta}(x)}{P_{data}(x)} dx \\<br>&amp;= \mathop{\arg\max}_{\theta} -\int_{x} P_{data}(x) \log \frac{P_{data}(x)}{P_{\theta}(x)} dx \\<br>&amp;= \mathop{\arg\min}_{\theta} \int_{x} P_{data}(x) \log \frac{P_{data}(x)}{P_{\theta}(x)} dx \\<br>&amp;= \mathop{\arg\min}_{\theta} KL(P_{data}|| P_{\theta})  &amp;\quad — KL散度\\<br>\end{align}<br>$$ </li>
-<li>上式表明：似然函数最大化(极大似然法，对应交叉熵损失最小化)，等价于最小化真实分布与预估分布的KL散度</li>
-<li>注：式中\(x_i\)样本表示&lt;特征,标签&gt;对，\(P_{\theta}(x_i)\)表示在模型\(\theta\)下，真实&lt;特征,标签&gt;出现的概率</li>
-</ul>
-</li>
-<li>同理，可以证明，<strong>最小化交叉熵损失函数</strong>的目标也是<strong>最小化真实分布和预估分布的KL散度</strong></li>
-</ul>
-</li>
-<li>最大化后验概率等价于最小化对数似然损失函数<br>$$\theta^{\star} = \mathop{\arg\max}_{\theta} LL(\theta) = \mathop{\arg\min}_{\theta} -LL(\theta) = \mathop{\arg\min}_{\theta} -\log P(Y|X) = \mathop{\arg\min}_{\theta} -\sum_{i=1}^{N}\log p_{\theta}(y_{i}|x_{i})$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="指数损失函数"><a href="#指数损失函数" class="headerlink" title="指数损失函数"></a>指数损失函数</h4><p><em>提升方法的损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=e^{-yf(x)}$$</li>
-<li>对应模型<ul>
-<li>提升方法</li>
-</ul>
-</li>
-</ul>
-<h4 id="0-1损失函数"><a href="#0-1损失函数" class="headerlink" title="0-1损失函数"></a>0-1损失函数</h4><p><em>最理想的损失函数,但是不光滑,不可导</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=0, \text{if} \  yf(x)&gt;0 \\<br>loss=L(y,f(x))=1, \text{if} \  yf(x)&lt;0$$</li>
-<li>在由\(f(x)\)符号判断样本的类别的二分类问题中<ul>
-<li>分类正确时总有\(yf(x)&gt;0\),损失为0</li>
-<li>分类错误时总有\(yf(x)&lt;0\),损失为1</li>
-</ul>
-</li>
-<li>在特定的模型中,比如要求\(f(x)=y\)才算正确分类的模型中<ul>
-<li>0-1损失函数可定义为如下<br>$$loss=L(y,f(x))=0, \text{if} \  y=f(x) \\<br>loss=L(y,f(x))=1, \text{if} \  y\neq f(x)$$</li>
-</ul>
-</li>
-</ul>
-<h4 id="合页损失函数"><a href="#合页损失函数" class="headerlink" title="合页损失函数"></a>合页损失函数</h4><p><em>支持向量机的损失函数</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=[1-yf(x)]_{+}$$</li>
-<li>\([z]_{+}\)表示<ul>
-<li>\(z&gt;0\)时取\(z\)</li>
-<li>\(z\leq 0\)时取0</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>支持向量机</li>
-</ul>
-</li>
-</ul>
-<h4 id="感知机的损失函数"><a href="#感知机的损失函数" class="headerlink" title="感知机的损失函数"></a>感知机的损失函数</h4><p><em>感知机特有的损失函数&lt;&lt;统计学习方法&gt;&gt;</em></p>
-<ul>
-<li>基本形式<br>$$loss=L(y,f(x))=[-yf(x)]_{+}$$</li>
-<li>与合页损失函数对比<ul>
-<li>相当于函数图像整体左移一个单位长度</li>
-<li>合页损失函数比感知机的损失函数对学习的要求更高</li>
-<li>这使得感知机对分类正确的样本就无法进一步优化(分类正确的样本损失函数为0),学到的分类面只要能对样本正确分类即可(不是最优的,而且随机梯度下降时从不同点出发会有不同结果)</li>
-<li>而SVM则需要学到最优的才行,因为即使分类正确的样本,依然会有一个较小的损失,此时为了最小化损失函数,需要不断寻找,直到分类面为最优的分类面位置</li>
-</ul>
-</li>
-<li>对应模型<ul>
-<li>感知机</li>
-</ul>
-</li>
-</ul>
-<h4 id="感知损失函数"><a href="#感知损失函数" class="headerlink" title="感知损失函数"></a>感知损失函数</h4><p><em>与感知机没有任何关系</em></p>
-<ul>
-<li>基本形式<br>$$L(y,f(x))=1, \text{if} \   \left | y-f(x)\right |&gt;t \\<br>L(y,f(x))=0,  \text{if} \  \left | y-f(x)\right |&lt; t$$</li>
-<li>这里”感知”的意思是在一定范围内认为\(y\approx f(x)\),满足小范围差距时,损失函数为0</li>
-</ul>
-<h4 id="Focal-Loss"><a href="#Focal-Loss" class="headerlink" title="Focal Loss"></a>Focal Loss</h4><p><em>论文原文为: <a href="http://openaccess.thecvf.com/content_ICCV_2017/papers/Lin_Focal_Loss_for_ICCV_2017_paper.pdf" target="_blank" rel="noopener">ICCV 2017: Focal Loss for Dense Object Detection</a></em></p>
-<ul>
-<li>主要是为了解决正负样本严重失衡的问题</li>
-<li>是交叉熵损失函数的一种改进</li>
-<li>回归交叉熵损失函数的表达式为:<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$</li>
-<li>Focal Loss的损失函数如下<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -(1-y_i’)^\gamma logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -y_i^\gamma\log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$<ul>
-<li>\(\gamma\)的取值在原始论文中使用了 0, 0.5, 1, 2, 5 等</li>
-<li>当 \(\gamma &gt; 0\) 时显然有<ul>
-<li>预测值\(y_i’\)与真实标签\(y_i\)差异越大的样本,他们的损失权重越大（\(y_i=1\)时，预测值和真实值的差异为\(1-y_i’\)，\(y_i=0\)时，差异为\(y_i’\)）</li>
-<li>预测值\(y_i’\)与真实标签\(y_i\)差异越小的样本,他们的损失权重越小</li>
-<li>以上两点给了模型重视分类错误样本的提示，模型会重视分类出错的样本</li>
-</ul>
-</li>
-<li>\(\gamma = 0\)时Focal Loss退化为交叉熵损失函数</li>
-<li>\(\gamma\) 越大,说明, 分类错误的样本占的损失比重越大 </li>
-</ul>
-</li>
-<li>实际使用中, 常加上\(\alpha\)平衡变量<br>$$<br>\begin{align}<br>loss(x_i) &amp;= -\alpha(1-y_i’)^\gamma logy_i’, &amp;\quad y_i = 1 \\<br>loss(x_i) &amp;= -(1-\alpha)y_i^\gamma\log(1-y_i’), &amp;\quad y_i = 0<br>\end{align}<br>$$<ul>
-<li>\(\alpha\) 用于平衡正负样本的重要性</li>
-<li>\(\gamma\) 用于加强对难分类样本的重视程度</li>
-</ul>
-</li>
-<li>假设正样本数量太少, 负样本数量太多, 那么该损失函数将降低负样本在训练中所占的权重, 可以理解为一种<strong>困难样本挖掘</strong><ul>
-<li>困难样本挖掘的思想就是找到分类错误的样本(难以分类的样本), 然后重点关注这些错误样本</li>
-</ul>
-</li>
-<li>原论文中的实验结果:<img src="/Notes/ML/ML——损失函数总结/focal_loss_Overview.png">
+<h3 id="偏差与方差的定义"><a href="#偏差与方差的定义" class="headerlink" title="偏差与方差的定义"></a>偏差与方差的定义</h3><ul>
+<li>方差：模型的预测值之间的离散程度</li>
+<li>偏差：模型整体的预测值与真实值的偏离程度<img src="/Notes/ML/ML——模型的方差与偏差/Variance&Bias.png">
 
 </li>
 </ul>
-<h4 id="岭回归"><a href="#岭回归" class="headerlink" title="岭回归"></a>岭回归</h4><ul>
-<li>基本思路是在最小二乘的基础上加上L2正则<br>$$loss(\theta) = \frac{1}{m}\sum_{i=1}^{m}(y_{i} - f(x_{i}))^2 + \lambda \theta^2$$</li>
-<li>其中\(\lambda \theta^2\)项是L2正则项，也称为<strong>收缩惩罚项（shrinkage penalty）</strong><ul>
-<li>它试图缩小模型的参数，引入偏差来缓解参数估计中的方法问题，原始的最小二乘是无偏估计，但是引入了L2正则以后会变成有偏的，但是方差更小的参数估计</li>
-<li>实际上，shrinkage参数，也称为<strong>收缩参数</strong>，是统计学里面的一个概念，是用于缓解参数估计时离群点带来的问题</li>
+<hr>
+<h3 id="正则化与方差和偏差"><a href="#正则化与方差和偏差" class="headerlink" title="正则化与方差和偏差"></a>正则化与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://www.cnblogs.com/qkloveslife/p/9885500.html" target="_blank" rel="noopener">https://www.cnblogs.com/qkloveslife/p/9885500.html</a></li>
 </ul>
-</li>
-</ul>
-<h4 id="几个回归损失函数的对比"><a href="#几个回归损失函数的对比" class="headerlink" title="几个回归损失函数的对比"></a>几个回归损失函数的对比</h4><ul>
-<li>参考链接补充：<a href="https://www.cnblogs.com/nxf-rabbit75/archive/2019/02/26/10440805.html" target="_blank" rel="noopener">https://www.cnblogs.com/nxf-rabbit75/archive/2019/02/26/10440805.html</a></li>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>\(\lambda\)为正则化系数</li>
+<li>当\(\lambda\)很小时，模型处于“高方差”状态，“训练误差”很小，“交叉验证误差”较大</li>
+<li>当\(\lambda\)很大时，模型处于“高偏差”状态，“训练误差”和“交叉验证误差”都很大</li>
 </ul>
 <hr>
-<h3 id="不同模型的损失函数"><a href="#不同模型的损失函数" class="headerlink" title="不同模型的损失函数"></a>不同模型的损失函数</h3><h4 id="决策树的损失函数"><a href="#决策树的损失函数" class="headerlink" title="决策树的损失函数"></a>决策树的损失函数</h4><ul>
-<li>决策树有两个解释<ul>
-<li>if-then规则</li>
-<li>条件概率分布</li>
+<h3 id="集成学习与方差和偏差"><a href="#集成学习与方差和偏差" class="headerlink" title="集成学习与方差和偏差"></a>集成学习与方差和偏差</h3><ul>
+<li>参考博客：<a href="https://blog.csdn.net/xmu_jupiter/article/details/47314927" target="_blank" rel="noopener">https://blog.csdn.net/xmu_jupiter/article/details/47314927</a></li>
+</ul>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><h5 id="集成学习分两类"><a href="#集成学习分两类" class="headerlink" title="集成学习分两类"></a>集成学习分两类</h5><ul>
+<li>平均方法：例如随机森林， Bagging methods。在平均方法中，系统分别去建立多个基分类器，分类器之间没有任何联系。然后在分类或者回归阶段，各个分类器根据测试数据给出自己的答案，然后系统根据各个分类器给出的结果去综合出最后的结果，比如可以使投票的形式。</li>
+<li>提升方法：例如梯度提升决策树GBDT，AdaBoost。在提升方法中，系统模型在训练过程中会先后建立一系列分类器，这些分类器单个可能是弱分类器，但是组合起来就成为一个强分类器。</li>
+</ul>
+<h5 id="不同类别的偏差与方差"><a href="#不同类别的偏差与方差" class="headerlink" title="不同类别的偏差与方差"></a>不同类别的偏差与方差</h5><ul>
+<li>平均方法尝试去降低模型的方差<ul>
+<li>所以平均方法通常比其任何一个基分类器效果好</li>
 </ul>
 </li>
-<li>&lt;&lt;统计学习方法&gt;&gt;: 决策树的损失函数是对数似然<ul>
-<li>决策树可以看作是对不同概率空间的划分</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="Loss-Function-vs-Cost-Function"><a href="#Loss-Function-vs-Cost-Function" class="headerlink" title="Loss Function vs Cost Function"></a>Loss Function vs Cost Function</h3><ul>
-<li>损失函数（Loss Function）应用于一个特定的样本计算误差</li>
-<li>成本函数（Cost Function）是对所有样本而言的误差</li>
-</ul>
-<hr>
-<h3 id="损失函数相关思考"><a href="#损失函数相关思考" class="headerlink" title="损失函数相关思考"></a>损失函数相关思考</h3><h4 id="分类问题为什么不能用MSE？"><a href="#分类问题为什么不能用MSE？" class="headerlink" title="分类问题为什么不能用MSE？"></a>分类问题为什么不能用MSE？</h4><ul>
-<li>参考链接：<ul>
-<li><a href="https://blog.csdn.net/CCSUXWZ/article/details/123695477?utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~aggregatepage~first_rank_ecpm_v1~rank_v31_ecpm-2-123695477.pc_agg_new_rank&utm_term=%E5%88%86%E7%B1%BB%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%94%A8mse&spm=1000.2123.3001.4430" target="_blank" rel="noopener">为什么分类问题不使用MSE(平方损失函数)</a></li>
-<li><a href="https://mp.weixin.qq.com/s?__biz=MzA4ODUxNjUzMQ==&mid=2247497812&idx=2&sn=a89412d3f803727758d2848d4c4cdc54&chksm=902a4a88a75dc39e76c72727eb494893e4108e3c2e543151d989144cf27a455fd10fb915a538&mpshare=1&scene=1&srcid=0323TN8Afh6zKFPclQcibgi8&sharer_sharetime=1648029215231&sharer_shareid=2b3e20f48a2bd45a6e7e36b7b6821670#rd" target="_blank" rel="noopener">深究交叉熵损失(Cross-entropy)和平方损失(MSE)的区别</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></li>
-</ul>
-</li>
-<li>原因：<ul>
-<li>在sigmoid函数拟合概率的情况下，使用MSE会导致预估值接近0或者为1时的梯度都接近0，不利于模型学习收敛</li>
-<li>在sigmoid函数拟合概率的情况下，MSE是非凸优化问题，容易陷入局部最优；交叉熵损失则是凸优化问题，不会陷入局部最优</li>
-</ul>
-</li>
-<li><strong>最小化交叉熵损失函数等价于不做任何假设的极大似然估计</strong>，其本质是在最小化真实样本分布和预估分布的KL散度（这里的分布可以是已知X时，label的条件分布）</li>
-<li><strong>最小化MSE损失函数等价于假设噪声服从高斯分布时的极大似然估计</strong><ul>
-<li><em>推导可参考：<a href="https://zhuanlan.zhihu.com/p/541655548" target="_blank" rel="noopener">MSE的推导</a>、<a href="https://zhuanlan.zhihu.com/p/501569029?utm_psn=1753542229158043648&utm_id=0" target="_blank" rel="noopener">MSE，MLE和高斯分布的关系</a>、<a href="https://zhuanlan.zhihu.com/p/463812174" target="_blank" rel="noopener">为什么回归问题用MSE？</a></em></li>
-<li>假设在回归问题中\(y = z + \epsilon\)，样本噪声\(\epsilon\)服从均值为0，方差为\(\sigma\)的高斯分布，即\(\epsilon \sim N(0,\sigma)\)，这里的\(\sigma&gt;0\)</li>
-<li>则有原始样本\(y\)服从均值为\(z\)方差为\(\sigma\)的高斯分布\(y \sim N(z,\sigma)\)，我们的目标是用模型拟合非噪声部分\(y_{pred} = \theta^T x = z\)，此时有\(y = y_{pred} + \epsilon\)，即\(y\)服从高斯分布\(y \sim N(y_{pred},\sigma)\)</li>
-<li>正太分布的概率密度函数为\(p(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-u)^2}{2\sigma^2}}\)，则此时单个样本出现的概率为\(\frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y-\theta^T x)^2}{2\sigma^2}}\)。</li>
-<li>用<strong>极大似然法</strong>估计参数\(\theta\)，即最大化多个样本的联合概率为:<br>  $$<br>  \begin{align}<br>  \theta^* &amp;= \mathop{\arg\max}_\theta \prod_i \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} \\<br>  &amp;= \mathop{\arg\max}_\theta \prod_i e^{-\frac{(y^i-\theta^T x^i)^2}{2\sigma^2}} &amp;\quad —去掉与\theta无关的常数项 \\<br>  &amp;= \mathop{\arg\max}_\theta \sum_i -\frac{(y^i-\theta^T x^i)^2}{2\sigma^2} &amp;\quad —取对数 \\<br>  &amp;= \mathop{\arg\max}_\theta \sum_i -(y^i-\theta^T x^i)^2 &amp;\quad —继续去除常数项 \\<br>  &amp;= \mathop{\arg\min}_\theta \sum_i (y^i-\theta^T x^i)^2 \\<br>  \end{align}<br>  $$</li>
-<li>即当假设噪声服从高斯分布时，用极大似然法估计参数与MSE损失函数得到的参数相同</li>
-</ul>
-</li>
-</ul>
-<h4 id="MSE和RMSE对反向传播过程一样吗？"><a href="#MSE和RMSE对反向传播过程一样吗？" class="headerlink" title="MSE和RMSE对反向传播过程一样吗？"></a>MSE和RMSE对反向传播过程一样吗？</h4><ul>
-<li>答案是不一样<ul>
-<li>MSE的梯度是：<br>$$ \nabla_{w} loss_{MSE} = \frac{1}{M}\sum_{i=1}^M 2(f_w(x_i)-y_i) \cdot \nabla_{w}f_w(x_i) $$</li>
-<li>RMSE的梯度是：<br>$$ \nabla_{w} loss_{RMSE} = \frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}} \cdot \frac{1}{M}\sum_{i=1}^M 2(f_w(x_i)-y_i) \cdot \nabla_{w}f_w(x_i) $$</li>
-</ul>
-</li>
-<li>由于两者的梯度不同，所以两者对参数的影响也不同，由于\(\frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}}\)不是固定值，所以MSE和RMSE对梯度的影响也不是简单的固定倍数关系<ul>
-<li>可以简单理解为：<ul>
-<li>RMSE的梯度相当于在MSE的基础上乘以\(\frac{1}{2} \left(\frac{1}{M}\sum_{i=1}^M (f_w(x_i)-y_i)^2\right)^{-\frac{1}{2}}\)，在不同的Batch中，该值不同，Loss越大，该值越大，Loss越小，该值越小</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>MSE是在假设误差服从均值为0的正太分布（即\(\epsilon \sim N(0,\sigma)\)）的基础上基于<strong>极大似然法</strong>求得的目标函数</li>
-<li>在同一个Batch内来看，RMSE与MSE的目标实际上是完全一致的，即MSE最小时，RMSE也最小；但是从不同Batch之间来看，RMSE的梯度系数不同无法实现在所有训练集上MSE最小<ul>
-<li><strong>当所有数据只有一个Batch时，RMSE和MSE对梯度的影响是常数倍数关系（基于所有样本计算Loss得到的常数）</strong></li>
-</ul>
-</li>
-<li>为了实现多次采样Batch后实现MSE（满足极大似然法推导结果），一般常用MSE作为损失函数，而不是RMSE，RMSE更多是一个指标</li>
+<li>而提升方法尝试去降低模型的偏差</li>
 </ul>
 
           
@@ -1114,7 +671,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型评估指标总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——训练集-验证集-测试集.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1133,11 +690,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/ML/ML——模型评估指标总结.html" itemprop="url">ML——模型评估指标总结</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——训练集-验证集-测试集.html" itemprop="url">ML——训练集-验证集-测试集</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1169,90 +742,56 @@
       
         
           
-            <p><em>各种模型评估指标总结,持续更新</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
+            <p><em>训练集(training set),验证集(validation set)和测试集(test set)</em></p>
 <hr>
-<h3 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/zongfa/p/9431807.html" target="_blank" rel="noopener">https://www.cnblogs.com/zongfa/p/9431807.html</a></li>
+<h3 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法:"></a>统计学习方法:</h3><ul>
+<li>训练集: 用于模型训练</li>
+<li>验证集: 用于模型选择</li>
+<li>测试集: 用于模型评估(原文:用于最终对学习方法的评估)</li>
 </ul>
-<h4 id="Accuracy，准确率"><a href="#Accuracy，准确率" class="headerlink" title="Accuracy，准确率"></a>Accuracy，准确率</h4><ul>
-<li>公式：$$ \text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN} $$</li>
-<li>直观，但不利于不平衡样本</li>
-</ul>
-<h4 id="Recall，召回率"><a href="#Recall，召回率" class="headerlink" title="Recall，召回率"></a>Recall，召回率</h4><ul>
-<li>公式：$$ \text{Recall} = \frac{TP}{TP+FN} $$</li>
-</ul>
-<h4 id="Precision，精确率"><a href="#Precision，精确率" class="headerlink" title="Precision，精确率"></a>Precision，精确率</h4><ul>
-<li>公式：$$ \text{Precision} = \frac{TP}{TP+FP} $$</li>
-</ul>
-<h4 id="F1-Score"><a href="#F1-Score" class="headerlink" title="F1 Score"></a>F1 Score</h4><ul>
-<li>公式：$$ \text{F1 Score} = \frac{2 * \text{Precision} * \text{Recall}}{\text{Precision}+\text{Recall}} $$</li>
-<li>综合考虑模型”求精“和”求全“的能力</li>
-</ul>
-<h4 id="AUC"><a href="#AUC" class="headerlink" title="AUC"></a>AUC</h4><ul>
-<li>形式化定义：AUC是ROC曲线下方的面积，其中ROC曲线的横坐标是伪阳性率（也叫假正类率，False Positive Rate），纵坐标是真阳性率（真正类率，True Positive Rate）</li>
-<li>本质：任意取两个样本，一个正样本和一个负样本（\( \forall x^+, x^-\)），模型预测正样本为正的概率分为\(Score_\theta(y=1|x^+)\)，模型预测正样本为正的概率分为\(Score_\theta(y=1|x^-)\)，则AUC为：<br>$$ AUC_\theta = P(Score_\theta(y=1|x^+)&gt;Score_\theta(y=1|x^-))$$</li>
-<li>真实实现时，可以统计所有正负样本对，若正样本预估值大于负样本，则累计分数+1，最后用累计分数除以所有可能的正负样本对数量<br>$$ AUC_\theta = \frac{Count(S_+&gt;S_-)}{Count(S_+) * Count(S_-)}$$</li>
-<li>具体代码实现：<ul>
-<li>将样本按照预估分数倒序排列，从大到小</li>
-<li>定义四个变量：正样本总数\(M\)，负样本总数\(N\)，已访问负样本数量\(X=0\)，正样本大于负样本的样本对数量\(Z=0\)</li>
-<li>依次访问所有样本：<ul>
-<li>若为正样本，则\(Z = Z + (N-X)\)</li>
-<li>若为负样本，则\(X = X + 1\)</li>
+<hr>
+<h3 id="个人理解"><a href="#个人理解" class="headerlink" title="个人理解:"></a>个人理解:</h3><ul>
+<li>训练集: 用于模型拟合的数据样本</li>
+<li>验证集: 用于模型的选择<ul>
+<li>不参与训练过程</li>
+<li>可用于超参数的调整</li>
+<li>可用于判断模型是否过拟合(用于决策何时停止训练过程)</li>
+<li>可多次使用</li>
 </ul>
 </li>
-<li>最后计算：\(AUC = \frac{Z}{M * N}\)</li>
+<li>测试集: 用于模型的评估 <ul>
+<li>不参与训练过程</li>
+<li>不可用于超参数的调整</li>
+<li>只可以使用一次</li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="回归模型"><a href="#回归模型" class="headerlink" title="回归模型"></a>回归模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/HuZihu/p/10300760.html" target="_blank" rel="noopener">https://www.cnblogs.com/HuZihu/p/10300760.html</a></li>
-<li>参考：<a href="https://blog.csdn.net/guolindonggld/article/details/87856780" target="_blank" rel="noopener">https://blog.csdn.net/guolindonggld/article/details/87856780</a><h4 id="MSE"><a href="#MSE" class="headerlink" title="MSE"></a>MSE</h4></li>
-<li>MSE (Mean Square Error，均方误差)</li>
-<li>也常用作损失函数<h4 id="RMSE"><a href="#RMSE" class="headerlink" title="RMSE"></a>RMSE</h4></li>
-<li>EMSE (Root Mean Square Error，根均方误差)<h4 id="MAE"><a href="#MAE" class="headerlink" title="MAE"></a>MAE</h4></li>
-<li>MAE (Mean Absolute Error，平均绝对误差)<h4 id="MAPE"><a href="#MAPE" class="headerlink" title="MAPE"></a>MAPE</h4></li>
-<li>MAPE (Mean Absolute Percentage Error，平均绝对百分比误差)<h4 id="SMAPE"><a href="#SMAPE" class="headerlink" title="SMAPE"></a>SMAPE</h4></li>
-<li>MAPE (Symmetric Mean Absolute Percentage Error，对称平均绝对百分比误差)</li>
+<h3 id="一些场景说明"><a href="#一些场景说明" class="headerlink" title="一些场景说明"></a>一些场景说明</h3><h4 id="做kaggle题目时"><a href="#做kaggle题目时" class="headerlink" title="做kaggle题目时"></a>做kaggle题目时</h4><ul>
+<li>不用测试集,因为数据集本来就少,测试集不能用于优化或者选择模型,只能用于评估</li>
+<li>此时测试集可以理解为kaggle题目中未知的部分数据</li>
+<li>此时从验证集中划分一部分验证集</li>
+</ul>
+<h4 id="写论文时"><a href="#写论文时" class="headerlink" title="写论文时"></a>写论文时</h4><ul>
+<li>需要训练集用于训练,验证集用于模型选择</li>
+<li>并且最终需要测试集用于评估模型和与其他人的模型对比</li>
+</ul>
+<p><strong>核心:验证集和测试集不能参与训练模型,测试集不能参与模型选择</strong><br><em>模型训练时不能让模型看见验证集</em><br><em>在模型确定前都不能让模型看见测试集</em></p>
+<hr>
+<h3 id="关于K折交叉验证法"><a href="#关于K折交叉验证法" class="headerlink" title="关于K折交叉验证法"></a>关于K折交叉验证法</h3><ul>
+<li>统计学习方法中的描述: 交叉验证中每次划分为两部分,一部分用于训练模型,另一部分用于测试模型</li>
+<li>理解:上面的两部分,一部分为训练集,另一部分为验证集,在这里面没有测试集</li>
 </ul>
 <hr>
-<h3 id="排序模型"><a href="#排序模型" class="headerlink" title="排序模型"></a>排序模型</h3><ul>
-<li>参考：<a href="https://www.cnblogs.com/by-dream/p/9403984.html" target="_blank" rel="noopener">https://www.cnblogs.com/by-dream/p/9403984.html</a><h4 id="DCG"><a href="#DCG" class="headerlink" title="DCG"></a>DCG</h4></li>
-<li>DCG（Discounted Cumulative Gain， 累计收益折扣）<h4 id="NDCG"><a href="#NDCG" class="headerlink" title="NDCG"></a>NDCG</h4></li>
-<li>(NDCG)Normalized Discounted Cumulative Gain</li>
+<h3 id="关于网格搜索"><a href="#关于网格搜索" class="headerlink" title="关于网格搜索"></a>关于网格搜索</h3><ul>
+<li>用来调超参数的一部分正好称为验证集</li>
+<li>除了验证集外,加入写论文做实验需要和其他模型作比较的话需要使用测试集(和验证集以及训练集都不相交)</li>
 </ul>
 <hr>
-<h3 id="校准模型"><a href="#校准模型" class="headerlink" title="校准模型"></a>校准模型</h3><ul>
-<li>参考：<a href="http://t.zoukankan.com/eilearn-p-14164687.html" target="_blank" rel="noopener">推荐系统（2）—— 评估指标</a></li>
-<li>参考：<a href="https://www.6aiq.com/article/1628642001831" target="_blank" rel="noopener">阿里妈妈展示广告预估校准技术演进之路</a></li>
-</ul>
-<h4 id="COPC"><a href="#COPC" class="headerlink" title="COPC"></a>COPC</h4><ul>
-<li>COPC（Click over Predicted Click）<ul>
-<li>COPC = 实际的点击率/模型预测的点击率，主要衡量model整体预估的偏高和偏低，同样越接近1越好，一般情况下在1附近波动。这个指标在展示广告上应用多一些</li>
-</ul>
-</li>
-</ul>
-<h4 id="PCOC"><a href="#PCOC" class="headerlink" title="PCOC"></a>PCOC</h4><ul>
-<li>PCOC（Predicted Click over Click)<ul>
-<li>PCOC = 模型预估的点击率/实际点击率，与COPC用途相同</li>
-<li>COPC的倒数</li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p>PCOC指标是校准之后的点击率与后验点击率（近似真实概率）的比值，越接近于1，意味着在绝对值上越准确，大于1为高估，小于1为低估，是一种常用的高低估评价指标。但是PCOC存在一定局限性，举个例子：2万个样本，其中1万个样本的预估概率是0.2，后验概率是0.4，计算出PCOC是0.2/0.4=0.5，是显著低估的，另1万个样本PCOC是0.8/0.6= 1.3，明显是高估的。所以校准效果并不好，但是样本放一起看，校准后概率是（0.2+0.8）/2=0.5，后验概率是（0.4+0.6）/2=0.5，整体PCOC是1.0，表现完全正常。所以<strong>单一PCOC指标不能表征样本各维度下的校准水平。</strong></p>
-</blockquote>
-<hr>
-<h3 id="净胜率模型"><a href="#净胜率模型" class="headerlink" title="净胜率模型"></a>净胜率模型</h3><ul>
-<li>ANLP<ul>
-<li>参考：论文《Scalable Bid Landscape Forecasting in Real-time Bidding》</li>
-<li>链接：<a href="https://arxiv.org/pdf/2001.06587.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2001.06587.pdf</a></li>
-</ul>
-</li>
+<h3 id="关于数据划分的比重"><a href="#关于数据划分的比重" class="headerlink" title="关于数据划分的比重"></a>关于数据划分的比重</h3><ul>
+<li>训练集：测试集 = 7：3</li>
+<li>训练集：验证集：测试集 = 6：2：2</li>
+<li>数据量非常多时（比如百万级别），验证集和测试集的比重可以适当缩小，因为验证集的主要目的是选择较好的模型，而测试集的目的是为了测试模型的效果，如果1万条数据足以验证模型的效果，则没必要非得给20万条数据</li>
 </ul>
 
           
@@ -1302,7 +841,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——f-divergence.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——模型性能评估之MAP.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1321,11 +860,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——f-divergence.html" itemprop="url">Math——f-divergence</a></h1>
+                <a class="post-title-link" href="/Notes/ML/ML——模型性能评估之MAP.html" itemprop="url">ML——模型性能评估之MAP</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1357,160 +912,286 @@
       
         
           
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-
-<hr>
-<h3 id="f-divergence定义"><a href="#f-divergence定义" class="headerlink" title="f-divergence定义"></a>f-divergence定义</h3><p>\( f \)-散度（\( f \)-divergence）是概率论和信息论中的一种概念，用于衡量两个概率分布之间的差异。它是由Imre Csiszár引入的，并且在统计学、机器学习以及信息理论等领域有着广泛的应用。</p>
-<p>形式上，对于两个概率分布 \( P \) 和 \( Q \)，定义在一个共同的样本空间上，\( f \)-散度可以被定义为：</p>
-<p>$$ D_f(P|Q) = \int_{\Omega} q(x) f\left(\frac{p(x)}{q(x)}\right) dx $$</p>
-<p>其中：</p>
+            <p><em>MAP(Mean Average Precision)</em></p>
 <ul>
-<li>\( \Omega \) 是样本空间。</li>
-<li>\( p(x) \) 和 \( q(x) \) 分别是 \( P \) 和 \( Q \) 的概率密度函数。</li>
-<li>\( f \) 是一个凸函数，满足 \( f(1) = 0 \)，这是为了保证当 \( P = Q \) 时 \( D_f(P|Q) = 0 \)。</li>
+<li>参考博客: <a href="https://blog.csdn.net/JNingWei/article/details/78955536" target="_blank" rel="noopener">https://blog.csdn.net/JNingWei/article/details/78955536</a></li>
 </ul>
-<p>\( f \)-散度的一个重要性质是它是非负的，即 \( D_f(P|Q) \geq 0 \)，并且只有当 \( P = Q \) 时等号成立。这意味着 \( f \)-散度可以作为两个概率分布之间距离的一种度量，尽管它不满足距离的所有公理（比如对称性）。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/ML——采样方法.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/ML/ML——采样方法.html" itemprop="url">ML——采样方法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文介绍几种采样的方法</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
 <hr>
-<h3 id="常见的f-divergence"><a href="#常见的f-divergence" class="headerlink" title="常见的f-divergence"></a>常见的f-divergence</h3><p>几个常见的 \( f \)-散度的例子包括：</p>
+<h3 id="计算机能做什么样的采样"><a href="#计算机能做什么样的采样" class="headerlink" title="计算机能做什么样的采样"></a>计算机能做什么样的采样</h3><h4 id="Uniform"><a href="#Uniform" class="headerlink" title="Uniform"></a>Uniform</h4><ul>
+<li>本质上来讲,计算机只能实现对<strong>均匀分布</strong>(Uniform Distribution)的采样</li>
+</ul>
+<h4 id="numpy-random模块功能介绍"><a href="#numpy-random模块功能介绍" class="headerlink" title="numpy.random模块功能介绍"></a><code>numpy.random</code>模块功能介绍</h4><p><em><code>numpy.random</code>是用来实现随机数生成的库</em></p>
 <ul>
-<li>Kullback-Leibler散度 (KL散度)，其中 \( f(u) = u \log u \)。</li>
-<li>Hellinger距离，这里 \( f(u) = (\sqrt{u} - 1)^2 \)。</li>
-<li>总变差距离，此时 \( f(u) = |u - 1| \)。</li>
-<li>χ²散度，使用 \( f(u) = \frac{(u - 1)^2}{u} \)。</li>
+<li>生成随机数<code>random</code></li>
+<li>生成某个随机数的随机样本<code>random_sample</code></li>
+<li>对序列做随机<code>shuffle</code>,<code>choice</code>等</li>
 </ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——Jenson不等式.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/Math/Math——Jenson不等式.html" itemprop="url">Math——Jenson不等式</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<hr>
-<h3 id="Jensen不等式定义"><a href="#Jensen不等式定义" class="headerlink" title="Jensen不等式定义"></a>Jensen不等式定义</h3><ul>
-<li>詹森不等式（Jensen’s Inequality）是数学中，特别是概率论和凸分析中的一个重要结果。它描述了凸函数或凹函数在期望值上的性质。</li>
-<li>对于一个实值的凸函数 \(f\) 和任意一组非负权重 \(\lambda_i\) （满足 \(\sum_{i=1}^{n} \lambda_i = 1\)），以及对应的随机变量 \(X_i\) 的取值，詹森不等式可以表述为：<ul>
-<li>如果 \(f\) 是一个凸函数，则有：<br>  $$ f\left( \sum_{i=1}^{n} \lambda_i X_i \right) \leq \sum_{i=1}^{n} \lambda_i f(X_i) $$</li>
-<li>如果 \(f\) 是一个凹函数，则不等号方向相反：<br>  $$ f\left( \sum_{i=1}^{n} \lambda_i X_i \right) \geq \sum_{i=1}^{n} \lambda_i f(X_i) $$</li>
+<h4 id="numpy-random模块的采样"><a href="#numpy-random模块的采样" class="headerlink" title="numpy.random模块的采样"></a><code>numpy.random</code>模块的采样</h4><p><em><code>numpy.random</code>模块下实现了很多常见分布的采样函数(他们本质上都是计算机通过多次均匀分布采样实现的)</em></p>
+<h5 id="单变量分布"><a href="#单变量分布" class="headerlink" title="单变量分布"></a>单变量分布</h5><ul>
+<li><code>beta</code>:beta分布</li>
+<li><code>binomial</code>:二项分布</li>
+<li><code>chisquare</code>:卡方分布</li>
+<li><code>exponential</code>:指数分布</li>
+<li>还有更多…</li>
 </ul>
-</li>
+<h5 id="多变量分布"><a href="#多变量分布" class="headerlink" title="多变量分布"></a>多变量分布</h5><ul>
+<li><code>dirichlet</code> : Multivariate generalization of Beta distribution. 狄利克雷分布</li>
+<li><code>multinomial</code>: Multivariate generalization of the binomial distribution. 多项分布</li>
+<li><code>multivariate_normal</code>: Multivariate generalization of the normal distribution. 多变量正太(高斯)分布</li>
+</ul>
+<h5 id="标准分布"><a href="#标准分布" class="headerlink" title="标准分布"></a>标准分布</h5><ul>
+<li><code>standard_cauchy</code>:      Standard Cauchy-Lorentz distribution.</li>
+<li><code>standard_exponential</code>: Standard exponential distribution.</li>
+<li><code>standard_gamma</code>:       Standard Gamma distribution.</li>
+<li><code>standard_normal</code>:      Standard normal distribution.</li>
+<li><code>standard_t</code>:           Standard Student’s t-distribution.</li>
 </ul>
 <hr>
-<h3 id="概率论中的Jenson不等式"><a href="#概率论中的Jenson不等式" class="headerlink" title="概率论中的Jenson不等式"></a>概率论中的Jenson不等式</h3><ul>
-<li>在概率论的上下文中，这可以被解释为：对于一个凸函数 \(f\) 和一个随机变量 \(X\)，我们有：<br>  $$ f(E[X]) \leq E[f(X)] $$</li>
-<li>这里 \(E[\cdot]\) 表示期望值。同样地，对于凹函数，不等号的方向会反过来。</li>
-</ul>
-<hr>
-<h3 id="Jenson不等式的简单推导"><a href="#Jenson不等式的简单推导" class="headerlink" title="Jenson不等式的简单推导"></a>Jenson不等式的简单推导</h3><p><strong>推导詹森不等式的简单方法：</strong></p>
+<h3 id="复杂分布的采样方式"><a href="#复杂分布的采样方式" class="headerlink" title="复杂分布的采样方式"></a>复杂分布的采样方式</h3><p><em>在实践中,往往有很多复杂的分布,复杂到我们无法直接对他进行采样</em><br><em>有些时候我们甚至不知道目标函数的分布函数</em></p>
+<h4 id="逆变换采样"><a href="#逆变换采样" class="headerlink" title="逆变换采样"></a>逆变换采样</h4><p><em>Inverse Transform Sampling</em></p>
 <ul>
-<li>考虑最简单的情况，即当 \(n = 2\) 时，并且 \(\lambda_1 + \lambda_2 = 1\)，不失一般性，假设 \(f\) 是一个凸函数。根据凸函数的定义，对于所有 \(0 \leq \lambda \leq 1\) 和任意两个点 \(x_1, x_2\)，我们有：<br>  $$ f(\lambda x_1 + (1-\lambda) x_2) \leq \lambda f(x_1) + (1-\lambda) f(x_2) $$</li>
-<li>这个不等式就是詹森不等式在 \(n = 2\) 情况下的形式。为了推广到任意正整数 \(n\) 和任何权重 \(\lambda_i\)，我们可以使用归纳法，或者利用凸组合的概念来证明。</li>
-<li>对于更一般的随机变量 \(X\)，通过积分的形式，也可以得到相同的结果。具体来说，设 \(P\) 是 \(X\) 的概率分布，那么对任意凸函数 \(f\)，我们有：<br>  $$ f\left(\int X dP\right) \leq \int f(X) dP $$</li>
-<li>这是连续版本的詹森不等式，其中左边是对 \(X\) 的期望应用函数 \(f\)，而右边是先对 \(X\) 应用 \(f\) 再求期望。</li>
+<li><p>目标函数: \(p(x)\)</p>
+</li>
+<li><p>相关补充: </p>
+<ul>
+<li>求函数的累积分布函数\(\Phi^{-1}(x) = \int_{- \infty}^{x}p(t)d_{t}\)</li>
+<li>求累计分布函数的逆函数(反函数)</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>计算: \(x_{i} = \Phi^{-1}(u_{i})\), 其中\(\Phi^{-1}(\cdot)\)是\(p(x)\)的<strong>累积分布函数(CDF)的逆函数</strong></li>
+<li>\(x_{i}\)服从\(p(x)\)分布</li>
+</ul>
+</li>
+<li><p>优缺点:</p>
+<ul>
+<li>优点:<ul>
+<li>仅需进行一个均匀分布采样即可</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>需要求解累积分布函数的逆函数</li>
+<li>累积分布函数的逆函数不一定容易求解,有些甚至无法求解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>证明:</p>
+<ul>
+<li>示意图如下:  <img src="/Notes/ML/ML——采样方法/inverse_transform_sampling.png"></li>
+<li>图中纵轴就是均匀分布采样的结果,然后丛纵轴对应到的累计分布函数\(\Phi(x)\)的曲线上概率越大的地方实际上也就是累积分布函数的导数(原始分布函数\(p(x)\))最大的地方</li>
+<li>这个对应过程等价于我们将\(x\)轴和\(y\)轴互换,也就是求累积分布函数的逆函数即可</li>
+</ul>
+</li>
+</ul>
+<h4 id="拒绝采样"><a href="#拒绝采样" class="headerlink" title="拒绝采样"></a>拒绝采样</h4><p><em>别名: Accept-Reject Sampling, <strong>接受-拒绝采样</strong></em></p>
+<ul>
+<li><p>目标函数: \(p(x)\)</p>
+</li>
+<li><p>相关补充: </p>
+<ul>
+<li><strong>(参考分布寻找)</strong>: 寻找一个容易采样的分布\(q(x)\),满足\(p(x) \leq M\cdot q(x)\)</li>
+<li>一般选择正太分布等</li>
+<li>\(M &gt; 1\),从后面的证明可以知道, M越小越好</li>
+</ul>
+</li>
+<li><p>采样步骤:</p>
+<ul>
+<li>参考分布采样:\(x_{i} \sim q(x)\)</li>
+<li>均匀分布采样:\(u_{i} \sim U(0,1)\)</li>
+<li>判断是否接受: 如果\(u_{i} &lt; \frac{p(x_{i})}{M\cdot q(x_{i})}\),则接受采样,否则拒绝本次采样(丢弃本次采样的\(x_{i}\))</li>
+<li>\(x_{i}\)服从\(p(x)\)分布(不包括被拒绝的样本)</li>
+</ul>
+</li>
+<li><p>证明: </p>
+<ul>
+<li>由采样步骤得到,最终得到的分布服从$$q(x)\cdot \frac{p(x)}{M\cdot q(x)} = \frac{1}{M}p(x)$$</li>
+<li>对上述分布进行归一化即可得到采样的样本服从\(p(x)\)</li>
+<li><em>从\(\frac{1}{M}p(x)\)这里也可以看出来采样的效率由M值的大小决定,M越小,采样效率越高</em></li>
+</ul>
+</li>
+<li><p>优缺点:</p>
+<ul>
+<li>优点:<ul>
+<li>复杂分布变成简单分布采样+一个均匀分布,有时候甚至可以将参考分布也使用均匀分布</li>
+</ul>
+</li>
+<li>缺点:<ul>
+<li>参考分布\(q(x)\)的选择很难的</li>
+<li>不合适的参考分布可能导致采样效率低下</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>解决\(q(x)\)难以寻找的一种解决方案: <strong>自适应拒绝采样</strong>(Adaptive Rejection Sampling)</p>
+<ul>
+<li>只适用于目标函数为凸函数</li>
+<li>使用分段线性函数来覆盖目标函数</li>
+<li>下面是示意图片(图片来源: <a href="https://www.jianshu.com/p/3fb6f4d39c60" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb6f4d39c60</a>)<img src="/Notes/ML/ML——采样方法/adaptive-rejection_sampling.png">
+
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="重要性采样"><a href="#重要性采样" class="headerlink" title="重要性采样"></a>重要性采样</h4><p><em>Importance Sampling</em></p>
+<ul>
+<li><p>重要性采样与前面两者不同,重要性采样解决的问题是在求一个函数的关于原始分布的期望时</p>
+</li>
+<li><p>目标定义: \(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</p>
+</li>
+<li><p>直接对\(p(x)\)采样可能存在的两个问题:</p>
+<ul>
+<li>\(p(x)\)可能难以采样</li>
+<li>\(p(x)\)采样到的样本大多都在\(f(x)\)比较小的地方,即\(f(x)\)与\(p(x)\)的差别太大导致有限次采样无法正确评估原始期望,采样次数不够大的话偏差可能很大<ul>
+<li>这里一种解决方案是采样足够多的次数,多花点时间保证所有样本量足够,降低偏差</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>解决方案:</p>
+<ul>
+<li><p>引入一个容易采样的参考分布\(q(x)\),满足<br>$$<br>\begin{align}<br>E_{x\sim p(x)}[f(x)] &amp;= \int_{x}f(x)p(x)d_{x} \\<br>&amp;= \int_{x}f(x)\frac{p(x)}{q(x)}q(x)d_{x} \\<br>&amp;= \int_{x}f(x)w(x)q(x)d_{x} \\<br>\end{align}<br>$$</p>
+</li>
+<li><p>其中\(w(x) = \frac{p(x)}{q(x)}\)称为样本\(x\)的重要性权重(Importance Weight),不同样本的重要性权重不同</p>
+</li>
+<li><p>与直接从\(p(x)\)中采样相比,相同采样次数,最终得到期望偏差会更小,因为\(p(x)\)会<strong>增大在\(f(x)\)大但是\(p(x)\)极小处</strong>的样本被采样的概率,然后调低这个样本的权重</p>
+</li>
+<li><p>示意图片:</p>
+
+
+</li>
+</ul>
+</li>
 </ul>
 <hr>
-<h3 id="Jenson不等式的使用"><a href="#Jenson不等式的使用" class="headerlink" title="Jenson不等式的使用"></a>Jenson不等式的使用</h3><ul>
-<li>经常在推导时，可以使用Jenson不等式来实现求和计算和函数的交换，比如在VAE变分下界推导时就是用到了Jenson不等式</li>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>逆采样和拒绝采样</strong>都是在通过简单分布采样来采样原始分布的样本,最终的样本就是服从原始分布的样本\(x_{i}\sim p(x)\)</li>
+<li><strong>重要性采样</strong>本质上是通过简单分布来采样和重要性权重来估计某个函数在原始分布上的期望\(E_{x\sim p(x)}[f(x)] = \int_{x}f(x)p(x)d_{x}\)</li>
+<li>对于高维空间中的随机向量,拒绝采样和重要性采样经常难以找到合适的参考分布,容易导致采样效率低下(样本的接受概率太小或者重要性权重太低),此时可以考虑马尔科夫蒙特卡洛采样法(MCMC),MCMC中常见的有两种,MH(Metropolis-Hastings)采样法和Gibbs采样法,关于MCMC详情可参考我的博客<a href="/Notes/ML/ML%E2%80%94%E2%80%94MCMC%E9%87%87%E6%A0%B7.html">ML——MCMC采样</a></li>
 </ul>
 
           
@@ -1560,7 +1241,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——假设检验.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FM-因子分解机.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1579,11 +1260,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——假设检验.html" itemprop="url">Math——假设检验</a></h1>
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FM-因子分解机.html" itemprop="url">RS——FM-因子分解机</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1615,21 +1312,504 @@
       
         
           
-            <p><em>本文介绍各种常见假设检验方法及使用示例</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>本文主要介绍因子分解机(FM, Factorization Machine)</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FM模型"><a href="#FM模型" class="headerlink" title="FM模型"></a>FM模型</h3><ul>
+<li>最早于2010年提出,目标是<strong>解决稀疏特征下的特征组合问题</strong></li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>假设训练数据为:\(\{(x, y)\}\)<ul>
+<li>\(x\)特征维度为n(One-Hot编码后的维度), 初始时维度比较小,但是特征中含有特殊的字符串或者对象类型等,我们使用One-Hot编码来拓展每个特殊特征(如果一个特征有m个可能的取值,那么One-Hot编码下每个特征将被扩展为m个维度)<ul>
+<li>由于用One-Hot来编码,所以实际上特征是非常稀疏的(某些特征很多样本都为0,只有少数的样本为1)</li>
+</ul>
+</li>
+<li>\(y_{i}\)是样本的标签,表示是否点击(Clicked?), 1表示点击,0表示未点击</li>
+</ul>
+</li>
+<li>一般模型建模<br>$$y(x) = w_0+ \sum_{i=1}^n w_i x_i \label{eq:poly}\tag{1}$$<ul>
+<li>未挖掘到特征之间的关联关系,<ul>
+<li>如“USA”与“Thanksgiving”、“China”与“Chinese New Year”这样的关联特征，对用户的点击有着正向的影响</li>
+<li>如“化妆品”类商品与“女”性，“球类运动配件”的商品与“男”性，“电影票”的商品与“电影”品类偏好等</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FM建模<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n w_{ij} x_i x_j $$<ul>
+<li>n是样本的特征数量</li>
+<li>\(x_{i}\)是样本的<strong>第\(i\)个特征</strong>,不是第\(i\)个样本</li>
+<li>\(w_{0}, w_{i}, w_{ij}\)都是模型参数</li>
+<li>显然模型组合特征的参数数量为\(\frac{n(n-1)}{2}\),且任意两个参数独立</li>
+</ul>
+</li>
+<li>存在问题: 在数据稀疏性普遍存在的实际应用场景中，二次项参数的训练是很困难的<ul>
+<li>原因: 每个参数\(w_{ij}\) 的训练需要大量\(x_{i}\) 和\(x_{j}\) 都非零的样本；由于样本数据本来就比较稀疏，满足“\(x_{i}\)和\(x_{j}\)都非零”的样本将会非常少。训练样本的不足，很容易导致参数\(w_{ij}\)不准确，最终将严重影响模型的性能</li>
+</ul>
+</li>
+<li>解决问题的灵感<ul>
+<li>基于模型的协同过滤中,一个User-Item的评分(rating)矩阵可以分解为User和Item两个矩阵,每个用户和商品都可以用一个隐向量表示<img src="/Notes/RecommenderSystem/RS——FM-因子分解机/CF-Matrix.png"></li>
+</ul>
+</li>
+<li>FM解决问题的方法:<ul>
+<li>用一个对称矩阵\(W\)代表所有二次项参数\(w_{ij}\),矩阵的两边对称的是参数,中间填充正实数</li>
+<li>矩阵\(W\)可分解为<br>$$W=V^{T}V$$<ul>
+<li>\(V\)的第 \(j\) 列就是第 \(j\) 维特征的隐向量</li>
+<li>\(V\)是\(k x n\)维的向量(\(k &lt;&lt; n\))</li>
+<li>此时有<br>$$w_{ij} = \boldsymbol{v}_i^T \boldsymbol{v}_j$$<br>$$ y(x) = w_0+ \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \boldsymbol{v}_i^T \boldsymbol{v}_j x_{i} x_{j} $$</li>
+<li>\(v_{i}\cdot v_{j}\)是两个隐向量的内积</li>
+<li>此时\(w_{ij}\)和\(w_{mj}\)之间不在是独立的,他们有相同的内积项\(v_{j}\),这意味着所有包含“\(x_{i}\)的非零组合特征”(存在某个\(j\neq i\)，使得 \(x_{i}x_{j}\neq 0\))的样本都可以用来学习隐向量\(v_{i}\)(从而学习到\(w_{ij}\)), 这很大程度上<strong>避免了数据稀疏性造成的影响</strong><ul>
+<li>问题: 以前不能用来学习吗?</li>
+<li>回答: 以前的时候 \(w_{ij}\) 参数只能靠 \(x_{i}, x_{j}\) 均为1的样本 \(x\) 来训练,现在 \(w_{ij}\) 能由 \(v_{j}, v_{j}\) 生成,而 \(x_{i}\) 不为0的所有 \(x\) 都可以用来训练 \(v_{i}\),(当然,这里还需要存在某个 \(j\neq i\) ，使得 \(x_{i}x_{j}\neq 0\) , 只要当前样本不是只有\(x_{i}\)这个维度为1,这个条件肯定是成立的)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当前的式子运算复杂度是\(O(kn^2)\),这意味着我们训练和预测时计算\(y(x)\)的值都需要\(O(n^2)\)的时间</li>
+<li>考虑到上面的公式主要是复杂在二次项的计算,我们考虑对二次项进行化简<br>$$<br>\begin{aligned}<br>\sum_{i=1}^{n-1}\sum_{j=i+1}^n(\boldsymbol{v}<em>i^T \boldsymbol{v}_j)x_ix_j &amp;= \frac{1}{2}\left(\sum</em>{i=1}^n\sum_{j=1}^n(\boldsymbol{v}<em>i^T \boldsymbol{v}_j)x_ix_j-\sum</em>{i=1}^n(\boldsymbol{v}<em>i^T \boldsymbol{v}_i)x_ix_i\right)\\<br>&amp;=\frac{1}{2}\left(\sum</em>{i=1}^n\sum_{j=1}^n\sum_{l=1}^kv_{il}v_{jl}x_ix_j-\sum_{i=1}^n\sum_{l=1}^k v_{il}^2x_i^2\right)\\<br>&amp;=\frac{1}{2}\sum_{l=1}^k\left(\sum_{i=1}^n(v_{il}x_i)\sum_{j=1}^n(v_{jl}x_j)-\sum_{i=1}^nv_{il}^2x_i^2\right)\\<br>&amp;=\frac{1}{2}\sum_{l=1}^k\left(\left(\sum_{i=1}^n(v_{il}x_i)\right)^2-\sum_{i=1}^n (v_{il}x_i)^2\right)\\\end{aligned}<br>$$<ul>
+<li>现在二次项的复杂度是\(O(nk)\),最终模型的计算复杂度也是\(O(nk)\),注意这里是计算复杂度,不是参数数量(虽然FM模型的二次项参数数量碰巧也是\(nk\)个)</li>
+<li>意味着我们可以在<strong>线性时间</strong>内对<strong>FM模型</strong>进行<strong>训练</strong>和<strong>预测</strong>,是非常高效的</li>
+</ul>
+</li>
+</ul>
+<h4 id="参数数量"><a href="#参数数量" class="headerlink" title="参数数量"></a>参数数量</h4><ul>
+<li>整体模型的参数一共是\(1+n+nk\)个<ul>
+<li>偏执项一个\(w_{0}\)</li>
+<li>一次项 \(n\) 个\((w_{1},\dots,w_{n})\)</li>
+<li>二次项 \(nk\) 个\(v_{ij}\),其中\(i=1,2,\dots,n\), \(j=1,2,\dots,k\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="和其他模型的对比"><a href="#和其他模型的对比" class="headerlink" title="和其他模型的对比"></a>和其他模型的对比</h4><ul>
+<li>FM较为灵活,通过一些合适的特征变换,可以用来模拟<strong>二阶多项式核</strong>的(<strong>SVM</strong>,<strong>MF模型</strong>,<strong>SVD++模型</strong>)等</li>
+<li>相比SVM的二阶多项式而言,FM在样本稀疏的情况下有优势?什么优势?[待更新],<ul>
+<li>能想到的其中一个优势是FM训练/预测是线性复杂度,而二阶多项式核SVM需要计算核矩阵[待更新,关于核矩阵的理解?],所以复杂度是\(O(n^2)\)</li>
+</ul>
+</li>
+<li>MF相当于只有 \(u,i\) 两类特征的FM模型[待更新:MF的详细推导]<ul>
+<li>而FM模型中我们还可以加入任意多的特征,比如user的历史购买平均值,item的历史购买平均值等,但是MF只能局限在两类特征中</li>
+<li>为什么MF相当于只有 \(u,i\) 两类特征的FM模型?<ul>
+<li>证明,将MF中的每一项评分(rating)改写为:<br>$$r_{ui} \sim \beta_{u} + \gamma_i + x_u^Ty_i$$</li>
+<li>显然可得结论</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SVD++与MF类似,都是矩阵分解方法,在特征的扩展性上也不如FM模型[待更新: SVD++的推导和理解]</li>
+<li>FFM是FM的改进模型,加入了Field的概念,参考<a href="/Notes/RecommenderSystem/RS%E2%80%94%E2%80%94FMM%E6%A8%A1%E5%9E%8B.html">RS——FMM模型</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——FMM模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——FMM模型.html" itemprop="url">RS——FMM模型</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>本文主要介绍FFM(FFM, Field-aware Factorization Machine)</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="FFM模型"><a href="#FFM模型" class="headerlink" title="FFM模型"></a>FFM模型</h3><ul>
+<li>FFM最初概念来自Yu-Chin Juan（阮毓钦，毕业于中国台湾大学，现在美国Criteo工作）与其比赛队员,他们借鉴了Michael Jahrer的论文中的field概念提出了FM的升级版模型</li>
+</ul>
+<h4 id="Field的概念"><a href="#Field的概念" class="headerlink" title="Field的概念"></a>Field的概念</h4><ul>
+<li>FFM把相同性质的特征归于同一个Field,<ul>
+<li>比如“Day=26/11/15”、“Day=1/7/14”、“Day=19/2/15”这三个特征都是代表日期的，可以放到同一个field中</li>
+</ul>
+</li>
+<li>简单来说,就是同一个categorical特征经过One-Hot编码生成的数值特征都可以放到同一个field，包括用户性别、职业、品类偏好等</li>
+</ul>
+<h4 id="模型推导"><a href="#模型推导" class="headerlink" title="模型推导"></a>模型推导</h4><ul>
+<li>FM 对每个特征 \(x_i\) 学习一个 \(k\) 维隐向量\(v_i\), 二次项参数数量为\(nk\)</li>
+<li>FFM 对每个特征 \(x_i\) 和每个域(field) \(f_j\) 学习一个 \(k\) 维隐向量\(v_{i,f_{j}}\), 二次项参数数量为\(nfk\)<ul>
+<li>假设样本的特征有 \(n\) 个</li>
+<li>假设filed有 \(f\) 个</li>
+</ul>
+</li>
+<li>建模方程<br>$$y(x) = w_0 + \sum_{i=1}^n w_i x_i + \sum_{i=1}^n \sum_{j=i+1}^n \langle \mathbf{v}_{i, f_j}, \mathbf{v}_{j, f_i} \rangle x_i x_j \label{eq:ffm}\tag{4}$$<ul>
+<li>值得注意的是,上面的公式中,\(\mathbf{v}_{i, f_j}\)的第二个下标是 \(f_j\) ,不是 \(f_i\) ,表示的是, 同一个特征\(x_{i}\)在对不同的域(Field) \(f_j\) 中的特征 \(x_j\) 组合时,FFM考虑到 \(x_j\)的域不同,应该用不同的组合方式,所以使用不同的隐向量</li>
+<li>FM中 \(x_i\) 的隐向量为 \(v_i\)</li>
+<li>FFM中 \(x_i\) 的隐向量有多个,确切的说是隐矩阵, 对每个不同的域Field(包括\(x_i\)自身所在的域), 都有一个隐向量 \(v_{i,f_{j}}\) , 和不同类型的特征组合时,我们选择他们对应域的隐变量与之相乘</li>
+</ul>
+</li>
+<li>当前模型的二次项一共有\(\frac{n(n-1)}{2}\)项, 计算复杂度为\(O(n^2)\) 与FM化简前相同, FFM这里不能化简, 所以训练和预测复杂度计算复杂度为 \(O(n^2)\)</li>
+</ul>
+<h4 id="FFM需要关注的细节"><a href="#FFM需要关注的细节" class="headerlink" title="FFM需要关注的细节"></a>FFM需要关注的细节</h4><ul>
+<li>样本归一化, FFM默认进行样本归一化, 有个参数<code>pa.norm</code>设置为真即可;若此参数设置为假，很容易造成数据inf溢出，进而引起梯度计算的nan错误<br>  *　因此，样本层面的数据是推荐进行归一化的<ul>
+<li>[待更新],样本归一化的具体操作,样本归一化的作用是什么?</li>
+</ul>
+</li>
+<li>特征归一化，这里由于样本归一化后categorical的特征会变得非常小</li>
+<li>省略零值特征, 从建模方程可以看出, 零值特征对FFM模型完全没有贡献,包含零值特征的一切组合均为零</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/RecommenderSystem/RS——推荐系统综述.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/RecommenderSystem/RS——推荐系统综述.html" itemprop="url">RS——推荐系统综述</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <ul>
-<li>参考链接1：<a href="https://zhuanlan.zhihu.com/p/124072225" target="_blank" rel="noopener">知乎：T检验、F检验、卡方检验详细分析及应用场景总结</a></li>
-<li>参考链接2：<a href="https://www.zhihu.com/zvideo/1355465438965551105" target="_blank" rel="noopener">知乎视频：5分钟带你了解卡方检验</a></li>
-</ul>
-<h3 id="卡方检验"><a href="#卡方检验" class="headerlink" title="卡方检验"></a>卡方检验</h3><p><em>《概率论与数理统计》</em></p>
-<h3 id="p-value的含义"><a href="#p-value的含义" class="headerlink" title="p-value的含义"></a>p-value的含义</h3><ul>
-<li>在假设检验中，对p-value的的一种直观理解：在假设\(H_0\)：假设目标样本属于某个正太分布，这个样本不是从这个正太分布中采样的概率就是p值（即p值的本质是一个概率）<ul>
-<li>进一步的理解，已知一个正太分布和一个目标样本，那么这个目标样本对应的p值就是：重新在这个正太分布中重新采样一个新样本，新样本离中心位置\(u_0\)的距离大于等于目标样本的概率（该概率就是正太分布的两边区间积分和）</li>
-<li>p值越小，说明这个目标样本越不可能是从这个正太分布采样出来的，越应该拒绝原假设\(H_0\)（即越应该接受\(H_A\)</li>
+<li>参考博客:<ul>
+<li><a href="http://xtf615.com/2018/05/03/recommender-system-survey/" target="_blank" rel="noopener">http://xtf615.com/2018/05/03/recommender-system-survey/</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27502172" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27502172</a></li>
 </ul>
 </li>
+</ul>
+<hr>
+<h3 id="推荐系统分类-基于推荐依据分类"><a href="#推荐系统分类-基于推荐依据分类" class="headerlink" title="推荐系统分类(基于推荐依据分类)"></a>推荐系统分类(基于推荐依据分类)</h3><img src="/Notes/RecommenderSystem/RS——推荐系统综述/RS-Overview.jpg">
+<p>[待更新]</p>
+<h4 id="基于内容的推荐"><a href="#基于内容的推荐" class="headerlink" title="基于内容的推荐"></a>基于内容的推荐</h4><p><em>Content-based recommenders</em></p>
+<ul>
+<li><strong>推荐和用户曾经喜欢的商品相似的商品</strong></li>
+<li><strong>主要是基于商品属性信息和用户画像信息的对比</strong></li>
+<li>核心问题是<strong>如何刻画商品属性和用户画像以及效用的度量</strong></li>
+<li>使用一个<strong>效用函数</strong>(utility function)来评价特定用户\(c in C\)对特定项目\(s_{c}’ in S\)的评分, \(UserProfit(c), ItemProfit(s)\)分别表示用户和商品的收益函数(Profit Function)[存疑: 待更新]<br>$$u(c,s) = score(UserProfit(c), ItemProfit(s))$$<ul>
+<li>基于启发式的方法(Heuristic-based method): <ul>
+<li>特征构建: 基于关键字提取等方法,使用TF-IDF等指标提取关键字作为特征</li>
+<li>效用的度量: 使用启发式cosine等相似性指标, 衡量商品特征和用户画像的相似性,相似性越高,效用越大</li>
+</ul>
+</li>
+<li>基于机器学习的方法(Machine learning-based mehod):<ul>
+<li>特征构建: 使用机器学习算法来构建用户和商品的维度特征,例如建模商品属于某个类别,得到商品的刻画属性</li>
+<li>效用的度量: 直接使用机器学习算法拟合效用函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>对于任意的用户\(c \in C\),我们可以通过选择商品\(s_{c}’ \in S\)来得到最大化的效用函数<br>$$\forall c \in C, s_{c}’ = \arg\max_{s \in S} u(c,s)$$</li>
+</ul>
+<h4 id="基于协同过滤的推荐"><a href="#基于协同过滤的推荐" class="headerlink" title="基于协同过滤的推荐"></a>基于协同过滤的推荐</h4><p><em>Collaborative filtering recommenders</em></p>
+<h5 id="基于内存的推荐"><a href="#基于内存的推荐" class="headerlink" title="基于内存的推荐"></a>基于内存的推荐</h5><ul>
+<li>直接对User-Item矩阵进行研究<ul>
+<li>User-based CF: 推荐给特定用户列表中还没有发生过行为、而在<strong>相似用户列表中产生过行为</strong>的高频商品</li>
+<li>Item-based CF: 推荐给特定用户列表中还没有发生过行为、并且和<strong>当前用户已经发生过行为的商品相似的商品</strong></li>
+</ul>
+</li>
+</ul>
+<h5 id="基于模型的推荐"><a href="#基于模型的推荐" class="headerlink" title="基于模型的推荐"></a>基于模型的推荐</h5><h6 id="损失函数-正则项-Loss-Function"><a href="#损失函数-正则项-Loss-Function" class="headerlink" title="损失函数+正则项(Loss Function)"></a>损失函数+正则项(Loss Function)</h6><h6 id="神经网络-层-Neural-Network"><a href="#神经网络-层-Neural-Network" class="headerlink" title="神经网络+层(Neural Network)"></a>神经网络+层(Neural Network)</h6><h6 id="图模型-圈-Graph-Model"><a href="#图模型-圈-Graph-Model" class="headerlink" title="图模型+圈(Graph Model)"></a>图模型+圈(Graph Model)</h6><h6 id="基于矩阵分解的推荐"><a href="#基于矩阵分解的推荐" class="headerlink" title="基于矩阵分解的推荐"></a>基于矩阵分解的推荐</h6><ul>
+<li>Traditional SVD<ul>
+<li>传统的SVD分解<br>$$R_{m\times n} = U_{m \times k} \Sigma_{k \times k} V_{k \times n}^T$$</li>
+<li>缺点:<ul>
+<li>普通SVD分解时矩阵必须是稠密的,即每个位置都必须有值</li>
+<li>如果矩阵是稀疏的,有空值,那么需要先用均值或者其他统计学方法来填充矩阵</li>
+<li>计算复杂度高,空间消耗大</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FunkSVD<ul>
+<li>分解为两个低秩矩阵而不是三个矩阵<br>$$\hat{r}_{u,i} = q_i^T p_u$$<ul>
+<li>\(\hat{r}_{u,i}\)指用户对商品的评分</li>
+<li>\(q_{i}\)是商品\(i\)在隐空间的隐向量表示</li>
+<li>\(p_{u}\)是用户\(u\)在隐空间的隐向量表示</li>
+</ul>
+</li>
+<li>不使用传统的矩阵分解方式,定一个损失函数(针对\(\hat{r}_{u,i}\)未缺失的地方,\(\hat{r}_{u,i}\)缺失的地方训练时不用管),然后用梯度下降法进行参数优化<ul>
+<li>优化问题(最小化损失函数)定义如下<br>$$q^{\star}, p^{\star} = \min_{q, p} \sum_{(u,i) \in R_{train}} (r_{u,i} - q_i^T p_u)^2 + \lambda (||q_i||^2 + ||p_u||^2 )$$<ul>
+<li>正则项是两个参数的L2正则</li>
+<li>\(R_{train}\)是评分矩阵中<strong>可观测的数据对</strong>构成的集合, 缺失值不参与训练, 缺失值是需要我们最终预测的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>BiasSVD<ul>
+<li>BiasSVD是FunkSVD诸多变形版本的一个相对成功的方法</li>
+<li>带有偏执项的SVD分解</li>
+<li>基于假设: <ul>
+<li>关于用户的假设: 天生存在偏好,有的喜欢给商品好评,有的喜欢给商品差评<ul>
+<li>这些用户的固有属性与商品无关</li>
+</ul>
+</li>
+<li>关于商品的假设: 天生存在优劣,有的容易被人给好评,有的容易被人给差评<ul>
+<li>这些商品的固有属性与用户无关</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>优化问题(最小化损失函数)定义<br>$$<br>\begin{align}<br>&amp;\hat{r}<em>{ui} = \mu + b_u + b_i + q_i^Tp_u \\<br>&amp;min \sum</em>{r_{ui} \in R_{train}} \left(r_{ui} - \hat{r}_{ui} \right)^2 + \lambda\left(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2\right)<br>\end{align}<br>$$    </li>
+<li>梯度下降更新公式<br>$$<br>\begin{align}<br>\begin{split}b_u &amp;\leftarrow b_u &amp;+ \gamma (e_{ui} - \lambda b_u) \\<br>b_i &amp;\leftarrow b_i &amp;+ \gamma (e_{ui} - \lambda b_i)\\<br>p_u &amp;\leftarrow p_u &amp;+ \gamma (e_{ui} \cdot q_i - \lambda p_u)\\<br>q_i &amp;\leftarrow q_i &amp;+ \gamma (e_{ui} \cdot p_u - \lambda q_i)\end{split}<br>\end{align}<br>$$<ul>
+<li>\(e_{ui} = r_{ui} - \hat{r}_{ui}\)</li>
+<li>\(b_{u}\)[待更新]</li>
+<li>\(b_{i}\)[待更新]</li>
+<li>\(u\)[待更新]</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>SVD++<ul>
+<li>SVD++是对BiasSVD进行改进的</li>
+<li>基于假设:<ul>
+<li>除了显示的评分行为以外，用户对于商品的浏览记录或购买记录（隐式反馈）也可以从侧面反映用户的偏好。相当于引入了额外的信息源，<strong>能够解决因显示评分行为较少导致的冷启动问题</strong></li>
+</ul>
+</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>TimeSVD++<ul>
+<li>之前的模型都是静态的,这里TimeSVD++是动态的,每个时间段学习一个参数,不同时间段使用该时间段的训练数据进行学习</li>
+<li>优化问题定义[待更新]</li>
+</ul>
+</li>
+<li>BiasSVDwithU</li>
+<li>NMF</li>
+<li>非负矩阵分解Nonnegative Matrix Factorization*</li>
+<li>PMF</li>
+<li>概率矩阵分解Probabilistic Matrix Factorization*</li>
+<li>WRMF</li>
+<li>weighted regularized matrix factorization*</li>
+</ul>
+<h4 id="混合的推荐"><a href="#混合的推荐" class="headerlink" title="混合的推荐"></a>混合的推荐</h4><ul>
+<li>基于混合的推荐，顾名思义，是对以上算法的融合</li>
+<li>淘宝上就既有基于内容的推荐也有协同过滤的推荐</li>
+<li>对模型的融合可以参考集成学习的三种集成方式<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94Ensemble-%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0.html">ML——Ensemble-集成学习</a></li>
+</ul>
+<h3 id="推荐系统分类-基于推荐的最终输出形式分类"><a href="#推荐系统分类-基于推荐的最终输出形式分类" class="headerlink" title="推荐系统分类(基于推荐的最终输出形式分类)"></a>推荐系统分类(基于推荐的最终输出形式分类)</h3><h4 id="评分预测模型"><a href="#评分预测模型" class="headerlink" title="评分预测模型"></a>评分预测模型</h4><p><em>Rating prediction</em></p>
+<ul>
+<li>核心目的: 填充User-Item矩阵中的缺失值</li>
+<li>模型衡量指标: 均方根误差(RMSE, Root Mean Squard Error), 平均绝对误差(MAE, Mean Absolute Error)</li>
+</ul>
+<h4 id="排序预测模型"><a href="#排序预测模型" class="headerlink" title="排序预测模型"></a>排序预测模型</h4><p><em>Ranking prediction (top-n recommendation)</em></p>
+<ul>
+<li>核心目的: 给定一个用户,推荐一个有序的商品列表</li>
+<li>模型衡量指标: Precision@K, Recall@K等</li>
+</ul>
+<h4 id="分类模型"><a href="#分类模型" class="headerlink" title="分类模型"></a>分类模型</h4><p><em>Classification</em></p>
+<ul>
+<li>核心目的: 将候选商品分类,然后用于推荐</li>
+<li>模型衡量指标: Accuracy</li>
 </ul>
 
           
@@ -1679,7 +1859,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——因果推断.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——Ensemble-集成学习.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1698,11 +1878,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——因果推断.html" itemprop="url">Math——因果推断</a></h1>
+                <a class="post-title-link" href="/Notes/ML/Models/ML——Ensemble-集成学习.html" itemprop="url">ML——集成学习</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1734,21 +1930,52 @@
       
         
           
-            <p><em>本文介绍因果推断相关概念</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+            <p><em>集成学习(Ensemble)的本质是一种组合基础模型实现更高泛化能力和精度的技术框架</em><br>本文参考了博客: <a href="http://www.cnblogs.com/jasonfreak/p/5657196.html" target="_blank" rel="noopener">http://www.cnblogs.com/jasonfreak/p/5657196.html</a></p>
+<hr>
+<h3 id="集成学习的三族算法"><a href="#集成学习的三族算法" class="headerlink" title="集成学习的三族算法"></a>集成学习的三族算法</h3><h4 id="Bagging"><a href="#Bagging" class="headerlink" title="Bagging"></a>Bagging</h4><p><em>通过<strong>重采样技术</strong>生成若干<strong>不同子训练集</strong>,然后在<strong>每个训练集</strong>上训练<strong>一个分类器</strong>,最终采用<strong>投票方式</strong>产生模型最终结果</em></p>
+<ul>
+<li>m个基础模型</li>
+<li>从原始训练集中抽样生成m个子训练集,用子训练集训练每个基础模型</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行综合产生
 
+</li>
+</ul>
+<h5 id="代表模型"><a href="#代表模型" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="随机森林"><a href="#随机森林" class="headerlink" title="随机森林"></a>随机森林</h6><ul>
+<li>RF = Bagging + DT (随机森林中特征的选择也是随机的,这一点不同于DT,也不同与Bagging)</li>
+<li>随机森林详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94RF.html" title="/Notes/ML/Models/ML——RF.html">ML——RF</a></li>
+</ul>
+<h4 id="Boosting"><a href="#Boosting" class="headerlink" title="Boosting"></a>Boosting</h4><p><em>每个<strong>训练样例都有权重</strong>，每次训练新分类器的时候都<strong>着重训练</strong>那些在<strong>上一次分类</strong>过程中<strong>分错的样例</strong>，<strong>权重</strong>会随着迭代次数的变化而<strong>变化</strong></em></p>
+<ul>
+<li>训练思想是,每一轮迭代都将重心放到分错类的样本上</li>
+<li>训练过程为阶梯状</li>
+<li>基础模型按照次序依次训练(实现时可做到并行)</li>
+<li>前一个模型的预测结果修改后一个模型的样本权重(注意:模型的训练集时不会变的,只有每个样本的权重在变化,增大分错的样本的权重,使得后面训练时重视分错的样本),以此类推</li>
+<li>最终预测结果: 对所有基础模型预测的结果进行线性综合产生
 
-<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
-<li>讲的比较好的入门材料：<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/616895131" target="_blank" rel="noopener">闲聊因果效应（1）：当我们聊因果时，我们在聊什么</a></li>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/622399450" target="_blank" rel="noopener">闲聊因果效应（2）: 理解因果效应的计算以及PSM、IPW</a></li>
-</ul>
 </li>
-<li>阿里发的一篇论文，用神经网络实现的二分类Uplift模型：<ul>
-<li>参考链接：<a href="https://zhuanlan.zhihu.com/p/629853695" target="_blank" rel="noopener">KDD‘22 阿里｜DESCN: Deep Entire Space Cross Networks | 多任务、端到端、IPW的共舞</a></li>
 </ul>
+<h5 id="代表模型-1"><a href="#代表模型-1" class="headerlink" title="代表模型"></a>代表模型</h5><h6 id="提升树"><a href="#提升树" class="headerlink" title="提升树"></a>提升树</h6><ul>
+<li>Boosting Tree = AdaBoost + DT (AdaBoost是Boosting族算法的一种)</li>
+</ul>
+<h6 id="梯度提升树"><a href="#梯度提升树" class="headerlink" title="梯度提升树"></a>梯度提升树</h6><ul>
+<li>GBDT = Gradient Boosting + DT (Gradient Boosting是Boosting族算法的一种)</li>
+<li>GBDT详情可参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94GBDT.html" title="/Notes/ML/Models/ML——GBDT.html">ML——GBDT</a></li>
+</ul>
+<h4 id="Stacking"><a href="#Stacking" class="headerlink" title="Stacking"></a>Stacking</h4><p><em>每个分类器首先做一遍决策，然后将分类器们的决策送到更高一层的模型中，把他们当做特征再进行一次训练</em></p>
+<ul>
+<li>训练所有基础模型</li>
+<li>获取所有基础模型的预测结果</li>
+<li>第j个模型对某个训练样本产生的预测值作为该训练样本的第j个特征,标签不变,生成一个新的数据集(注意,样本的特征空间大小发生了变化,标签没变)</li>
+<li>基于新的训练集进行训练,得到预测模型M()</li>
+<li>测试时也要将特征转换后再用M进行预测</li>
+<li>实质上就是先用一些模型提取特征(这些模型的输出作为更高层模型的特征),然后再用模型的输出作为最终模型的特征,从而实现模型的堆叠(Stacking)</li>
+<li>理论上可以堆叠各种各样的分类器
+
 </li>
+</ul>
+<hr>
+<h3 id="方差与偏差"><a href="#方差与偏差" class="headerlink" title="方差与偏差"></a>方差与偏差</h3><ul>
+<li>偏差与方差可以参考我的博客: <a href="/Notes/ML/ML%E2%80%94%E2%80%94%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%96%B9%E5%B7%AE%E4%B8%8E%E5%81%8F%E5%B7%AE.html">模型的偏差与方差</a></li>
 </ul>
 
           
@@ -1798,7 +2025,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/Math/Math——函数空间总结.html">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/ML/Models/ML——DT-决策树.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joe Zhou">
@@ -1817,11 +2044,27 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Notes/Math/Math——函数空间总结.html" itemprop="url">Math——函数空间总结</a></h1>
+                <a class="post-title-link" href="/Notes/ML/Models/ML——DT-决策树.html" itemprop="url">ML——DT-决策树</a></h1>
         
 
         <div class="post-meta">
-          
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-15T00:00:00+08:00">
+                2018-03-15
+              </time>
+            
+
+            
+
+            
+          </span>
 
           
 
@@ -1853,8 +2096,316 @@
       
         
           
-            <p><em>希尔伯特空间,欧几里得空间,巴拿赫空间或者拓扑空间都是<strong>函数空间</strong></em></p>
-<p>参考博客:<a href="https://blog.csdn.net/weixin_36811328/article/details/81207753" target="_blank" rel="noopener">欧几里得空间与希尔伯特空间</a></p>
+            <p>本文参考: &lt;&lt;统计学习方法&gt;&gt;<br><em>决策树算法时很多优秀的集成算法的基础,包括RF,GBDT,提升树(Boosting Tree)等</em></p>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<hr>
+<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><ul>
+<li>决策树(DT)是一种基本的分类和回归方法</li>
+<li>分类问题中可以理解为if-then规则的集合</li>
+<li>分类问题中也可以理解为定义在特征空间-&gt;类空间上的条件概率分布</li>
+<li>分类问题中使用的是ID3和C4.5<ul>
+<li>ID3 基于 最大化信息增益 来选择特征</li>
+<li>C4.5基于 最大化信息增益比 来选择特征</li>
+</ul>
+</li>
+<li>回归问题使用的是分类与回归树(Classification And Regression Tree, CART)<ul>
+<li>分类树: 基于 最小化基尼(Gini Index)指数 来选择特征</li>
+<li>回归树: 基于 最小化平方误差 来选择特征</li>
+</ul>
+</li>
+<li>关于树模型的复杂度可以用下面的方式评估, 统计学习方法中<strong>CART</strong>选择使用树的<strong>节点总数</strong>来评估树的复杂度<ul>
+<li>叶子节点的数量</li>
+<li>节点总数</li>
+<li>树的深度</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="树模型的优缺点"><a href="#树模型的优缺点" class="headerlink" title="树模型的优缺点"></a>树模型的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>可解释性强</li>
+<li>可处理混合类型特征(?)</li>
+<li>具体伸缩不变性(不用归一化特征,LR模型需要归一化特征) </li>
+<li>有特征组合的作用</li>
+<li>可自然地处理缺失值(神经网络不能处理缺失值)</li>
+<li>对异常点鲁棒</li>
+<li>有特征选择作用</li>
+<li>可扩展性强，容易并行</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>缺乏平滑性(回归预测时输出值只能 输出有限的若干种数值)</li>
+<li>不适合处理高维稀疏数据<ul>
+<li>数据稀疏时<ul>
+<li>比如某个数据集有10000个样本</li>
+<li>某个特征只有10个样本存在值，其他样本都不存在值</li>
+</ul>
+</li>
+<li>决策树： </li>
+<li>这样的话树容易将当前特征选中作为分类特征，这种划分可能在训练集上看起来很好，但测试集中表现可能不太好(这里不是简单的缺失值，而是数据很稀疏，这里需要进一步的理解[待更新])</li>
+<li>LR等线性模型：<ul>
+<li>因为现在的模型普遍都会带着正则项，而LR等线性模型的正则项是对权重的惩罚，也就是特征对应的权重一旦过大，惩罚就会很大，进一步压缩权重的值，使他不至于过大，而树模型则不一样，树模型的惩罚项通常为叶子节点数和深度等，而我们都知道，对于上面这种 case，树只需要一个节点就可以完美分割9990和10个样本，惩罚项极其之小.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="决策树训练的三个步骤"><a href="#决策树训练的三个步骤" class="headerlink" title="决策树训练的三个步骤"></a>决策树训练的三个步骤</h3><h4 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h4><h5 id="信息增益"><a href="#信息增益" class="headerlink" title="信息增益"></a>信息增益</h5><ul>
+<li>对数据集D的经验熵:\(H(D)=-\sum_{k=1}^{K}\frac{|C_{k}|}{|D|}log_{2}\frac{|C_{k}|}{|D|}\)</li>
+<li>对特征A对数据集D的经验条件熵:\(H(D|A)=\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}H(D_{i})=-\sum_{n=1}^{n}\frac{|D_{i}|}{|D|}\sum_{k=1}^{K}\frac{|D_{ik}|}{|D_{i}|}log_{2}\frac{|D_{ik}|}{|D_{i}|}\), n为特征A的取值个数</li>
+</ul>
+<h5 id="信息增益比"><a href="#信息增益比" class="headerlink" title="信息增益比"></a>信息增益比</h5><ul>
+<li>特征A对训练数据D的信息增益比:\(g_{R}(D,A)=\frac{g(D,A)}{H_{A}(D)}\)<ul>
+<li>其中\(H_{A}=-\sum_{i=1}^{n}\frac{|D_{i}|}{|D|}log_{2}\frac{|D_{i}|}{|D|}\), n为特征A的取值个数</li>
+</ul>
+</li>
+</ul>
+<h5 id="基尼指数"><a href="#基尼指数" class="headerlink" title="基尼指数"></a>基尼指数</h5><ul>
+<li>对于分布\(p=(p_{1},…,p_{k})\)的基尼指数:\(Gini(p)=\sum_{k=1}^{K}p_{k}(1-p_{k})=1-\sum_{k=1}^{K}p_{k}^{2}\)</li>
+<li>对样本集合D,基尼指数为:\(Gini(p)=1-\sum_{k=1}^{K}\left(\frac{|C_{k}|}{|D|}\right)^{2}\)</li>
+<li>在特征A的条件下,集合D的基尼指数:\(Gini(D,A)=\frac{|C_{1}|}{|D|}Gini(D_{1})+\frac{|C_{2}|}{|D|}Gini(D_{2})\)<ul>
+<li>我们将集合D根据特征A分为两类: </li>
+<li>是否取特征A的某个值,其中\(A=a\)的是\(D_{1}\),\(A\neq a\)的是\(D_{2}\)</li>
+</ul>
+</li>
+</ul>
+<h4 id="决策树的生成"><a href="#决策树的生成" class="headerlink" title="决策树的生成"></a>决策树的生成</h4><h5 id="ID3"><a href="#ID3" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>基于<strong>最大化信息增益</strong>来选择特征</li>
+<li>选取所有信息增益最大的特征作为当前结点的特征</li>
+<li>对取值数目较多的属性有所偏好</li>
+<li>只有分类树,没有回归树</li>
+<li>ID3相当于用极大似然法对模型进行选择(问题:如何理解?)</li>
+</ul>
+<h5 id="C4-5"><a href="#C4-5" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>基于<strong>最大化信息增益比</strong>来选择特征</li>
+<li>选取信息增益比最大的特征作为当前结点的特征<ul>
+<li>由于使用最大的信息增益比特征可能对取值数目少的特征属性有所偏好,所以C4.5算法一般不会直接选信息增益比最大的,而是<ul>
+<li><strong>先从候选区属性中找出信息增益高于平均水平的</strong></li>
+<li><strong>再从筛选结果中寻找信息增益比最大的</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>处理连续型特征时使用二分法(bi-partition)</li>
+<li>只有分类树,没有回归树</li>
+</ul>
+<h5 id="CART"><a href="#CART" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>CART的决策树是二叉树</li>
+<li>分类树: 基于<strong>最小化基尼指数</strong>来选择特征<ul>
+<li>输出变量为离散变量</li>
+<li>基于基尼指数选取所有可能的特征A和所有可能的切分点a中,选择基尼指数最小的特征和切分点为最优特征和最优且分点</li>
+</ul>
+</li>
+<li>回归树: 基于<strong>最小化平方误差</strong>来选择特征<ul>
+<li>CART回归树一般称为最小二乘回归树(因为目标函数的优化是最小化误差的平方和实现的)</li>
+<li>输出变量为连续变量</li>
+<li>选取时选择最优划分变量(特征)j和最优切分点s,然后按照变量j的划分点s将结点分为两个结点,大于s的为第一个结点,小于s的为第二个结点</li>
+</ul>
+</li>
+<li>一点说明:<ul>
+<li>*&lt;&lt;统计学习方法&gt;&gt;*中:<ul>
+<li>回归树的特征默认是连续变量,选取划分点s时使用的是<strong>连续变量的各种中间值</strong>作为候选值,<strong>大于s的分为一个结点,小于s的分为一个结点</strong></li>
+<li>分类树的特征默认是离散变量,选取划分点a时使用的是<strong>离散变量的值</strong>作为候选值,<strong>等于a的分为一个结点,不等于a的分为另一个结点</strong></li>
+<li>但是实际上无论时分类树还是回归树,CART都可以用相同手段处理连续值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h4><ul>
+<li>剪枝的核心思想:<ul>
+<li>就是加入考虑树的复杂度考量(决策树的生成时仅仅是考虑到信息增益和信息增益比,没有考量树的复杂度)<ul>
+<li>树的深度越深,树越复杂</li>
+</ul>
+</li>
+<li>整体上再考虑树变得更简单的同时保证分类误差较小</li>
+</ul>
+</li>
+</ul>
+<h5 id="预剪枝"><a href="#预剪枝" class="headerlink" title="预剪枝"></a>预剪枝</h5><ul>
+<li>预剪枝发生在决策树生成过程中</li>
+<li>在每个节点划分前先进行估计</li>
+<li>若当前节点划分不能带来决策树准确率提升,则停止划分</li>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中未提到这个方法,只讲了一种简单的后剪枝算法</li>
+<li>时间复杂度小,欠拟合风险大</li>
+</ul>
+<h5 id="后剪枝"><a href="#后剪枝" class="headerlink" title="后剪枝"></a>后剪枝</h5><ul>
+<li>后剪枝发生在决策树生成后</li>
+<li>自底向上的对非叶子节点进行考察(注意千万不可从根节点开始自顶向下的剪枝,可能失去整体最优的决策树)</li>
+<li>若将该节点换成叶子节点能带来决策树准确率提升,则将该节点替换为叶子节点</li>
+<li>时间复杂度大,欠拟合风险小</li>
+</ul>
+<h6 id="常见的后剪枝方法"><a href="#常见的后剪枝方法" class="headerlink" title="常见的后剪枝方法"></a>常见的后剪枝方法</h6><p><em>各种方法各有优劣,关注不同的优化角度</em></p>
+<ul>
+<li>REP 错误率降低剪枝(Reduced Error Pruning)</li>
+<li>PEP 悲观剪枝(Pessimistic Error Pruning)</li>
+<li>CCP 代价复杂度剪枝(Cost Complexity Pruning), 详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CPP剪枝算法描述</a></li>
+<li>MEP 最小误差剪枝(Minimum Error Pruning)</li>
+<li>CVP (Critical Value Pruning)</li>
+<li>OPP (Optimal Pruning)</li>
+</ul>
+<h5 id="ID3和C4-5的剪枝"><a href="#ID3和C4-5的剪枝" class="headerlink" title="ID3和C4.5的剪枝"></a>ID3和C4.5的剪枝</h5><h5 id="CART的剪枝"><a href="#CART的剪枝" class="headerlink" title="CART的剪枝"></a>CART的剪枝</h5><p><em>CART使用的是CCP剪枝</em></p>
+<ul>
+<li>对任意的子树,我们可以定义子树的损失<ul>
+<li>\(C_{a}(T)=C(T)+\alpha|T|\)</li>
+<li>子树的损失 = 子树的预测误差 + \(\alpha\) * 子树的节点数</li>
+<li>对于回归树和分类树,子树的预测误差定义不一样,前者是误差的平方和,后者是基尼指数</li>
+</ul>
+</li>
+<li>可以证明对于给定的Alpha,一定存在某个损失最小的子树,也就是我们要的最优子树</li>
+<li>现实中实现时可以使用递归的方法实现</li>
+</ul>
+<h6 id="CCP剪枝算法描述"><a href="#CCP剪枝算法描述" class="headerlink" title="CCP剪枝算法描述"></a>CCP剪枝算法描述</h6><p><em>CPP剪枝也是一种后剪枝算法</em><br><strong>修正：统计学习方法CART算法第六步中应该跳到第二步，而不是第三步</strong></p>
+<ul>
+<li>1：计算所有节点对应的\(\alpha\)值: \(\alpha=\frac{C(t)-C(T_{t})}{|T_{t}|-1}\)<ul>
+<li>\(C(t)\)是以<strong>t节点单一节点为树</strong>时单一节点树的损失函数</li>
+<li>\(C(T_{t})\)是以<strong>t节点为根节点的子树</strong>时整棵子树的损失函数</li>
+<li>\(|T_{t}|\)是以<strong>t节点为根节点的子树</strong>时整棵子树的节点数量</li>
+</ul>
+</li>
+<li>2：对当前\(\alpha\)值最小的节点t剪枝，并存储中间结果的\(\alpha\)值和剪枝后的树结构<ul>
+<li>当\(\alpha\)确定时，存在唯一的最小子树\(T_{\alpha}\)使损失函数\(C_{\alpha}(T)\)最小</li>
+</ul>
+</li>
+<li>3：选取当前树为剪枝后的树，跳转到第1步，直到剪枝到只有三个节点的树时截止</li>
+<li>4：截止后得到节点数量从大到小的多个子树\(T_{\alpha_{0}}, T_{\alpha_{1}},…,T_{\alpha_{n}}\). (其中\(T_{\alpha_{i}}\)也就对应着第i个\(\alpha\)值\(\alpha_{i}\))</li>
+<li>5：用交叉验证法对\(\alpha\)的值进行选择(CART算法执行时\(\alpha\)类似超参数，整个算法学习的过程类似于用交叉验证法确定超参数的过程，\(\alpha\)的值确定了，对应的决策树也就确定了！)</li>
+</ul>
+<h4 id="关于连续特征"><a href="#关于连续特征" class="headerlink" title="关于连续特征"></a>关于连续特征</h4><h5 id="统计学习方法"><a href="#统计学习方法" class="headerlink" title="统计学习方法"></a>统计学习方法</h5><ul>
+<li>在&lt;&lt;统计学习方法&gt;&gt;中回归树的特征默认是连续变量,分类树的特征默认是离散变量</li>
+</ul>
+<h5 id="机器学习-周志华"><a href="#机器学习-周志华" class="headerlink" title="机器学习 周志华"></a>机器学习 周志华</h5><ul>
+<li>在&lt;&lt;机器学习&gt;&gt;中提到连续特征的一种解决方案:<ul>
+<li>把该连续特征所有出现的取值排序</li>
+<li>取临近两两之间的平均值作为划分点</li>
+<li>像处理离散的点一样,使用信息增益最大化,信息增益率最大化,或者是基尼指数最小化实现对应的划分选择</li>
+</ul>
+</li>
+</ul>
+<h5 id="个人总结"><a href="#个人总结" class="headerlink" title="个人总结"></a>个人总结</h5><ul>
+<li>处理连续型变量(特征的能力)<ul>
+<li>ID3 不能处理连续型特征<ul>
+<li>因为连续型特征往往使得每一个样本该特征取值都不一样,造成该特征对数据集D的经验条件熵为0?</li>
+<li>使得ID3算法趋向于选择这个特征?</li>
+</ul>
+</li>
+<li>C4.5 能处理连续型特征<ul>
+<li>将数据排序后找到类别不同的分割线作为切分点</li>
+<li>根据切分点把连续属性二分类装换为布尔类型</li>
+<li>可多次使用连续属性分类</li>
+</ul>
+</li>
+<li>CART 能处理连续型特征<ul>
+<li>实际对连续型特征的处理<strong>与C4.5一样</strong></li>
+<li>由于CART树构建时每次都会对特征进行二值化分,所以可以很好的适用与连续型变量</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="一些总结"><a href="#一些总结" class="headerlink" title="一些总结"></a>一些总结</h4><ul>
+<li>算法ID3生成可能是多叉树,而CART一定是二叉树，*&lt;&lt;统计学习方法&gt;&gt;*中二者生成相同的数是巧合，除了不同评价方式的特征选择结果一样以外，还需要被选中的特征都是二值的！</li>
+<li>ID3相当于用极大似然法对模型进行选择</li>
+</ul>
+<h4 id="一种很好的理解思路"><a href="#一种很好的理解思路" class="headerlink" title="一种很好的理解思路"></a>一种很好的理解思路</h4><h5 id="ID3-1"><a href="#ID3-1" class="headerlink" title="ID3"></a>ID3</h5><ul>
+<li>ID3算法就是用<strong>信息增益</strong>大小来判断当前节点应该用什么特征来构建决策树，用计算出的<strong>信息增益最大的特征</strong>来建立决策树的当前节点</li>
+</ul>
+<h6 id="ID3的缺点"><a href="#ID3的缺点" class="headerlink" title="ID3的缺点:"></a>ID3的缺点:</h6><ul>
+<li>ID3<strong>不能处理连续特征</strong></li>
+<li>ID3对取值较多的特征有着偏好<strong>在相同条件下，取值比较多的特征比取值少的特征信息增益大</strong></li>
+<li>ID3<strong>不能处理缺失值</strong></li>
+<li>没有考虑过拟合的问题(问题: ID3没有剪枝吗?)</li>
+</ul>
+<h5 id="C4-5-1"><a href="#C4-5-1" class="headerlink" title="C4.5"></a>C4.5</h5><ul>
+<li>C4.5可以看成是对ID3进行改进</li>
+</ul>
+<h6 id="C4-5对ID3的改进"><a href="#C4-5对ID3的改进" class="headerlink" title="C4.5对ID3的改进"></a>C4.5对ID3的改进</h6><ul>
+<li><p>对于ID3不能处理连续特征，C4.5的思路是将连续的特征离散化.</p>
+<ul>
+<li>样本(m个样本)按照特征的取值排列后取相邻样本的平均值作为划分点(m-1个划分点),分别计算以每个划分点作为二元分类时的信息增益. 最终选择信息增益高的(问题:这里是C4.5,为什么不是使用信息增益比而是信息增益来作为区分?)</li>
+<li>C4.5选择连续特征作为分类特征时,只分两类,但是后面(其他层结点)可以使用该特征分类,也就是说连续特征在C4.5中可以多次使用,但每次只分为两部分</li>
+</ul>
+</li>
+<li><p>对于ID3信息增益最大指标会造成偏向于取值较多的特征的问题. C4.5使用信息增益比来解决问题</p>
+</li>
+<li><p>对于ID3不能处理缺失值的问题,C4.5主要解决两个问题</p>
+<ul>
+<li>1) 如何在属性值缺失条件下进行<strong>属性选择</strong><ul>
+<li>没有缺失值的属性,正常处理</li>
+<li>每个属性A有缺失值:<ul>
+<li>对该特征进行划分时仅仅考虑在属性A上没有缺失的部分数据,有缺失的数据不考虑.</li>
+<li>无缺失的数据计算收益时需要乘以一个权重(无缺失的样本总数/样本总数)</li>
+<li>相当于信息增益适当缩小</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>2) 给定划分属性,若<strong>样本在该属性上的值缺失,如何对样本进行划分</strong><ul>
+<li>在A属性没有缺失值的样本,正常划分</li>
+<li>在A属性有缺失值的样本:<ul>
+<li>给每个样本引入权重,初始值都为1 </li>
+<li>同一个样本按照不同概率划入到不同的结点(当前叶节点)中去(概率是当前结点中样本数量/无缺失样本总数) </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>对于没有考虑过拟合的问题:</p>
+<ul>
+<li>C4.5引入了正则化系数剪枝(问题: ID3没有剪枝吗?)</li>
+</ul>
+</li>
+</ul>
+<h6 id="C4-5的缺点"><a href="#C4-5的缺点" class="headerlink" title="C4.5的缺点"></a>C4.5的缺点</h6><ul>
+<li>[这个问题存疑,没有任何书籍显示C4.5的剪枝策略是PEP,&lt;&lt;统计学习方法&gt;&gt;中只是简单的介绍了<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#%E5%90%8E%E5%89%AA%E6%9E%9D">后剪枝</a>]C4.5的剪枝方法时PEP,PEP准确度高,但是存在下面两个子问题:<ul>
+<li>1) PEP使用由上而下的剪枝策略,会导致与预先剪枝相同的问题,造成过度剪枝</li>
+<li>2) 会造成剪枝失败的情况</li>
+</ul>
+</li>
+<li>C4.5生成多叉树,计算机中很多时候多叉树运算效率不如二叉树来的高</li>
+<li>C4.5只能用于分类</li>
+<li>C4.5需要进行大量的对数运算(计算熵)</li>
+</ul>
+<h5 id="CART-1"><a href="#CART-1" class="headerlink" title="CART"></a>CART</h5><ul>
+<li>可以理解为对C4.5进一步的改进</li>
+</ul>
+<h6 id="CART对C4-5的改进"><a href="#CART对C4-5的改进" class="headerlink" title="CART对C4.5的改进"></a>CART对C4.5的改进</h6><ul>
+<li>CART使用CPP代价复杂度剪枝算法<ul>
+<li>详细过程参考<a href="/Notes/ML/Models/ML%E2%80%94%E2%80%94DT-%E5%86%B3%E7%AD%96%E6%A0%91.html#CCP%E5%89%AA%E6%9E%9D%E7%AE%97%E6%B3%95%E6%8F%8F%E8%BF%B0">CCP剪枝算法描述</a></li>
+</ul>
+</li>
+<li>CART使用二叉树只生成二叉树,即使是离散特征<ul>
+<li>CART对连续特征的处理与C4.5完全相同</li>
+<li>CART对离散特征也是二分类且也是可以多次使用同一特征(ID3与C4.5中离散特征只能使用一次,且是多分叉)</li>
+<li>所以CART是一颗二叉树</li>
+</ul>
+</li>
+<li>CART可有分类树和回归树两种<ul>
+<li>回归树的目标函数的优化是: 最小化误差的平方和</li>
+<li>分类树以概率最大的类别作为叶节点的类别</li>
+<li>回归树以中位数或者均值作为预测结果</li>
+</ul>
+</li>
+<li>CART使用基尼指数作为结点混乱度的度量指标<ul>
+<li>避免了对数计算(与熵比较)</li>
+</ul>
+</li>
+</ul>
+<h5 id="ID3-C4-5-CART的缺点"><a href="#ID3-C4-5-CART的缺点" class="headerlink" title="ID3,C4.5,CART的缺点"></a>ID3,C4.5,CART的缺点</h5><ul>
+<li>每次之全责一个最优特征作为分类决策,而实际中其实可能需要多个特征一起决策<ul>
+<li>解决方案: 多变量决策树(每次选择多个特征一起决策)<ul>
+<li>单个特征决策可以看成是直线</li>
+<li>多个特征决策可以看成是斜线</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>样本改变一点点都会造成树的结构改变很大<ul>
+<li>解决方案: 随机森林等集成学习方法</li>
+</ul>
+</li>
+</ul>
 
           
         
@@ -1894,7 +2445,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/14/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><span class="page-number current">15</span><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><a class="extend next" rel="next" href="/page/16/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/14/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><span class="page-number current">15</span><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/16/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1942,7 +2493,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">293</span>
+                  <span class="site-state-item-count">195</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1955,7 +2506,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">49</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
