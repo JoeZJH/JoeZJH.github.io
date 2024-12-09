@@ -1335,6 +1335,261 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——DDIM.html" itemprop="url">DL——DDIM</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">DENOISING DIFFUSION IMPLICIT MODELS, ICLR 2021</a>  </li>
+<li><a href="https://zhuanlan.zhihu.com/p/666552214" target="_blank" rel="noopener">一文带你看懂DDPM和DDIM（含原理简易推导，pytorch代码） - Deja vu的文章 - 知乎</a>  </li>
+<li><a href="https://zhuanlan.zhihu.com/p/627616358" target="_blank" rel="noopener">一文读懂DDIM凭什么可以加速DDPM的采样效率</a>  </li>
+<li><a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>  </li>
+</ul>
+</li>
+</ul>
+<h3 id="DDPM为什么慢？"><a href="#DDPM为什么慢？" class="headerlink" title="DDPM为什么慢？"></a>DDPM为什么慢？</h3><ul>
+<li>采样步数不能太小，否则单次破坏力度过大，不容易恢复？</li>
+<li>不能跳步，否则不遵循马尔科夫过程</li>
+</ul>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><ul>
+<li><p>核心是在DDPM的基础上，增加一些设定，解决马尔科夫性导致的无法跳步采样的问题</p>
+</li>
+<li><p>直观理解</p>
+<img src="/Notes/DL/DL——DDIM/DDIM-P1.png"></li>
+<li><p>放弃马尔科夫性假设后，我们假设分布\(p(x_{t-1}|x_t, x_0)\)服从高斯分布：<br>  $$<br>  \begin{align}<br>  p(x_{t-1}|x_t, x_0) &amp;\sim \mathcal{N}(kx_0+mx_t, \sigma^2) \\<br>  x_{t-1} &amp;= kx_0+mx_t + \sigma \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>在\( x_t\)加噪过程中有（详情参见DDPM推导）：<br>  $$ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t} \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})$$</p>
+</li>
+<li><p>将\(x_t\)带入原始假设分布，并合并同类项有(下面的推导使用到两个高斯分布的混合)：<br>  $$<br>  \begin{align}<br>  x_{t-1} &amp;= kx_0+m(\sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t} \epsilon’) + \sigma \epsilon, \ \text{where} \ \epsilon,\epsilon’ \sim \mathcal{N}(0,\mathbf{I}) \\<br>  x_{t-1} &amp;= (k+m\sqrt{\bar{\alpha}_t})x_0 + \sqrt{m^2(1-\bar{\alpha}_t) + \sigma^2}\epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>在\( x_{t-1}\)加噪过程中有（详情参见DDPM推导）：<br>  $$ x_{t-1} = \sqrt{\bar{\alpha}_{t-1}} x_0 + \sqrt{1-\bar{\alpha}_{t-1}} \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})$$</p>
+</li>
+<li><p>于是，对照两个等式，让对应项相等可得以下方程：<br>  $$<br>  \begin{align}<br>  k+m\sqrt{\bar{\alpha}_t} &amp;= \sqrt{\bar{\alpha}_{t-1}}\\<br>  \sqrt{m^2(1-\bar{\alpha}_t) + \sigma^2} &amp;= \sqrt{1-\bar{\alpha}_{t-1}}<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>解方程可得：<br>  $$<br>  \begin{align}<br>  m &amp;= \frac{\sqrt{1-\bar{\alpha}_{t-1}-\sigma^2}}{\sqrt{1-\bar{\alpha}_t}} \\<br>  k &amp;= \sqrt{\bar{\alpha}_{t-1}} - \frac{\sqrt{1-\bar{\alpha}_{t-1}-\sigma^2}}{\sqrt{1-\bar{\alpha}_t}}\sqrt{\bar{\alpha}_t}<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>将结果带回原始假设分布可得：<br>  $$<br>  \begin{align}<br>  x_{t-1} &amp;= (\sqrt{\bar{\alpha}_{t-1}} - \frac{\sqrt{1-\bar{\alpha}_{t-1}-\sigma^2}}{\sqrt{1-\bar{\alpha}_t}}\sqrt{\bar{\alpha}_t})x_0+(\frac{\sqrt{1-\bar{\alpha}_{t-1}-\sigma^2}}{\sqrt{1-\bar{\alpha}_t}})x_t + \sigma \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I}) \\<br>  x_{t-1} &amp;= \sqrt{\bar{\alpha}_{t-1}}x_0 - \sqrt{1-\bar{\alpha}_{t-1}-\sigma^2} \frac {x_t - \sqrt{\bar{\alpha}_t}x_0}{\sqrt{1-\bar{\alpha}_t}} + \sigma \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I}) \\<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>由加噪过程中关系，用\(x_t\)表示\(x_0\)有（详情见DDPM推导）：<br>  $$<br>  \begin{align}<br>  x_0 = \frac{x_t - \sqrt{1-\bar{\alpha}_t} \epsilon_t}{\sqrt{\bar{\alpha}_t} } \\<br>  \epsilon_t = \frac{x_t - \sqrt{\bar{\alpha}_t}x_0}{\sqrt{1-\bar{\alpha}_t}}<br>  \end{align}<br>  $$</p>
+</li>
+<li><p>将上述结果带入上一步的结论可得：<br>  $$ x_{t-1} = \sqrt{\bar{\alpha}_{t-1}}\frac{x_t - \sqrt{1-\bar{\alpha}_t} \epsilon_t}{\sqrt{\bar{\alpha}_t} } - \sqrt{1-\bar{\alpha}_{t-1}-\sigma^2} \epsilon_t + \sigma \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I}) $$</p>
+<ul>
+<li>其中\(\epsilon_t = \epsilon_\theta(x_t, t)\)</li>
+</ul>
+</li>
+<li><p>至此，我们还差\(\sigma\)的值没有确定：</p>
+<ul>
+<li>考虑上式可以写成：<br>  $$<br>  q_\sigma(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)<br>  = \mathcal{N}(\mathbf{x}_{t-1}; \sqrt{\bar{\alpha}_{t-1}} \Big( \frac{\mathbf{x}_t - \sqrt{1 - \bar{\alpha}_t} \epsilon^{(t)}_\theta(\mathbf{x}_t)}{\sqrt{\bar{\alpha}_t}} \Big) + \sqrt{1 - \bar{\alpha}_{t-1} - \sigma_t^2} \epsilon^{(t)}_\theta(\mathbf{x}_t), \sigma_t^2 \mathbf{I})<br>  $$</li>
+<li>且\(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0) = \mathcal{N}(\mathbf{x}_{t-1}; \tilde{\boldsymbol{\mu}}(\mathbf{x}_t, \mathbf{x}_0), \tilde{\beta}_t \mathbf{I})\)</li>
+<li>于是有：<br>  $$ \tilde{\beta}_t = \sigma_t^2 = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t $$</li>
+<li>实际实验时，可以改写为：\(\sigma_t^2 = \eta’ \cdot \tilde{\beta}_t\)或直接使用\(\sigma_t^2 = \eta \cdot \beta_t\)，详情见本文实验部分</li>
+</ul>
+</li>
+<li><p>推导过程中没有一定要求\(x_{t-1}\)是\(x_t\)的上一步，所以可以用\(x_s\)替换\(x_{t-1}\)：<br>  $$q_{\sigma, s &lt; t}(\mathbf{x}_s \vert \mathbf{x}_t, \mathbf{x}_0)<br>  = \mathcal{N}(\mathbf{x}_s; \sqrt{\bar{\alpha}_s} \Big( \frac{\mathbf{x}_t - \sqrt{1 - \bar{\alpha}_t} \epsilon^{(t)}_\theta(\mathbf{x}_t)}{\sqrt{\bar{\alpha}_t}} \Big) + \sqrt{1 - \bar{\alpha}_s - \sigma_t^2} \epsilon^{(t)}_\theta(\mathbf{x}_t), \sigma_t^2 \mathbf{I})$$</p>
+</li>
+<li><p>最后，我们可以得到推导结果：</p>
+  <img src="/Notes/DL/DL——DDIM/DDIM-P2.png">
+<ul>
+<li>当采样方差\(\sigma\)满足一定条件时，上面的式子会满足马尔科夫过程，即等价于DDPM</li>
+</ul>
+</li>
+<li><p>图示跳步采样（生成）的原理：</p>
+  <img src="/Notes/DL/DL——DDIM/DDIM-P3.png">
+
+</li>
+</ul>
+<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><h4 id="DDPM的训练和推理"><a href="#DDPM的训练和推理" class="headerlink" title="DDPM的训练和推理"></a>DDPM的训练和推理</h4><img src="/Notes/DL/DL——DDIM/ddpm-training-and-sampling.png">
+
+<h4 id="DDIM的训练和推理"><a href="#DDIM的训练和推理" class="headerlink" title="DDIM的训练和推理"></a>DDIM的训练和推理</h4><ul>
+<li><p>训练过程与DDPM基本一致，但DDIM只需要采样固定间隔的步数即可</p>
+<ul>
+<li>如果已经有训练好的DDPM，可以直接用，因为DDPM的训练时间步包含了DDIM的训练时间步</li>
+</ul>
+</li>
+<li><p>推理过程</p>
+  <img src="/Notes/DL/DL——DDIM/DDIM-P4.png">
+</li>
+<li><p>推理时，一般会设置\(\sigma=0\)，即DDIM是确定性的，这是DDIM中区别于DDPM的很大的点</p>
+</li>
+</ul>
+<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
+<li>实验设置<img src="/Notes/DL/DL——DDIM/DDIM-P5-0.png"></li>
+<li>结果展示<img src="/Notes/DL/DL——DDIM/DDIM-P5.png"></li>
+<li>结果分析<img src="/Notes/DL/DL——DDIM/DDIM-P6.png"></li>
+<li>从图中可以得出结论<ul>
+<li>\(\sigma\)越小（\(\eta\)越小，方差越小），即方差越小，效果越好，DDIM最好（DDIM对应\(\eta=0\)且\(\sigma=0\)）</li>
+<li>当\(T=1000\)时（或者\(T\)非常大时），DDPM效果最好（DDPM对应\(\eta=1\)且\(\sigma = \hat{\sigma}\)）</li>
+<li>小节：当采样步数少时（即间隔大时），使用DDIM效果更好，DDPM效果非常差；当采样步数很大时，DDPM效果微微好于DDIM</li>
+</ul>
+</li>
+</ul>
+<h3 id="代码亲测"><a href="#代码亲测" class="headerlink" title="代码亲测"></a>代码亲测</h3><ul>
+<li><p>各种\(\alpha,\beta\)的定义技巧：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">num_steps = 100</span><br><span class="line">betas = torch.linspace(-6,6,num_steps) </span><br><span class="line">betas = torch.sigmoid(betas)*(0.5e-2 - 1e-5)+1e-5 # beta逐步递增</span><br><span class="line">alphas = 1-betas</span><br><span class="line">print(&quot;alphas: %s&quot; % alphas)</span><br><span class="line">alphas_prod = torch.cumprod(alphas,0) # 连乘</span><br><span class="line">alphas_bar = alphas_prod</span><br><span class="line">alphas_prod_p = torch.cat([torch.tensor([1]).float(),alphas_prod[:-1]],0) # previous连乘</span><br><span class="line">alphas_bar_sqrt = torch.sqrt(alphas_bar)</span><br><span class="line">one_minus_alphas_bar_log = torch.log(1 - alphas_bar)</span><br><span class="line">one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_bar)</span><br><span class="line"></span><br><span class="line"># 模型定义：model(x, t)</span><br><span class="line"># 采样方式：torch.randn_like(x)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实现细节(为了清晰表达，对原始采样公式有所修改)：<br>$$<br>x_s = \sqrt{\bar{\alpha}_s}\left(\frac{x_k-\sqrt{1-\bar{\alpha}_k}\epsilon_{\theta}(x_k,k)}{\bar{\alpha}_k}\right) + \sqrt{1-\bar{\alpha}_s-a_1\sigma_k^2}\epsilon_{\theta}(x_k,k) + a_2\sigma_k \epsilon<br>$$</p>
+<ul>
+<li>其中：\(\sigma_k^2 = \beta_t\)</li>
+<li>注意：\(a_1,a_2\)是新加的，拆开\(a_1,a_2\)的原因是实验发现两者可以设置不同值，且有以下现象：<ul>
+<li>\(a_2=0,a_1=1.0\)时，此时表示不采样，整个生成过程中没有添加随机值（除了初始样本为随机值外），不影响样本的生成质量，相对有随机值生成效果甚至更好</li>
+<li>\(a_1=0\)时，无论\(a_2\)值为多少，生成的样本均是类似乱码的图</li>
+<li>\(a_1&gt;0.5\)时，无论\(a_2\)值是否为0，生成的样本均不错（\(a_1\)的值不能太小，否则效果会不好）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>亲测实验结果与论文有偏差的原因分析:</p>
+<ul>
+<li>如果采样步数较少，效果也不好，但当采样间隔为2时，即跳一步采样，效果还可以（不如间隔为1）<ul>
+<li>采样步数越多，效果越好（与原始论文结果一样）</li>
+</ul>
+</li>
+<li>为什么本人实现的DDIM采样步数不能太少？（跳步10步时效果较差，与原始论文结果不一致）<ul>
+<li>DDIM可能对模型要求很高，本人尝试环境中模型过于简单？训练样本过少？</li>
+</ul>
+</li>
+<li>为什么\(a_1=0\)时，效果非常差？<ul>
+<li>待解答</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="DDIM对比DDPM"><a href="#DDIM对比DDPM" class="headerlink" title="DDIM对比DDPM"></a>DDIM对比DDPM</h3><ul>
+<li>DDIM训练流程与DDPM完全相同，只是推理(采样)过程不同</li>
+<li>DDIM主要解决DDPM采样慢的问题<ul>
+<li>DDPM有符合马尔科夫假设，需要一步步采样，效率慢</li>
+<li>DDIM没有马尔科夫假设，可以跳步生成图片，且可以不采样（标准的DDIM就是不采样的，论文中，噪音的方差越小，得到的效果越好）</li>
+</ul>
+</li>
+<li>DDIM中Implicit名字的来源是什么？<ul>
+<li>Implicit的含义是表示“隐式的”，原论文的DDIM就是特指\(\sigma_t=0\)的情形，意思这是一个隐式的概率模型，因为跟其他选择所不同的是，此时从给定的\(\boldsymbol{x}_T = \boldsymbol{z}\)出发，得到的生成结果\(\boldsymbol{x}_0\)是不带随机性的<a href="https://kexue.fm/archives/9181" target="_blank" rel="noopener">生成扩散模型漫谈（四）：DDIM = 高观点DDPM，科学空间</a>  </li>
+</ul>
+</li>
+</ul>
+<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
+<li>DDPM采样时不能去掉噪音，为什么DDIM可以？<ul>
+<li>回答：因为DDIM采样中，噪音的方差\(\sigma\)是通过实验发现效果比较好的</li>
+<li>具体原因？</li>
+</ul>
+</li>
+<li>为什么DDPM和DDIM训练逻辑基本一致，但DDPM推断必须遵循马尔科夫性，而DDIM不需要？<ul>
+<li>回答：<ul>
+<li>训练时：DDIM和DDPM训练过程都遵循马尔科夫过程。DDIM可以按照一定间隔采样时间步，但实际上也是经过在满足马尔科夫过程的情况下推导出来的，DDPM和DDIM的训练采样公式都是因为方差可以累加实现跳跃采样的</li>
+<li>推断时：因为DDPM的采样公式是在满足马尔科夫过程情况下推导出来的， 而DDIM的采样公式是在非马尔科夫过程情况下推导出来的，所以使用DDPM采样公式时，不能跳步；使用DDIM采样公式时（注意：实际上DDIM不采样，直接确定性生成），可以跳步</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="附录：其他快速推导方式"><a href="#附录：其他快速推导方式" class="headerlink" title="附录：其他快速推导方式"></a>附录：其他快速推导方式</h3><ul>
+<li>参考自：<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a><br>  $$<br>  \begin{aligned}<br>  \mathbf{x}_{t-1}<br>  &amp;= \sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 +  \sqrt{1 - \bar{\alpha}_{t-1}}\boldsymbol{\epsilon}_{t-1} &amp; \\<br>  &amp;= \sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_{t-1} - \sigma_t^2} \boldsymbol{\epsilon}_t + \sigma_t\boldsymbol{\epsilon} &amp; \\<br>  &amp;= \sqrt{\bar{\alpha}_{t-1}} \Big( \frac{\mathbf{x}_t - \sqrt{1 - \bar{\alpha}_t} \epsilon^{(t)}_\theta(\mathbf{x}_t)}{\sqrt{\bar{\alpha}_t}} \Big) + \sqrt{1 - \bar{\alpha}_{t-1} - \sigma_t^2} \epsilon^{(t)}_\theta(\mathbf{x}_t) + \sigma_t\boldsymbol{\epsilon} \\<br>  q_\sigma(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)<br>  &amp;= \mathcal{N}(\mathbf{x}_{t-1}; \sqrt{\bar{\alpha}_{t-1}} \Big( \frac{\mathbf{x}_t - \sqrt{1 - \bar{\alpha}_t} \epsilon^{(t)}_\theta(\mathbf{x}_t)}{\sqrt{\bar{\alpha}_t}} \Big) + \sqrt{1 - \bar{\alpha}_{t-1} - \sigma_t^2} \epsilon^{(t)}_\theta(\mathbf{x}_t), \sigma_t^2 \mathbf{I})<br>  \end{aligned}<br>  $$</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDPM.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1396,21 +1651,21 @@
 
 <ul>
 <li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a></li>
-<li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a>：一篇写得非常好的博客</li>
-<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a><ul>
+<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a>  </li>
+<li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a>：   Lilian Weng的博客</li>
+<li><a href="https://www.bilibili.com/video/BV1b541197HX/" target="_blank" rel="noopener">54、Probabilistic Diffusion Model概率扩散模型理论与完整PyTorch代码详细解读</a>  <ul>
 <li>视频中有部分小bug，评论区已修复</li>
 </ul>
 </li>
-<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑<ul>
-<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，</li>
+<li><a href="https://zhuanlan.zhihu.com/p/624851115" target="_blank" rel="noopener">一文解决你关于扩散模型ddpm的所有疑惑</a>，回答了很多疑惑  <ul>
+<li><a href="https://www.bilibili.com/video/BV1p24y1K7Pf/" target="_blank" rel="noopener">一个视频看懂扩散模型DDPM原理推导|AI绘画底层模型</a>，  </li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <hr>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><p><em>这部分推导参考自<a href="https://zhuanlan.zhihu.com/p/525106459" target="_blank" rel="noopener">由浅入深了解Diffusion Model - ewrfcas的文章 - 知乎</a>和<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What are Diffusion Models?</a></em></p>
+<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><p><em>这部分推导参考自<a href="https://zhuanlan.zhihu.com/p/525106459" target="_blank" rel="noopener">由浅入深了解Diffusion Model - ewrfcas的文章 - 知乎</a>和<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models" target="_blank" rel="noopener">What   are Diffusion Models?</a></em>  </p>
 <h4 id="Diffusion前向过程"><a href="#Diffusion前向过程" class="headerlink" title="Diffusion前向过程"></a>Diffusion前向过程</h4><h5 id="前向过程的整体描述"><a href="#前向过程的整体描述" class="headerlink" title="前向过程的整体描述"></a>前向过程的整体描述</h5><ul>
 <li>给定真实图片\(x_0 \sim q(x_0)\)，Diffusion前向过程通过\(T\)次对其添加高斯噪声，得到\(x_T\)，第\(t\)次加噪后得到的样本为\(x_t\)</li>
 <li>加噪过程是增加一个服从高斯分布的误差，每一步中高斯分布方差的超参数是提前设定的 \(\{\beta_t \in (0,1)\}_{t=1}^T\)。</li>
@@ -1432,7 +1687,7 @@
 <ul>
 <li>问题：为什么前向过程的需要使用\(\sqrt{1-\beta_t}x_{t-1}\)来表示均值？<ul>
 <li>回答：因为这样可以使得\(x_T\)的均值中不含有原始样本\(x_0\)的信息，也就是说，这样使得\(x_T\)接近噪声</li>
-<li>补充问题：使用其他小于0的数\(\)替代\(1-\beta_t\)吗？</li>
+<li>补充问题：使用其他小于0的数\(k_t\)替代\(\sqrt{1-\beta_t}\)吗？答案是可以的，但是使用\(\sqrt{1-\beta_t}\)是为了满足\((\sqrt{1-\beta_t})^2+\beta_t = 1\)这样的形式，方便后续的推导，如果不使用这样的形式，推导起来会更复杂些，详情见苏神的博客<a href="https://kexue.fm/archives/9119" target="_blank" rel="noopener">生成扩散模型漫谈（一）：DDPM = 拆楼 + 建楼</a>  </li>
 </ul>
 </li>
 </ul>
@@ -1471,7 +1726,7 @@
 <li><p>于是，采样（生成）过程可以总结为如下的流程（下面的流程表示已知\(x_t\)和时间步\(t\)时采样\(x_{t-1}\)的步骤）：</p>
 <ul>
 <li>计算均值\(\tilde{\boldsymbol{\mu}}(x_t, t)\)：将\(x_t\)和时间步\(t\)输入神经网络预测\(x_0 \rightarrow x_t\)过程中添加的 \(t\) 个噪声的Merge结果\(\epsilon_\theta(x_t, t)\)，接着将\(\epsilon_\theta(x_t, t)\)带入\(\tilde{\boldsymbol{\mu}}(x_t) = \color{red}{\frac{1}{\sqrt{\alpha_t}} \Big( \mathbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(x_t, t) \Big)}\)得到均值</li>
-<li>计算方差\(\Sigma_\theta(x_t,t)\)：在DDPM中，使用固定值作为方差\(\Sigma_\theta(x_t,t) = \tilde{\beta}_t\)，同时在实践中，使用\(\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t \approx \beta_t \)，即\(\tilde{\beta}_t = \beta_t \)（其他有些文章会使用可学习的神经网络表示\(\Sigma_\theta(x_t, t)\)，比如<a href="https://arxiv.org/pdf/2112.10741" target="_blank" rel="noopener">GLIDE: Towards Photorealistic Image Generation and Editing with Text-Guided Diffusion Models</a>）</li>
+<li>计算方差\(\Sigma_\theta(x_t,t)\)：在DDPM中，使用固定值作为方差\(\Sigma_\theta(x_t,t) = \tilde{\beta}_t\)，同时在实践中，使用\(\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t \approx \beta_t \)，即\(\tilde{\beta}_t = \beta_t \)（其他有些文章会使用可学习的神经网络表示\(\Sigma_\theta(x_t, t)\)，比如<a href="https://arxiv.org/pdf/2112.10741" target="_blank" rel="noopener">GLIDE: Towards Photorealistic Image Generation and Editing with Text-Guided Diffusion Models</a>）  </li>
 <li>采样\(x_{t-1} \sim \mathcal{N}(\tilde{\boldsymbol{\mu}}(x_t, t), \Sigma_\theta(x_t,t))\)，即\(x_{t-1} = \tilde{\boldsymbol{\mu}}(x_t, t) + \Sigma_\theta(x_t,t)\cdot \epsilon, \ \epsilon \sim \mathcal{N}(0,\mathbf{I})\)</li>
 </ul>
 </li>
@@ -1541,239 +1796,24 @@
 </ul>
 </li>
 <li>既然为什么不能一步到位得到\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)?<ul>
-<li>回答：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = \mathcal{N}(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
+<li>回答（理论视角）：这样做是不可以的，在整个推导过程中，我们有\(q(x_t|x_0) = \mathcal{N}(x_t;\sqrt{\bar{\alpha}_{t}}x_0, (1-\bar{\alpha}_{t})\mathbf{I})\)（这里是通过高斯过程的叠加实现的，整个过程遵循马尔科夫过程），所以才有公式\(x_t=\sqrt{\bar{\alpha}_{t}}x_0 + \sqrt{1-\bar{\alpha}_{t}}\epsilon\)，这不代表我们可以通过\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)来得到\(x_0\)，因为此时的\(x_0\)是无法一步导出的（即\(q(x_0|x_t)\)是未知的，未知的原因是不遵循马尔科夫过程，训练时使用的损失函数是在满足马尔科夫过程假设的情况下推导出来的，推理时也不能违背该假设），必须遵循马尔科夫过程（即\(q(x_{t-1}|x_t)\)）<ul>
 <li>\(q(x_t|x_0)\)已知但是\(q(x_0|x_t)\)未知的原因是因为采样是不可逆的</li>
 <li>既然\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)不准确（不遵循马尔科夫过程），为什么按照\(x_0 = \frac{1}{\sqrt{\bar{\alpha}_{t}}}(x_t-\sqrt{1-\bar{\alpha}_{t}}\epsilon_{\theta})\)的到的\(x_0\)可以作为中间变量来帮助生成\(x_{t-1}\)呢？公式推导带入的时候使用了这个式子，本质上也说明推导过程不遵循马尔科夫过程了吧？</li>
 </ul>
 </li>
+<li>其他直观理解：模型直接学习\(q(x_0|x_t)\)是困难的，即误差\(\epsilon_\theta(x_t,t)\)虽然可以用于直接恢复\(x_0\)，但是不太精确（相当于是“粗略预估”），为了得到较好的\(x_0\)，在预估误差\(\epsilon_\theta(x_t,t)\)后，我们需要进行“修正”，所以，逐步采样的过程就是逐步“粗略预估”，逐步“修正”的过程（“预估”+“修正”的视角来自<a href="https://kexue.fm/archives/9262" target="_blank" rel="noopener">生成扩散模型漫谈（十）：统一扩散模型（理论篇）</a>）  </li>
 </ul>
 </li>
 </ul>
 </li>
 <li>DDPM可以不加入噪声吗？<ul>
 <li>实践：不可以，图片生成质量会特别差</li>
-<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】</li>
+<li>回答：因为如果不加入噪声，原因未知，猜测是采样次数多导致中间步骤的偏差被放大？(来源：<a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a>)【这个观点无法解释DDIM为什么可以直接生成，DDIM（DDIM生成时不加入噪声）生成1000步效果也不会太差】  </li>
 </ul>
 </li>
 </ul>
 <hr>
 <h3 id="附录：其他推导过程参考"><a href="#附录：其他推导过程参考" class="headerlink" title="附录：其他推导过程参考"></a>附录：其他推导过程参考</h3><img src="/Notes/DL/DL——DDPM/ddpm-derivation.webp">
-
-
-
-
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——DDIM.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——DDIM.html" itemprop="url">DL——DDIM</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍DDIM（Denoising Diffusion Implicit Models）的理论介绍</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
-<ul>
-<li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">DENOISING DIFFUSION IMPLICIT MODELS, ICLR 2021</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/627616358" target="_blank" rel="noopener">一文读懂DDIM凭什么可以加速DDPM的采样效率</a></li>
-<li><a href="https://www.bilibili.com/video/BV1Ra4y1F73C/" target="_blank" rel="noopener">一个视频看懂DDIM凭什么加速采样|扩散模型相关</a></li>
-</ul>
-</li>
-</ul>
-<h3 id="DDPM为什么慢？"><a href="#DDPM为什么慢？" class="headerlink" title="DDPM为什么慢？"></a>DDPM为什么慢？</h3><ul>
-<li>采样步数不能太小，否则单次破坏力度过大，不容易恢复？</li>
-<li>不能跳步，否则不遵循马尔科夫过程</li>
-</ul>
-<h3 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h3><ul>
-<li>核心是在DDPM的基础上，增加解决马尔科夫问题</li>
-<li>直观理解<img src="/Notes/DL/DL——DDIM/DDIM-P1.png"></li>
-<li>推导结果，推导流程有时间再补充<img src="/Notes/DL/DL——DDIM/DDIM-P2.png">
-<ul>
-<li>当采样方差\(\sigma\)满足一定条件时，上面的式子会满足马尔科夫过程，即等价于DDPM</li>
-</ul>
-</li>
-<li>图示跳步采样（生成）的原理：<img src="/Notes/DL/DL——DDIM/DDIM-P3.png">
-
-</li>
-</ul>
-<h3 id="训练和推理"><a href="#训练和推理" class="headerlink" title="训练和推理"></a>训练和推理</h3><h4 id="DDPM的训练和推理"><a href="#DDPM的训练和推理" class="headerlink" title="DDPM的训练和推理"></a>DDPM的训练和推理</h4><img src="/Notes/DL/DL——DDIM/ddpm-training-and-sampling.png">
-
-<h4 id="DDIM的训练和推理"><a href="#DDIM的训练和推理" class="headerlink" title="DDIM的训练和推理"></a>DDIM的训练和推理</h4><ul>
-<li><p>训练过程与DDPM基本一致，但DDIM只需要采样固定间隔的步数即可</p>
-<ul>
-<li>如果已经有训练好的DDPM，可以直接用，因为DDPM的训练时间步包含了DDIM的训练时间步</li>
-</ul>
-</li>
-<li><p>推理过程</p>
-<img src="/Notes/DL/DL——DDIM/DDIM-P4.png">
-</li>
-<li><p>推理时，一般会设置\(\sigma=0\)，即DDIM是确定性的，也就是DDIM中I(Implicit)区别于DDPM中(Probabilistic)的原因</p>
-</li>
-</ul>
-<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><ul>
-<li>实验设置<img src="/Notes/DL/DL——DDIM/DDIM-P5-0.png"></li>
-<li>结果展示<img src="/Notes/DL/DL——DDIM/DDIM-P5.png"></li>
-<li>结果分析<img src="/Notes/DL/DL——DDIM/DDIM-P6.png"></li>
-<li>从图中可以得出结论<ul>
-<li>\(\sigma\)越小（\(\eta\)越小，方差越小），即方差越小，效果越好，DDIM最好（DDIM对应\(\eta=0\)且\(\sigma=0\)）</li>
-<li>当\(T=1000\)时（或者\(T\)非常大时），DDPM效果最好（DDPM对应\(\eta=1\)且\(\sigma = \hat{\sigma}\)）</li>
-<li>小节：当采样步数少时（即间隔大时），使用DDIM效果更好，DDPM效果非常差；当采样步数很大时，DDPM效果微微好于DDIM</li>
-</ul>
-</li>
-</ul>
-<h3 id="代码亲测"><a href="#代码亲测" class="headerlink" title="代码亲测"></a>代码亲测</h3><ul>
-<li><p>各种\(\alpha,\beta\)的定义技巧：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">num_steps = 100</span><br><span class="line">betas = torch.linspace(-6,6,num_steps) </span><br><span class="line">betas = torch.sigmoid(betas)*(0.5e-2 - 1e-5)+1e-5 # beta逐步递增</span><br><span class="line">alphas = 1-betas</span><br><span class="line">print(&quot;alphas: %s&quot; % alphas)</span><br><span class="line">alphas_prod = torch.cumprod(alphas,0) # 连乘</span><br><span class="line">alphas_bar = alphas_prod</span><br><span class="line">alphas_prod_p = torch.cat([torch.tensor([1]).float(),alphas_prod[:-1]],0) # previous连乘</span><br><span class="line">alphas_bar_sqrt = torch.sqrt(alphas_bar)</span><br><span class="line">one_minus_alphas_bar_log = torch.log(1 - alphas_bar)</span><br><span class="line">one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_bar)</span><br><span class="line"></span><br><span class="line"># 模型定义：model(x, t)</span><br><span class="line"># 采样方式：torch.randn_like(x)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>实现细节(为了清晰表达，对原始采样公式有所修改)：<br>$$<br>x_s = \sqrt{\bar{\alpha}_s}\left(\frac{x_k-\sqrt{1-\bar{\alpha}_k}\epsilon_{\theta}(x_k,k)}{\bar{\alpha}_k}\right) + \sqrt{1-\bar{\alpha}_s-a_1\sigma_k^2}\epsilon_{\theta}(x_k,k) + a_2\sigma_k \epsilon<br>$$</p>
-<ul>
-<li>其中：\(\sigma_k^2 = \beta_t\)</li>
-<li>注意：\(a_1,a_2\)是新加的，拆开\(a_1,a_2\)的原因是实验发现两者可以设置不同值，且有以下现象：<ul>
-<li>\(a_2=0,a_1=1.0\)时，此时表示不采样，整个生成过程中没有添加随机值（除了初始样本为随机值外），不影响样本的生成质量，相对有随机值生成效果甚至更好</li>
-<li>\(a_1=0\)时，无论\(a_2\)值为多少，生成的样本均是类似乱码的图</li>
-<li>\(a_1&gt;0.5\)时，无论\(a_2\)值是否为0，生成的样本均不错（\(a_1\)的值不能太小，否则效果会不好）</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>亲测实验结果与论文有偏差的原因分析:</p>
-<ul>
-<li>如果采样步数较少，效果也不好，但当采样间隔为2时，即跳一步采样，效果还可以（不如间隔为1）<ul>
-<li>采样步数越多，效果越好（与原始论文结果一样）</li>
-</ul>
-</li>
-<li>为什么本人实现的DDIM采样步数不能太少？（跳步10步时效果较差，与原始论文结果不一致）<ul>
-<li>DDIM可能对模型要求很高，本人尝试环境中模型过于简单？训练样本过少？</li>
-</ul>
-</li>
-<li>为什么\(a_1=0\)时，效果非常差？<ul>
-<li>待解答</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h3 id="DDIM对比DDPM"><a href="#DDIM对比DDPM" class="headerlink" title="DDIM对比DDPM"></a>DDIM对比DDPM</h3><ul>
-<li>DDIM训练流程与DDPM完全相同，只是推理(采样)过程不同</li>
-<li>DDIM主要解决DDPM采样慢的问题<ul>
-<li>DDPM有符合马尔科夫假设，需要一步步采样，效率慢</li>
-<li>DDIM没有马尔科夫假设，可以跳步生成图片，且可以不采样（标准的DDIM就是不采样的，论文中，噪音的方差越小，得到的效果越好）</li>
-</ul>
-</li>
-</ul>
-<h3 id="一些问题和解答"><a href="#一些问题和解答" class="headerlink" title="一些问题和解答"></a>一些问题和解答</h3><ul>
-<li>DDPM采样时不能去掉噪音，为什么DDIM可以？<ul>
-<li>回答：因为DDIM采样中，噪音的方差\(\sigma\)是通过实验发现效果比较好的</li>
-<li>具体原因？</li>
-</ul>
-</li>
-<li>为什么DDPM和DDIM训练逻辑基本一致，但DDPM推断必须遵循马尔科夫性，而DDIM不需要？<ul>
-<li>回答：<ul>
-<li>训练时：DDIM和DDPM训练过程都遵循马尔科夫过程。DDIM可以按照一定间隔采样时间步，但实际上也是经过在满足马尔科夫过程的情况下推导出来的，DDPM和DDIM的训练采样公式都是因为方差可以累加实现跳跃采样的</li>
-<li>推断时：因为DDPM的采样公式是在满足马尔科夫过程情况下推导出来的， 而DDIM的采样公式是在非马尔科夫过程情况下推导出来的，所以使用DDPM采样公式时，不能跳步；使用DDIM采样公式时（注意：实际上DDIM不采样，直接确定性生成），可以跳步</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
           
         
       
@@ -1882,159 +1922,73 @@
 
 <ul>
 <li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models, ICML 2021</a></li>
-<li>源码：<a href="https://github.com/openai/improved-diffusion" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models</a></li>
+<li>原始论文：<a href="https://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models, ICML 2021</a>  </li>
+<li>源码：<a href="https://github.com/openai/improved-diffusion" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models</a>  </li>
 </ul>
 </li>
 </ul>
 <hr>
 <h3 id="整体说明"><a href="#整体说明" class="headerlink" title="整体说明"></a>整体说明</h3><ul>
-<li>IDDPM提供了对DDPM的一些优化，包括xx、xx等</li>
+<li>IDDPM提供了对DDPM的一些优化，许多内容是基于DDPM原始论文<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a>的  </li>
 </ul>
 <hr>
-<h3 id="参数优化"><a href="#参数优化" class="headerlink" title="参数优化"></a>参数优化</h3><h4 id="优化正向过程方差-beta-t"><a href="#优化正向过程方差-beta-t" class="headerlink" title="优化正向过程方差\(\beta_t\)"></a>优化正向过程方差\(\beta_t\)</h4><ul>
-<li>DDPM中的方差设置:<ul>
-<li>在DDPM中曾经提到方差 \(\beta_t\) 是可以通过重参数法学习的，也可以设置为固定值</li>
-<li>DDPM实现中是使用固定值，也就是说扩散过程 \(q\) 都是不可学习的参数。具体来说，DDPM实验时设置了\(T=1000\)该固定值使用的是\([10^{-4}, 0.02]\)之间的线性的固定值（即\(\beta_1 = 10^{-4} \ \text{to} \beta_T = 0.02\)）</li>
+<h3 id="可学习的逆向过程方差-Sigma-theta-x-t-t"><a href="#可学习的逆向过程方差-Sigma-theta-x-t-t" class="headerlink" title="可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)"></a>可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</h3><ul>
+<li>DDPM中逆向过程方差\(\Sigma_\theta(x_t,t)\)设置：<ul>
+<li>DDPM中的方差设置为固定值：\(\mathbf{\Sigma}_\theta(\mathbf{x}_t, t) = \sigma^2_t \mathbf{I}\)，其中\(\sigma_t = \tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t\)，或者直接使用\(\sigma_t = \beta_t\)（实验上，两种设置效果差不多）</li>
+<li>DDPM中作者通过实验发现，如果将\(\Sigma_\theta(x_t,t)\)设置为可学习的，模型会不容易收敛，采样效果会变差</li>
 </ul>
 </li>
 <li>IDDPM中的改进：<ul>
-<li>IDDPM将\(\beta_t\)从线性机制改成余弦机制</li>
+<li>采用一种插值的方法表示\(\Sigma_\theta(x_t,t)\)：\(\mathbf{\Sigma}_\theta(\mathbf{x}_t, t) = \exp(\mathbf{v} \log \beta_t + (1-\mathbf{v}) \log \tilde{\beta}_t)\)<ul>
+<li>其中\(\mathbf{v} \)是可以学习的向量（注意\(\beta_t\)是标量，而\(\mathbf{v} \)是向量，DDPM中的协方差矩阵是\(\sigma^2_t \mathbf{I}\)中实际上假设了各个维度的方差都相同，都是\(\sigma^2_t\)，IDDPM中则通过引入\(\mathbf{v} \)来实现不同维度方差不同）</li>
+<li>能够这样插值的一个思路是因为\(\sigma_t\)的取值范围在\([\beta_t, \tilde{\beta}_t]\)（详情见<a href="https://zhuanlan.zhihu.com/p/654388872" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models (IDDPM) - 妖妖的文章 - 知乎</a>）。  </li>
+<li>虽然理论上应该对\(\mathbf{v} \)进行限制，但是IDDPM实验中也没有对\(\mathbf{v} \)进行限制，实验结果证明了即使不限制\(\mathbf{v} \)范围，也不会超过插值范围</li>
+</ul>
+</li>
+<li>传统DDPM的损失函数\(L_{\text{simple}}\)不依赖\(\Sigma_\theta(x_t,t)\)，所以优化传统的损失函数不能更新到\(\mathbf{v} \)，为了更新到\(\mathbf{v} \)，IDDPM在传统损失函数上增加了一项，最终IDDPM损失函数为：<br>  $$ L_\text{hybrid} = L_\text{simple} + \lambda L_\text{VLB} $$<ul>
+<li>其中\(L_\text{VLB} = L_T + L_{T-1} + \dots + L_0\)，详情见：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a>  </li>
+<li>设置\(\lambda=0.001\)，用于防止\(L_\text{VLB}\)过于强势，影响\(L_\text{simple}\)的学习</li>
+<li>设置\(L_\text{VLB}\)对\(\mu_\theta(x_t, t)\)是停止梯度回传的（<code>stop_gradient</code>），确保\(\mu_\theta(x_t, t)\)还是主要由\(L_\text{simple}\)学习</li>
+<li>问题：\(L_\text{VLB}\)对\(\mu_\theta(x_t, t)\)都停止梯度回传了，还需要设置\(\lambda=0.001\)这么小吗？</li>
 </ul>
 </li>
 </ul>
-<h4 id="可学习的逆向过程方差-Sigma-theta-x-t-t"><a href="#可学习的逆向过程方差-Sigma-theta-x-t-t" class="headerlink" title="可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)"></a>可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</h4>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——Stable-Diffusion.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Joe Zhou">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/jiahong-head.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Jiahong的个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Notes/DL/DL——Stable-Diffusion.html" itemprop="url">DL——Stable-Diffusion</a></h1>
-        
-
-        <div class="post-meta">
-          
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><em>文本介绍Stable Diffusion</em></p>
-<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-
+</li>
+</ul>
+<hr>
+<h3 id="Improving-the-Noise-Schedule"><a href="#Improving-the-Noise-Schedule" class="headerlink" title="Improving the Noise Schedule"></a>Improving the Noise Schedule</h3><p><em>优化前向过程中的方差\(\{\beta_t\}_{t=1}^T\)安排</em></p>
 <ul>
-<li>参考链接：<ul>
-<li>原始论文：</li>
-<li>源码：</li>
-<li>参考博客：<a href="https://zhuanlan.zhihu.com/p/669570827" target="_blank" rel="noopener">Stable Diffusion 万字长文详解稳定扩散模型 - 7号床的文章 - 知乎</a></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h3 id="整体说明"><a href="#整体说明" class="headerlink" title="整体说明"></a>整体说明</h3><ul>
-<li>IDDPM提供了对DDPM的一些优化，包括xx、xx等</li>
-</ul>
-<hr>
-<h3 id="参数优化"><a href="#参数优化" class="headerlink" title="参数优化"></a>参数优化</h3><h4 id="优化正向过程方差-beta-t"><a href="#优化正向过程方差-beta-t" class="headerlink" title="优化正向过程方差\(\beta_t\)"></a>优化正向过程方差\(\beta_t\)</h4><ul>
-<li>DDPM中的方差设置:<ul>
+<li>DDPM中前向过程的方差安排设置:<ul>
+<li>DDPM实现中是使用线性的固定值，也就是说扩散过程 \(q\) 都是不可学习的参数。具体来说，DDPM实验时设置了\(T=1000\)该固定值使用的是\([10^{-4}, 0.02]\)之间的线性的固定值（即\(\beta_1 = 10^{-4} \ \text{to} \ \beta_T = 0.02\)）</li>
 <li>在DDPM中曾经提到方差 \(\beta_t\) 是可以通过重参数法学习的，也可以设置为固定值</li>
-<li>DDPM实现中是使用固定值，也就是说扩散过程 \(q\) 都是不可学习的参数。具体来说，DDPM实验时设置了\(T=1000\)该固定值使用的是\([10^{-4}, 0.02]\)之间的线性的固定值（即\(\beta_1 = 10^{-4} \ \text{to} \beta_T = 0.02\)）</li>
 </ul>
 </li>
 <li>IDDPM中的改进：<ul>
-<li>IDDPM将\(\beta_t\)从线性机制改成余弦机制</li>
+<li>IDDPM将\(\beta_t\)从线性机制改成余弦机制，具体来说，通过\(\bar{\alpha}_t\)反推\(\beta_t\)<br>  $$ \beta_t = \text{clip}(1-\frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}, 0.999) \quad\bar{\alpha}_t = \frac{f(t)}{f(0)}\quad\text{where }f(t)=\cos\Big(\frac{t/T+s}{1+s}\cdot\frac{\pi}{2}\Big)^2 $$<ul>
+<li>其中\(s\)是一个非常小的数字，用于防止\(t\)太小的时候\(\beta_t\)取值太小，实验中，取\(s=0.008\)</li>
+</ul>
+</li>
+<li>改进前后的取值比较  
+
+</li>
 </ul>
 </li>
 </ul>
-<h4 id="可学习的逆向过程方差-Sigma-theta-x-t-t"><a href="#可学习的逆向过程方差-Sigma-theta-x-t-t" class="headerlink" title="可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)"></a>可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</h4>
+<hr>
+<h3 id="基于重要性采样训练-L-text-VLB"><a href="#基于重要性采样训练-L-text-VLB" class="headerlink" title="基于重要性采样训练\(L_\text{VLB}\)"></a>基于重要性采样训练\(L_\text{VLB}\)</h3><ul>
+<li>DDPM中，训练时时间步时均匀采样得到的，但是不同的时间步\(L_\text{VLB}\)的Loss值不同，所以使用重要性采样来使得Loss大的地方得到更多的训练，详情见<a href="https://zhuanlan.zhihu.com/p/654388872" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models (IDDPM) - 妖妖的文章 - 知乎</a>：<br>  $$ L_\text{VLB} = \mathbb{E}_{t \sim p_t}\Big[\frac{L_t}{p_t}\Big] \quad \text{where } p_t \propto \sqrt{\mathbb{E}[L_t^2]} \ \text{and} \ \sum_t p_t = 1$$<ul>
+<li>这里的改进不常用，文章写的有点晦涩难懂，需要时再来好好理解一下
+
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="加速采样"><a href="#加速采样" class="headerlink" title="加速采样"></a>加速采样</h3><ul>
+<li>与DDIM相似</li>
+</ul>
+
           
         
       
@@ -2196,6 +2150,157 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://JoeZJH.github.io/Notes/DL/DL——条件扩散模型.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joe Zhou">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/jiahong-head.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jiahong的个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Notes/DL/DL——条件扩散模型.html" itemprop="url">DL——条件扩散模型</a></h1>
+        
+
+        <div class="post-meta">
+          
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><em>文本介绍Conditional Diffusion的理论介绍</em></p>
+<!-- <script src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"  type="text/javascript"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<ul>
+<li>参考链接：<ul>
+<li><a href="https://kexue.fm/archives/9257" target="_blank" rel="noopener">生成扩散模型漫谈（九）：条件控制生成结果</a>：本文的证明大多参考自苏神的博客  </li>
+<li><a href="https://arxiv.org/pdf/2105.05233" target="_blank" rel="noopener">Diffusion Models Beat GANs on Image Synthesis, OpenAI, 2021</a>：第一篇条件扩散模型的文章，Classifier-Guidance方法  </li>
+<li><a href="https://arxiv.org/pdf/2207.12598" target="_blank" rel="noopener">Classifier-Free Diffusion Guidance, Google Research, Brain team, 2022</a>：第一篇使用Classifier-free   Guidance方法的文章</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="整体概述"><a href="#整体概述" class="headerlink" title="整体概述"></a>整体概述</h3><ul>
+<li>在图像生成领域，条件一般可以分成类别标签或者是一段文本</li>
+<li>从方法上来看，条件控制生成的方式主要分两种：Classifier-Guidance 和 Classifier-free Guidance<ul>
+<li>Classifier-Guidance：先无条件训练，训练后在生成时引入条件分类器（Classifier）。这总方式灵活，无需重新训练，但是效果较差</li>
+<li>Classifier-free Guidance：训练时引入条件，生成时无需Classifier。这种方式需要重新训练Diffusion模型，但理论效果更好些</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Classifier-free-Guidance"><a href="#Classifier-free-Guidance" class="headerlink" title="Classifier-free Guidance"></a>Classifier-free Guidance</h3><ul>
+<li>Classifier-free Guidance的方法直接讲条件添加到原始Diffusion模型中，从而使得模型在训练时就能感知到条件，因此，在采样（生成）时，不需要额外训练Classifier了</li>
+<li>在原始分布\(p(x_{t-1}|x_t)\)增加条件\(y\)，则原始分布变成\(p(x_{t-1}|x_t,y)\)<br>  $$<br>  \begin{equation}<br>  p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t, \boldsymbol{y}) = \mathcal{N}(\boldsymbol{x}_{t-1}; \boldsymbol{\mu}(\boldsymbol{x}_t, \boldsymbol{y}),\sigma_t^2\boldsymbol{I})<br>  \end{equation}$$</li>
+<li>接着，在训练时，噪声网络上也增加输入\(y\)，即\(\epsilon_\theta(x_t, y, t)\)</li>
+<li>最后，可以使用下面的式子来实现加权<br>  $$\begin{equation}\tilde{\boldsymbol{\epsilon}}_{\boldsymbol{\theta}}(\boldsymbol{x}_t, \boldsymbol{y}, t) = (1 + w)\boldsymbol{\epsilon}_{\boldsymbol{\theta}}(\boldsymbol{x}_t, \boldsymbol{y}, t) - w \boldsymbol{\epsilon}_{\boldsymbol{\theta}}(\boldsymbol{x}_t, t)\end{equation}<br>  $$<ul>
+<li>其中，无条件的\(\epsilon_\theta(x_t, t)\)通过设置一个特定的条件\(\phi\)获得，即\(\epsilon_\theta(x_t, t) = \epsilon_\theta(x_t, \phi, t)\)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="Classifier-Guidance"><a href="#Classifier-Guidance" class="headerlink" title="Classifier-Guidance"></a>Classifier-Guidance</h3><ul>
+<li>相关推导也可以参考论文：<a href="https://arxiv.org/pdf/2011.13456" target="_blank" rel="noopener">Score-based generative modeling through stochastic differential equations, 2020</a>，下面的推导参考苏神<a href="https://kexue.fm/archives/9257" target="_blank" rel="noopener">生成扩散模型漫谈（九）：条件控制生成结果</a>的推导实现  </li>
+<li>在推导过程中，在原始分布\(p(x_{t-1}|x_t)\)增加条件\(y\)，则原始分布变成\(p(x_{t-1}|x_t,y)\)</li>
+<li>根据贝叶斯公式有：<br>  $$\begin{equation}p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t, \boldsymbol{y}) = \frac{p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)p(\boldsymbol{y}|\boldsymbol{x}_{t-1}, \boldsymbol{x}_t)}{p(\boldsymbol{y}|\boldsymbol{x}_t)}\label{eq:bayes-1}\end{equation}$$</li>
+<li>由于\(x_t\)是由\(x_{t-1}\)加上噪声得到的，所以\(p(\boldsymbol{y}|\boldsymbol{x}_{t-1}, \boldsymbol{x}_t) = p(\boldsymbol{y}|\boldsymbol{x}_{t-1})\)</li>
+<li>于是有：<br>  $$ \begin{equation}p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t, \boldsymbol{y}) = \frac{p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)p(\boldsymbol{y}|\boldsymbol{x}_{t-1})}{p(\boldsymbol{y}|\boldsymbol{x}_t)} = p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t) e^{\log p(\boldsymbol{y}|\boldsymbol{x}_{t-1}) - \log p(\boldsymbol{y}|\boldsymbol{x}_t)}\label{eq:bayes-2}\end{equation} $$</li>
+<li>接下来我们要求解\(\log p(\boldsymbol{y}|\boldsymbol{x}_{t-1}) - \log p(\boldsymbol{y}|\boldsymbol{x}_t)\)这一项，首先做一下近似，当\(T\)足够大时，有\(x_t\)和\(x_{t-1}\)非常接近，故而可以用泰勒展开来近似：<br>  $$ \begin{equation}\log p(\boldsymbol{y}|\boldsymbol{x}_{t-1}) - \log p(\boldsymbol{y}|\boldsymbol{x}_t)\approx (\boldsymbol{x}_{t-1} - \boldsymbol{x}_t)\cdot\nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)\end{equation}$$</li>
+<li>假设\(p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)=\mathcal{N}(\boldsymbol{x}_{t-1};\boldsymbol{\mu}(\boldsymbol{x}_t),\sigma_t^2\boldsymbol{I})\propto e^{-\Vert \boldsymbol{x}_{t-1} - \boldsymbol{\mu}(\boldsymbol{x}_t)\Vert^2/2\sigma_t^2}\)，则有<br>  $$<br>  \begin{aligned}<br>  p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t, \boldsymbol{y}) =&amp;\ p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t) e^{\log p(\boldsymbol{y}|\boldsymbol{x}_{t-1}) - \log p(\boldsymbol{y}|\boldsymbol{x}_t)} \\<br>  \propto&amp;\ e^{-\Vert \boldsymbol{x}_{t-1} - \boldsymbol{\mu}(\boldsymbol{x}_t)\Vert^2/2\sigma_t^2 + (\boldsymbol{x}_{t-1} - \boldsymbol{x}_t)\cdot\nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)} \\<br>  \propto&amp;\ e^{-\Vert \boldsymbol{x}_{t-1} - \boldsymbol{\mu}(\boldsymbol{x}_t) - \sigma_t^2 \nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)\Vert^2/2\sigma_t^2}<br>  \end{aligned}<br>  $$</li>
+<li>将上上面的形式转换成正太分布，有：<br>  $$ \mathcal{N}(\boldsymbol{x}_{t-1};\boldsymbol{\mu}(\boldsymbol{x}_t) + \sigma_t^2 \nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t),\sigma_t^2\boldsymbol{I})$$</li>
+<li>也就是说按照下面形式采样即可实现条件的加入：<br>  $$<br>  \begin{equation}\boldsymbol{x}_{t-1} = \boldsymbol{\mu}(\boldsymbol{x}_t) \color{red}{+} {\color{red}{\underbrace{\sigma_t^2 \nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)}_{\text{新增项}}}} + \sigma_t\boldsymbol{\varepsilon},\quad \boldsymbol{\varepsilon}\sim \mathcal{N}(\boldsymbol{0},\boldsymbol{I})\end{equation}<br>  $$</li>
+<li>在原始论文DDPM的采样形式为：<br>  $$\begin{equation}\sigma_t^2 \nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)|_{\boldsymbol{x}_t=\boldsymbol{\mu}(\boldsymbol{x}_t)}\end{equation}$$<ul>
+<li>这个形式与上述推导结果不同，区别在于xxx</li>
+</ul>
+</li>
+<li>在<a href="https://arxiv.org/pdf/2105.05233" target="_blank" rel="noopener">Diffusion Models Beat GANs on Image Synthesis, OpenAI, 2021</a>中，作者发现，在分类器上增加一个梯度缩放参数\(s\)（gradient   scale \(s\)）可以更好的调节生成效果，<br>  $$<br>  \begin{equation}\boldsymbol{x}_{t-1} = \boldsymbol{\mu}(\boldsymbol{x}_t) \color{red}{+} {\color{red}{\underbrace{ \color{black}{s} \sigma_t^2 \nabla_{\boldsymbol{x}_t} \log p(\boldsymbol{y}|\boldsymbol{x}_t)}_{\text{新增项}}}} + \sigma_t\boldsymbol{\varepsilon},\quad \boldsymbol{\varepsilon}\sim \mathcal{N}(\boldsymbol{0},\boldsymbol{I})\end{equation}<br>  $$</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2261,7 +2366,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">50</span>
+                  <span class="site-state-item-count">49</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

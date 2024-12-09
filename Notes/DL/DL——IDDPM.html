@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021 源码：Improved Denoising Diffusion Probabilistic Models     整">
+<meta name="description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021   源码：Improved Denoising Diffusion Probabilistic Models">
 <meta name="keywords" content="DL,CV">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DL——IDDPM">
 <meta property="og:url" content="https://JoeZJH.github.io/Notes/DL/DL——IDDPM.html">
 <meta property="og:site_name" content="Jiahong的个人博客">
-<meta property="og:description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021 源码：Improved Denoising Diffusion Probabilistic Models     整">
+<meta property="og:description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021   源码：Improved Denoising Diffusion Probabilistic Models">
 <meta property="og:locale" content="En/中">
-<meta property="og:updated_time" content="2024-12-08T17:43:29.214Z">
+<meta property="og:updated_time" content="2024-12-09T16:09:54.154Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="DL——IDDPM">
-<meta name="twitter:description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021 源码：Improved Denoising Diffusion Probabilistic Models     整">
+<meta name="twitter:description" content="文本介绍IDDPM（Improved Denoising Diffusion Probabilistic Models）的理论介绍     参考链接： 原始论文：Improved Denoising Diffusion Probabilistic Models, ICML 2021   源码：Improved Denoising Diffusion Probabilistic Models">
 
 
 
@@ -332,28 +332,73 @@
 
 <ul>
 <li>参考链接：<ul>
-<li>原始论文：<a href="https://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models, ICML 2021</a></li>
-<li>源码：<a href="https://github.com/openai/improved-diffusion" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models</a></li>
+<li>原始论文：<a href="https://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models, ICML 2021</a>  </li>
+<li>源码：<a href="https://github.com/openai/improved-diffusion" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models</a>  </li>
 </ul>
 </li>
 </ul>
 <hr>
 <h3 id="整体说明"><a href="#整体说明" class="headerlink" title="整体说明"></a>整体说明</h3><ul>
-<li>IDDPM提供了对DDPM的一些优化，包括xx、xx等</li>
+<li>IDDPM提供了对DDPM的一些优化，许多内容是基于DDPM原始论文<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a>的  </li>
 </ul>
 <hr>
-<h3 id="参数优化"><a href="#参数优化" class="headerlink" title="参数优化"></a>参数优化</h3><h4 id="优化正向过程方差-beta-t"><a href="#优化正向过程方差-beta-t" class="headerlink" title="优化正向过程方差\(\beta_t\)"></a>优化正向过程方差\(\beta_t\)</h4><ul>
-<li>DDPM中的方差设置:<ul>
-<li>在DDPM中曾经提到方差 \(\beta_t\) 是可以通过重参数法学习的，也可以设置为固定值</li>
-<li>DDPM实现中是使用固定值，也就是说扩散过程 \(q\) 都是不可学习的参数。具体来说，DDPM实验时设置了\(T=1000\)该固定值使用的是\([10^{-4}, 0.02]\)之间的线性的固定值（即\(\beta_1 = 10^{-4} \ \text{to} \beta_T = 0.02\)）</li>
+<h3 id="可学习的逆向过程方差-Sigma-theta-x-t-t"><a href="#可学习的逆向过程方差-Sigma-theta-x-t-t" class="headerlink" title="可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)"></a>可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</h3><ul>
+<li>DDPM中逆向过程方差\(\Sigma_\theta(x_t,t)\)设置：<ul>
+<li>DDPM中的方差设置为固定值：\(\mathbf{\Sigma}_\theta(\mathbf{x}_t, t) = \sigma^2_t \mathbf{I}\)，其中\(\sigma_t = \tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \cdot \beta_t\)，或者直接使用\(\sigma_t = \beta_t\)（实验上，两种设置效果差不多）</li>
+<li>DDPM中作者通过实验发现，如果将\(\Sigma_\theta(x_t,t)\)设置为可学习的，模型会不容易收敛，采样效果会变差</li>
 </ul>
 </li>
 <li>IDDPM中的改进：<ul>
-<li>IDDPM将\(\beta_t\)从线性机制改成余弦机制</li>
+<li>采用一种插值的方法表示\(\Sigma_\theta(x_t,t)\)：\(\mathbf{\Sigma}_\theta(\mathbf{x}_t, t) = \exp(\mathbf{v} \log \beta_t + (1-\mathbf{v}) \log \tilde{\beta}_t)\)<ul>
+<li>其中\(\mathbf{v} \)是可以学习的向量（注意\(\beta_t\)是标量，而\(\mathbf{v} \)是向量，DDPM中的协方差矩阵是\(\sigma^2_t \mathbf{I}\)中实际上假设了各个维度的方差都相同，都是\(\sigma^2_t\)，IDDPM中则通过引入\(\mathbf{v} \)来实现不同维度方差不同）</li>
+<li>能够这样插值的一个思路是因为\(\sigma_t\)的取值范围在\([\beta_t, \tilde{\beta}_t]\)（详情见<a href="https://zhuanlan.zhihu.com/p/654388872" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models (IDDPM) - 妖妖的文章 - 知乎</a>）。  </li>
+<li>虽然理论上应该对\(\mathbf{v} \)进行限制，但是IDDPM实验中也没有对\(\mathbf{v} \)进行限制，实验结果证明了即使不限制\(\mathbf{v} \)范围，也不会超过插值范围</li>
+</ul>
+</li>
+<li>传统DDPM的损失函数\(L_{\text{simple}}\)不依赖\(\Sigma_\theta(x_t,t)\)，所以优化传统的损失函数不能更新到\(\mathbf{v} \)，为了更新到\(\mathbf{v} \)，IDDPM在传统损失函数上增加了一项，最终IDDPM损失函数为：<br>  $$ L_\text{hybrid} = L_\text{simple} + \lambda L_\text{VLB} $$<ul>
+<li>其中\(L_\text{VLB} = L_T + L_{T-1} + \dots + L_0\)，详情见：<a href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf" target="_blank" rel="noopener">Denoising Diffusion Probabilistic Models, NeurIPS 2020</a>  </li>
+<li>设置\(\lambda=0.001\)，用于防止\(L_\text{VLB}\)过于强势，影响\(L_\text{simple}\)的学习</li>
+<li>设置\(L_\text{VLB}\)对\(\mu_\theta(x_t, t)\)是停止梯度回传的（<code>stop_gradient</code>），确保\(\mu_\theta(x_t, t)\)还是主要由\(L_\text{simple}\)学习</li>
+<li>问题：\(L_\text{VLB}\)对\(\mu_\theta(x_t, t)\)都停止梯度回传了，还需要设置\(\lambda=0.001\)这么小吗？</li>
 </ul>
 </li>
 </ul>
-<h4 id="可学习的逆向过程方差-Sigma-theta-x-t-t"><a href="#可学习的逆向过程方差-Sigma-theta-x-t-t" class="headerlink" title="可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)"></a>可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</h4>
+</li>
+</ul>
+<hr>
+<h3 id="Improving-the-Noise-Schedule"><a href="#Improving-the-Noise-Schedule" class="headerlink" title="Improving the Noise Schedule"></a>Improving the Noise Schedule</h3><p><em>优化前向过程中的方差\(\{\beta_t\}_{t=1}^T\)安排</em></p>
+<ul>
+<li>DDPM中前向过程的方差安排设置:<ul>
+<li>DDPM实现中是使用线性的固定值，也就是说扩散过程 \(q\) 都是不可学习的参数。具体来说，DDPM实验时设置了\(T=1000\)该固定值使用的是\([10^{-4}, 0.02]\)之间的线性的固定值（即\(\beta_1 = 10^{-4} \ \text{to} \ \beta_T = 0.02\)）</li>
+<li>在DDPM中曾经提到方差 \(\beta_t\) 是可以通过重参数法学习的，也可以设置为固定值</li>
+</ul>
+</li>
+<li>IDDPM中的改进：<ul>
+<li>IDDPM将\(\beta_t\)从线性机制改成余弦机制，具体来说，通过\(\bar{\alpha}_t\)反推\(\beta_t\)<br>  $$ \beta_t = \text{clip}(1-\frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}, 0.999) \quad\bar{\alpha}_t = \frac{f(t)}{f(0)}\quad\text{where }f(t)=\cos\Big(\frac{t/T+s}{1+s}\cdot\frac{\pi}{2}\Big)^2 $$<ul>
+<li>其中\(s\)是一个非常小的数字，用于防止\(t\)太小的时候\(\beta_t\)取值太小，实验中，取\(s=0.008\)</li>
+</ul>
+</li>
+<li>改进前后的取值比较  
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="基于重要性采样训练-L-text-VLB"><a href="#基于重要性采样训练-L-text-VLB" class="headerlink" title="基于重要性采样训练\(L_\text{VLB}\)"></a>基于重要性采样训练\(L_\text{VLB}\)</h3><ul>
+<li>DDPM中，训练时时间步时均匀采样得到的，但是不同的时间步\(L_\text{VLB}\)的Loss值不同，所以使用重要性采样来使得Loss大的地方得到更多的训练，详情见<a href="https://zhuanlan.zhihu.com/p/654388872" target="_blank" rel="noopener">Improved Denoising Diffusion Probabilistic Models (IDDPM) - 妖妖的文章 - 知乎</a>：<br>  $$ L_\text{VLB} = \mathbb{E}_{t \sim p_t}\Big[\frac{L_t}{p_t}\Big] \quad \text{where } p_t \propto \sqrt{\mathbb{E}[L_t^2]} \ \text{and} \ \sum_t p_t = 1$$<ul>
+<li>这里的改进不常用，文章写的有点晦涩难懂，需要时再来好好理解一下
+
+
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="加速采样"><a href="#加速采样" class="headerlink" title="加速采样"></a>加速采样</h3><ul>
+<li>与DDIM相似</li>
+</ul>
+
       
     </div>
     
@@ -385,8 +430,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/Notes/DL/DL——Stable-Diffusion.html" rel="next" title="DL——Stable-Diffusion">
-                <i class="fa fa-chevron-left"></i> DL——Stable-Diffusion
+              <a href="/Notes/DL/DL——xDeepFM.html" rel="next" title="DL——xDeepFM">
+                <i class="fa fa-chevron-left"></i> DL——xDeepFM
               </a>
             
           </div>
@@ -395,8 +440,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/Notes/DL/DL——DDIM.html" rel="prev" title="DL——DDIM">
-                DL——DDIM <i class="fa fa-chevron-right"></i>
+              <a href="/Notes/DL/DL——DDPM.html" rel="prev" title="DL——DDPM">
+                DL——DDPM <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -489,7 +534,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">50</span>
+                  <span class="site-state-item-count">49</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
@@ -538,7 +583,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#整体说明"><span class="nav-number">1.</span> <span class="nav-text">整体说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参数优化"><span class="nav-number">2.</span> <span class="nav-text">参数优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#优化正向过程方差-beta-t"><span class="nav-number">2.1.</span> <span class="nav-text">优化正向过程方差\(\beta_t\)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#可学习的逆向过程方差-Sigma-theta-x-t-t"><span class="nav-number">2.2.</span> <span class="nav-text">可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#整体说明"><span class="nav-number">1.</span> <span class="nav-text">整体说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可学习的逆向过程方差-Sigma-theta-x-t-t"><span class="nav-number">2.</span> <span class="nav-text">可学习的逆向过程方差\(\Sigma_\theta(x_t,t)\)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Improving-the-Noise-Schedule"><span class="nav-number">3.</span> <span class="nav-text">Improving the Noise Schedule</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于重要性采样训练-L-text-VLB"><span class="nav-number">4.</span> <span class="nav-text">基于重要性采样训练\(L_\text{VLB}\)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加速采样"><span class="nav-number">5.</span> <span class="nav-text">加速采样</span></a></li></ol></div>
             
 
           </div>
